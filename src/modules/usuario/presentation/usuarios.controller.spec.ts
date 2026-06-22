@@ -1,20 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { UserRole } from '../domain/user.entity';
+import { RolUsuario } from '../domain/usuario.entity';
 import { UsuariosService } from '../application/usuarios.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UserResponseDto } from './dto/user-response.dto';
+import { RegistroResponseDto } from './dto/registro-response.dto';
+import { RegistroUsuarioDto } from './dto/registro-usuario.dto';
 import { UsuariosController } from './usuarios.controller';
 
 describe('UsuariosController', () => {
   let controller: UsuariosController;
   let mockUsuariosService: {
-    registerUser: jest.Mock;
+    registrar: jest.Mock;
   };
 
   beforeEach(async () => {
     mockUsuariosService = {
-      registerUser: jest.fn(),
+      registrar: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -34,76 +34,80 @@ describe('UsuariosController', () => {
     jest.clearAllMocks();
   });
 
-  describe('registerUser', () => {
+  describe('registrar', () => {
     it('debería delegar al service y retornar el resultado cuando se recibe un dto válido', async () => {
       // Arrange
-      const dto: CreateUserDto = {
+      const dto: RegistroUsuarioDto = {
+        nombreTenant: 'Clínica Test',
         email: 'test@example.com',
         password: 'password123',
-        fullName: 'Test User',
-        role: UserRole.PROFESSIONAL,
+        nombreCompleto: 'Test User',
       };
 
-      const expectedResponse = new UserResponseDto({
+      const expectedResponse = new RegistroResponseDto({
         id: 'uuid-1234',
         email: dto.email,
-        fullName: dto.fullName,
-        role: UserRole.PROFESSIONAL,
-        createdAt: new Date('2026-06-22T00:00:00Z'),
+        nombreCompleto: dto.nombreCompleto,
+        rol: RolUsuario.ADMINISTRADOR,
+        tenantId: 'tenant-uuid-001',
+        creadoEn: new Date('2026-06-22T00:00:00Z'),
       });
 
-      mockUsuariosService.registerUser.mockResolvedValue(expectedResponse);
+      mockUsuariosService.registrar.mockResolvedValue(expectedResponse);
 
       // Act
-      const result = await controller.registerUser(dto);
+      const result = await controller.registrar(dto);
 
       // Assert
-      expect(mockUsuariosService.registerUser).toHaveBeenCalledTimes(1);
-      expect(mockUsuariosService.registerUser).toHaveBeenCalledWith(dto);
+      expect(mockUsuariosService.registrar).toHaveBeenCalledTimes(1);
+      expect(mockUsuariosService.registrar).toHaveBeenCalledWith(dto);
       expect(result).toBe(expectedResponse);
     });
 
     it('debería retornar exactamente lo que el service devuelve sin modificarlo', async () => {
       // Arrange
-      const dto: CreateUserDto = {
+      const dto: RegistroUsuarioDto = {
+        nombreTenant: 'Otro Tenant',
         email: 'another@example.com',
         password: 'securepass',
-        fullName: 'Another User',
+        nombreCompleto: 'Another User',
       };
 
-      const serviceResponse = new UserResponseDto({
+      const serviceResponse = new RegistroResponseDto({
         id: 'uuid-9999',
         email: dto.email,
-        fullName: dto.fullName,
-        role: UserRole.ADMIN,
-        createdAt: new Date('2026-06-22T00:00:00Z'),
+        nombreCompleto: dto.nombreCompleto,
+        rol: RolUsuario.ADMINISTRADOR,
+        tenantId: 'tenant-uuid-002',
+        creadoEn: new Date('2026-06-22T00:00:00Z'),
       });
 
-      mockUsuariosService.registerUser.mockResolvedValue(serviceResponse);
+      mockUsuariosService.registrar.mockResolvedValue(serviceResponse);
 
       // Act
-      const result = await controller.registerUser(dto);
+      const result = await controller.registrar(dto);
 
       // Assert
       expect(result).toStrictEqual(serviceResponse);
-      expect(result).toBeInstanceOf(UserResponseDto);
+      expect(result).toBeInstanceOf(RegistroResponseDto);
     });
 
     it('debería propagar la excepción cuando el service lanza un error', async () => {
       // Arrange
-      const dto: CreateUserDto = {
+      const dto: RegistroUsuarioDto = {
+        nombreTenant: 'Tenant Dup',
         email: 'dup@example.com',
         password: 'password123',
-        fullName: 'Dup User',
+        nombreCompleto: 'Dup User',
       };
 
-      mockUsuariosService.registerUser.mockRejectedValue(
-        new Error('El email ya está registrado'),
+      mockUsuariosService.registrar.mockRejectedValue(
+        new Error('El email ya está registrado en este tenant'),
       );
 
       // Act & Assert
-      await expect(controller.registerUser(dto)).rejects.toThrow(
-        'El email ya está registrado',
+      await expect(controller.registrar(dto)).rejects.toThrow(
+        'El email ya está registrado en este tenant',
       );
     });
   });

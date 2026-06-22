@@ -1,161 +1,228 @@
-import { ConflictException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 
-import { USER_REPOSITORY } from '../domain/user.repository';
-import { UserRole } from '../domain/user.entity';
-import { CreateUserDto } from '../presentation/dto/create-user.dto';
-import { UserResponseDto } from '../presentation/dto/user-response.dto';
+import { TipoTenant } from '../../tenant/domain/tenant.entity';
+import { EmailYaRegistradoError } from '../domain/exceptions/email-ya-registrado.error';
+import { RolUsuario } from '../domain/usuario.entity';
+import { RegistroResponseDto } from '../presentation/dto/registro-response.dto';
+import { RegistroUsuarioDto } from '../presentation/dto/registro-usuario.dto';
 import { UsuariosService } from './usuarios.service';
 
 jest.mock('bcrypt');
 
 describe('UsuariosService', () => {
   let service: UsuariosService;
-  let mockUserRepository: {
-    findByEmail: jest.Mock;
-    save: jest.Mock;
+  let mockUsuarioRepository: {
+    findByEmailAndTenant: jest.Mock;
+    guardar: jest.Mock;
+  };
+  let mockTenantRepository: {
+    guardar: jest.Mock;
+    findById: jest.Mock;
   };
 
   const bcryptHashMock = bcrypt.hash as jest.Mock;
 
-  beforeEach(async () => {
-    mockUserRepository = {
-      findByEmail: jest.fn(),
-      save: jest.fn(),
+  beforeEach(() => {
+    mockUsuarioRepository = {
+      findByEmailAndTenant: jest.fn(),
+      guardar: jest.fn(),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        UsuariosService,
-        {
-          provide: USER_REPOSITORY,
-          useValue: mockUserRepository,
-        },
-      ],
-    }).compile();
+    mockTenantRepository = {
+      guardar: jest.fn(),
+      findById: jest.fn(),
+    };
 
-    service = module.get<UsuariosService>(UsuariosService);
+    service = new UsuariosService(mockUsuarioRepository, mockTenantRepository);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('registerUser', () => {
-    it('debería registrar un usuario exitosamente cuando el email no existe', async () => {
+  describe('registrar', () => {
+    const createdTenant = {
+      id: 'tenant-uuid-001',
+      nombre: 'Clínica Demo',
+      tipo: TipoTenant.CLINICA,
+      plan: 'free',
+      creadoEn: new Date('2026-06-22T00:00:00Z'),
+    };
+
+    it('debería crear el tenant y el usuario administrador exitosamente', async () => {
       // Arrange
-      const dto: CreateUserDto = {
-        email: 'test@example.com',
+      const dto: RegistroUsuarioDto = {
+        nombreTenant: 'Clínica Demo',
+        tipoTenant: TipoTenant.CLINICA,
+        email: 'admin@demo.com',
         password: 'password123',
-        fullName: 'Test User',
-        role: UserRole.PROFESSIONAL,
+        nombreCompleto: 'Admin Demo',
       };
 
-      const savedUser = {
+      const savedUsuario = {
         id: 'uuid-1234',
         email: dto.email,
         passwordHash: 'hashedPwd',
-        fullName: dto.fullName,
-        role: UserRole.PROFESSIONAL,
-        createdAt: new Date('2026-06-22T00:00:00Z'),
-        updatedAt: new Date('2026-06-22T00:00:00Z'),
+        nombreCompleto: dto.nombreCompleto,
+        rol: RolUsuario.ADMINISTRADOR,
+        tenantId: createdTenant.id,
+        creadoEn: new Date('2026-06-22T00:00:00Z'),
+        actualizadoEn: new Date('2026-06-22T00:00:00Z'),
       };
 
-      mockUserRepository.findByEmail.mockResolvedValue(null);
+      mockTenantRepository.guardar.mockResolvedValue(createdTenant);
+      mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(null);
       bcryptHashMock.mockResolvedValue('hashedPwd');
-      mockUserRepository.save.mockResolvedValue(savedUser);
+      mockUsuarioRepository.guardar.mockResolvedValue(savedUsuario);
 
       // Act
-      const result = await service.registerUser(dto);
+      const result = await service.registrar(dto);
 
       // Assert
-      expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(dto.email);
+      expect(mockTenantRepository.guardar).toHaveBeenCalledWith({
+        nombre: dto.nombreTenant,
+        tipo: dto.tipoTenant,
+      });
+      expect(mockUsuarioRepository.findByEmailAndTenant).toHaveBeenCalledWith(
+        dto.email,
+        createdTenant.id,
+      );
       expect(bcryptHashMock).toHaveBeenCalledWith(dto.password, 10);
-      expect(mockUserRepository.save).toHaveBeenCalledWith({
+      expect(mockUsuarioRepository.guardar).toHaveBeenCalledWith({
         email: dto.email,
         passwordHash: 'hashedPwd',
-        fullName: dto.fullName,
-        role: dto.role,
+        nombreCompleto: dto.nombreCompleto,
+        tenantId: createdTenant.id,
+        rol: RolUsuario.ADMINISTRADOR,
       });
-      expect(result).toBeInstanceOf(UserResponseDto);
-      expect(result.id).toBe(savedUser.id);
-      expect(result.email).toBe(savedUser.email);
-      expect(result.fullName).toBe(savedUser.fullName);
-      expect(result.role).toBe(savedUser.role);
-      expect(result.createdAt).toBe(savedUser.createdAt);
-      expect((result as any).passwordHash).toBeUndefined();
+      expect(result).toBeInstanceOf(RegistroResponseDto);
+      expect(result.id).toBe(savedUsuario.id);
+      expect(result.email).toBe(savedUsuario.email);
+      expect(result.nombreCompleto).toBe(savedUsuario.nombreCompleto);
+      expect(result.rol).toBe(RolUsuario.ADMINISTRADOR);
+      expect(result.tenantId).toBe(createdTenant.id);
+      expect(result.creadoEn).toBe(savedUsuario.creadoEn);
+      expect(
+        (result as unknown as Record<string, unknown>).passwordHash,
+      ).toBeUndefined();
     });
 
-    it('debería lanzar ConflictException cuando el email ya está registrado', async () => {
+    it('debería usar TipoTenant.INDEPENDIENTE por defecto cuando tipoTenant no se pasa', async () => {
       // Arrange
-      const dto: CreateUserDto = {
-        email: 'existing@example.com',
-        password: 'password123',
-        fullName: 'Existing User',
+      const dto: RegistroUsuarioDto = {
+        nombreTenant: 'Consulta Independiente',
+        email: 'prof@independiente.com',
+        password: 'securepass',
+        nombreCompleto: 'Profesional Solo',
       };
 
-      const existingUser = {
-        id: 'uuid-existing',
-        email: dto.email,
-        passwordHash: 'someHash',
-        fullName: dto.fullName,
-        role: UserRole.PROFESSIONAL,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      const tenantIndependiente = {
+        id: 'tenant-uuid-002',
+        nombre: dto.nombreTenant,
+        tipo: TipoTenant.INDEPENDIENTE,
+        plan: 'free',
+        creadoEn: new Date('2026-06-22T00:00:00Z'),
       };
 
-      mockUserRepository.findByEmail.mockResolvedValue(existingUser);
-
-      // Act & Assert
-      await expect(service.registerUser(dto)).rejects.toThrow(ConflictException);
-      await expect(service.registerUser(dto)).rejects.toThrow(
-        'El email ya está registrado',
-      );
-
-      expect(mockUserRepository.save).not.toHaveBeenCalled();
-      expect(bcryptHashMock).not.toHaveBeenCalled();
-    });
-
-    it('debería registrar correctamente cuando el role es opcional y no se pasa', async () => {
-      // Arrange
-      const dto: CreateUserDto = {
-        email: 'norole@example.com',
-        password: 'password123',
-        fullName: 'No Role User',
-        // role no se incluye
-      };
-
-      const savedUser = {
+      const savedUsuario = {
         id: 'uuid-5678',
         email: dto.email,
         passwordHash: 'hashedPwd',
-        fullName: dto.fullName,
-        role: UserRole.PROFESSIONAL, // la BD aplica el default
-        createdAt: new Date('2026-06-22T00:00:00Z'),
-        updatedAt: new Date('2026-06-22T00:00:00Z'),
+        nombreCompleto: dto.nombreCompleto,
+        rol: RolUsuario.ADMINISTRADOR,
+        tenantId: tenantIndependiente.id,
+        creadoEn: new Date('2026-06-22T00:00:00Z'),
+        actualizadoEn: new Date('2026-06-22T00:00:00Z'),
       };
 
-      mockUserRepository.findByEmail.mockResolvedValue(null);
+      mockTenantRepository.guardar.mockResolvedValue(tenantIndependiente);
+      mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(null);
       bcryptHashMock.mockResolvedValue('hashedPwd');
-      mockUserRepository.save.mockResolvedValue(savedUser);
+      mockUsuarioRepository.guardar.mockResolvedValue(savedUsuario);
 
       // Act
-      const result = await service.registerUser(dto);
+      const result = await service.registrar(dto);
 
       // Assert
-      expect(mockUserRepository.save).toHaveBeenCalledWith({
+      expect(mockTenantRepository.guardar).toHaveBeenCalledWith({
+        nombre: dto.nombreTenant,
+        tipo: TipoTenant.INDEPENDIENTE,
+      });
+      expect(result).toBeInstanceOf(RegistroResponseDto);
+      expect(result.tenantId).toBe(tenantIndependiente.id);
+    });
+
+    it('debería lanzar EmailYaRegistradoError cuando el email ya está registrado en el tenant', async () => {
+      // Arrange
+      const dto: RegistroUsuarioDto = {
+        nombreTenant: 'Tenant Existente',
+        email: 'existing@example.com',
+        password: 'password123',
+        nombreCompleto: 'Existing User',
+      };
+
+      const existingUsuario = {
+        id: 'uuid-existing',
+        email: dto.email,
+        passwordHash: 'someHash',
+        nombreCompleto: dto.nombreCompleto,
+        rol: RolUsuario.ADMINISTRADOR,
+        tenantId: createdTenant.id,
+        creadoEn: new Date(),
+        actualizadoEn: new Date(),
+      };
+
+      mockTenantRepository.guardar.mockResolvedValue(createdTenant);
+      mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(
+        existingUsuario,
+      );
+
+      // Act & Assert
+      await expect(service.registrar(dto)).rejects.toThrow(
+        EmailYaRegistradoError,
+      );
+      await expect(service.registrar(dto)).rejects.toThrow(
+        'El email existing@example.com ya está registrado en este tenant',
+      );
+
+      expect(mockUsuarioRepository.guardar).not.toHaveBeenCalled();
+      expect(bcryptHashMock).not.toHaveBeenCalled();
+    });
+
+    it('el rol del usuario siempre debe ser ADMINISTRADOR sin importar el input', async () => {
+      // Arrange
+      const dto: RegistroUsuarioDto = {
+        nombreTenant: 'Tenant Test',
+        email: 'admin@test.com',
+        password: 'password123',
+        nombreCompleto: 'Admin Test',
+      };
+
+      const savedUsuario = {
+        id: 'uuid-admin',
         email: dto.email,
         passwordHash: 'hashedPwd',
-        fullName: dto.fullName,
-        // role NO debe estar en el objeto enviado al save
-      });
+        nombreCompleto: dto.nombreCompleto,
+        rol: RolUsuario.ADMINISTRADOR,
+        tenantId: createdTenant.id,
+        creadoEn: new Date('2026-06-22T00:00:00Z'),
+        actualizadoEn: new Date('2026-06-22T00:00:00Z'),
+      };
 
-      const saveCall = mockUserRepository.save.mock.calls[0][0] as Record<string, unknown>;
-      expect(saveCall).not.toHaveProperty('role');
+      mockTenantRepository.guardar.mockResolvedValue(createdTenant);
+      mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(null);
+      bcryptHashMock.mockResolvedValue('hashedPwd');
+      mockUsuarioRepository.guardar.mockResolvedValue(savedUsuario);
 
-      expect(result).toBeInstanceOf(UserResponseDto);
-      expect(result.id).toBe(savedUser.id);
+      // Act
+      await service.registrar(dto);
+
+      // Assert
+      const guardarCalls = mockUsuarioRepository.guardar.mock.calls as Array<
+        Array<Record<string, unknown>>
+      >;
+      const guardarCall = guardarCalls[0][0];
+      expect(guardarCall.rol).toBe(RolUsuario.ADMINISTRADOR);
     });
   });
 });
