@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { TenantModule } from './modules/tenant/tenant.module';
 import { UsuariosModule } from './modules/usuario/usuarios.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { UsuariosModule } from './modules/usuario/usuarios.module';
         autoLoadEntities: true,
       }),
     }),
+    TenantModule,
     UsuariosModule,
   ],
 })

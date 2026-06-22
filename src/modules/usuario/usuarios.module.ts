@@ -1,20 +1,27 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { TenantModule } from '../tenant/tenant.module';
+import { ITenantRepository } from '../tenant/domain/tenant.repository';
 import { UsuariosService } from './application/usuarios.service';
-import { User } from './domain/user.entity';
-import { USER_REPOSITORY } from './domain/user.repository';
-import { TypeOrmUserRepository } from './infrastructure/persistence/typeorm-user.repository';
+import { IUsuarioRepository } from './domain/usuario.repository';
+import { TypeOrmUsuarioRepository } from './infrastructure/persistence/typeorm-usuario.repository';
+import { UsuarioOrmEntity } from './infrastructure/persistence/usuario.orm-entity';
 import { UsuariosController } from './presentation/usuarios.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User])],
+  imports: [TypeOrmModule.forFeature([UsuarioOrmEntity]), TenantModule],
   controllers: [UsuariosController],
   providers: [
-    UsuariosService,
     {
-      provide: USER_REPOSITORY,
-      useClass: TypeOrmUserRepository,
+      provide: UsuariosService,
+      useFactory: (ur: IUsuarioRepository, tr: ITenantRepository) =>
+        new UsuariosService(ur, tr),
+      inject: [IUsuarioRepository, ITenantRepository],
+    },
+    {
+      provide: IUsuarioRepository,
+      useClass: TypeOrmUsuarioRepository,
     },
   ],
 })

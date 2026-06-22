@@ -1,39 +1,50 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
-import type { IUserRepository } from '../domain/user.repository';
-import { USER_REPOSITORY } from '../domain/user.repository';
-import { CreateUserDto } from '../presentation/dto/create-user.dto';
-import { UserResponseDto } from '../presentation/dto/user-response.dto';
+import { TipoTenant } from '../../tenant/domain/tenant.entity';
+import { ITenantRepository } from '../../tenant/domain/tenant.repository';
+import { EmailYaRegistradoError } from '../domain/exceptions/email-ya-registrado.error';
+import { RolUsuario } from '../domain/usuario.entity';
+import { IUsuarioRepository } from '../domain/usuario.repository';
+import { RegistroResponseDto } from '../presentation/dto/registro-response.dto';
+import { RegistroUsuarioDto } from '../presentation/dto/registro-usuario.dto';
 
-@Injectable()
 export class UsuariosService {
   constructor(
-    @Inject(USER_REPOSITORY)
-    private readonly userRepository: IUserRepository,
+    private readonly usuarioRepository: IUsuarioRepository,
+    private readonly tenantRepository: ITenantRepository,
   ) {}
 
-  async registerUser(dto: CreateUserDto): Promise<UserResponseDto> {
-    const existing = await this.userRepository.findByEmail(dto.email);
+  async registrar(dto: RegistroUsuarioDto): Promise<RegistroResponseDto> {
+    const tenant = await this.tenantRepository.guardar({
+      nombre: dto.nombreTenant,
+      tipo: dto.tipoTenant ?? TipoTenant.INDEPENDIENTE,
+    });
+
+    const existing = await this.usuarioRepository.findByEmailAndTenant(
+      dto.email,
+      tenant.id,
+    );
     if (existing) {
-      throw new ConflictException('El email ya está registrado');
+      throw new EmailYaRegistradoError(dto.email);
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
-    const saved = await this.userRepository.save({
+    const saved = await this.usuarioRepository.guardar({
       email: dto.email,
       passwordHash,
-      fullName: dto.fullName,
-      ...(dto.role !== undefined && { role: dto.role }),
+      nombreCompleto: dto.nombreCompleto,
+      tenantId: tenant.id,
+      rol: RolUsuario.ADMINISTRADOR,
     });
 
-    return new UserResponseDto({
+    return new RegistroResponseDto({
       id: saved.id,
       email: saved.email,
-      fullName: saved.fullName,
-      role: saved.role,
-      createdAt: saved.createdAt,
+      nombreCompleto: saved.nombreCompleto,
+      rol: saved.rol,
+      tenantId: saved.tenantId,
+      creadoEn: saved.creadoEn,
     });
   }
 }

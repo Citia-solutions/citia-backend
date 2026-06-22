@@ -7,9 +7,17 @@ import {
   MinLength,
 } from 'class-validator';
 
-import { UserRole } from '../../domain/user.entity';
+import { TipoTenant } from '../../../tenant/domain/tenant.entity';
 
-export class CreateUserDto {
+export class RegistroUsuarioDto {
+  @IsString()
+  @IsNotEmpty()
+  nombreTenant: string;
+
+  @IsOptional()
+  @IsEnum(TipoTenant)
+  tipoTenant?: TipoTenant;
+
   @IsEmail()
   @IsNotEmpty()
   email: string;
@@ -21,9 +29,5 @@ export class CreateUserDto {
 
   @IsString()
   @IsNotEmpty()
-  fullName: string;
-
-  @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
+  nombreCompleto: string;
 }
