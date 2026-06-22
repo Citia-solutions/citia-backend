@@ -16,6 +16,10 @@
 
 ## To Do
 
-- [x] Registrar un usuario en la base de datos
+> Prerequisito: US-00a (registro inicial) y US-00b (login JWT) deben estar completos antes de implementar este dashboard.
+
+- [ ] Endpoint GET /citas/hoy — devuelve citas del día del profesional autenticado (requiere auth)
+- [ ] Ordenar cronológicamente, marcar citas pasadas
+- [ ] Endpoint GET /citas/:id — detalle de una cita con opciones reagendar/cancelar
 
 

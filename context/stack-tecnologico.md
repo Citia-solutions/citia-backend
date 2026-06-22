@@ -6,6 +6,7 @@
 	4. Conexión a api: Fetch
 3. Backend: 
 	1. NestJs: encajamos con una arquitectura limpia basada en hexagonal architecture 
+		2. ORM: TypeORM (definitivo, ADR-00). `synchronize: false` en dev/prod. Migraciones versionadas siempre.
 4. Worker/cola: redis RNF-03, necesitaremos Bullmq
 5. Observabilidad: logs estructurados + una alerta cuando la tasa de fallo de recordatorios cruce un umbral, y **Sentry** (hosted) para errores. 
 6. Despliegue:
