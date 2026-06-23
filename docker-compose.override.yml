@@ -1,0 +1,60 @@
+# Override de DESARROLLO (hot-reload).
+# docker compose lo carga automaticamente junto a docker-compose.yml cuando
+# ejecutas `docker compose up` sin -f. Para PROD pura usa explicitamente:
+#   docker compose -f docker-compose.yml up --build -d
+#
+# Aqui:
+#   - Construimos solo hasta el stage `deps` (todas las deps, incl. ts-node y nest CLI).
+#   - Montamos el codigo fuente para hot-reload (nest start --watch).
+#   - El entrypoint detecta que NO hay dist/ y corre las migraciones via ts-node.
+#
+# REGLA DE ORO con node_modules (volumen anonimo, ver volumes del servicio app):
+#   - Cambiaste dependencias npm (package.json) -> `docker compose up --build -V`
+#     El flag -V (--renew-anon-volumes) regenera el volumen anonimo de node_modules
+#     desde la imagen recien construida. Sin -V, el contenedor reutiliza el
+#     node_modules viejo y veras errores tipo "Cannot find module '@nestjs/...'".
+#   - Solo cambiaste codigo (sin tocar deps) -> `docker compose up` (el hot-reload basta).
+
+services:
+  app:
+    build:
+      context: .
+      target: deps
+    # En dev arrancamos como root para evitar problemas de permisos con el
+    # volumen montado desde el host. El entrypoint corre migraciones (ts-node)
+    # y luego lanza el watcher.
+    user: root
+    entrypoint: ['/bin/sh', './entrypoint.sh']
+    command: ['npm', 'run', 'start:dev']
+    environment:
+      NODE_ENV: development
+    volumes:
+      # Codigo fuente montado para hot-reload.
+      - .:/app
+      # node_modules anonimo: usa los instalados en la imagen (alpine/linux),
+      # no los del host (que pueden ser de otra plataforma).
+      - /app/node_modules
+
+  # pgAdmin: herramienta de DEV para inspeccionar la base. Vive SOLO aqui (override)
+  # para no exponerla nunca en produccion. UI en http://localhost:5050.
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      # Credenciales SOLO para desarrollo local. NO usar en prod.
+      PGADMIN_DEFAULT_EMAIL: admin@citia.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      # Evita que pgAdmin pida la master password al abrir un servidor pre-cargado.
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - '5050:80'
+    volumes:
+      # Persiste config/servidores registrados entre reinicios.
+      - pgadmin-data:/var/lib/pgadmin
+      # Pre-registra el servidor 'db' para no tener que crearlo a mano.
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+
+volumes:
+  pgadmin-data:

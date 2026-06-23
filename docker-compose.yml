@@ -1,0 +1,52 @@
+# Base / produccion.
+#   - Levantar prod:  docker compose up --build -d
+#   - Para DEV usar el override: docker compose -f docker-compose.yml -f docker-compose.override.yml up --build
+#     (docker compose carga override.yml automaticamente si existe, ver notas).
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:-postgres}
+      POSTGRES_DB: ${DB_NAME:-citia_dev}
+    ports:
+      # Expone Postgres al host (util para inspeccionar con psql/GUI).
+      - '${DB_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # La app espera a este healthcheck antes de correr migraciones.
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-citia_dev}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: ${PORT:-3000}
+      # Dentro de la red de compose, la DB es el servicio 'db', NO localhost.
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASS: ${DB_PASS:-postgres}
+      DB_NAME: ${DB_NAME:-citia_dev}
+      # Autenticacion. JWT_SECRET DEBE venir del entorno/secretos en prod.
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      # Origen del frontend permitido por CORS.
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    ports:
+      - '${PORT:-3000}:${PORT:-3000}'
+
+volumes:
+  pgdata:
