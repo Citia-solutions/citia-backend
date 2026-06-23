@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 
+import { TransactionContext } from '../../../../shared/application/transaction-runner';
 import { Usuario } from '../../domain/usuario.entity';
 import { IUsuarioRepository } from '../../domain/usuario.repository';
 import { UsuarioOrmEntity } from './usuario.orm-entity';
@@ -15,17 +16,27 @@ export class TypeOrmUsuarioRepository extends IUsuarioRepository {
     super();
   }
 
+  private repoFor(tx?: TransactionContext): Repository<UsuarioOrmEntity> {
+    return tx
+      ? (tx as EntityManager).getRepository(UsuarioOrmEntity)
+      : this.repo;
+  }
+
   async findByEmailAndTenant(
     email: string,
     tenantId: string,
+    tx?: TransactionContext,
   ): Promise<Usuario | null> {
-    const orm = await this.repo.findOne({ where: { email, tenantId } });
+    const orm = await this.repoFor(tx).findOne({ where: { email, tenantId } });
     if (!orm) return null;
     return this.toDomain(orm);
   }
 
-  async guardar(usuario: Partial<Usuario>): Promise<Usuario> {
-    const orm = await this.repo.save(this.toPersistence(usuario));
+  async guardar(
+    usuario: Partial<Usuario>,
+    tx?: TransactionContext,
+  ): Promise<Usuario> {
+    const orm = await this.repoFor(tx).save(this.toPersistence(usuario));
     return this.toDomain(orm);
   }
 

@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 
+import { TransactionContext } from '../../../../shared/application/transaction-runner';
 import { Tenant } from '../../domain/tenant.entity';
 import { ITenantRepository } from '../../domain/tenant.repository';
 import { TenantOrmEntity } from './tenant.orm-entity';
@@ -15,19 +16,31 @@ export class TypeOrmTenantRepository extends ITenantRepository {
     super();
   }
 
-  async guardar(tenant: Partial<Tenant>): Promise<Tenant> {
-    const orm = await this.repo.save(this.toPersistence(tenant));
+  private repoFor(tx?: TransactionContext): Repository<TenantOrmEntity> {
+    return tx
+      ? (tx as EntityManager).getRepository(TenantOrmEntity)
+      : this.repo;
+  }
+
+  async guardar(
+    tenant: Partial<Tenant>,
+    tx?: TransactionContext,
+  ): Promise<Tenant> {
+    const orm = await this.repoFor(tx).save(this.toPersistence(tenant));
     return this.toDomain(orm);
   }
 
-  async findById(id: string): Promise<Tenant | null> {
-    const orm = await this.repo.findOne({ where: { id } });
+  async findById(id: string, tx?: TransactionContext): Promise<Tenant | null> {
+    const orm = await this.repoFor(tx).findOne({ where: { id } });
     if (!orm) return null;
     return this.toDomain(orm);
   }
 
-  async findBySlug(slug: string): Promise<Tenant | null> {
-    const orm = await this.repo.findOne({ where: { slug } });
+  async findBySlug(
+    slug: string,
+    tx?: TransactionContext,
+  ): Promise<Tenant | null> {
+    const orm = await this.repoFor(tx).findOne({ where: { slug } });
     if (!orm) return null;
     return this.toDomain(orm);
   }

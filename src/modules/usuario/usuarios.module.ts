@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { TransactionRunner } from '../../shared/application/transaction-runner';
+import { SharedModule } from '../../shared/shared.module';
 import { TenantModule } from '../tenant/tenant.module';
 import { ITenantRepository } from '../tenant/domain/tenant.repository';
 import { UsuariosService } from './application/usuarios.service';
@@ -10,14 +12,21 @@ import { UsuarioOrmEntity } from './infrastructure/persistence/usuario.orm-entit
 import { UsuariosController } from './presentation/usuarios.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UsuarioOrmEntity]), TenantModule],
+  imports: [
+    TypeOrmModule.forFeature([UsuarioOrmEntity]),
+    TenantModule,
+    SharedModule,
+  ],
   controllers: [UsuariosController],
   providers: [
     {
       provide: UsuariosService,
-      useFactory: (ur: IUsuarioRepository, tr: ITenantRepository) =>
-        new UsuariosService(ur, tr),
-      inject: [IUsuarioRepository, ITenantRepository],
+      useFactory: (
+        ur: IUsuarioRepository,
+        tr: ITenantRepository,
+        tx: TransactionRunner,
+      ) => new UsuariosService(ur, tr, tx),
+      inject: [IUsuarioRepository, ITenantRepository, TransactionRunner],
     },
     {
       provide: IUsuarioRepository,
