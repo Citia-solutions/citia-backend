@@ -2,7 +2,7 @@
 
 **Epic:** 00 — Autenticación y registro  
 **Historia:** US-00a  
-**Estado:** ✅ Implementado (2026-06-22) · ⏳ Migración + tests integración pendientes
+**Estado:** ✅ Implementado (2026-06-22) · ✅ Migración aplicable + tests de integración en verde
 
 ---
 
@@ -72,9 +72,12 @@ src/modules/
   "nombreCompleto": "Dra. Ana López",
   "rol": "ADMINISTRADOR",
   "tenantId": "<uuid-tenant>",
+  "nombreTenant": "Clínica Sur",
+  "tenantSlug": "clinica-sur",
   "creadoEn": "2026-06-22T..."
 }
 ```
+> `tenantSlug` se autogenera a partir de `nombreTenant` (slugify + sufijo `-2`, `-3`… ante colisión). Es el identificador que el frontend usará luego para el login (ver US-00b / ADR-03).
 
 **Errores:**
 - `400` — validación del DTO
@@ -98,6 +101,7 @@ src/modules/
 |------------|----------|------------------|
 | id         | uuid PK  | auto-generado    |
 | nombre     | varchar  | not null         |
+| slug       | varchar  | not null, **UNIQUE** — autogenerado (ADR-03) |
 | tipo       | enum     | CLINICA/INDEPENDIENTE |
 | plan       | varchar  | default 'free'   |
 | creado_en  | timestamptz | @CreateDateColumn |
@@ -122,10 +126,11 @@ Constraints: `UNIQUE(tenant_id, email)`, `INDEX(tenant_id)`.
 - ADR-00: TypeORM como ORM — `synchronize: false` en dev/prod
 - ADR-01: Passport + JWT — tenantId del token, no del body (aplica en US-00b)
 - ADR-02: Código en español + regla de dependencias hexagonal
+- ADR-03: Login multi-tenant por `tenantSlug` — el `slug` del tenant se genera en este registro
 
 ---
 
 ## Pendientes
-1. **Migración:** generar y aplicar migración TypeORM (`tenants` → `usuarios`)
-2. **Tests de integración:** BD real — crear usuario, leer, duplicado mismo tenant, mismo email distinto tenant
-3. **US-00b (login):** `POST /api/auth/login` → JWT con `sub` + `tenantId`
+1. ✅ **Migración:** `1750000000000-CreateTenantsAndUsuarios` (tablas) + `1750000001000-AddSlugToTenants` (columna slug). Aplicables con `npm run migration:run` o vía entrypoint Docker.
+2. ✅ **Tests de integración:** en verde contra BD real (crear, leer, duplicado mismo tenant, mismo email distinto tenant, slugs únicos entre tenants homónimos).
+3. ✅ **US-00b (login):** `POST /api/auth/login` → JWT con `sub` + `tenantId` — implementado (ver `us00b-login.md`).

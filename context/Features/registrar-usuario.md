@@ -1,8 +1,23 @@
+> ⚠️ **DOCUMENTO EN DESUSO — SUPERSEDED por [`us00a-registro-inicial.md`](./us00a-registro-inicial.md)**
+>
+> Este doc describe un **diseño antiguo que ya NO existe en el código**: entidad `user.entity.ts`
+> (tabla `users`), campos en inglés (`fullName`, `role`), token de inyección por string
+> (`USER_REPOSITORY`) y response con `createdAt`. Nada de esto está implementado.
+>
+> La realidad actual del registro (`POST /api/usuarios`) está documentada en
+> **`us00a-registro-inicial.md`**: código en español, tablas `tenants` / `usuarios`,
+> arquitectura hexagonal con puertos como `abstract class`, creación atómica de Tenant + Usuario
+> y autogeneración de `tenantSlug`.
+>
+> Se conserva este archivo solo como puntero histórico. **No lo uses como referencia.**
+
+---
+
 # Feature: Registrar usuario en la base de datos
 
 **Epic:** 06 — Dashboard de citas del día  
 **Tarea:** Registrar un usuario en la base de datos  
-**Estado:** ✅ Completado (2026-06-22)
+**Estado:** ⛔ DESUSO — Superseded por `us00a-registro-inicial.md` (el contenido de abajo NO refleja el código actual)
 
 ---
 
