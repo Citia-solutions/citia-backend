@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { AuthModule } from './modules/auth/auth.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { UsuariosModule } from './modules/usuario/usuarios.module';
 
@@ -24,6 +25,7 @@ import { UsuariosModule } from './modules/usuario/usuarios.module';
         autoLoadEntities: true,
       }),
     }),
+    AuthModule,
     TenantModule,
     UsuariosModule,
   ],
