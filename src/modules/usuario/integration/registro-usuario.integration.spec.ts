@@ -51,6 +51,10 @@ describe('RegistroUsuario (integration)', () => {
     expect(result.tenantId).toBeDefined();
     expect(result.rol).toBe(RolUsuario.ADMINISTRADOR);
 
+    // RegistroResponseDto ahora incluye nombreTenant y tenantSlug
+    expect(result.nombreTenant).toBe(dto.nombreTenant);
+    expect(result.tenantSlug).toBe('clinica-integracion');
+
     // tenantId es un UUID válido
     expect(result.tenantId).toMatch(/^[0-9a-f-]{36}$/);
 
@@ -137,5 +141,30 @@ describe('RegistroUsuario (integration)', () => {
 
     // El hash empieza con el prefijo bcrypt
     expect(ormEntity!.passwordHash).toMatch(/^\$2b\$/);
+  });
+
+  it('debería generar slugs únicos cuando dos tenants comparten el mismo nombre', async () => {
+    // Arrange — mismo nombreTenant => mismo slug base => debe desambiguar
+    const dtoUno: RegistroUsuarioDto = {
+      nombreTenant: 'Centro Médico Slug',
+      email: 'uno@slug-dup.com',
+      password: 'password1234',
+      nombreCompleto: 'Usuario Uno',
+    };
+    const dtoDos: RegistroUsuarioDto = {
+      nombreTenant: 'Centro Médico Slug',
+      email: 'dos@slug-dup.com',
+      password: 'password1234',
+      nombreCompleto: 'Usuario Dos',
+    };
+
+    // Act
+    const resultUno = await service.registrar(dtoUno);
+    const resultDos = await service.registrar(dtoDos);
+
+    // Assert — el primero toma el slug base, el segundo el sufijo -2
+    expect(resultUno.tenantSlug).toBe('centro-medico-slug');
+    expect(resultDos.tenantSlug).toBe('centro-medico-slug-2');
+    expect(resultUno.tenantId).not.toBe(resultDos.tenantId);
   });
 });

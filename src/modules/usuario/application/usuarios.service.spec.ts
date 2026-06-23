@@ -18,6 +18,7 @@ describe('UsuariosService', () => {
   let mockTenantRepository: {
     guardar: jest.Mock;
     findById: jest.Mock;
+    findBySlug: jest.Mock;
   };
 
   const bcryptHashMock = bcrypt.hash as jest.Mock;
@@ -31,6 +32,7 @@ describe('UsuariosService', () => {
     mockTenantRepository = {
       guardar: jest.fn(),
       findById: jest.fn(),
+      findBySlug: jest.fn(),
     };
 
     service = new UsuariosService(mockUsuarioRepository, mockTenantRepository);
@@ -44,6 +46,7 @@ describe('UsuariosService', () => {
     const createdTenant = {
       id: 'tenant-uuid-001',
       nombre: 'Clínica Demo',
+      slug: 'clinica-demo',
       tipo: TipoTenant.CLINICA,
       plan: 'free',
       creadoEn: new Date('2026-06-22T00:00:00Z'),
@@ -70,6 +73,7 @@ describe('UsuariosService', () => {
         actualizadoEn: new Date('2026-06-22T00:00:00Z'),
       };
 
+      mockTenantRepository.findBySlug.mockResolvedValue(null);
       mockTenantRepository.guardar.mockResolvedValue(createdTenant);
       mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(null);
       bcryptHashMock.mockResolvedValue('hashedPwd');
@@ -79,8 +83,12 @@ describe('UsuariosService', () => {
       const result = await service.registrar(dto);
 
       // Assert
+      expect(mockTenantRepository.findBySlug).toHaveBeenCalledWith(
+        'clinica-demo',
+      );
       expect(mockTenantRepository.guardar).toHaveBeenCalledWith({
         nombre: dto.nombreTenant,
+        slug: 'clinica-demo',
         tipo: dto.tipoTenant,
       });
       expect(mockUsuarioRepository.findByEmailAndTenant).toHaveBeenCalledWith(
@@ -101,6 +109,8 @@ describe('UsuariosService', () => {
       expect(result.nombreCompleto).toBe(savedUsuario.nombreCompleto);
       expect(result.rol).toBe(RolUsuario.ADMINISTRADOR);
       expect(result.tenantId).toBe(createdTenant.id);
+      expect(result.nombreTenant).toBe(createdTenant.nombre);
+      expect(result.tenantSlug).toBe(createdTenant.slug);
       expect(result.creadoEn).toBe(savedUsuario.creadoEn);
       expect(
         (result as unknown as Record<string, unknown>).passwordHash,
@@ -119,6 +129,7 @@ describe('UsuariosService', () => {
       const tenantIndependiente = {
         id: 'tenant-uuid-002',
         nombre: dto.nombreTenant,
+        slug: 'consulta-independiente',
         tipo: TipoTenant.INDEPENDIENTE,
         plan: 'free',
         creadoEn: new Date('2026-06-22T00:00:00Z'),
@@ -135,6 +146,7 @@ describe('UsuariosService', () => {
         actualizadoEn: new Date('2026-06-22T00:00:00Z'),
       };
 
+      mockTenantRepository.findBySlug.mockResolvedValue(null);
       mockTenantRepository.guardar.mockResolvedValue(tenantIndependiente);
       mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(null);
       bcryptHashMock.mockResolvedValue('hashedPwd');
@@ -146,6 +158,7 @@ describe('UsuariosService', () => {
       // Assert
       expect(mockTenantRepository.guardar).toHaveBeenCalledWith({
         nombre: dto.nombreTenant,
+        slug: 'consulta-independiente',
         tipo: TipoTenant.INDEPENDIENTE,
       });
       expect(result).toBeInstanceOf(RegistroResponseDto);
@@ -172,6 +185,7 @@ describe('UsuariosService', () => {
         actualizadoEn: new Date(),
       };
 
+      mockTenantRepository.findBySlug.mockResolvedValue(null);
       mockTenantRepository.guardar.mockResolvedValue(createdTenant);
       mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(
         existingUsuario,
@@ -209,6 +223,7 @@ describe('UsuariosService', () => {
         actualizadoEn: new Date('2026-06-22T00:00:00Z'),
       };
 
+      mockTenantRepository.findBySlug.mockResolvedValue(null);
       mockTenantRepository.guardar.mockResolvedValue(createdTenant);
       mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(null);
       bcryptHashMock.mockResolvedValue('hashedPwd');
@@ -223,6 +238,99 @@ describe('UsuariosService', () => {
       >;
       const guardarCall = guardarCalls[0][0];
       expect(guardarCall.rol).toBe(RolUsuario.ADMINISTRADOR);
+    });
+  });
+
+  describe('registrar — generación de slug único', () => {
+    const dto: RegistroUsuarioDto = {
+      nombreTenant: 'Clínica Demo',
+      email: 'admin@demo.com',
+      password: 'password123',
+      nombreCompleto: 'Admin Demo',
+    };
+
+    const savedUsuario = {
+      id: 'uuid-slug',
+      email: dto.email,
+      passwordHash: 'hashedPwd',
+      nombreCompleto: dto.nombreCompleto,
+      rol: RolUsuario.ADMINISTRADOR,
+      tenantId: 'tenant-slug-id',
+      creadoEn: new Date('2026-06-22T00:00:00Z'),
+      actualizadoEn: new Date('2026-06-22T00:00:00Z'),
+    };
+
+    it('debería guardar el tenant con el slug base cuando el slug está libre al primer intento', async () => {
+      // Arrange — findBySlug no encuentra nada => slug base disponible
+      mockTenantRepository.findBySlug.mockResolvedValue(null);
+      mockTenantRepository.guardar.mockResolvedValue({
+        id: 'tenant-slug-id',
+        nombre: dto.nombreTenant,
+        slug: 'clinica-demo',
+        tipo: TipoTenant.INDEPENDIENTE,
+        plan: 'free',
+        creadoEn: new Date('2026-06-22T00:00:00Z'),
+      });
+      mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(null);
+      bcryptHashMock.mockResolvedValue('hashedPwd');
+      mockUsuarioRepository.guardar.mockResolvedValue(savedUsuario);
+
+      // Act
+      const result = await service.registrar(dto);
+
+      // Assert — solo se intentó el slug base una vez
+      expect(mockTenantRepository.findBySlug).toHaveBeenCalledTimes(1);
+      expect(mockTenantRepository.findBySlug).toHaveBeenCalledWith(
+        'clinica-demo',
+      );
+      expect(mockTenantRepository.guardar).toHaveBeenCalledWith(
+        expect.objectContaining({ slug: 'clinica-demo' }),
+      );
+      expect(result.tenantSlug).toBe('clinica-demo');
+    });
+
+    it('debería usar el sufijo "-2" cuando el slug base ya existe y el segundo candidato está libre', async () => {
+      // Arrange — 1er intento (clinica-demo) ocupado, 2do intento (clinica-demo-2) libre
+      const tenantExistente = {
+        id: 'tenant-existente',
+        nombre: dto.nombreTenant,
+        slug: 'clinica-demo',
+        tipo: TipoTenant.INDEPENDIENTE,
+        plan: 'free',
+        creadoEn: new Date('2026-06-22T00:00:00Z'),
+      };
+      mockTenantRepository.findBySlug
+        .mockResolvedValueOnce(tenantExistente)
+        .mockResolvedValueOnce(null);
+      mockTenantRepository.guardar.mockResolvedValue({
+        id: 'tenant-slug-id',
+        nombre: dto.nombreTenant,
+        slug: 'clinica-demo-2',
+        tipo: TipoTenant.INDEPENDIENTE,
+        plan: 'free',
+        creadoEn: new Date('2026-06-22T00:00:00Z'),
+      });
+      mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(null);
+      bcryptHashMock.mockResolvedValue('hashedPwd');
+      mockUsuarioRepository.guardar.mockResolvedValue(savedUsuario);
+
+      // Act
+      const result = await service.registrar(dto);
+
+      // Assert — se probaron dos candidatos en orden
+      expect(mockTenantRepository.findBySlug).toHaveBeenNthCalledWith(
+        1,
+        'clinica-demo',
+      );
+      expect(mockTenantRepository.findBySlug).toHaveBeenNthCalledWith(
+        2,
+        'clinica-demo-2',
+      );
+      // El tenant guardado lleva el slug con sufijo -2
+      expect(mockTenantRepository.guardar).toHaveBeenCalledWith(
+        expect.objectContaining({ slug: 'clinica-demo-2' }),
+      );
+      expect(result.tenantSlug).toBe('clinica-demo-2');
     });
   });
 });
