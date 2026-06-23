@@ -50,6 +50,8 @@ describe('UsuariosController', () => {
         nombreCompleto: dto.nombreCompleto,
         rol: RolUsuario.ADMINISTRADOR,
         tenantId: 'tenant-uuid-001',
+        nombreTenant: 'Clínica Demo',
+        tenantSlug: 'clinica-demo',
         creadoEn: new Date('2026-06-22T00:00:00Z'),
       });
 
@@ -79,6 +81,8 @@ describe('UsuariosController', () => {
         nombreCompleto: dto.nombreCompleto,
         rol: RolUsuario.ADMINISTRADOR,
         tenantId: 'tenant-uuid-002',
+        nombreTenant: 'Clínica Demo',
+        tenantSlug: 'clinica-demo',
         creadoEn: new Date('2026-06-22T00:00:00Z'),
       });
 

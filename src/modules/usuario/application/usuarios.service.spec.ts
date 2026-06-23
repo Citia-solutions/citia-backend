@@ -20,6 +20,9 @@ describe('UsuariosService', () => {
     findById: jest.Mock;
     findBySlug: jest.Mock;
   };
+  let mockTransactionRunner: {
+    run: jest.Mock;
+  };
 
   const bcryptHashMock = bcrypt.hash as jest.Mock;
 
@@ -35,7 +38,17 @@ describe('UsuariosService', () => {
       findBySlug: jest.fn(),
     };
 
-    service = new UsuariosService(mockUsuarioRepository, mockTenantRepository);
+    mockTransactionRunner = {
+      run: jest.fn((work: (tx: unknown) => Promise<unknown>) =>
+        work(undefined),
+      ),
+    };
+
+    service = new UsuariosService(
+      mockUsuarioRepository,
+      mockTenantRepository,
+      mockTransactionRunner,
+    );
   });
 
   afterEach(() => {
@@ -85,24 +98,32 @@ describe('UsuariosService', () => {
       // Assert
       expect(mockTenantRepository.findBySlug).toHaveBeenCalledWith(
         'clinica-demo',
+        undefined,
       );
-      expect(mockTenantRepository.guardar).toHaveBeenCalledWith({
-        nombre: dto.nombreTenant,
-        slug: 'clinica-demo',
-        tipo: dto.tipoTenant,
-      });
+      expect(mockTenantRepository.guardar).toHaveBeenCalledWith(
+        {
+          nombre: dto.nombreTenant,
+          slug: 'clinica-demo',
+          tipo: dto.tipoTenant,
+        },
+        undefined,
+      );
       expect(mockUsuarioRepository.findByEmailAndTenant).toHaveBeenCalledWith(
         dto.email,
         createdTenant.id,
+        undefined,
       );
       expect(bcryptHashMock).toHaveBeenCalledWith(dto.password, 10);
-      expect(mockUsuarioRepository.guardar).toHaveBeenCalledWith({
-        email: dto.email,
-        passwordHash: 'hashedPwd',
-        nombreCompleto: dto.nombreCompleto,
-        tenantId: createdTenant.id,
-        rol: RolUsuario.ADMINISTRADOR,
-      });
+      expect(mockUsuarioRepository.guardar).toHaveBeenCalledWith(
+        {
+          email: dto.email,
+          passwordHash: 'hashedPwd',
+          nombreCompleto: dto.nombreCompleto,
+          tenantId: createdTenant.id,
+          rol: RolUsuario.ADMINISTRADOR,
+        },
+        undefined,
+      );
       expect(result).toBeInstanceOf(RegistroResponseDto);
       expect(result.id).toBe(savedUsuario.id);
       expect(result.email).toBe(savedUsuario.email);
@@ -156,11 +177,14 @@ describe('UsuariosService', () => {
       const result = await service.registrar(dto);
 
       // Assert
-      expect(mockTenantRepository.guardar).toHaveBeenCalledWith({
-        nombre: dto.nombreTenant,
-        slug: 'consulta-independiente',
-        tipo: TipoTenant.INDEPENDIENTE,
-      });
+      expect(mockTenantRepository.guardar).toHaveBeenCalledWith(
+        {
+          nombre: dto.nombreTenant,
+          slug: 'consulta-independiente',
+          tipo: TipoTenant.INDEPENDIENTE,
+        },
+        undefined,
+      );
       expect(result).toBeInstanceOf(RegistroResponseDto);
       expect(result.tenantId).toBe(tenantIndependiente.id);
     });
@@ -282,9 +306,11 @@ describe('UsuariosService', () => {
       expect(mockTenantRepository.findBySlug).toHaveBeenCalledTimes(1);
       expect(mockTenantRepository.findBySlug).toHaveBeenCalledWith(
         'clinica-demo',
+        undefined,
       );
       expect(mockTenantRepository.guardar).toHaveBeenCalledWith(
         expect.objectContaining({ slug: 'clinica-demo' }),
+        undefined,
       );
       expect(result.tenantSlug).toBe('clinica-demo');
     });
@@ -321,14 +347,17 @@ describe('UsuariosService', () => {
       expect(mockTenantRepository.findBySlug).toHaveBeenNthCalledWith(
         1,
         'clinica-demo',
+        undefined,
       );
       expect(mockTenantRepository.findBySlug).toHaveBeenNthCalledWith(
         2,
         'clinica-demo-2',
+        undefined,
       );
       // El tenant guardado lleva el slug con sufijo -2
       expect(mockTenantRepository.guardar).toHaveBeenCalledWith(
         expect.objectContaining({ slug: 'clinica-demo-2' }),
+        undefined,
       );
       expect(result.tenantSlug).toBe('clinica-demo-2');
     });

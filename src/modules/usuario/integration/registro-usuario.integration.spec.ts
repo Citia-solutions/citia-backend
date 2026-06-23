@@ -3,10 +3,12 @@ import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { TenantModule } from '../../tenant/tenant.module';
+import { TenantOrmEntity } from '../../tenant/infrastructure/persistence/tenant.orm-entity';
 import { UsuarioOrmEntity } from '../infrastructure/persistence/usuario.orm-entity';
 import { UsuariosModule } from '../usuarios.module';
 import { RegistroUsuarioDto } from '../presentation/dto/registro-usuario.dto';
 import { UsuariosService } from '../application/usuarios.service';
+import { IUsuarioRepository } from '../domain/usuario.repository';
 import { RolUsuario } from '../domain/usuario.entity';
 import { typeOrmTestConfig } from '../../../../test/typeorm-test.config';
 
@@ -166,5 +168,63 @@ describe('RegistroUsuario (integration)', () => {
     expect(resultUno.tenantSlug).toBe('centro-medico-slug');
     expect(resultDos.tenantSlug).toBe('centro-medico-slug-2');
     expect(resultUno.tenantId).not.toBe(resultDos.tenantId);
+  });
+});
+
+describe('RegistroUsuario — atomicidad transaccional (integration)', () => {
+  let module: TestingModule;
+  let service: UsuariosService;
+  let tenantRepo: Repository<TenantOrmEntity>;
+
+  // Mock del repositorio de usuario: el Tenant se inserta de verdad (repo real
+  // + tx), pero el guardado del usuario explota DENTRO del run(), forzando el
+  // rollback de la transacción completa.
+  const usuarioRepoMock: Partial<IUsuarioRepository> = {
+    findByEmailAndTenant: () => Promise.resolve(null),
+    guardar: () =>
+      Promise.reject(new Error('fallo simulado al guardar usuario')),
+  };
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [
+        TypeOrmModule.forRoot(typeOrmTestConfig),
+        TenantModule,
+        UsuariosModule,
+      ],
+    })
+      .overrideProvider(IUsuarioRepository)
+      .useValue(usuarioRepoMock)
+      .compile();
+
+    service = module.get<UsuariosService>(UsuariosService);
+    tenantRepo = module.get<Repository<TenantOrmEntity>>(
+      getRepositoryToken(TenantOrmEntity),
+    );
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  it('debería hacer rollback del Tenant cuando el guardado del usuario falla dentro de la transacción', async () => {
+    // Arrange — slug único para no chocar con los otros tests
+    const dto: RegistroUsuarioDto = {
+      nombreTenant: 'Rollback Test Tenant',
+      email: 'rollback@test.com',
+      password: 'password1234',
+      nombreCompleto: 'Rollback User',
+    };
+
+    // Act & Assert — el registro falla por el mock que rechaza en guardar()
+    await expect(service.registrar(dto)).rejects.toThrow(
+      'fallo simulado al guardar usuario',
+    );
+
+    // Assert — el Tenant insertado debe haberse revertido: NO queda huérfano
+    const tenantHuerfano = await tenantRepo.findOne({
+      where: { slug: 'rollback-test-tenant' },
+    });
+    expect(tenantHuerfano).toBeNull();
   });
 });
