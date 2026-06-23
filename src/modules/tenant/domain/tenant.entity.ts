@@ -6,6 +6,7 @@ export enum TipoTenant {
 export class Tenant {
   id: string;
   nombre: string;
+  slug: string;
   tipo: TipoTenant;
   plan: string;
   creadoEn: Date;

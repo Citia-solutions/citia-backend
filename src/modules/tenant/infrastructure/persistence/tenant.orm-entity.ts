@@ -15,6 +15,9 @@ export class TenantOrmEntity {
   @Column({ nullable: false })
   nombre: string;
 
+  @Column({ unique: true })
+  slug: string;
+
   @Column({
     type: 'enum',
     enum: TipoTenant,

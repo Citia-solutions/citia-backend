@@ -26,10 +26,17 @@ export class TypeOrmTenantRepository extends ITenantRepository {
     return this.toDomain(orm);
   }
 
+  async findBySlug(slug: string): Promise<Tenant | null> {
+    const orm = await this.repo.findOne({ where: { slug } });
+    if (!orm) return null;
+    return this.toDomain(orm);
+  }
+
   private toDomain(orm: TenantOrmEntity): Tenant {
     const tenant = new Tenant();
     tenant.id = orm.id;
     tenant.nombre = orm.nombre;
+    tenant.slug = orm.slug;
     tenant.tipo = orm.tipo;
     tenant.plan = orm.plan;
     tenant.creadoEn = orm.creadoEn;
@@ -40,6 +47,7 @@ export class TypeOrmTenantRepository extends ITenantRepository {
     const orm: Partial<TenantOrmEntity> = {};
     if (domain.id !== undefined) orm.id = domain.id;
     if (domain.nombre !== undefined) orm.nombre = domain.nombre;
+    if (domain.slug !== undefined) orm.slug = domain.slug;
     if (domain.tipo !== undefined) orm.tipo = domain.tipo;
     if (domain.plan !== undefined) orm.plan = domain.plan;
     return orm;
