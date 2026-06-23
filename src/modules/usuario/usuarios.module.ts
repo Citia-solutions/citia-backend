@@ -24,5 +24,6 @@ import { UsuariosController } from './presentation/usuarios.controller';
       useClass: TypeOrmUsuarioRepository,
     },
   ],
+  exports: [IUsuarioRepository],
 })
 export class UsuariosModule {}

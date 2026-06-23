@@ -1,5 +1,6 @@
 import * as bcrypt from 'bcrypt';
 
+import { slugify } from '../../tenant/domain/slug';
 import { TipoTenant } from '../../tenant/domain/tenant.entity';
 import { ITenantRepository } from '../../tenant/domain/tenant.repository';
 import { EmailYaRegistradoError } from '../domain/exceptions/email-ya-registrado.error';
@@ -15,8 +16,11 @@ export class UsuariosService {
   ) {}
 
   async registrar(dto: RegistroUsuarioDto): Promise<RegistroResponseDto> {
+    const slug = await this.generarSlugUnico(dto.nombreTenant);
+
     const tenant = await this.tenantRepository.guardar({
       nombre: dto.nombreTenant,
+      slug,
       tipo: dto.tipoTenant ?? TipoTenant.INDEPENDIENTE,
     });
 
@@ -44,7 +48,26 @@ export class UsuariosService {
       nombreCompleto: saved.nombreCompleto,
       rol: saved.rol,
       tenantId: saved.tenantId,
+      nombreTenant: tenant.nombre,
+      tenantSlug: tenant.slug,
       creadoEn: saved.creadoEn,
     });
+  }
+
+  /**
+   * Genera un slug unico para el tenant a partir de su nombre.
+   * Si el slug base ya existe, anade un sufijo incremental (-2, -3, ...).
+   */
+  private async generarSlugUnico(nombreTenant: string): Promise<string> {
+    const base = slugify(nombreTenant);
+
+    let candidato = base;
+    let intento = 2;
+    while (await this.tenantRepository.findBySlug(candidato)) {
+      candidato = `${base}-${intento}`;
+      intento += 1;
+    }
+
+    return candidato;
   }
 }

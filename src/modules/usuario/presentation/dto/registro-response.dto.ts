@@ -6,6 +6,8 @@ export class RegistroResponseDto {
   nombreCompleto: string;
   rol: RolUsuario;
   tenantId: string;
+  nombreTenant: string;
+  tenantSlug: string;
   creadoEn: Date;
 
   constructor(partial: RegistroResponseDto) {
