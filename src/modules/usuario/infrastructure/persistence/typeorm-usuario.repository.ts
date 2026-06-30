@@ -7,6 +7,8 @@ import { Usuario } from '../../domain/usuario.entity';
 import { IUsuarioRepository } from '../../domain/usuario.repository';
 import { UsuarioOrmEntity } from './usuario.orm-entity';
 
+//Adaptador de persistencia para modulo usuario - Conecta entity del dominio con base de datos
+
 @Injectable()
 export class TypeOrmUsuarioRepository extends IUsuarioRepository {
   constructor(

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule, ConfigService } from '@nestjs/config';//Realiza la lectura de variables de entorno
+import { TypeOrmModule } from '@nestjs/typeorm';//Integra el orm para conexion con la base de datos
 
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantModule } from './modules/tenant/tenant.module';
@@ -8,12 +8,15 @@ import { UsuariosModule } from './modules/usuario/usuarios.module';
 
 @Module({
   imports: [
+    //Carga las variables de entorno
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    //Configura la confi con postgresql de manera asincrona
+    //forRootAsync pq depende de ConfigService
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
+      imports: [ConfigModule],//De donde viene la dependencia
+      inject: [ConfigService],//Hacia donde se inyectta
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         host: configService.getOrThrow<string>('DB_HOST'),
@@ -25,9 +28,9 @@ import { UsuariosModule } from './modules/usuario/usuarios.module';
         autoLoadEntities: true,
       }),
     }),
-    AuthModule,
-    TenantModule,
-    UsuariosModule,
+    AuthModule,//Modulo de autentificacion
+    TenantModule,//Modulo de los tenant
+    UsuariosModule,//Modulos de los usuarios
   ],
 })
 export class AppModule {}
