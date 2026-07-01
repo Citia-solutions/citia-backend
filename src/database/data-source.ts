@@ -1,5 +1,7 @@
 import { DataSource } from 'typeorm';
 
+import { CitaOrmEntity } from '../modules/cita/infrastructure/persistence/cita.orm-entity';
+import { PacienteOrmEntity } from '../modules/paciente/infrastructure/persistence/paciente.orm-entity';
 import { TenantOrmEntity } from '../modules/tenant/infrastructure/persistence/tenant.orm-entity';
 import { UsuarioOrmEntity } from '../modules/usuario/infrastructure/persistence/usuario.orm-entity';
 
@@ -19,7 +21,12 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER ?? 'postgres',
   password: process.env.DB_PASS ?? 'postgres',
   database: process.env.DB_NAME ?? 'citia_dev',
-  entities: [TenantOrmEntity, UsuarioOrmEntity],
+  entities: [
+    TenantOrmEntity,
+    UsuarioOrmEntity,
+    PacienteOrmEntity,
+    CitaOrmEntity,
+  ],
   migrations: [migrationsGlob],
   synchronize: false,
 });
