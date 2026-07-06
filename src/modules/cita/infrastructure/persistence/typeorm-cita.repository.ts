@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   And,
@@ -9,6 +10,7 @@ import {
 } from 'typeorm';
 
 import { TransactionContext } from '../../../../shared/application/transaction-runner';
+import { rangoDelDiaEnZona } from '../../../../shared/domain/timezone';
 import { Cita } from '../../domain/cita.entity';
 import { CitaRepository } from '../../domain/cita.repository';
 import { CitaOrmEntity } from './cita.orm-entity';
@@ -20,6 +22,7 @@ export class TypeOrmCitaRepository extends CitaRepository {
   constructor(
     @InjectRepository(CitaOrmEntity)
     private readonly repo: Repository<CitaOrmEntity>,
+    private readonly config: ConfigService,
   ) {
     super();
   }
@@ -39,18 +42,17 @@ export class TypeOrmCitaRepository extends CitaRepository {
     dia: Date,
     tx?: TransactionContext,
   ): Promise<Cita[]> {
-    const inicioDia = new Date(dia);
-    inicioDia.setHours(0, 0, 0, 0);
-    const finDia = new Date(inicioDia);
-    finDia.setDate(finDia.getDate() + 1);
+    // El "día" se calcula en la zona horaria de la clínica (no la del servidor,
+    // que corre en UTC). Rango semiabierto [00:00, día+1 00:00) en esa zona,
+    // convertido a instantes UTC para comparar contra la columna timestamptz.
+    const tz = this.config.get<string>('APP_TZ', 'America/Santiago');
+    const { desde, hasta } = rangoDelDiaEnZona(dia, tz);
 
-    // Rango semiabierto [00:00, día+1 00:00) para que las 00:00 del día
-    // siguiente NO cuenten como del día actual.
     const filas = await this.repoFor(tx).find({
       where: {
         tenantId,
         usuarioId,
-        inicio: And(MoreThanOrEqual(inicioDia), LessThan(finDia)),
+        inicio: And(MoreThanOrEqual(desde), LessThan(hasta)),
       },
       order: { inicio: 'ASC' },
     });

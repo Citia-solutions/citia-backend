@@ -1,5 +1,6 @@
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { PacienteRepository } from '../../paciente/domain/paciente.repository';
+import { formatearHoraEnZona } from '../../../shared/domain/timezone';
 import { Cita } from '../domain/cita.entity';
 import { CitaRepository } from '../domain/cita.repository';
 import { CitaDashboardDto } from '../presentation/dto/cita-dashboard.dto';
@@ -11,6 +12,9 @@ export class CitasService {
   constructor(
     private readonly citaRepository: CitaRepository,
     private readonly pacienteRepository: PacienteRepository,
+    // Zona horaria de la clínica (ej. 'America/Santiago'). El "día" y la "hora"
+    // se calculan en esta zona, no en la del servidor (contenedor en UTC).
+    private readonly tz: string,
   ) {}
 
   // US-02: crea una cita nueva (nace PENDIENTE via Cita.crear).
@@ -68,7 +72,7 @@ export class CitasService {
         new CitaDashboardDto({
           id: cita.id,
           pacienteNombre: nombresPorPaciente.get(cita.pacienteId) ?? 'Paciente',
-          hora: this.formatearHora(cita.inicio),
+          hora: formatearHoraEnZona(cita.inicio, this.tz),
           inicio: cita.inicio,
           duracionMin: cita.duracionMin,
           tipoConsulta: cita.tipoConsulta,
@@ -97,12 +101,5 @@ export class CitasService {
     );
 
     return new Map(entradas);
-  }
-
-  // Deriva "HH:mm" del datetime de inicio para mostrar en la tarjeta.
-  private formatearHora(inicio: Date): string {
-    const horas = inicio.getHours().toString().padStart(2, '0');
-    const minutos = inicio.getMinutes().toString().padStart(2, '0');
-    return `${horas}:${minutos}`;
   }
 }

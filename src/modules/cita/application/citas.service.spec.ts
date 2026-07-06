@@ -35,7 +35,11 @@ describe('CitasService', () => {
       buscarPorId: jest.fn(),
     };
 
-    service = new CitasService(mockCitaRepository, mockPacienteRepository);
+    service = new CitasService(
+      mockCitaRepository,
+      mockPacienteRepository,
+      'America/Santiago',
+    );
   });
 
   afterEach(() => {
@@ -197,10 +201,10 @@ describe('CitasService', () => {
       expect(dia).toBeInstanceOf(Date);
     });
 
-    it('debería mapear cada cita a CitaDashboardDto con la hora "HH:mm" derivada de inicio', async () => {
-      // Arrange — 14:05 hora local
-      const inicio = new Date();
-      inicio.setHours(14, 5, 0, 0);
+    it('debería mapear cada cita a CitaDashboardDto con la hora "HH:mm" en la zona de la clínica', async () => {
+      // Arrange — 18:05Z = 14:05 en America/Santiago (UTC-4). Instante UTC
+      // explícito: el test es determinista sin importar la TZ de la máquina.
+      const inicio = new Date('2026-06-30T18:05:00Z');
       const cita = reconstituir('cita-1', 'paciente-1', inicio);
       mockCitaRepository.buscarDelDiaPorProfesional.mockResolvedValue([cita]);
       mockPacienteRepository.buscarPorId.mockResolvedValue({

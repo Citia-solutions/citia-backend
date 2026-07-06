@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { PacienteModule } from '../paciente/paciente.module';
@@ -20,9 +21,17 @@ import { CitasController } from './presentation/citas.controller';
   providers: [
     {
       provide: CitasService,
-      useFactory: (cr: CitaRepository, pr: PacienteRepository) =>
-        new CitasService(cr, pr),
-      inject: [CitaRepository, PacienteRepository],
+      useFactory: (
+        cr: CitaRepository,
+        pr: PacienteRepository,
+        config: ConfigService,
+      ) =>
+        new CitasService(
+          cr,
+          pr,
+          config.get<string>('APP_TZ', 'America/Santiago'),
+        ),
+      inject: [CitaRepository, PacienteRepository, ConfigService],
     },
     {
       provide: CitaRepository,
