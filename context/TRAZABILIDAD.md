@@ -40,10 +40,16 @@ Orden cronológico (más antiguo arriba).
 | 29 | `298967d` style(main): formato prettier en comentarios | 2026-08-16 | style | — (solo formato, sin cambio de comportamiento) |
 | 30 | `3db199a` docs(context): ADR-05/06/07 + índices + trazabilidad | 2026-08-16 | docs | ADR-05, ADR-06, ADR-07; este archivo |
 | 31 | `a5a5f58` chore(git): normalizar fin de línea con `.gitattributes` | 2026-08-16 | chore | — (tooling; ver nota abajo) |
+| 32 | `cc362ee` docs(context): alinear trazabilidad y features con la consolidación | 2026-08-16 | docs | este archivo; [infra](Features/infra-contenedores.md), [us06](Features/us06-dashboard-citas.md), ADR-05, índices |
 
 > **Nota commit 31.** `core.autocrlf=true` marcaba ~32 archivos como modificados con contenido
 > idéntico, ensuciando `git status` y los diffs de cada PR. `.gitattributes` fija LF para repo y
 > working tree (CRLF solo en `.bat`/`.cmd`, binarios excluidos).
+
+> **Convención — el último commit de docs.** Un commit no puede citar su propio hash, así que el
+> commit de documentación que **cierra** una pasada de alineación siempre se registra en la pasada
+> siguiente (como pasó con `77523c9` y con `3db199a`). Si al auditar aparece exactamente **un**
+> commit `docs(context)` sin fila al final del historial, es esto y no un hueco.
 
 ## Cobertura por decisión (ADR ↔ commits)
 
