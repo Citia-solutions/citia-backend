@@ -1,0 +1,16 @@
+# Normaliza los fines de línea: LF en el repo y en el working tree.
+# Sin esto, core.autocrlf=true en Windows marca archivos como modificados
+# aunque su contenido sea idéntico, ensuciando `git status` y los diffs.
+* text=auto eol=lf
+
+# Scripts de Windows que sí requieren CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binarios: nunca convertir.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
