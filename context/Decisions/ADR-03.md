@@ -1,7 +1,12 @@
 # ADR-03: Login multi-tenant por tenantSlug
 
 **Fecha:** 2026-06-22
-**Estado:** Aceptado
+**Estado:** Aceptado · ⚠️ **regla 4 superseded por [ADR-08](ADR-08.md)** (propuesto)
+
+> **Nota.** [ADR-08](ADR-08.md) retoma la sub-opción de *subdominio* que este ADR dejó **aplazada** y
+> mueve el tenant del **body** a la **URL**. Solo cambia la **regla 4** (transporte). Siguen
+> plenamente vigentes: la unicidad compuesta `(tenant_id, email)`, el slug autogenerado (regla 2), el
+> puerto `findBySlug` (regla 3) y el **401 genérico** (regla 5).
 
 ---
 

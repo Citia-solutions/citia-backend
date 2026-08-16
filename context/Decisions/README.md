@@ -13,6 +13,7 @@ contexto, las opciones evaluadas, la decisión tomada y sus consecuencias.
 | [ADR-05](ADR-05.md) | Contenedorización Docker multi-stage + migraciones en el arranque | Aceptado · Implementado | 2026-06-22 | `b8cac2a`, `df53128`, `0e54f0b`, `77a97c9`, `b623b6a` |
 | [ADR-06](ADR-06.md) | Atomicidad del registro: puerto `TransactionRunner` con contexto opaco | Aceptado · Implementado | 2026-06-23 | `d4fa476`, `f573485` |
 | [ADR-07](ADR-07.md) | Día y hora del dashboard en la zona de la clínica (DST-safe con `Intl`) | Aceptado · Implementado | 2026-07-06 | `08dad63` |
+| [ADR-08](ADR-08.md) | El tenant sale del body del login y pasa a la URL (puerto `TenantResolver`) | **Propuesto** · sin implementar | 2026-08-16 | — |
 
 ## Relaciones entre ADRs
 
@@ -23,5 +24,8 @@ contexto, las opciones evaluadas, la decisión tomada y sus consecuencias.
 - ADR-06 (transaccional) **aplica** ADR-02 (contexto `unknown` opaco para no filtrar TypeORM).
 - ADR-07 (zona horaria) **se apoya en** ADR-04 (`inicio` como `timestamptz` único) y ADR-02
   (utilidad pura en `shared/domain/`).
+- ADR-08 (tenant en la URL) **supersede parcialmente** a ADR-03: solo su regla 4 (transporte del
+  tenant); la unicidad compuesta, el slug autogenerado y el 401 genérico siguen vigentes. **Replica**
+  el patrón de puerto opaco de ADR-06 y la selección por config de ADR-07.
 
 Ver la matriz completa commit ↔ doc en [`../TRAZABILIDAD.md`](../TRAZABILIDAD.md).
