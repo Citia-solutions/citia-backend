@@ -2,13 +2,15 @@
 
 **Epic:** 00 — Autenticación y registro  
 **Historia:** US-00a  
-**Estado:** ✅ Implementado (2026-06-22) · ✅ Migración aplicable + tests de integración en verde
+**Estado:** ✅ Implementado (2026-06-22) · ✅ Atomicidad transaccional (2026-06-23, ADR-06) · ✅ Migración aplicable + tests de integración en verde
+**Commits:** `ce7d99e` (tenant), `718fe1f` (refactor hexagonal), `2ee856f` (endpoint), `706f12f` (tests), `389eb81` (migración), `195431b`+`cfa35f3` (slug), `d4fa476`+`f573485` (transaccional)
 
 ---
 
 ## Qué hace este endpoint
 
-`POST /api/usuarios` crea un Tenant y su primer Usuario ADMINISTRADOR en una operación atómica.
+`POST /api/usuarios` crea un Tenant y su primer Usuario ADMINISTRADOR en una **operación atómica**
+(envuelta en una transacción — ver [Atomicidad transaccional](#atomicidad-transaccional-anti-tenant-huérfano)).
 El `tenantId` lo genera el servidor al crear el Tenant — nunca llega del cliente (RNF-02).
 
 ---
@@ -33,13 +35,18 @@ src/modules/
     │   ├── usuario.orm-entity.ts     ← TypeORM @Entity('usuarios'), @Unique(['tenantId','email'])
     │   └── typeorm-usuario.repository.ts  ← Adaptador + mapper toDomain/toPersistence
     ├── application/
-    │   └── usuarios.service.ts       ← registrar(): crea Tenant → Usuario
+    │   └── usuarios.service.ts       ← registrar(): tx.run( slug → Tenant → email check → hash → Usuario )
     ├── presentation/
     │   ├── usuarios.controller.ts    ← POST /usuarios → 201
     │   └── dto/
     │       ├── registro-usuario.dto.ts   ← sin tenantId
-    │       └── registro-response.dto.ts  ← incluye tenantId
-    └── usuarios.module.ts            ← importa TenantModule
+    │       └── registro-response.dto.ts  ← incluye tenantId, nombreTenant, tenantSlug
+    └── usuarios.module.ts            ← importa TenantModule + SharedModule
+
+src/shared/                          ← infraestructura transversal (ADR-06)
+├── application/transaction-runner.ts       ← Abstract class TransactionRunner + TransactionContext (opaco)
+├── infrastructure/typeorm-transaction-runner.ts  ← Adaptador sobre dataSource.transaction()
+└── shared.module.ts                        ← provee y exporta TransactionRunner
 ```
 
 **Regla hexagonal verificada:** `grep -rE "from 'typeorm'|from '@nestjs'" src/modules/*/domain src/modules/*/application` → 0 coincidencias.
@@ -94,6 +101,38 @@ src/modules/
 
 ---
 
+## Atomicidad transaccional (anti-tenant-huérfano)
+
+**Decisión completa en [ADR-06](../Decisions/ADR-06.md). Commits `d4fa476` + `f573485`.**
+
+El registro inserta dos filas en secuencia (Tenant → Usuario). En la primera versión (2026-06-22)
+esto corría **sin transacción**: si algo fallaba tras insertar el Tenant (email duplicado, error de
+hash, fallo al guardar el usuario), el **Tenant quedaba huérfano** (sin usuario, ensuciando la
+unicidad de `slug`). La atomicidad se añadió el 2026-06-23.
+
+`registrar()` se envuelve en `TransactionRunner.run(...)`. Todo el flujo corre dentro de la
+transacción; cualquier excepción hace **rollback completo** → cero huérfanos.
+
+```
+tx.run(async (tx) => {
+  slug   = generarSlugUnico(nombreTenant, tx)   // verifica findBySlug dentro de la tx
+  tenant = tenantRepository.guardar({...}, tx)
+  if (usuarioRepository.findByEmailAndTenant(email, tenant.id, tx)) → EmailYaRegistradoError (409)
+  hash   = bcrypt.hash(password, 10)
+  usuario= usuarioRepository.guardar({..., rol: ADMINISTRADOR}, tx)
+})  // throw en cualquier punto → ROLLBACK del INSERT del tenant
+```
+
+- **Puerto `TransactionRunner`** (`shared/application/`) con `TransactionContext = unknown`
+  (**opaco**): `application` no conoce TypeORM (ADR-02). Adaptador `TypeOrmTransactionRunner`
+  (`shared/infrastructure/`) sobre `dataSource.transaction()`.
+- Los repos de tenant y usuario aceptan un `tx?` **opcional**: cuando viene, resuelven el
+  repositorio desde el `EntityManager` transaccional. **Backward compatible** (siguen usables sin `tx`).
+- **Verificado** por un test de integración que fuerza el fallo al guardar el usuario y comprueba
+  que el Tenant no persiste (`registro-usuario.integration.spec.ts`).
+
+---
+
 ## Esquema de BD
 
 ### Tabla `tenants`
@@ -127,6 +166,7 @@ Constraints: `UNIQUE(tenant_id, email)`, `INDEX(tenant_id)`.
 - ADR-01: Passport + JWT — tenantId del token, no del body (aplica en US-00b)
 - ADR-02: Código en español + regla de dependencias hexagonal
 - ADR-03: Login multi-tenant por `tenantSlug` — el `slug` del tenant se genera en este registro
+- **ADR-06: Atomicidad transaccional — puerto `TransactionRunner` con contexto opaco (anti-huérfano)**
 
 ---
 

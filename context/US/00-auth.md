@@ -21,6 +21,7 @@
 - [x] Puerto `ITenantRepository` + adaptador TypeORM con mapper
 - [x] `RegistroUsuarioDto` sin `tenantId` (campo generado server-side)
 - [x] `UsuariosService.registrar()` — crea Tenant → Usuario atómicamente; genera `slug` vía `slugify(nombreTenant)` con sufijo ante colisión
+- [x] Atomicidad real vía puerto `TransactionRunner` (rollback anti-tenant-huérfano) — ADR-06
 - [x] `POST /api/usuarios` → 201 `RegistroResponseDto` (incluye `nombreTenant` y `tenantSlug`)
 - [x] Migración TypeORM: tablas `tenants` + `usuarios` (+ migración aditiva `AddSlugToTenants` con backfill)
 - [x] Tests de integración contra BD real (crear, leer, duplicado por tenant, distinto tenant)

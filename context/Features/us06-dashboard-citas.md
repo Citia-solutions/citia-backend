@@ -2,7 +2,8 @@
 
 **Epic:** 06 — Dashboard de citas del día (RF-03)
 **Historia:** US-06
-**Estado:** ✅ Implementado backend (2026-06-30) · 77 unit verdes (dominio 100%) · ⚠️ e2e escrito, pendiente de correr contra Postgres
+**Estado:** ✅ Implementado backend (2026-06-30) · ✅ Fix zona horaria de la clínica (2026-07-06, ADR-07) · 77 unit verdes (dominio 100%) · ⚠️ e2e escrito, pendiente de correr contra Postgres
+**Commits:** `9ab2bec` (paciente), `e592d74` (cita + máquina de estados), `b485e1f` (wiring), `76157dc` (tests), `77523c9` (docs US-06 + ADR-04), `08dad63` (fix zona horaria)
 
 ---
 
@@ -166,6 +167,24 @@ Detalle y justificación en **ADR-04**.
 
 ---
 
+## Zona horaria: día y hora en la zona de la clínica
+
+**Decisión completa en [ADR-07](../Decisions/ADR-07.md). Commit `08dad63` (2026-07-06).**
+
+"Hoy" y "la hora" dependen de la zona de la clínica, no de la del servidor. El contenedor corre en
+**UTC**; el cálculo original usaba esa zona, así que en Chile el corte de medianoche se desplazaba
+y las horas salían **3–4 h desfasadas**. La corrección:
+
+- Utilidad pura DST-safe **`src/shared/domain/timezone.ts`** (con `Intl`, sin librerías externas):
+  - `rangoDelDiaEnZona(instante, tz)` → rango semiabierto `[00:00, día+1 00:00)` en UTC para la query.
+  - `formatearHoraEnZona(instante, tz)` → `"HH:mm"` en la zona.
+- La zona es config: **`APP_TZ`** (default `America/Santiago`). El repositorio calcula el rango en
+  `APP_TZ`; `CitasService` recibe la zona **por constructor** (inyectada con `useFactory` en
+  `CitaModule`), manteniendo `application` sin dependencia de Nest.
+- **Deuda anotada:** `APP_TZ` es global; un despliegue multi-zona moverá la zona al Tenant (ADR-07).
+
+---
+
 ## Tests
 
 | Suite                                   | Tipo  | Estado |
@@ -185,6 +204,7 @@ correr el e2e con BD — los tests ya están escritos y cubren creación real, f
 ## ADRs relacionados
 
 - **ADR-04:** Modelo de Cita — máquina de estados en el dominio + estado materializado (job de ghosting).
+- **ADR-07:** Día y hora del dashboard calculados en la zona de la clínica (DST-safe con `Intl`).
 - ADR-01: Passport + JWT — `tenantId` del token, no del body (aquí se estrena el guard).
 - ADR-02: Código en español + regla de dependencias hexagonal.
 
