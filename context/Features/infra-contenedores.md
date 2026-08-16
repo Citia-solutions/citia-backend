@@ -1,8 +1,8 @@
 # Feature: Contenedorización (Docker + compose + migraciones en arranque)
 
 **Tipo:** Infraestructura / cross-cutting (no es una US de negocio)
-**Estado:** ✅ Implementado (2026-06-22)
-**Commits:** `b8cac2a` (Docker + compose + entrypoint), `df53128` (fix build), `0e54f0b` (scripts migración prod)
+**Estado:** ✅ Implementado (2026-06-22) · ✅ Tooling de entorno local y seed demo (2026-08-16)
+**Commits:** `b8cac2a` (Docker + compose + entrypoint), `df53128` (fix build), `0e54f0b` (scripts migración prod), `77a97c9` (puerto pgAdmin), `b623b6a` (carga de `.env` en CLI/e2e), `f200557` (seed demo)
 **ADR:** [ADR-05](../Decisions/ADR-05.md)
 
 ---
@@ -63,6 +63,10 @@ No hace polling de la DB: espera al `healthcheck` de compose (`depends_on: servi
   de compose el host de la DB es **`db`**, no `localhost`. `JWT_SECRET` **debe** venir del entorno.
 - **override (dev)**: monta el código para hot-reload y añade **pgAdmin**.
 
+> **Puerto de pgAdmin (`77a97c9`).** El 5050 original cae dentro del rango **5041-5140 que
+> Windows/Hyper-V reserva**, así que el contenedor no podía publicar el puerto en local. Se usa
+> **15050** por defecto, sobreescribible con `PGADMIN_PORT` en el `.env`.
+
 **Uso:**
 ```bash
 # Producción
@@ -83,6 +87,43 @@ docker compose -f docker-compose.yml -f docker-compose.override.yml up --build
 
 ---
 
+## Carga de `.env` fuera de Nest (`b623b6a`)
+
+`ConfigModule.forRoot()` solo carga el `.env` **dentro** del ciclo de vida de Nest. Dos caminos
+quedaban fuera y leían `process.env` vacío:
+
+| Camino | Problema | Solución |
+|--------|----------|----------|
+| CLI de migraciones (`ts-node` sobre `data-source.ts`) | El data-source corre en el host, sin Nest | `config()` de dotenv al tope de `data-source.ts`. En la imagen de producción las vars vienen del contenedor y `config()` es no-op |
+| Tests e2e | `typeorm-test.config.ts` lee `process.env` **en tiempo de import**, antes del `beforeAll` | `test/setup-env.ts` registrado como `setupFiles` en `jest-e2e.json` |
+
+También se corrigió la ruta del CLI a `./node_modules/typeorm/cli.js`, que es la que resuelve
+correctamente en Windows.
+
+---
+
+## Seed de datos demo (`f200557`)
+
+`npm run seed` puebla la BD con lo mínimo para probar el dashboard de US-06
+(`GET /api/citas/hoy`) sin crear datos a mano:
+
+- 1 Tenant `CLINICA` + 1 Usuario `ADMINISTRADOR` con **credenciales fijas** (`clinica-demo` /
+  `admin@clinicademo.cl` / `Demo1234`), que el script imprime al terminar.
+- 3 Pacientes del tenant.
+- 6 Citas de **hoy** con estados variados (PENDIENTE, CONFIRMADA, ASISTIO, NO_ASISTIO, CANCELADA).
+
+Decisiones de diseño:
+
+- **Reutiliza los servicios y repositorios ya wired** (`NestFactory.createApplicationContext`), así
+  hereda bcrypt, la generación de slug y la máquina de estados de Cita. **No hace `INSERT`s crudos**
+  que salten invariantes del dominio (ADR-04).
+- **Idempotente:** si el tenant demo ya existe (por slug), borra *solo* sus datos y los recrea. Se
+  puede correr N veces sin chocar con los `UNIQUE` ni acumular basura.
+- Las horas se generan como **offsets relativos a `ahora`**, no absolutas: así caen en el "hoy" de
+  la clínica tanto si el seed corre en el host como dentro del contenedor en UTC (ADR-07).
+
+---
+
 ## Nota de build (`df53128`)
 
 Un `.ts` suelto en `context/` elevaba el `rootDir` y hacía que Nest emitiera a `dist/src/main.js`,
@@ -94,7 +135,9 @@ rompiendo `node dist/main`. Se **excluyó `context/`** de `tsconfig.build.json`.
 ## Variables de entorno
 
 Ver `.env.example`. Claves de infra: `DB_HOST/PORT/USER/PASS/NAME`, `PORT`, `JWT_SECRET`,
-`JWT_EXPIRES_IN`, `FRONTEND_URL`, `APP_TZ`.
+`JWT_EXPIRES_IN`, `FRONTEND_URL`, `APP_TZ`, `PGADMIN_PORT` (default `15050`).
+
+Los tests e2e usan además `TEST_DB_*`, cargadas por `test/setup-env.ts`.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-06-22
 **Estado:** Aceptado · Implementado (2026-06-22)
-**Commits:** `b8cac2a` (Docker), `df53128` (fix build), `0e54f0b` (scripts de migración prod)
+**Commits:** `b8cac2a` (Docker), `df53128` (fix build), `0e54f0b` (scripts de migración prod), `77a97c9` (puerto pgAdmin), `b623b6a` (carga de `.env` en CLI/e2e)
 
 ---
 

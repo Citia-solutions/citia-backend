@@ -199,6 +199,20 @@ Total suite del proyecto: **77 unit verdes**. Cobertura: dominio `Cita` 100%, se
 Cobertura de infraestructura (`typeorm-cita.repository.ts`, orm-entity, module) queda en 0% hasta
 correr el e2e con BD — los tests ya están escritos y cubren creación real, filtro por día/tenant/profesional.
 
+### Probar el dashboard a mano (`npm run seed`)
+
+El seed de datos demo (`f200557`, ver [infra-contenedores](infra-contenedores.md#seed-de-datos-demo-f200557))
+crea un tenant con **6 citas de hoy en estados variados**, listo para pegarle al endpoint:
+
+```bash
+npm run migration:run
+npm run seed          # imprime las credenciales demo al terminar
+# login en POST /api/auth/login con tenantSlug "clinica-demo"
+# y luego GET /api/citas/hoy con el Bearer token
+```
+
+Las horas se generan relativas a "ahora", así que las citas siempre caen en el día vigente.
+
 ---
 
 ## ADRs relacionados

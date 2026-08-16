@@ -9,7 +9,7 @@ endpoints, esquema de BD, decisiones y pendientes. Alineadas con los commits (ve
 | [us00a-registro-inicial](us00a-registro-inicial.md) | US-00a (signup) | ✅ Implementado + atomicidad | 00,01,02,03,**06** | `ce7d99e`,`718fe1f`,`2ee856f`,`d4fa476` |
 | [us00b-login](us00b-login.md) | US-00b (login JWT) | ✅ Implementado | 01,02,03 | `45198c3`,`c911bce` |
 | [us06-dashboard-citas](us06-dashboard-citas.md) | US-06 (dashboard) | ✅ Backend + fix TZ · ⚠️ e2e pend. | 04,**07**,01,02 | `e592d74`,`9ab2bec`,`08dad63` |
-| [infra-contenedores](infra-contenedores.md) | Infra (Docker) | ✅ Implementado | **05** | `b8cac2a`,`df53128`,`0e54f0b` |
+| [infra-contenedores](infra-contenedores.md) | Infra (Docker + tooling) | ✅ Implementado + seed demo | **05** | `b8cac2a`,`df53128`,`0e54f0b`,`f200557` |
 | [registrar-usuario](registrar-usuario.md) | ⛔ DESUSO | Superseded por us00a | — | (histórico) |
 
 ## Notas
