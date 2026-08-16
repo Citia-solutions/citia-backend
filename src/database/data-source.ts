@@ -1,9 +1,15 @@
+import { config } from 'dotenv';
 import { DataSource } from 'typeorm';
 
 import { CitaOrmEntity } from '../modules/cita/infrastructure/persistence/cita.orm-entity';
 import { PacienteOrmEntity } from '../modules/paciente/infrastructure/persistence/paciente.orm-entity';
 import { TenantOrmEntity } from '../modules/tenant/infrastructure/persistence/tenant.orm-entity';
 import { UsuarioOrmEntity } from '../modules/usuario/infrastructure/persistence/usuario.orm-entity';
+
+// Carga variables de .env cuando el data-source se usa desde el host (CLI de
+// migraciones vía ts-node). En la imagen de produccion las vars vienen del
+// entorno del contenedor; config() simplemente no encuentra .env y no hace nada.
+config();
 
 // Detecta si este archivo corre como TypeScript (ts-node, dev) o como
 // JavaScript compilado (dist/, prod). Asi el mismo data-source sirve para
