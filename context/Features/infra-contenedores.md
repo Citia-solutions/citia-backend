@@ -147,3 +147,14 @@ Los tests e2e usan además `TEST_DB_*`, cargadas por `test/setup-env.ts`.
    de escalar a >1 réplica (evita carrera entre réplicas) — ver ADR-05.
 2. **Deploy en Railway** y, más adelante, VPS (DigitalOcean) — stack-tecnologico.md.
 3. **Observabilidad** (Sentry, logs estructurados) — aún no incorporada.
+
+---
+
+## Deudas técnicas asociadas
+
+- [DT-18](../Deudas/DT-18.md) — no existe límite de tasa en ninguna superficie.
+- [DT-19](../Deudas/DT-19.md) — sin observabilidad (RNF-08 es hoy inverificable).
+- [DT-20](../Deudas/DT-20.md) — los e2e nunca se han ejecutado contra una base real.
+- [DT-21](../Deudas/DT-21.md) — carpetas vacías con nombres mal escritos.
+
+Índice completo: [`../Deudas/README.md`](../Deudas/README.md).

@@ -163,3 +163,15 @@ Migraciones (tablas + slug) aplicables vía `migration:run` / entrypoint Docker.
 1. **Refresh token rotation:** al implementarse, reducir `JWT_EXPIRES_IN` al objetivo `15m` (ADR-01).
 2. **Revocación de tokens** (logout efectivo): blacklist en Redis o invalidación vía rotación.
 3. **Login por subdominio** (sub-opción aplazada en ADR-03), reusando la columna `slug`.
+
+---
+
+## Deudas técnicas asociadas
+
+- [DT-01](../Deudas/DT-01.md) — sin renovación ni revocación de sesión (por eso la caducidad es `1d` y no `15m`).
+- [DT-02](../Deudas/DT-02.md) — el `rol` viaja en el token y nadie lo verifica.
+- [DT-03](../Deudas/DT-03.md) — sin recuperación de contraseña.
+- [DT-04](../Deudas/DT-04.md) — sin límite de intentos.
+- [DT-05](../Deudas/DT-05.md) — el 401 genérico no es uniforme en el tiempo.
+
+Índice completo: [`../Deudas/README.md`](../Deudas/README.md).

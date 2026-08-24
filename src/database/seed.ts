@@ -114,14 +114,24 @@ const PLAN_CITAS: PlanCita[] = [
 
 const PACIENTES = [
   {
+    rut: '11.111.111-1',
     nombre: 'María Fernández',
-    contacto: '+56 9 1111 1111',
+    telefono: '+56 9 1111 1111',
+    correo: 'maria.fernandez@demo.cl',
     consentimiento: true,
   },
-  { nombre: 'Juan Pérez', contacto: '+56 9 2222 2222', consentimiento: true },
   {
+    rut: '12.345.678-5',
+    nombre: 'Juan Pérez',
+    telefono: '+56 9 2222 2222',
+    correo: 'juan.perez@demo.cl',
+    consentimiento: true,
+  },
+  {
+    rut: '18.765.432-7',
     nombre: 'Camila Rojas',
-    contacto: '+56 9 3333 3333',
+    telefono: '+56 9 3333 3333',
+    correo: 'camila.rojas@demo.cl',
     consentimiento: false,
   },
 ];

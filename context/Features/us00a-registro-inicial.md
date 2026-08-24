@@ -174,3 +174,14 @@ Constraints: `UNIQUE(tenant_id, email)`, `INDEX(tenant_id)`.
 1. ✅ **Migración:** `1750000000000-CreateTenantsAndUsuarios` (tablas) + `1750000001000-AddSlugToTenants` (columna slug). Aplicables con `npm run migration:run` o vía entrypoint Docker.
 2. ✅ **Tests de integración:** en verde contra BD real (crear, leer, duplicado mismo tenant, mismo email distinto tenant, slugs únicos entre tenants homónimos).
 3. ✅ **US-00b (login):** `POST /api/auth/login` → JWT con `sub` + `tenantId` — implementado (ver `us00b-login.md`).
+
+---
+
+## Deudas técnicas asociadas
+
+- [DT-03](../Deudas/DT-03.md) — sin verificación de correo ni recuperación de contraseña.
+- [DT-06](../Deudas/DT-06.md) — registro público sin freno: un correo puede fundar organizaciones ilimitadas.
+- [DT-07](../Deudas/DT-07.md) — no existe alta de un segundo usuario; `CLINICA` es inalcanzable.
+- [DT-09](../Deudas/DT-09.md) — la comprobación de correo duplicado es inalcanzable.
+
+Índice completo: [`../Deudas/README.md`](../Deudas/README.md).

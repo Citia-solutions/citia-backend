@@ -235,3 +235,18 @@ Las horas se generan relativas a "ahora", así que las citas siempre caen en el 
 4. **Endpoints de transición** (confirmar/cancelar/asistencia): la entidad ya los soporta; falta
    exponerlos vía HTTP.
 5. Scoring y reporte de comportamiento del paciente (RF-08).
+
+---
+
+## Deudas técnicas asociadas
+
+- [DT-10](../Deudas/DT-10.md) — la máquina de estados no tiene ningún endpoint que la ejerza. 🟢 resuelta en diseño por ADR-09.
+- [DT-11](../Deudas/DT-11.md) — sin el job de cierre, el historial de RF-08 no se acumula. **⏳ se encarece sola.**
+- [DT-12](../Deudas/DT-12.md) — el solapamiento de citas no se detecta.
+- [DT-13](../Deudas/DT-13.md) — se aceptan citas en el pasado.
+- [DT-14](../Deudas/DT-14.md) — `inicio` se acepta sin zona horaria (la corrección de ADR-07 fue solo a la salida).
+- [DT-15](../Deudas/DT-15.md) — no se puede buscar un paciente; el flujo se rompe en la segunda cita.
+- [DT-16](../Deudas/DT-16.md) — el consentimiento se captura y nadie lo lee.
+- [DT-20](../Deudas/DT-20.md) — los e2e nunca se han ejecutado contra Postgres.
+
+Índice completo: [`../Deudas/README.md`](../Deudas/README.md).

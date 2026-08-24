@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   HttpCode,
@@ -7,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
+import { RutInvalidoError } from '../../../shared/domain/rut-invalido.error';
 import { CurrentUser } from '../../auth/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import type { AuthenticatedUser } from '../../auth/jwt-payload.interface';
@@ -25,6 +27,14 @@ export class PacientesController {
     @Body() dto: CrearPacienteDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<PacienteResponseDto> {
-    return this.pacientesService.crearPaciente(dto, user.tenantId);
+    try {
+      return await this.pacientesService.crearPaciente(dto, user.tenantId);
+    } catch (error) {
+      // RUT con digito verificador incorrecto -> 400 Bad Request.
+      if (error instanceof RutInvalidoError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
   }
 }

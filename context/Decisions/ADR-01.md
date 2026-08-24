@@ -88,3 +88,12 @@ Próximos pasos pendientes:
 - RNF-02: aislamiento multi-tenant.
 - `@nestjs/passport`: https://docs.nestjs.com/security/authentication
 - `passport-jwt`: https://www.passportjs.org/packages/passport-jwt/
+
+---
+
+## Deudas técnicas asociadas
+
+- [DT-01](../Deudas/DT-01.md) — sin renovación ni revocación de sesión (nace de la desviación consciente de `JWT_EXPIRES_IN`).
+- [DT-02](../Deudas/DT-02.md) — el `rol` que emite la regla 3 no lo verifica ningún guard.
+
+Índice completo: [`../Deudas/README.md`](../Deudas/README.md).

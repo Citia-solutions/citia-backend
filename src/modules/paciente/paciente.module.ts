@@ -21,7 +21,8 @@ import { PacientesController } from './presentation/pacientes.controller';
       useClass: TypeOrmPacienteRepository,
     },
   ],
-  // Se exporta el puerto para que el modulo Cita resuelva nombres de paciente.
-  exports: [PacienteRepository],
+  // Se exporta el puerto (para resolver nombres en el dashboard) y el servicio
+  // (para que Cita reutilice `resolverOCrear` al agendar, ADR-09 §3).
+  exports: [PacienteRepository, PacientesService],
 })
 export class PacienteModule {}

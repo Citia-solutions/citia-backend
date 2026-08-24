@@ -42,11 +42,23 @@ export class TypeOrmPacienteRepository extends PacienteRepository {
     return this.toDomain(orm);
   }
 
+  async buscarPorRut(
+    rut: string,
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<Paciente | null> {
+    const orm = await this.repoFor(tx).findOne({ where: { rut, tenantId } });
+    if (!orm) return null;
+    return this.toDomain(orm);
+  }
+
   private toDomain(orm: PacienteOrmEntity): Paciente {
     const paciente = new Paciente();
     paciente.id = orm.id;
+    paciente.rut = orm.rut;
     paciente.nombre = orm.nombre;
-    paciente.contacto = orm.contacto;
+    paciente.telefono = orm.telefono;
+    paciente.correo = orm.correo;
     paciente.consentimiento = orm.consentimiento;
     paciente.tenantId = orm.tenantId;
     return paciente;
@@ -55,8 +67,10 @@ export class TypeOrmPacienteRepository extends PacienteRepository {
   private toPersistence(domain: Partial<Paciente>): Partial<PacienteOrmEntity> {
     const orm: Partial<PacienteOrmEntity> = {};
     if (domain.id !== undefined) orm.id = domain.id;
+    if (domain.rut !== undefined) orm.rut = domain.rut;
     if (domain.nombre !== undefined) orm.nombre = domain.nombre;
-    if (domain.contacto !== undefined) orm.contacto = domain.contacto;
+    if (domain.telefono !== undefined) orm.telefono = domain.telefono;
+    if (domain.correo !== undefined) orm.correo = domain.correo;
     if (domain.consentimiento !== undefined)
       orm.consentimiento = domain.consentimiento;
     if (domain.tenantId !== undefined) orm.tenantId = domain.tenantId;

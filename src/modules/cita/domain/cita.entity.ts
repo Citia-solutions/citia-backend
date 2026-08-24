@@ -128,6 +128,41 @@ export class Cita {
     this._estado = EstadoCita.NO_ASISTIO;
   }
 
+  /**
+   * pendiente | confirmada -> pendiente, con nuevo `inicio` (ADR-09 §5).
+   *
+   * Reagendar MUEVE la cita: conserva su id y su identidad. No se cancela para
+   * crear otra, porque entonces una cita movida N veces serían N+1 filas sin
+   * vínculo entre sí, imposibles de interpretar para RF-08.
+   *
+   * Vuelve a `pendiente` a propósito: si el paciente había confirmado, confirmó
+   * OTRA hora. Esa confirmación ya no vale y hay que volver a pedirla.
+   */
+  reagendar(nuevoInicio: Date): void {
+    if (
+      this._estado !== EstadoCita.PENDIENTE &&
+      this._estado !== EstadoCita.CONFIRMADA
+    ) {
+      throw new TransicionEstadoInvalidaError(this._estado, 'reagendar');
+    }
+    this.inicio = nuevoInicio;
+    this._estado = EstadoCita.PENDIENTE;
+  }
+
+  /**
+   * Corrige datos que no cambian el compromiso (duración, tipo de consulta).
+   * A diferencia de reagendar, no avisa al paciente ni cuenta para su historial.
+   * Prohibido sobre una cita terminal: ya no hay nada que corregir.
+   */
+  editar(props: { duracionMin?: number; tipoConsulta?: string }): void {
+    if (this.esTerminal()) {
+      throw new TransicionEstadoInvalidaError(this._estado, 'editar');
+    }
+    if (props.duracionMin !== undefined) this.duracionMin = props.duracionMin;
+    if (props.tipoConsulta !== undefined)
+      this.tipoConsulta = props.tipoConsulta;
+  }
+
   // pendiente -> ghosting (terminal): llegó el día sin confirmar (vía job).
   marcarGhosting(): void {
     this.asegurarTransicion(EstadoCita.PENDIENTE, 'marcarGhosting');

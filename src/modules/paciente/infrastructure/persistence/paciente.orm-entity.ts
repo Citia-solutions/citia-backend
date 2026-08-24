@@ -13,15 +13,28 @@ import { TenantOrmEntity } from '../../../tenant/infrastructure/persistence/tena
 
 @Entity('pacientes')
 @Index('idx_paciente_tenant', ['tenantId'])
+// Un RUT identifica una persona dentro de una organizacion (ADR-09 §3).
+// Indice parcial: los pacientes sin RUT no colisionan entre si.
+@Index('uq_paciente_tenant_rut', ['tenantId', 'rut'], {
+  unique: true,
+  where: '"rut" IS NOT NULL',
+})
 export class PacienteOrmEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  // Forma canonica: solo digitos + verificador, sin puntos ni guion.
+  @Column({ type: 'varchar', nullable: true })
+  rut: string | null;
 
   @Column({ nullable: false })
   nombre: string;
 
   @Column({ nullable: false })
-  contacto: string;
+  telefono: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  correo: string | null;
 
   @Column({ default: false })
   consentimiento: boolean;

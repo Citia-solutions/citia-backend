@@ -1,7 +1,16 @@
 # ADR-04: Modelo de Cita — máquina de estados en el dominio y estado materializado
 
 **Fecha:** 2026-06-30
-**Estado:** Aceptado
+**Estado:** Aceptado · ➕ **extendido por [ADR-09](ADR-09.md)** (propuesto)
+
+> **Nota.** [ADR-09](ADR-09.md) **añade** la transición `reagendar()` al grafo de la decisión 2 —sin
+> redefinir ninguna de las existentes— y salda la deuda que este ADR dejó abierta: al decir que una
+> cita cancelada no se reabre sino que se crea otra, una cita movida N veces quedaba como N+1 filas
+> **sin vínculo entre sí**, imposibles de interpretar para RF-08. ADR-09 resuelve reagendando **en
+> su sitio** con una bitácora inmutable de cambios. Sigue plenamente vigente todo lo demás: el
+> estado privado con transiciones validadas en el dominio (1), los estados terminales y la
+> distinción `ghosting` / `no_asistio` (2), el `inicio` como datetime único (3) y la materialización
+> del estado vía job (4).
 
 ---
 
@@ -96,3 +105,13 @@ fuente de verdad estable.
 - `src/modules/cita/domain/cita.entity.ts` — máquina de estados.
 - `context/Features/us06-dashboard-citas.md` — feature que introduce este modelo.
 - RF-03 (dashboard), RF-07 (respuesta del paciente), RF-08 (calificación de asistencia).
+
+---
+
+## Deudas técnicas asociadas
+
+- [DT-10](../Deudas/DT-10.md) — la máquina de estados de la decisión 1 no tiene ningún endpoint que la ejerza. 🟢 resuelta en diseño por ADR-09.
+- [DT-11](../Deudas/DT-11.md) — el job de la decisión 4 no existe, así que el historial de RF-08 no se acumula. **⏳ es la única deuda que se encarece sola.**
+- [DT-22](../Deudas/DT-22.md) — la regla "de un terminal no se sale" de la decisión 2 dejaba las citas reagendadas sin vínculo entre sí. 🟢 resuelta en diseño por ADR-09.
+
+Índice completo: [`../Deudas/README.md`](../Deudas/README.md).

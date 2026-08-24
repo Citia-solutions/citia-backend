@@ -9,6 +9,7 @@ import { PacienteNoEncontradoError } from '../application/paciente-no-encontrado
 import { EstadoCita } from '../domain/cita.entity';
 import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-estado-invalida.error';
 import { CitaDashboardDto } from './dto/cita-dashboard.dto';
+import { PacienteResponseDto } from '../../paciente/presentation/dto/paciente-response.dto';
 import { CitaResponseDto } from './dto/cita-response.dto';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { CitasController } from './citas.controller';
@@ -50,6 +51,16 @@ describe('CitasController', () => {
   });
 
   describe('crear (POST /citas)', () => {
+    const pacienteResuelto = new PacienteResponseDto({
+      id: 'paciente-1',
+      rut: '11.111.111-1',
+      nombre: 'Ana',
+      telefono: '+56 9 1111 1111',
+      correo: 'ana@mail.com',
+      consentimiento: true,
+      tenantId: 'tenant-1',
+    });
+
     const dto: CrearCitaDto = {
       inicio: '2026-06-30T10:30:00Z',
       duracionMin: 30,
@@ -65,7 +76,8 @@ describe('CitasController', () => {
         duracionMin: dto.duracionMin,
         tipoConsulta: dto.tipoConsulta,
         estado: EstadoCita.PENDIENTE,
-        pacienteId: dto.pacienteId,
+        pacienteId: dto.pacienteId as string,
+        paciente: pacienteResuelto,
       });
       mockCitasService.crearCita.mockResolvedValue(response);
 

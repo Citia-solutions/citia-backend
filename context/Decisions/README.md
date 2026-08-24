@@ -14,6 +14,7 @@ contexto, las opciones evaluadas, la decisión tomada y sus consecuencias.
 | [ADR-06](ADR-06.md) | Atomicidad del registro: puerto `TransactionRunner` con contexto opaco | Aceptado · Implementado | 2026-06-23 | `d4fa476`, `f573485` |
 | [ADR-07](ADR-07.md) | Día y hora del dashboard en la zona de la clínica (DST-safe con `Intl`) | Aceptado · Implementado | 2026-07-06 | `08dad63` |
 | [ADR-08](ADR-08.md) | El tenant sale del body del login y pasa a la URL (puerto `TenantResolver`) | **Propuesto** · sin implementar | 2026-08-16 | — |
+| [ADR-09](ADR-09.md) | Gestión de citas: `SolicitudCita` como agregado aparte, RUT como identidad del paciente, reagendar con bitácora | Aceptado · **release 1 implementado** · vía pública pendiente | 2026-08-23 | — |
 
 ## Relaciones entre ADRs
 
@@ -27,5 +28,10 @@ contexto, las opciones evaluadas, la decisión tomada y sus consecuencias.
 - ADR-08 (tenant en la URL) **supersede parcialmente** a ADR-03: solo su regla 4 (transporte del
   tenant); la unicidad compuesta, el slug autogenerado y el 401 genérico siguen vigentes. **Replica**
   el patrón de puerto opaco de ADR-06 y la selección por config de ADR-07.
+- ADR-09 (gestión de citas) **extiende** ADR-04 —añade la transición `reagendar()` y salda su deuda
+  de historial de reagendamientos— y **depende de** ADR-08: el enlace público del paciente necesita
+  el tenant en la URL, lo que convierte a ADR-08 en prerrequisito de infraestructura, no en una
+  mejora de experiencia. **Replica** el puerto opaco de ADR-06 (en `PublicadorEventos`) y matiza la
+  regla anti-enumeración de ADR-03 §5 para la superficie pública.
 
 Ver la matriz completa commit ↔ doc en [`../TRAZABILIDAD.md`](../TRAZABILIDAD.md).

@@ -12,4 +12,12 @@ export abstract class PacienteRepository {
     tenantId: string,
     tx?: TransactionContext,
   ): Promise<Paciente | null>;
+
+  // Resuelve la identidad del paciente dentro del tenant (ADR-09 §3).
+  // El `rut` debe llegar YA normalizado: la comparacion es exacta.
+  abstract buscarPorRut(
+    rut: string,
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<Paciente | null>;
 }

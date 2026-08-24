@@ -36,6 +36,16 @@ export class TypeOrmCitaRepository extends CitaRepository {
     return this.toDomain(orm);
   }
 
+  async buscarPorId(
+    id: string,
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<Cita | null> {
+    const orm = await this.repoFor(tx).findOne({ where: { id, tenantId } });
+    if (!orm) return null;
+    return this.toDomain(orm);
+  }
+
   async buscarDelDiaPorProfesional(
     tenantId: string,
     usuarioId: string,

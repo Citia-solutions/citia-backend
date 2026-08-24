@@ -290,3 +290,121 @@ describe('Cita (dominio)', () => {
     });
   });
 });
+
+describe('Cita.reagendar', () => {
+  const props = {
+    inicio: new Date('2026-08-25T14:00:00Z'),
+    duracionMin: 30,
+    tipoConsulta: 'Control',
+    tenantId: 'tenant-1',
+    pacienteId: 'paciente-1',
+    usuarioId: 'usuario-1',
+  };
+  const NUEVA_HORA = new Date('2026-08-26T16:00:00Z');
+
+  it('mueve el inicio conservando la identidad de la cita', () => {
+    const cita = Cita.crear(props);
+
+    cita.reagendar(NUEVA_HORA);
+
+    expect(cita.inicio).toEqual(NUEVA_HORA);
+    // NO se crea otra cita: mismos paciente, profesional y organización.
+    expect(cita.pacienteId).toBe('paciente-1');
+    expect(cita.usuarioId).toBe('usuario-1');
+    expect(cita.tenantId).toBe('tenant-1');
+  });
+
+  it('deja en pendiente una cita que estaba pendiente', () => {
+    const cita = Cita.crear(props);
+
+    cita.reagendar(NUEVA_HORA);
+
+    expect(cita.estado).toBe(EstadoCita.PENDIENTE);
+  });
+
+  it('DEVUELVE a pendiente una cita ya confirmada: la confirmación era para otra hora', () => {
+    const cita = Cita.crear(props);
+    cita.confirmar();
+    expect(cita.estado).toBe(EstadoCita.CONFIRMADA);
+
+    cita.reagendar(NUEVA_HORA);
+
+    expect(cita.estado).toBe(EstadoCita.PENDIENTE);
+  });
+
+  it.each([
+    ['cancelada', (c: Cita) => c.cancelar()],
+    [
+      'asistio',
+      (c: Cita) => {
+        c.confirmar();
+        c.marcarAsistencia();
+      },
+    ],
+    [
+      'no_asistio',
+      (c: Cita) => {
+        c.confirmar();
+        c.marcarInasistencia();
+      },
+    ],
+    ['ghosting', (c: Cita) => c.marcarGhosting()],
+  ])('rechaza reagendar desde el estado terminal %s', (_estado, llevarA) => {
+    const cita = Cita.crear(props);
+    llevarA(cita);
+
+    expect(() => cita.reagendar(NUEVA_HORA)).toThrow(
+      TransicionEstadoInvalidaError,
+    );
+  });
+
+  it('no toca el inicio cuando la transición es ilegal', () => {
+    const cita = Cita.crear(props);
+    cita.cancelar();
+
+    expect(() => cita.reagendar(NUEVA_HORA)).toThrow();
+    expect(cita.inicio).toEqual(props.inicio);
+  });
+});
+
+describe('Cita.editar', () => {
+  const props = {
+    inicio: new Date('2026-08-25T14:00:00Z'),
+    duracionMin: 30,
+    tipoConsulta: 'Control',
+    tenantId: 'tenant-1',
+    pacienteId: 'paciente-1',
+    usuarioId: 'usuario-1',
+  };
+
+  it('cambia duración y tipo sin tocar el estado ni el inicio', () => {
+    const cita = Cita.crear(props);
+    cita.confirmar();
+
+    cita.editar({ duracionMin: 60, tipoConsulta: 'Primera consulta' });
+
+    expect(cita.duracionMin).toBe(60);
+    expect(cita.tipoConsulta).toBe('Primera consulta');
+    // Editar NO cambia el compromiso: ni el estado ni la hora se mueven.
+    expect(cita.estado).toBe(EstadoCita.CONFIRMADA);
+    expect(cita.inicio).toEqual(props.inicio);
+  });
+
+  it('deja intacto lo que no se envía', () => {
+    const cita = Cita.crear(props);
+
+    cita.editar({ duracionMin: 45 });
+
+    expect(cita.duracionMin).toBe(45);
+    expect(cita.tipoConsulta).toBe('Control');
+  });
+
+  it('rechaza editar una cita terminal', () => {
+    const cita = Cita.crear(props);
+    cita.cancelar();
+
+    expect(() => cita.editar({ duracionMin: 60 })).toThrow(
+      TransicionEstadoInvalidaError,
+    );
+  });
+});

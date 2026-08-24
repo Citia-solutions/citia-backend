@@ -135,7 +135,12 @@ describe('Citas dashboard (e2e)', () => {
     const res = await request(server())
       .post('/api/pacientes')
       .set('Authorization', `Bearer ${token}`)
-      .send({ nombre, contacto: 'contacto@mail.com', consentimiento: true })
+      .send({
+        nombre,
+        telefono: '+56 9 1111 1111',
+        correo: 'contacto@mail.com',
+        consentimiento: true,
+      })
       .expect(201);
     return (res.body as PacienteBody).id;
   };

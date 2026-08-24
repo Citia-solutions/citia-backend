@@ -73,3 +73,12 @@ Reglas:
 - RNF-02: aislamiento multi-tenant (cada profesional accede solo a sus datos).
 - `tenant/domain/slug.ts` — función `slugify`.
 - Migración `1750000001000-AddSlugToTenants`.
+
+---
+
+## Deudas técnicas asociadas
+
+- [DT-05](../Deudas/DT-05.md) — el 401 genérico de la regla 5 no es uniforme en el tiempo.
+- [DT-08](../Deudas/DT-08.md) — el slug de la regla 2 puede colisionar bajo concurrencia.
+
+Índice completo: [`../Deudas/README.md`](../Deudas/README.md).

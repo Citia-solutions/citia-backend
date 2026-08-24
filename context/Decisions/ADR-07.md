@@ -81,3 +81,12 @@ así que el cambio será localizado.
 - `src/modules/cita/infrastructure/persistence/typeorm-cita.repository.ts` (rango en `APP_TZ`),
   `src/modules/cita/application/citas.service.ts` (formato de hora), `src/modules/cita/cita.module.ts` (inyección).
 - `context/Features/us06-dashboard-citas.md` — feature que introduce el fix.
+
+---
+
+## Deudas técnicas asociadas
+
+- [DT-14](../Deudas/DT-14.md) — la corrección de la decisión 1 se aplicó a la salida, no a la entrada: `inicio` se acepta sin zona.
+- [DT-17](../Deudas/DT-17.md) — `APP_TZ` es global (limitación reconocida en la decisión 2).
+
+Índice completo: [`../Deudas/README.md`](../Deudas/README.md).
