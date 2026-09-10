@@ -25,7 +25,7 @@
 | RF-02 | Sincronización con calendarios externos | ❌ |
 | RF-03 | Dashboard de citas del día | ✅ implementado |
 | RF-04 | Perfil y configuración | ❌ |
-| RF-05 | Alertas al profesional | ❌ · hechos ya publicados, falta el consumidor |
+| RF-05 | Alertas al profesional | ❌ · los hechos ya se publican, falta el consumidor |
 | RF-06 | Recordatorios al paciente | ❌ |
 | RF-07 | Respuesta del paciente | ❌ |
 | RF-08 | Calificación de asistencia | ❌ · **el historial aún no se acumula** ([DT-11](../Deudas/DT-11.md)) |
@@ -57,7 +57,10 @@ cada feature implementada, no en este documento:
 | US-00 registro inicial | [us00a](../Features/us00a-registro-inicial.md) | ✅ con tests |
 | US-01 login | [us00b](../Features/us00b-login.md) | ✅ con tests |
 | US-06 dashboard | [us06](../Features/us06-dashboard-citas.md) | ✅ unitarios · ⚠️ e2e nunca ejecutado ([DT-20](../Deudas/DT-20.md)) |
-| US-02 gestión de citas | pendiente de escribir | ⚠️ release 1 entregado sin doc de feature |
+| US-02 gestión de citas | [us02](../Features/us02-gestion-citas.md) | ✅ unitarios · ⚠️ sin e2e ([DT-20](../Deudas/DT-20.md)) |
+
+> **Actualización 2026-09-10:** US-02 ya tiene documento de feature. Era el único caso en que había
+> código sin doc, que es justo lo que la convención del repo no permite.
 
 **Las historias no implementadas no tienen criterios de aceptación escritos.** Es correcto que sea
 así mientras no se aborden —escribirlos ahora sería adivinar— pero conviene no confundir *"el

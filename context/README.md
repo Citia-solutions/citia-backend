@@ -48,7 +48,12 @@ sin doc.**
 ## Estado, de un vistazo
 
 **Implementado:** alta de organización y administrador · login · dashboard de citas del día ·
-gestión de citas (release 1: crear, editar, reagendar, cancelar, transiciones de estado y bitácora).
+**gestión de citas completa** (agendar, editar, reagendar, cancelar, transiciones de estado,
+bitácora de cambios, publicación de hechos) · **recepción pública de solicitudes de hora** del
+paciente.
+
+**A medias:** la bandeja de solicitudes — el dominio soporta aceptar y rechazar, pero sin endpoints
+una solicitud entra y nadie la ve.
 
 **Lo más urgente:** el proceso que cierra las citas vencidas. Es lo único que impide que el historial
 de comportamiento del paciente —el diferenciador del producto— empiece a acumularse, y es la única

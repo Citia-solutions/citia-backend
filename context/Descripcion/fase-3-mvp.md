@@ -18,7 +18,7 @@
 | # | Pieza | Requisito | Estado |
 |---|-------|-----------|--------|
 | 1 | **Dashboard de citas del día** — paciente, hora y fecha | RF-03 · US-06 | ✅ implementado |
-| 2 | **Gestión de cita** | US-02 | 🟡 release 1 entregado; falta la vía pública del paciente |
+| 2 | **Gestión de cita** | US-02 | ✅ ambas vías entregadas · ⚠️ falta la bandeja de solicitudes |
 | 3 | **Calificación de asistencia** | RF-08 | ❌ **bloqueada** |
 
 > **Sobre el número de la tercera.** En la nota original figura como "US-07". El requisito de
@@ -95,13 +95,16 @@ se vaya a prometer al primer cliente. Lo que no puede quedar es sin elegir.
 
 ```
 Pieza 1 · Dashboard              ██████████ implementado
-Pieza 2 · Gestión de cita        █████░░░░░ release 1 · falta vía pública
+Pieza 2 · Gestión de cita        ████████░░ las dos vías listas · falta la bandeja
 Pieza 3 · Calificación           ░░░░░░░░░░ bloqueada por el proceso de cierre
 ```
 
-**El camino más corto al MVP completo:** proceso de cierre (desbloquea la pieza 3 y detiene el
-reloj) → vía pública del paciente (completa la pieza 2, y necesita
-[ADR-08](../Decisions/ADR-08.md) antes) → decidir A o B sobre RF-06.
+*(Actualizado el 2026-09-10: la vía pública del paciente se entregó sin necesitar
+[ADR-08](../Decisions/ADR-08.md) completo — le bastó su mecanismo de transporte aplicado a la ruta
+nueva, sin tocar el login.)*
+
+**El camino más corto al MVP completo:** bandeja de solicitudes (cierra la pieza 2) → proceso de
+cierre (desbloquea la pieza 3 y detiene el reloj) → decidir A o B sobre RF-06.
 
 ---
 
