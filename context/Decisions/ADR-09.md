@@ -1,16 +1,31 @@
 # ADR-09: Gestión de citas — la solicitud del paciente es un agregado aparte, y reagendar mueve la cita registrando el hecho
 
 **Fecha:** 2026-08-23
-**Estado:** Aceptado · **Release 1 implementado** (2026-08-23) · vía publica pendiente
+**Estado:** Aceptado · **implementado por partes** — ver tabla abajo
 **Commits:** — (pendiente)
-
-> **Implementado en el release 1:** decisiones 3 (RUT como identidad, resolver-o-crear),
-> 4, 5 y 6 (editar / reagendar / cancelar + bitácora) y 7 (publicación de hechos), más las
-> transiciones de estado expuestas. **Pendiente:** decisiones 1, 2, 8, 9 y 10 — todo lo que cuelga
-> del enlace público del paciente, que depende de [ADR-08](ADR-08.md).
 **Relación:** **extiende** [ADR-04](ADR-04.md) (añade `reagendar()` al grafo de estados y salda su
-deuda de historial) · **depende de** [ADR-08](ADR-08.md) (el enlace público necesita el tenant en la
-URL) · **replica** el patrón de puerto opaco de [ADR-06](ADR-06.md).
+deuda de historial) · **adopta la fase 1 de** [ADR-08](ADR-08.md) en la ruta pública (ver §11.b) ·
+**replica** el patrón de puerto opaco de [ADR-06](ADR-06.md).
+
+## Estado de cada decisión
+
+| # | Decisión | Estado |
+|---|----------|--------|
+| 1 | `SolicitudCita` como agregado aparte | ✅ 2026-08-24 |
+| 2 | El paciente pide, no reserva | ✅ 2026-08-24 |
+| 3 | El RUT es la identidad del paciente | ✅ 2026-08-23 |
+| 4 | Editar ≠ reagendar ≠ cancelar | ✅ 2026-08-23 |
+| 5 | `Cita.reagendar()` | ✅ 2026-08-23 |
+| 6 | Bitácora `CambioCita` | ✅ 2026-08-23 |
+| 7 | Publicación de hechos | ✅ 2026-08-23 |
+| 8 | Ruta pública + límite de tasa | ruta ✅ · límite de tasa 🔵 **aplazado mientras el entorno sea local** ([DT-18](../Deudas/DT-18.md)) |
+| 9 | Formulario propio, no de terceros | ✅ (backend listo; el formulario es del frontend) |
+| 10 | Campos del formulario | 🟡 ✅ provisionales — a confirmar cuando el frontend los cierre |
+| — | Bandeja: listar, aceptar, rechazar | ❌ el dominio lo soporta; falta exponerlo |
+
+> **Requisito de despliegue:** el límite de tasa de la decisión 8 no existe. Es irrelevante mientras
+> se trabaje en local, y pasa a bloqueante el día que el backend quede accesible o se comparta el
+> enlace fuera del equipo. Ver [DT-18](../Deudas/DT-18.md).
 
 ---
 
@@ -321,6 +336,43 @@ retipear y deja el dato en el vocabulario del profesional, no en el del paciente
 > **No se recoge** "¿primera vez o control?", pese a ser el campo con mejor relación señal/coste del
 > formulario. Se prefirió minimizar fricción. Es el candidato número uno a añadir si al profesional
 > le falta contexto — cuesta un campo y no rompe nada.
+
+### 11. Notas de implementación de la vía pública (2026-08-24)
+
+Tres refinamientos que aparecieron al construirla. Los tres se eligieron por ser **los más
+reversibles** disponibles.
+
+**a) El enlace es de la organización, no del profesional.** La decisión 1 daba por hecho un
+`usuarioId` desde el momento de recibir la solicitud. No es posible hoy: los tenants tienen un
+identificador público (`slug`), los usuarios **no tienen ninguno**, y crear uno es una decisión de
+producto que este ADR no tomó. Así que `usuario_id` es nullable y se rellena **al aceptar**: el
+profesional que acepta es el dueño.
+
+> Reversible: si mañana el enlace es por profesional, se añade su identificador público y se puebla
+> la columna al recibir. Nada de lo construido cambia.
+
+**b) La ruta pública adopta el transporte por segmento de ADR-08 antes que el login.**
+`POST /api/publico/:tenantSlug/solicitudes`. La decisión 8 declaraba ADR-08 como prerrequisito; en la
+práctica solo hacía falta su *mecanismo*, no su migración. Aplicarlo a una superficie **nueva** no
+altera el contrato del login, que ya está en uso por el frontend. ADR-08 sigue pendiente para el
+login; esta ruta ya vive en su fase 1.
+
+**c) La regla "una solicitud abierta" se acota a una ventana de tiempo, no a un job de caducidad.**
+La unicidad se evalúa sobre solicitudes `recibida` de las últimas N horas
+(`SOLICITUD_VENTANA_HORAS`, por defecto 72), no sobre todas.
+
+> **Esto desactiva [DT-28](../Deudas/DT-28.md) sin construir nada.** El defecto era que una bandeja
+> abandonada bloqueaba de por vida a un paciente legítimo. Con la ventana, pasadas 72 h el paciente
+> puede volver a pedir hora **sin que nadie tenga que hacer nada**, y la solicitud vieja sigue
+> visible en la bandeja. Se evita depender del planificador, que aún no está elegido.
+
+**Lo que quedó fuera de esta entrega:** la bandeja (listar solicitudes) y aceptar/rechazar. El
+dominio ya los soporta (`aceptar()`, `rechazar()`); falta exponerlos.
+
+**Sobre el límite de tasa de la decisión 8:** se aplazó a conciencia el 2026-08-24 porque el proyecto
+se trabaja en local y nada está expuesto. La regla de la decisión 8 ("desde el día uno") se
+reinterpreta como **desde el día uno de exposición**, no desde el día uno de existencia del código.
+El disparador queda escrito en [DT-18](../Deudas/DT-18.md).
 
 ---
 

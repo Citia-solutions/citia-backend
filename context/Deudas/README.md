@@ -24,7 +24,6 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-03](DT-03.md) | Sin verificación de correo ni recuperación de contraseña | 🔴 alta | abierta | [us00a](../Features/us00a-registro-inicial.md) |
 | [DT-06](DT-06.md) | Registro público sin ningún freno | 🔴 alta | abierta | [us00a](../Features/us00a-registro-inicial.md) |
 | [DT-15](DT-15.md) | No se puede buscar un paciente | 🔴 alta | abierta | [us06](../Features/us06-dashboard-citas.md) |
-| [DT-18](DT-18.md) | No existe límite de tasa en ninguna superficie | 🔴 alta | abierta | transversal |
 | [DT-02](DT-02.md) | El rol se emite y nadie lo verifica | 🟠 media→alta | abierta | [ADR-01 §4](../Decisions/ADR-01.md) |
 | [DT-07](DT-07.md) | No existe alta de un segundo usuario | 🟠 media | abierta | [us00a](../Features/us00a-registro-inicial.md) |
 | [DT-12](DT-12.md) | Solapamiento de citas no detectado | 🟠 media | abierta | [us06](../Features/us06-dashboard-citas.md) |
@@ -38,15 +37,18 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-05](DT-05.md) | La respuesta de login no es uniforme en el tiempo | 🟡 baja | abierta | [ADR-03 §5](../Decisions/ADR-03.md) |
 | [DT-08](DT-08.md) | Colisión de identificador público bajo concurrencia | 🟡 baja | abierta | [ADR-03 §2](../Decisions/ADR-03.md) |
 | [DT-09](DT-09.md) | Comprobación de correo duplicado inalcanzable | 🟡 baja | abierta | [us00a](../Features/us00a-registro-inicial.md) |
+| [DT-18](DT-18.md) | No existe límite de tasa en ninguna superficie | 🔵→🔴 al desplegar | 🔵 aplazada · **requisito de despliegue** | transversal |
 | [DT-17](DT-17.md) | Zona horaria única para toda la instalación | 🟡 baja | 🔵 aplazada | [ADR-07 §2](../Decisions/ADR-07.md) |
 | [DT-21](DT-21.md) | Carpetas vacías con nombres mal escritos | 🟢 cosmética | abierta | estructura |
+| [DT-29](DT-29.md) | Funcionalidad implementada y no conectada (10 de 12 rutas) | 🟡 baja | abierta | release 1 de US-02 |
 
-## Cerradas
+## Cerradas o mitigadas
 
-| ID | Deuda | Cerrada en |
+| ID | Deuda | Resultado |
 |----|-------|-----------|
 | [DT-10](DT-10.md) | La máquina de estados es inalcanzable | release 1 · 2026-08-23 |
 | [DT-22](DT-22.md) | Sin vínculo entre citas reagendadas | release 1 · 2026-08-23 |
+| [DT-28](DT-28.md) | Una solicitud sin revisar bloquea al paciente | 🟢 mitigada con una ventana de tiempo · 2026-08-24 |
 
 ## Previstas — se contraen al implementar la vía pública de [ADR-09](../Decisions/ADR-09.md)
 
@@ -55,8 +57,11 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-23](DT-23.md) | Nada verifica que el RUT pertenezca a quien lo escribe | 🟠 media | ⚪ prevista | [ADR-09 §3, §8](../Decisions/ADR-09.md) |
 | [DT-25](DT-25.md) | La apuesta del formulario no se puede medir | 🟠 media | ⚪ prevista | [ADR-09 §10](../Decisions/ADR-09.md) |
 | [DT-26](DT-26.md) | Sin política de retención para las solicitudes | 🟠 media | ⚪ prevista | [ADR-09 §1, §10](../Decisions/ADR-09.md) |
-| [DT-28](DT-28.md) | Una solicitud sin revisar bloquea al paciente | 🟠 media | ⚪ prevista | [ADR-09 §8.3](../Decisions/ADR-09.md) |
 | [DT-24](DT-24.md) | Sin taxonomía de tipos de consulta | 🟡 baja | 🔵 aplazada | [ADR-09 §10](../Decisions/ADR-09.md) |
+
+> **DT-18 es la única deuda con disparador de entorno**, no de requisito: hoy es irrelevante porque
+> nada está expuesto, y pasa a bloqueante el día que exista un despliegue accesible o se comparta el
+> enlace público. Es un **requisito de despliegue**, no una tarea de desarrollo.
 
 > **`→` en la severidad** significa que la deuda escala sola cuando entre cierto requisito. DT-02
 > escala con DT-07; DT-16 y DT-19 escalan con RF-06 (recordatorios); DT-13 escala cuando exista el
@@ -77,6 +82,7 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [us00b](../Features/us00b-login.md) — login | DT-03, DT-04 |
 | [us06](../Features/us06-dashboard-citas.md) — dashboard | DT-12, DT-13, DT-15, DT-16, DT-20 |
 | Transversal / RNF | DT-18, DT-19, DT-21 |
+| Integración front ↔ back | DT-29 (ver también `citia-frontend/context/Deudas/`) |
 
 ---
 
