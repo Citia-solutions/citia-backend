@@ -40,7 +40,7 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-18](DT-18.md) | No existe límite de tasa en ninguna superficie | 🔵→🔴 al desplegar | 🔵 aplazada · **requisito de despliegue** | transversal |
 | [DT-17](DT-17.md) | Zona horaria única para toda la instalación | 🟡 baja | 🔵 aplazada | [ADR-07 §2](../Decisions/ADR-07.md) |
 | [DT-21](DT-21.md) | Carpetas vacías con nombres mal escritos | 🟢 cosmética | abierta | estructura |
-| [DT-29](DT-29.md) | Funcionalidad implementada y no conectada (10 de 12 rutas) | 🟡 baja | abierta | release 1 de US-02 |
+| [DT-29](DT-29.md) | Funcionalidad implementada y no conectada (7 de 14 rutas) | 🟡 baja | abierta (mitigada) | release 1 de US-02 |
 
 ## Cerradas o mitigadas
 

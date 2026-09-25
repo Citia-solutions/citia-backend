@@ -25,6 +25,7 @@ import { CitasService } from '../application/citas.service';
 import { CambioCita } from '../domain/cambio-cita.entity';
 import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-estado-invalida.error';
 import { CitaDashboardDto } from './dto/cita-dashboard.dto';
+import { CitaDetalleDto } from './dto/cita-detalle.dto';
 import { CitaResponseDto } from './dto/cita-response.dto';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { EditarCitaDto } from './dto/editar-cita.dto';
@@ -52,6 +53,18 @@ export class CitasController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<CitaDashboardDto[]> {
     return this.citasService.citasDeHoy(user);
+  }
+
+  // US-02.08: GET /api/citas/:id -> detalle para el voucher (cita + paciente +
+  // acciones permitidas). Declarado DESPUES de `hoy` a proposito: si fuera
+  // antes, `hoy` se leeria como un :id (hoy lo frenaria el UUID pipe con un
+  // 400, pero no conviene depender de eso).
+  @Get(':id')
+  async detalle(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CitaDetalleDto> {
+    return this.ejecutar(() => this.citasService.detalle(id, user));
   }
 
   // -------------------------------------------------------------------

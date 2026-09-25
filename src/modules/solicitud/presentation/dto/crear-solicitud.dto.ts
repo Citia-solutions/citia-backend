@@ -11,7 +11,10 @@ import {
  *
  * ⚠️ PROVISIONAL. Los campos son los definidos en ADR-09 §10; el formulario
  * del frontend todavía no está cerrado. Cuando lo esté, este DTO se ajusta —
- * es el único archivo que hay que tocar para cambiar la forma de entrada.
+ * es el único archivo del backend que hay que tocar para cambiar la forma de
+ * entrada. Los `@MaxLength` están copiados en el frontend (`LIMITES` en
+ * `citia-frontend/src/features/crear-cita/model/flujoCitaModel.ts`, DTF-06):
+ * si cambian aquí, cambiar allá en el mismo cambio.
  *
  * Todos obligatorios por ahora, incluido el RUT: es el filtro estructural de
  * entrada de la vía pública, que asume personas chilenas.

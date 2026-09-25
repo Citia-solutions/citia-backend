@@ -15,6 +15,7 @@ contexto, las opciones evaluadas, la decisión tomada y sus consecuencias.
 | [ADR-07](ADR-07.md) | Día y hora del dashboard en la zona de la clínica (DST-safe con `Intl`) | Aceptado · Implementado | 2026-07-06 | `08dad63` |
 | [ADR-08](ADR-08.md) | El tenant sale del body del login y pasa a la URL (puerto `TenantResolver`) | **Propuesto** · sin implementar | 2026-08-16 | — |
 | [ADR-09](ADR-09.md) | Gestión de citas: `SolicitudCita` como agregado aparte, RUT como identidad del paciente, reagendar con bitácora | Aceptado · **release 1 implementado** · vía pública pendiente | 2026-08-23 | — |
+| [ADR-10](ADR-10.md) | Enlace por cita para el paciente (US-02.07): token opaco hasheado, cancelar con la transición existente, pedir reagendar sin mover la cita | **Propuesto** · pendiente de H7 y Q11 | 2026-09-23 | — |
 
 ## Relaciones entre ADRs
 
@@ -33,5 +34,10 @@ contexto, las opciones evaluadas, la decisión tomada y sus consecuencias.
   el tenant en la URL, lo que convierte a ADR-08 en prerrequisito de infraestructura, no en una
   mejora de experiencia. **Replica** el puerto opaco de ADR-06 (en `PublicadorEventos`) y matiza la
   regla anti-enumeración de ADR-03 §5 para la superficie pública.
+- ADR-10 (enlace por cita) **matiza** la regla 1 de ADR-09 §8 —la vía pública solo escribe en
+  `solicitudes_cita`— para una capacidad delegada por el profesional sobre una cita; **se apoya en**
+  ADR-04 sin tocar su grafo y **replica** la atomicidad de ADR-06 y la respuesta uniforme de ADR-03
+  §5. **No depende** de ADR-08: el enlace no lleva `tenantSlug`. Toma el número 10 que Q6 anticipaba;
+  el ADR del proceso de cierre usa el siguiente libre.
 
 Ver la matriz completa commit ↔ doc en [`../TRAZABILIDAD.md`](../TRAZABILIDAD.md).

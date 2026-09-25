@@ -22,9 +22,18 @@
 | 3 | **Calificación de asistencia** | RF-08 | ❌ **bloqueada** |
 
 > **Sobre el número de la tercera.** En la nota original figura como "US-07". El requisito de
-> calificación de asistencia es **RF-08**; US-07 no existe en este repo. Conviene fijar un número de
-> historia y usarlo siempre, porque RF-07 (respuesta del paciente) y RF-08 (calificación) son cosas
-> distintas y se confunden con facilidad.
+> calificación de asistencia es **RF-08**. Conviene fijar un número de historia y usarlo siempre,
+> porque RF-07 (respuesta del paciente) y RF-08 (calificación) son cosas distintas y se confunden con
+> facilidad.
+>
+> **No confundir con las subtareas de US-02** (2026-09-23): `US-02.07`, `US-02.08` y `US-02.09` son
+> subtareas de la gestión de citas, no historias, y **no ocupan** los números US-07/08/09.
+>
+> **Ojo con el alcance:** la sección 2 deja RF-07 fuera de la v1, y la subtarea
+> [US-02.07](../US/02.07-paciente-reagenda-cancela.md) (el paciente cancela o pide reagendar)
+> implementa una parte. No es una contradicción mientras esté bloqueada por su propio diseño
+> (identidad y canal del paciente, [Q11](../PREGUNTAS-ABIERTAS.md)), pero si se construye, el alcance
+> del MVP cambia y hay que decirlo aquí.
 
 ### Por qué la tercera está bloqueada
 
