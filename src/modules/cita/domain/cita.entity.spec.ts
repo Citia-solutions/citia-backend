@@ -1,4 +1,4 @@
-import { Cita, CrearCitaProps, EstadoCita } from './cita.entity';
+import { AccionCita, Cita, CrearCitaProps, EstadoCita } from './cita.entity';
 import { TransicionEstadoInvalidaError } from './exceptions/transicion-estado-invalida.error';
 
 describe('Cita (dominio)', () => {
@@ -406,5 +406,118 @@ describe('Cita.editar', () => {
     expect(() => cita.editar({ duracionMin: 60 })).toThrow(
       TransicionEstadoInvalidaError,
     );
+  });
+});
+
+describe('Cita.accionesPermitidas (US-02.08)', () => {
+  const enEstado = (estado: EstadoCita): Cita =>
+    Cita.reconstituir({
+      id: 'cita-1',
+      inicio: new Date('2026-09-25T13:00:00Z'),
+      duracionMin: 30,
+      tipoConsulta: 'Control',
+      estado,
+      tenantId: 'tenant-1',
+      pacienteId: 'paciente-1',
+      usuarioId: 'usuario-1',
+      creadoEn: new Date(),
+      actualizadoEn: new Date(),
+    });
+
+  it.each<[EstadoCita, AccionCita[]]>([
+    [EstadoCita.PENDIENTE, ['confirmar', 'cancelar', 'reagendar', 'editar']],
+    [
+      EstadoCita.CONFIRMADA,
+      ['cancelar', 'reagendar', 'asistencia', 'inasistencia', 'editar'],
+    ],
+    [EstadoCita.CANCELADA, []],
+    [EstadoCita.ASISTIO, []],
+    [EstadoCita.NO_ASISTIO, []],
+    [EstadoCita.GHOSTING, []],
+  ])('desde %s permite exactamente %j', (estado, esperadas) => {
+    expect(enEstado(estado).accionesPermitidas()).toEqual(esperadas);
+  });
+
+  // Coherencia pregunta/transicion: lo que se anuncia como permitido NO lanza,
+  // y lo que no se anuncia SI lanza. Protege contra que ambas reglas diverjan.
+  const ejecutar: Record<AccionCita, (c: Cita) => void> = {
+    confirmar: (c) => c.confirmar(),
+    cancelar: (c) => c.cancelar(),
+    reagendar: (c) => c.reagendar(new Date('2026-09-26T13:00:00Z')),
+    asistencia: (c) => c.marcarAsistencia(),
+    inasistencia: (c) => c.marcarInasistencia(),
+    editar: (c) => c.editar({ duracionMin: 45 }),
+  };
+  const todas = Object.keys(ejecutar) as AccionCita[];
+
+  it.each(Object.values(EstadoCita))(
+    'en %s, accionesPermitidas coincide con las transiciones que no lanzan',
+    (estado) => {
+      const permitidas = enEstado(estado).accionesPermitidas();
+
+      for (const accion of todas) {
+        const cita = enEstado(estado);
+        if (permitidas.includes(accion)) {
+          expect(() => ejecutar[accion](cita)).not.toThrow();
+        } else {
+          expect(() => ejecutar[accion](cita)).toThrow(
+            TransicionEstadoInvalidaError,
+          );
+        }
+      }
+    },
+  );
+
+  it('nunca anuncia ghosting', () => {
+    for (const estado of Object.values(EstadoCita)) {
+      expect(enEstado(estado).accionesPermitidas()).not.toContain('ghosting');
+    }
+  });
+
+  // Las pruebas de arriba parten de `reconstituir`. Estas recorren transiciones
+  // reales: la respuesta debe seguir al estado vivo, no a una foto inicial.
+  describe('sigue al estado tras cada transición', () => {
+    const accionesDePendiente = enEstado(
+      EstadoCita.PENDIENTE,
+    ).accionesPermitidas();
+
+    it('debería volver a las acciones de pendiente cuando se reagenda una cita confirmada', () => {
+      // Arrange
+      const cita = enEstado(EstadoCita.CONFIRMADA);
+      expect(cita.accionesPermitidas()).toContain('asistencia');
+
+      // Act
+      cita.reagendar(new Date('2026-09-26T13:00:00Z'));
+
+      // Assert: la confirmación era para otra hora; se puede volver a confirmar
+      // y ya no se puede marcar asistencia.
+      expect(cita.accionesPermitidas()).toEqual(accionesDePendiente);
+      expect(cita.accionesPermitidas()).toContain('confirmar');
+      expect(cita.accionesPermitidas()).not.toContain('asistencia');
+      expect(cita.accionesPermitidas()).not.toContain('inasistencia');
+    });
+
+    it('debería quedar sin acciones cuando se cancela desde el voucher', () => {
+      // Arrange
+      const cita = enEstado(EstadoCita.CONFIRMADA);
+
+      // Act
+      cita.cancelar();
+
+      // Assert
+      expect(cita.accionesPermitidas()).toEqual([]);
+    });
+
+    it('debería devolver un arreglo nuevo en cada llamada cuando el llamador lo muta', () => {
+      // Arrange
+      const cita = enEstado(EstadoCita.PENDIENTE);
+      const primera = cita.accionesPermitidas();
+
+      // Act: un consumidor descuidado altera lo que recibió.
+      primera.push('asistencia');
+
+      // Assert: la entidad no comparte estado con el llamador.
+      expect(cita.accionesPermitidas()).toEqual(accionesDePendiente);
+    });
   });
 });

@@ -5,6 +5,7 @@ import { CambioCita, TipoCambio } from '../domain/cambio-cita.entity';
 import { Cita, EstadoCita } from '../domain/cita.entity';
 import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-estado-invalida.error';
 import { CitaDashboardDto } from '../presentation/dto/cita-dashboard.dto';
+import { CitaDetalleDto } from '../presentation/dto/cita-detalle.dto';
 import { CitaResponseDto } from '../presentation/dto/cita-response.dto';
 import { CrearCitaDto } from '../presentation/dto/crear-cita.dto';
 import { PacientesService } from '../../paciente/application/pacientes.service';
@@ -685,6 +686,237 @@ describe('CitasService', () => {
       // Assert
       expect(result).toEqual([]);
       expect(mockPacienteRepository.buscarPorId).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('detalle (US-02.08)', () => {
+    const citaEn = (estado: EstadoCita): Cita =>
+      Cita.reconstituir({
+        id: 'cita-1',
+        // 18:05Z = 15:05 en America/Santiago (UTC-3 en septiembre).
+        inicio: new Date('2026-09-25T18:05:00Z'),
+        duracionMin: 45,
+        tipoConsulta: 'Control',
+        estado,
+        tenantId: 'tenant-1',
+        pacienteId: 'paciente-1',
+        usuarioId: 'otro-profesional',
+        creadoEn: new Date(),
+        actualizadoEn: new Date(),
+      });
+
+    const paciente = {
+      id: 'paciente-1',
+      rut: '123456785',
+      nombre: 'Ana Pérez',
+      telefono: '+56 9 1111 1111',
+      correo: null,
+      consentimiento: true,
+      tenantId: 'tenant-1',
+    };
+
+    it('carga la cita y el paciente por el tenant del token (no filtra por profesional)', async () => {
+      mockCitaRepository.buscarPorId.mockResolvedValue(
+        citaEn(EstadoCita.PENDIENTE),
+      );
+      mockPacienteRepository.buscarPorId.mockResolvedValue(paciente);
+
+      await service.detalle('cita-1', usuarioAutenticado);
+
+      expect(mockCitaRepository.buscarPorId).toHaveBeenCalledWith(
+        'cita-1',
+        usuarioAutenticado.tenantId,
+        undefined,
+      );
+      expect(mockPacienteRepository.buscarPorId).toHaveBeenCalledWith(
+        'paciente-1',
+        usuarioAutenticado.tenantId,
+      );
+    });
+
+    it('arma el detalle: hora en zona de la clínica, RUT formateado y acciones de la entidad', async () => {
+      mockCitaRepository.buscarPorId.mockResolvedValue(
+        citaEn(EstadoCita.CONFIRMADA),
+      );
+      mockPacienteRepository.buscarPorId.mockResolvedValue(paciente);
+
+      const result = await service.detalle('cita-1', usuarioAutenticado);
+
+      expect(result).toBeInstanceOf(CitaDetalleDto);
+      expect(result).toEqual({
+        id: 'cita-1',
+        estado: EstadoCita.CONFIRMADA,
+        inicio: new Date('2026-09-25T18:05:00Z'),
+        hora: '15:05',
+        duracionMin: 45,
+        tipoConsulta: 'Control',
+        paciente: {
+          id: 'paciente-1',
+          nombre: 'Ana Pérez',
+          rut: '12.345.678-5',
+          telefono: '+56 9 1111 1111',
+          correo: null,
+        },
+        accionesPermitidas: [
+          'cancelar',
+          'reagendar',
+          'asistencia',
+          'inasistencia',
+          'editar',
+        ],
+      });
+    });
+
+    it('no expone tenantId, usuarioId ni consentimiento', async () => {
+      mockCitaRepository.buscarPorId.mockResolvedValue(
+        citaEn(EstadoCita.PENDIENTE),
+      );
+      mockPacienteRepository.buscarPorId.mockResolvedValue(paciente);
+
+      const result = await service.detalle('cita-1', usuarioAutenticado);
+
+      expect(result).not.toHaveProperty('tenantId');
+      expect(result).not.toHaveProperty('usuarioId');
+      expect(result.paciente).not.toHaveProperty('tenantId');
+      expect(result.paciente).not.toHaveProperty('consentimiento');
+    });
+
+    it('lanza CitaNoEncontradaError si la cita no existe o es de otro tenant', async () => {
+      mockCitaRepository.buscarPorId.mockResolvedValue(null);
+
+      await expect(
+        service.detalle('cita-x', usuarioAutenticado),
+      ).rejects.toBeInstanceOf(CitaNoEncontradaError);
+      expect(mockPacienteRepository.buscarPorId).not.toHaveBeenCalled();
+    });
+
+    it('debería lanzar el MISMO error cuando la cita es de otro tenant que cuando no existe', async () => {
+      // Arrange: repositorio que filtra por tenant de verdad. La cita vive en
+      // tenant-2; el usuario autenticado es de tenant-1.
+      const deOtroTenant = Cita.reconstituir({
+        id: 'cita-1',
+        inicio: new Date('2026-09-25T18:05:00Z'),
+        duracionMin: 45,
+        tipoConsulta: 'Control',
+        estado: EstadoCita.PENDIENTE,
+        tenantId: 'tenant-2',
+        pacienteId: 'paciente-2',
+        usuarioId: 'usuario-2',
+        creadoEn: new Date(),
+        actualizadoEn: new Date(),
+      });
+      mockCitaRepository.buscarPorId.mockImplementation(
+        (id: string, tenantId: string) =>
+          Promise.resolve(
+            id === deOtroTenant.id && tenantId === deOtroTenant.tenantId
+              ? deOtroTenant
+              : null,
+          ),
+      );
+
+      // Act
+      const errorOtroTenant = await service
+        .detalle('cita-1', usuarioAutenticado)
+        .catch((e: unknown) => e);
+      mockCitaRepository.buscarPorId.mockResolvedValue(null);
+      const errorInexistente = await service
+        .detalle('cita-1', usuarioAutenticado)
+        .catch((e: unknown) => e);
+
+      // Assert: misma clase y mismo mensaje; nada delata que existe en otro lado.
+      expect(errorOtroTenant).toBeInstanceOf(CitaNoEncontradaError);
+      expect(errorInexistente).toBeInstanceOf(CitaNoEncontradaError);
+      expect((errorOtroTenant as Error).message).toBe(
+        (errorInexistente as Error).message,
+      );
+      expect((errorOtroTenant as Error).message).not.toMatch(/tenant/i);
+      expect(mockPacienteRepository.buscarPorId).not.toHaveBeenCalled();
+    });
+
+    it('debería serializar sin tenantId, usuarioId, consentimiento ni RUT canónico cuando se envía por HTTP', async () => {
+      // Arrange
+      mockCitaRepository.buscarPorId.mockResolvedValue(
+        citaEn(EstadoCita.PENDIENTE),
+      );
+      mockPacienteRepository.buscarPorId.mockResolvedValue(paciente);
+
+      // Act: lo que realmente viaja es el JSON, no la instancia.
+      const json = JSON.stringify(
+        await service.detalle('cita-1', usuarioAutenticado),
+      );
+
+      // Assert: ni las claves ni sus valores aparecen en el cuerpo.
+      expect(json).not.toMatch(/tenantId|usuarioId|consentimiento/);
+      expect(json).not.toContain('tenant-1');
+      expect(json).not.toContain('otro-profesional');
+      expect(json).not.toContain('"123456785"');
+      expect(json).toContain('"rut":"12.345.678-5"');
+    });
+
+    it('debería devolver rut y correo en null cuando el paciente no tiene RUT ni correo', async () => {
+      // Arrange: el alta manual admite pacientes sin RUT (ADR-09 §3).
+      mockCitaRepository.buscarPorId.mockResolvedValue(
+        citaEn(EstadoCita.PENDIENTE),
+      );
+      mockPacienteRepository.buscarPorId.mockResolvedValue({
+        ...paciente,
+        rut: null,
+        correo: undefined,
+      });
+
+      // Act
+      const result = await service.detalle('cita-1', usuarioAutenticado);
+
+      // Assert
+      expect(result.paciente.rut).toBeNull();
+      expect(result.paciente.correo).toBeNull();
+    });
+
+    it('debería transportar las acciones que calcula la entidad sin recalcularlas', async () => {
+      // Arrange: la entidad responde algo que ninguna tabla del service daría
+      // para "pendiente". Si el service calculara por su cuenta, no coincidiría.
+      const cita = citaEn(EstadoCita.PENDIENTE);
+      const espia = jest
+        .spyOn(cita, 'accionesPermitidas')
+        .mockReturnValue(['editar']);
+      mockCitaRepository.buscarPorId.mockResolvedValue(cita);
+      mockPacienteRepository.buscarPorId.mockResolvedValue(paciente);
+
+      // Act
+      const result = await service.detalle('cita-1', usuarioAutenticado);
+
+      // Assert
+      expect(espia).toHaveBeenCalledTimes(1);
+      expect(result.accionesPermitidas).toEqual(['editar']);
+    });
+
+    it('debería ser de solo lectura: sin transacción, sin guardar, sin bitácora ni eventos', async () => {
+      // Arrange
+      mockCitaRepository.buscarPorId.mockResolvedValue(
+        citaEn(EstadoCita.CONFIRMADA),
+      );
+      mockPacienteRepository.buscarPorId.mockResolvedValue(paciente);
+
+      // Act
+      await service.detalle('cita-1', usuarioAutenticado);
+
+      // Assert
+      expect(mockTx.run).not.toHaveBeenCalled();
+      expect(mockCitaRepository.guardar).not.toHaveBeenCalled();
+      expect(mockCambioCitaRepository.registrar).not.toHaveBeenCalled();
+      expect(mockEventos.publicar).not.toHaveBeenCalled();
+    });
+
+    it('falla con un error interno (no 404) si el paciente de la cita no existe en su tenant', async () => {
+      mockCitaRepository.buscarPorId.mockResolvedValue(
+        citaEn(EstadoCita.PENDIENTE),
+      );
+      mockPacienteRepository.buscarPorId.mockResolvedValue(null);
+
+      const promesa = service.detalle('cita-1', usuarioAutenticado);
+
+      await expect(promesa).rejects.toThrow(/Integridad/);
+      await expect(promesa).rejects.not.toBeInstanceOf(CitaNoEncontradaError);
     });
   });
 });

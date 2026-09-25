@@ -17,6 +17,21 @@ const ESTADOS_TERMINALES: ReadonlySet<EstadoCita> = new Set([
   EstadoCita.GHOSTING,
 ]);
 
+/**
+ * Acciones que una PERSONA puede disparar sobre una cita (US-02.08).
+ *
+ * El vocabulario coincide con las rutas HTTP (`PATCH /citas/:id/<accion>`, y
+ * `editar` = `PATCH /citas/:id`) para que el frontend no tenga que traducir.
+ * `ghosting` no esta: lo materializa el job de cierre, nunca una persona.
+ */
+export type AccionCita =
+  | 'confirmar'
+  | 'cancelar'
+  | 'reagendar'
+  | 'asistencia'
+  | 'inasistencia'
+  | 'editar';
+
 // Datos necesarios para crear una cita nueva (estado inicial siempre pendiente).
 export interface CrearCitaProps {
   inicio: Date;
@@ -99,32 +114,49 @@ export class Cita {
     return ESTADOS_TERMINALES.has(this._estado);
   }
 
+  /**
+   * Que acciones son legales en el estado actual (US-02.08).
+   *
+   * Se responde con las MISMAS guardas que usan las transiciones (los
+   * predicados `puede*` de abajo), no con una tabla aparte: si el grafo cambia,
+   * la pregunta y la transicion cambian juntas. Es una pista para la interfaz,
+   * no una autorizacion: la transicion sigue siendo el guardian real (409).
+   *
+   * El orden es estable (el de la lista) para que el cliente pueda comparar.
+   */
+  accionesPermitidas(): AccionCita[] {
+    const guardas: ReadonlyArray<readonly [AccionCita, () => boolean]> = [
+      ['confirmar', () => this.puedeConfirmar()],
+      ['cancelar', () => this.puedeCancelar()],
+      ['reagendar', () => this.puedeReagendar()],
+      ['asistencia', () => this.puedeMarcarAsistencia()],
+      ['inasistencia', () => this.puedeMarcarInasistencia()],
+      ['editar', () => this.puedeEditar()],
+    ];
+    return guardas.filter(([, puede]) => puede()).map(([accion]) => accion);
+  }
+
   // pendiente -> confirmada (paciente confirma)
   confirmar(): void {
-    this.asegurarTransicion(EstadoCita.PENDIENTE, 'confirmar');
+    this.exigir(this.puedeConfirmar(), 'confirmar');
     this._estado = EstadoCita.CONFIRMADA;
   }
 
   // pendiente | confirmada -> cancelada (terminal)
   cancelar(): void {
-    if (
-      this._estado !== EstadoCita.PENDIENTE &&
-      this._estado !== EstadoCita.CONFIRMADA
-    ) {
-      throw new TransicionEstadoInvalidaError(this._estado, 'cancelar');
-    }
+    this.exigir(this.puedeCancelar(), 'cancelar');
     this._estado = EstadoCita.CANCELADA;
   }
 
   // confirmada -> asistio (terminal): el profesional marca asistencia.
   marcarAsistencia(): void {
-    this.asegurarTransicion(EstadoCita.CONFIRMADA, 'marcarAsistencia');
+    this.exigir(this.puedeMarcarAsistencia(), 'marcarAsistencia');
     this._estado = EstadoCita.ASISTIO;
   }
 
   // confirmada -> no_asistio (terminal): confirmó pero no llegó.
   marcarInasistencia(): void {
-    this.asegurarTransicion(EstadoCita.CONFIRMADA, 'marcarInasistencia');
+    this.exigir(this.puedeMarcarInasistencia(), 'marcarInasistencia');
     this._estado = EstadoCita.NO_ASISTIO;
   }
 
@@ -139,12 +171,7 @@ export class Cita {
    * OTRA hora. Esa confirmación ya no vale y hay que volver a pedirla.
    */
   reagendar(nuevoInicio: Date): void {
-    if (
-      this._estado !== EstadoCita.PENDIENTE &&
-      this._estado !== EstadoCita.CONFIRMADA
-    ) {
-      throw new TransicionEstadoInvalidaError(this._estado, 'reagendar');
-    }
+    this.exigir(this.puedeReagendar(), 'reagendar');
     this.inicio = nuevoInicio;
     this._estado = EstadoCita.PENDIENTE;
   }
@@ -155,9 +182,7 @@ export class Cita {
    * Prohibido sobre una cita terminal: ya no hay nada que corregir.
    */
   editar(props: { duracionMin?: number; tipoConsulta?: string }): void {
-    if (this.esTerminal()) {
-      throw new TransicionEstadoInvalidaError(this._estado, 'editar');
-    }
+    this.exigir(this.puedeEditar(), 'editar');
     if (props.duracionMin !== undefined) this.duracionMin = props.duracionMin;
     if (props.tipoConsulta !== undefined)
       this.tipoConsulta = props.tipoConsulta;
@@ -165,12 +190,56 @@ export class Cita {
 
   // pendiente -> ghosting (terminal): llegó el día sin confirmar (vía job).
   marcarGhosting(): void {
-    this.asegurarTransicion(EstadoCita.PENDIENTE, 'marcarGhosting');
+    this.exigir(this.puedeMarcarGhosting(), 'marcarGhosting');
     this._estado = EstadoCita.GHOSTING;
   }
 
-  private asegurarTransicion(desde: EstadoCita, evento: string): void {
-    if (this._estado !== desde) {
+  // -------------------------------------------------------------------
+  // Guardas del grafo de estados (ADR-04 §1). UNICA fuente de la regla:
+  // las usan las transiciones (para lanzar el 409) y `accionesPermitidas`
+  // (para contestar que se puede hacer). No duplicar en otro sitio.
+  // -------------------------------------------------------------------
+
+  private puedeConfirmar(): boolean {
+    return this._estado === EstadoCita.PENDIENTE;
+  }
+
+  private puedeCancelar(): boolean {
+    return this.estaVigente();
+  }
+
+  private puedeReagendar(): boolean {
+    return this.estaVigente();
+  }
+
+  private puedeMarcarAsistencia(): boolean {
+    return this._estado === EstadoCita.CONFIRMADA;
+  }
+
+  private puedeMarcarInasistencia(): boolean {
+    return this._estado === EstadoCita.CONFIRMADA;
+  }
+
+  private puedeEditar(): boolean {
+    return !this.esTerminal();
+  }
+
+  private puedeMarcarGhosting(): boolean {
+    return this._estado === EstadoCita.PENDIENTE;
+  }
+
+  // pendiente | confirmada: la cita sigue siendo un compromiso abierto.
+  private estaVigente(): boolean {
+    return (
+      this._estado === EstadoCita.PENDIENTE ||
+      this._estado === EstadoCita.CONFIRMADA
+    );
+  }
+
+  // Lanza el error de dominio si la guarda no se cumple. `evento` conserva el
+  // nombre del metodo (no el de la ruta) para no cambiar los mensajes de error.
+  private exigir(permitido: boolean, evento: string): void {
+    if (!permitido) {
       throw new TransicionEstadoInvalidaError(this._estado, evento);
     }
   }

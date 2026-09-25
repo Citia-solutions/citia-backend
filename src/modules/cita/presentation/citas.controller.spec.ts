@@ -1,14 +1,20 @@
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import { CitasService } from '../application/citas.service';
+import { CitaNoEncontradaError } from '../application/cita-no-encontrada.error';
 import { PacienteNoEncontradoError } from '../application/paciente-no-encontrado.error';
 import { EstadoCita } from '../domain/cita.entity';
 import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-estado-invalida.error';
 import { CitaDashboardDto } from './dto/cita-dashboard.dto';
+import { CitaDetalleDto } from './dto/cita-detalle.dto';
 import { PacienteResponseDto } from '../../paciente/presentation/dto/paciente-response.dto';
 import { CitaResponseDto } from './dto/cita-response.dto';
 import { CrearCitaDto } from './dto/crear-cita.dto';
@@ -19,6 +25,7 @@ describe('CitasController', () => {
   let mockCitasService: {
     crearCita: jest.Mock;
     citasDeHoy: jest.Mock;
+    detalle: jest.Mock;
   };
 
   const usuario: AuthenticatedUser = {
@@ -32,6 +39,7 @@ describe('CitasController', () => {
     mockCitasService = {
       crearCita: jest.fn(),
       citasDeHoy: jest.fn(),
+      detalle: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -146,6 +154,58 @@ describe('CitasController', () => {
       expect(mockCitasService.citasDeHoy).toHaveBeenCalledWith(usuario);
       expect(result).toEqual([dashboard]);
       expect(result[0]).toBeInstanceOf(CitaDashboardDto);
+    });
+  });
+
+  describe('detalle (GET /citas/:id)', () => {
+    it('debería delegar en el service con el id y el @CurrentUser', async () => {
+      // Arrange
+      const detalle = new CitaDetalleDto({
+        id: 'cita-1',
+        estado: EstadoCita.PENDIENTE,
+        inicio: new Date('2026-09-25T13:00:00Z'),
+        hora: '10:00',
+        duracionMin: 30,
+        tipoConsulta: 'Control',
+        paciente: {
+          id: 'paciente-1',
+          nombre: 'Ana',
+          rut: '12.345.678-5',
+          telefono: '+56 9 1111 1111',
+          correo: null,
+        },
+        accionesPermitidas: ['confirmar', 'cancelar', 'reagendar', 'editar'],
+      });
+      mockCitasService.detalle.mockResolvedValue(detalle);
+
+      // Act
+      const result = await controller.detalle('cita-1', usuario);
+
+      // Assert
+      expect(mockCitasService.detalle).toHaveBeenCalledWith('cita-1', usuario);
+      expect(result).toBe(detalle);
+    });
+
+    it('debería traducir CitaNoEncontradaError a 404 (inexistente u otro tenant)', async () => {
+      // Arrange
+      mockCitasService.detalle.mockRejectedValue(
+        new CitaNoEncontradaError('cita-x'),
+      );
+
+      // Act & Assert
+      await expect(
+        controller.detalle('cita-x', usuario),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('debería propagar sin traducir un error de integridad cuando falta el paciente (500, no 404)', async () => {
+      // Arrange: la cita existe pero su paciente no; es un fallo del servidor,
+      // no del cliente. Convertirlo en 404 escondería la inconsistencia.
+      const error = new Error('Integridad: el paciente no existe');
+      mockCitasService.detalle.mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(controller.detalle('cita-1', usuario)).rejects.toBe(error);
     });
   });
 });
