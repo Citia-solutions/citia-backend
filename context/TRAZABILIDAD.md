@@ -42,10 +42,19 @@ Orden cronológico (más antiguo arriba).
 | 31 | `a5a5f58` chore(git): normalizar fin de línea con `.gitattributes` | 2026-08-16 | chore | — (tooling; ver nota abajo) |
 | 32 | `cc362ee` docs(context): alinear trazabilidad y features con la consolidación | 2026-08-16 | docs | este archivo; [infra](Features/infra-contenedores.md), [us06](Features/us06-dashboard-citas.md), ADR-05, índices |
 | 33 | `73029e0` docs(context): trazar el commit de cierre y documentar la convención | 2026-08-16 | docs | este archivo (fila 32 + convención) |
+| 34 | `bfeada0` docs(adr): ADR-08 — tenant del body a la URL | 2026-08-16 | docs/decisión | **[ADR-08](Decisions/ADR-08.md)** (propuesto) |
+| 35 | `f2a7dff` feat: release 1 de US-02 + RUT + conexión con el frontend | 2026-08-24 | feature/decisión | **[ADR-09](Decisions/ADR-09.md)** §3–§7 + [us02](Features/us02-gestion-citas.md); cierra [DT-10](Deudas/DT-10.md) y [DT-22](Deudas/DT-22.md) |
+| 36 | `e1253c3` feat(solicitud): recepción pública de solicitudes de hora | 2026-09-10 | feature | [ADR-09](Decisions/ADR-09.md) §1,§2,§8–§11 + [us02](Features/us02-gestion-citas.md) §Pública |
+| 37 | `439a5fe` docs(context): vía pública en ADR-09 + tablero de deudas | 2026-09-10 | docs | ADR-09 §11; [DT-29](Deudas/DT-29.md) nueva; [DT-28](Deudas/DT-28.md) mitigada; [DT-18](Deudas/DT-18.md) aplazada |
 
 > **Nota commit 31.** `core.autocrlf=true` marcaba ~32 archivos como modificados con contenido
 > idéntico, ensuciando `git status` y los diffs de cada PR. `.gitattributes` fija LF para repo y
 > working tree (CRLF solo en `.bat`/`.cmd`, binarios excluidos).
+
+> **Nota commit 35.** El mensaje (`Connect api with btn`) describe solo la parte visible: ese commit
+> trae además el release 1 completo de US-02 —transiciones de estado expuestas, `reagendar()`,
+> bitácora `cambios_cita`, publicación de hechos— y el RUT como identidad del paciente. Es el commit
+> más grande del repo y su asunto no lo refleja; de ahí esta nota.
 
 > **Convención — el último commit de docs.** Un commit no puede citar su propio hash, así que el
 > commit de documentación que **cierra** una pasada de alineación siempre se registra en la pasada
@@ -64,6 +73,8 @@ Orden cronológico (más antiguo arriba).
 | **ADR-05** | Contenedorización Docker + migraciones en arranque | `b8cac2a`, `df53128`, `0e54f0b`, `77a97c9`, `b623b6a` |
 | **ADR-06** | Atomicidad transaccional (TransactionRunner opaco) | `d4fa476`, `f573485` |
 | **ADR-07** | Día/hora en zona de la clínica (DST-safe) | `08dad63` |
+| ADR-08 | Tenant en la URL | `bfeada0` (propuesto) · fase 1 adoptada en la ruta pública por `e1253c3` |
+| **ADR-09** | Gestión de citas: solicitud aparte, RUT como identidad, reagendar con bitácora | `f2a7dff` (§3–§7), `e1253c3` (§1,§2,§8–§11), `439a5fe` (docs) |
 
 > **ADRs en negrita** = creados en la pasada de alineación (2026-07-12) para cerrar decisiones que
 > estaban implementadas en el código pero no documentadas.

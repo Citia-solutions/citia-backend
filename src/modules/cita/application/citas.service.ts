@@ -18,6 +18,10 @@ import { CambioCitaRepository } from '../domain/cambio-cita.repository';
 import { Cita, EstadoCita } from '../domain/cita.entity';
 import { CitaRepository } from '../domain/cita.repository';
 import { CitaDashboardDto } from '../presentation/dto/cita-dashboard.dto';
+import {
+  CitaDetalleDto,
+  CitaDetallePacienteDto,
+} from '../presentation/dto/cita-detalle.dto';
 import { CitaResponseDto } from '../presentation/dto/cita-response.dto';
 import { CrearCitaDto } from '../presentation/dto/crear-cita.dto';
 import { EditarCitaDto } from '../presentation/dto/editar-cita.dto';
@@ -212,6 +216,54 @@ export class CitasService {
           estado: cita.estado,
         }),
     );
+  }
+
+  /**
+   * US-02.08: detalle de una cita para el voucher del profesional.
+   *
+   * Filtra SOLO por el tenant del token, igual que las transiciones (plan
+   * US-02.08 §1): no se agrega aqui una regla "solo del profesional" distinta
+   * a la del resto del recurso; eso se decide para todas a la vez con Q3.
+   * Cita inexistente u otro tenant -> CitaNoEncontradaError (mismo 404).
+   */
+  async detalle(
+    citaId: string,
+    usuario: AuthenticatedUser,
+  ): Promise<CitaDetalleDto> {
+    const cita = await this.cargar(citaId, usuario.tenantId);
+
+    const paciente = await this.pacienteRepository.buscarPorId(
+      cita.pacienteId,
+      usuario.tenantId,
+    );
+    if (!paciente) {
+      // Invariante rota: toda cita apunta a un paciente de su mismo tenant (FK).
+      // No es un 404 de la cita (si existe) ni un error del cliente: es un 500.
+      throw new Error(
+        `Integridad: el paciente "${cita.pacienteId}" de la cita "${cita.id}" no existe en su tenant`,
+      );
+    }
+
+    // Reutiliza el formateo del modulo paciente (RUT para mostrar, correo null).
+    const datosPaciente = PacientesService.aResponse(paciente);
+
+    return new CitaDetalleDto({
+      id: cita.id,
+      estado: cita.estado,
+      inicio: cita.inicio,
+      hora: formatearHoraEnZona(cita.inicio, this.tz),
+      duracionMin: cita.duracionMin,
+      tipoConsulta: cita.tipoConsulta,
+      paciente: new CitaDetallePacienteDto({
+        id: datosPaciente.id,
+        nombre: datosPaciente.nombre,
+        rut: datosPaciente.rut,
+        telefono: datosPaciente.telefono,
+        correo: datosPaciente.correo,
+      }),
+      // La regla vive en la entidad (ADR-04 §1); el service solo la transporta.
+      accionesPermitidas: cita.accionesPermitidas(),
+    });
   }
 
   /** Historial completo de cambios de una cita, del mas antiguo al mas reciente. */

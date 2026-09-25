@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'; //Integra el orm para conexion 
 import { AuthModule } from './modules/auth/auth.module';
 import { CitaModule } from './modules/cita/cita.module';
 import { PacienteModule } from './modules/paciente/paciente.module';
+import { SolicitudModule } from './modules/solicitud/solicitud.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { UsuariosModule } from './modules/usuario/usuarios.module';
 
@@ -35,6 +36,7 @@ import { UsuariosModule } from './modules/usuario/usuarios.module';
     UsuariosModule, //Modulos de los usuarios
     PacienteModule, //Modulo de pacientes
     CitaModule, //Modulo de citas (dashboard US-06)
+    SolicitudModule, //Solicitudes de hora del paciente (via publica, US-02)
   ],
 })
 export class AppModule {}

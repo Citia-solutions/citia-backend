@@ -1,6 +1,6 @@
 # Preguntas abiertas — reparto por rol
 
-Diez decisiones pendientes que bloquean el MVP. Aquí están reformuladas **en el lenguaje de quien
+Once decisiones pendientes que bloquean el MVP. Aquí están reformuladas **en el lenguaje de quien
 puede responderlas**, con el entregable que se espera de cada una.
 
 **Equipo:** 1 I+D · 2 desarrolladores · 1 hacker ético.
@@ -26,6 +26,7 @@ compromete, y los desarrolladores eligen el mecanismo que cumpla ese requisito.
 | 7 | Renovación de sesión | **hacker** define requisito, **dev** elige mecanismo | DT-01 |
 | 8 | ADR-08 — tenant en la URL | **desarrolladores**, revisión del **hacker** | toda la vía pública |
 | 9 | Modelo de disponibilidad | **desarrolladores** (solo evaluar riesgo) | nada hoy |
+| 11 | ¿Cómo llega al paciente el enlace de su cita, y cómo se sabe que es él? | **I+D** → decisión conjunta, **hacker** (H7) | US-02.07 entera |
 
 ---
 
@@ -33,7 +34,7 @@ compromete, y los desarrolladores eligen el mecanismo que cumpla ese requisito.
 
 ### Q10 — La validación. Empieza por aquí.
 
-**Es la entrada de todo lo demás.** Cuatro de las diez preguntas se responden solas con evidencia de
+**Es la entrada de todo lo demás.** Cuatro de las once preguntas se responden solas con evidencia de
 campo, y hoy hay cero conversaciones registradas.
 
 **Pregunta:** ¿el problema que describimos es el que esta gente realmente tiene, y les molesta lo
@@ -109,6 +110,28 @@ registro abierto necesita defensas que hoy no existen.
 
 **Coordinar con el hacker ético**, que tiene la otra mitad de esta pregunta.
 
+### Q11 — ¿Cómo le llega al paciente el enlace de su cita?
+
+**El problema concreto:** [US-02.07](US/02.07-paciente-reagenda-cancela.md) quiere que el paciente cancele
+o pida reagendar **sin cuenta**, desde un enlace que sirve para una sola cita. El mecanismo está
+diseñado; lo que no existe es **quién le entrega ese enlace**. RF-07 dice *"desde el recordatorio"*,
+y los recordatorios (RF-06) están fuera del MVP. Es la misma pregunta que Q1 vista desde el paciente.
+
+**Pregunta para el campo:** ¿el profesional aceptaría **copiar y enviar él mismo** el enlace por
+WhatsApp al agendar? Es un paso manual —justo lo que el producto promete eliminar— pero es un único
+mensaje, y le ahorra todas las llamadas de "no puedo ir". ¿Y los pacientes abrirían un enlace así?
+
+**Entregable:** una recomendación entre estas tres:
+- **A.** Puente manual: el profesional envía el enlace desde el voucher de la cita
+  ([US-02.08](US/02.08-voucher-cita.md)) hasta que exista RF-06.
+- **B.** Esperar a RF-06: US-02.07 entra cuando entren los recordatorios (depende de Q1).
+- **C.** Aplazar US-02.07 fuera de la v1.
+
+*Nota técnica:* el enlace se diseña para que **no dependa de quién lo entrega** — A y B usan el
+mismo. La respuesta cambia el alcance, no el diseño. Diseño propuesto en
+[ADR-10](Decisions/ADR-10.md) (§6 detalla qué cambia con A, B o C, y cuándo el consentimiento de
+[DT-16](Deudas/DT-16.md) pasa a bloqueante). **ADR-10 no se acepta sin esta respuesta.**
+
 ---
 
 ## Para los desarrolladores
@@ -140,7 +163,10 @@ igual cuando entren recordatorios, así que la pregunta real es **si conviene pa
 5. **Rompe un patrón a propósito:** todas las consultas del sistema están acotadas a un tenant; esta
    barre todas las organizaciones. Que sea explícito, no accidental.
 
-**Entregable:** ADR-10 corto + el job + tests.
+**Entregable:** ADR corto + el job + tests. *(El número 10 lo tomó [ADR-10](Decisions/ADR-10.md),
+enlace por cita de US-02.07; este ADR usa el siguiente número libre.)* Debe recoger además la regla
+que ADR-10 §5 le deja anotada: **una petición de reagendamiento sin atender no debería terminar en
+`ghosting`** — el paciente avisó.
 
 ### Q8 — ADR-08, el tenant en la URL *(Dev B · prioridad 2)*
 
@@ -248,6 +274,27 @@ No hace falta buscarlos, ya están localizados. Falta confirmar gravedad y prior
 - [DT-04](Deudas/DT-04.md) login sin límite de intentos
 - [DT-05](Deudas/DT-05.md) la respuesta de login no es uniforme en el tiempo (enumeración por tiempos)
 - [DT-18](Deudas/DT-18.md) no existe límite de tasa en ninguna superficie
+
+### H7 — Modelo de amenazas del enlace por cita *(antes de construirlo · la otra mitad de Q11)*
+
+[US-02.07](US/02.07-paciente-reagenda-cancela.md) propone la **primera superficie sin sesión que modifica
+una cita**: un enlace con un secreto que sirve para una sola cita, guardado hasheado, que caduca a
+la hora de inicio y se revoca al cerrarse la cita. Quien tenga el enlace puede cancelar o pedir otra
+hora. Diseño propuesto en [ADR-10](Decisions/ADR-10.md); su sección *Pendiente para aceptar* lista
+lo que se espera de esta revisión. **ADR-10 no se acepta sin ella.**
+
+**Preguntas:**
+1. **Reenvío y número equivocado:** el enlace es una capacidad transferible. ¿Qué es lo mínimo que
+   debe poder hacer el sistema cuando llega a quien no es? (Hoy: el profesional lo reemite y el
+   anterior deja de servir.)
+2. **Qué se muestra:** fecha, hora, con quién y estado — sin RUT ni contacto. ¿El tipo de consulta
+   es dato de salud que no debe aparecer en un enlace reenviable?
+3. **Dónde viaja el secreto:** la propuesta es que nunca aparezca en la URL de la API (logs,
+   proxies, cabecera `Referer`). ¿Es suficiente?
+4. **Límite de tasa:** con un secreto no adivinable, ¿qué política exige esta superficie además de
+   la de [DT-18](Deudas/DT-18.md)?
+
+**Entregable:** el requisito, no la solución — igual que H1.
 
 ---
 
