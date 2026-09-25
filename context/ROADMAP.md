@@ -25,8 +25,7 @@ dependencias y el estado real de cada pieza en un solo lugar.
 - Clic en una cita → detalle con opciones de reagendar/cancelar.
 - Marcar visualmente las citas pasadas (gris/tachado).
 
-> Depende de US-02 (la lista real de citas).
-
+> Depende de US-02 (la lista real de citas).a
 ---
 
 ## Fase 1 — US-02: Gestión de cita
