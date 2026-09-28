@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 
 import { TransactionContext } from '../../../../shared/application/transaction-runner';
 import { Paciente } from '../../domain/paciente.entity';
@@ -50,6 +50,19 @@ export class TypeOrmPacienteRepository extends PacienteRepository {
     const orm = await this.repoFor(tx).findOne({ where: { rut, tenantId } });
     if (!orm) return null;
     return this.toDomain(orm);
+  }
+
+  async buscarPorIds(
+    ids: readonly string[],
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<Paciente[]> {
+    // IN () no es SQL valido: sin ids no hay nada que buscar.
+    if (ids.length === 0) return [];
+    const filas = await this.repoFor(tx).find({
+      where: { id: In([...ids]), tenantId },
+    });
+    return filas.map((orm) => this.toDomain(orm));
   }
 
   private toDomain(orm: PacienteOrmEntity): Paciente {

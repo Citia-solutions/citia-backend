@@ -5,12 +5,14 @@ import {
   IsNotEmpty,
   IsOptional,
   IsPositive,
+  Max,
   IsString,
   IsUUID,
   ValidateNested,
 } from 'class-validator';
 
 import { CrearPacienteDto } from '../../../paciente/presentation/dto/crear-paciente.dto';
+import { DURACION_MAXIMA_MIN } from '../../domain/cita.entity';
 
 /**
  * Cuerpo del formulario "nueva cita" que rellena el profesional.
@@ -32,6 +34,9 @@ export class CrearCitaDto {
 
   @IsInt()
   @IsPositive()
+  // ADR-11 §2: tope de un dia; da la cota inferior de la consulta de
+  // solapamientos (`inicio - DURACION_MAXIMA_MIN`).
+  @Max(DURACION_MAXIMA_MIN)
   duracionMin: number;
 
   @IsString()

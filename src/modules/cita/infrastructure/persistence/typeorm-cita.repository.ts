@@ -4,6 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
   And,
   EntityManager,
+  FindOptionsWhere,
+  In,
   LessThan,
   MoreThanOrEqual,
   Repository,
@@ -11,7 +13,7 @@ import {
 
 import { TransactionContext } from '../../../../shared/application/transaction-runner';
 import { rangoDelDiaEnZona } from '../../../../shared/domain/timezone';
-import { Cita } from '../../domain/cita.entity';
+import { Cita, EstadoCita } from '../../domain/cita.entity';
 import { CitaRepository } from '../../domain/cita.repository';
 import { CitaOrmEntity } from './cita.orm-entity';
 
@@ -33,7 +35,8 @@ export class TypeOrmCitaRepository extends CitaRepository {
 
   async guardar(cita: Cita, tx?: TransactionContext): Promise<Cita> {
     const orm = await this.repoFor(tx).save(this.toPersistence(cita));
-    return this.toDomain(orm);
+    // En un UPDATE TypeORM no relee @CreateDateColumn: se conserva la del dominio.
+    return this.toDomain({ ...orm, creadoEn: orm.creadoEn ?? cita.creadoEn });
   }
 
   async buscarPorId(
@@ -65,6 +68,35 @@ export class TypeOrmCitaRepository extends CitaRepository {
         inicio: And(MoreThanOrEqual(desde), LessThan(hasta)),
       },
       order: { inicio: 'ASC' },
+    });
+
+    return filas.map((orm) => this.toDomain(orm));
+  }
+
+  async buscarPorProfesionalEnRango(
+    tenantId: string,
+    usuarioId: string,
+    desde: Date,
+    hasta: Date,
+    opciones?: { estados?: readonly EstadoCita[] },
+    tx?: TransactionContext,
+  ): Promise<Cita[]> {
+    // Usa el indice (tenant_id, usuario_id, inicio). El rango llega ya en
+    // instantes UTC: aqui no se lee APP_TZ.
+    const where: FindOptionsWhere<CitaOrmEntity> = {
+      tenantId,
+      usuarioId,
+      inicio: And(MoreThanOrEqual(desde), LessThan(hasta)),
+    };
+    // Lista vacia = "ningun estado" -> ninguna fila (IN () no es SQL valido).
+    if (opciones?.estados !== undefined) {
+      if (opciones.estados.length === 0) return [];
+      where.estado = In([...opciones.estados]);
+    }
+
+    const filas = await this.repoFor(tx).find({
+      where,
+      order: { inicio: 'ASC', creadoEn: 'ASC' },
     });
 
     return filas.map((orm) => this.toDomain(orm));

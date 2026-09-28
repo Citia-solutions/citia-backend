@@ -20,4 +20,14 @@ export abstract class PacienteRepository {
     tenantId: string,
     tx?: TransactionContext,
   ): Promise<Paciente | null>;
+
+  // Carga en lote los pacientes del tenant cuyos ids estan en `ids` (p. ej.
+  // para poner nombre a las citas de la agenda sin N+1). Los ids de otro
+  // tenant o inexistentes simplemente no vuelven: quien llama no debe asumir
+  // ni orden ni que haya uno por id. Con `ids` vacio devuelve [] sin consultar.
+  abstract buscarPorIds(
+    ids: readonly string[],
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<Paciente[]>;
 }
