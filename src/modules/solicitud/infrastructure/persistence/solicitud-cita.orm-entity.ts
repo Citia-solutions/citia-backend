@@ -60,11 +60,18 @@ export class SolicitudCitaOrmEntity {
   })
   estado: EstadoSolicitud;
 
-  // Cita generada al aceptar. Sin relación declarada a propósito: el módulo
-  // solicitud no depende del módulo cita.
+  // Cita generada al aceptar. Sin relación ni clave foránea a propósito
+  // (ADR-09): `solicitud` depende de `cita` a nivel de APLICACIÓN (la bandeja
+  // usa CitasService para crear la cita), no de esquema. La tabla no referencia
+  // a `citas` y el núcleo `cita` no sabe que las solicitudes existen.
   @Column({ name: 'cita_id', type: 'uuid', nullable: true })
   citaId: string | null;
 
   @CreateDateColumn({ name: 'recibida_en' })
   recibidaEn: Date;
+
+  // Cuándo salió de la bandeja (aceptada o rechazada). Nulo mientras está
+  // `recibida`. Lo fija el dominio, no la BD: no lleva default.
+  @Column({ name: 'resuelta_en', type: 'timestamptz', nullable: true })
+  resueltaEn: Date | null;
 }

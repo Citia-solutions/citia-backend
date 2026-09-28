@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, MoreThanOrEqual, Repository } from 'typeorm';
+import {
+  EntityManager,
+  FindOptionsOrder,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 
 import { TransactionContext } from '../../../../shared/application/transaction-runner';
 import {
@@ -30,7 +35,11 @@ export class TypeOrmSolicitudCitaRepository extends SolicitudCitaRepository {
     tx?: TransactionContext,
   ): Promise<SolicitudCita> {
     const orm = await this.repoFor(tx).save(this.toPersistence(solicitud));
-    return this.toDomain(orm);
+    // En un UPDATE TypeORM no relee @CreateDateColumn: se conserva la del dominio.
+    return this.toDomain({
+      ...orm,
+      recibidaEn: orm.recibidaEn ?? solicitud.recibidaEn,
+    });
   }
 
   async buscarAbiertaPorRut(
@@ -51,6 +60,62 @@ export class TypeOrmSolicitudCitaRepository extends SolicitudCitaRepository {
     return this.toDomain(orm);
   }
 
+  async buscarPorId(
+    id: string,
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<SolicitudCita | null> {
+    const orm = await this.repoFor(tx).findOne({ where: { id, tenantId } });
+    if (!orm) return null;
+    return this.toDomain(orm);
+  }
+
+  async buscarPorIdParaActualizar(
+    id: string,
+    tenantId: string,
+    tx: TransactionContext,
+  ): Promise<SolicitudCita | null> {
+    // `TransactionContext` es `unknown` y admite undefined: sin este chequeo
+    // se caería al repositorio por defecto y TypeORM rechazaría el bloqueo con
+    // un error menos claro.
+    if (!tx) {
+      throw new Error(
+        'buscarPorIdParaActualizar requiere una transacción (SELECT ... FOR UPDATE)',
+      );
+    }
+    const orm = await this.repoFor(tx).findOne({
+      where: { id, tenantId },
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (!orm) return null;
+    return this.toDomain(orm);
+  }
+
+  async listarPorEstado(
+    tenantId: string,
+    estado: EstadoSolicitud,
+    limite: number,
+    tx?: TransactionContext,
+  ): Promise<SolicitudCita[]> {
+    // Desempate por `id` para que el orden sea estable entre llamadas.
+    const order: FindOptionsOrder<SolicitudCitaOrmEntity> =
+      estado === EstadoSolicitud.RECIBIDA
+        ? { recibidaEn: 'ASC', id: 'ASC' }
+        : {
+            // NULLS LAST: en Postgres `DESC` pone los NULL primero por
+            // defecto; una resuelta sin marca no debe encabezar la bandeja.
+            resueltaEn: { direction: 'DESC', nulls: 'LAST' },
+            id: 'ASC',
+          };
+
+    const filas = await this.repoFor(tx).find({
+      where: { tenantId, estado },
+      order,
+      take: limite,
+    });
+    return filas.map((orm) => this.toDomain(orm));
+  }
+
   private toDomain(orm: SolicitudCitaOrmEntity): SolicitudCita {
     return SolicitudCita.reconstituir({
       id: orm.id,
@@ -66,6 +131,7 @@ export class TypeOrmSolicitudCitaRepository extends SolicitudCitaRepository {
       estado: orm.estado,
       citaId: orm.citaId,
       recibidaEn: orm.recibidaEn,
+      resueltaEn: orm.resueltaEn,
     });
   }
 
@@ -84,6 +150,7 @@ export class TypeOrmSolicitudCitaRepository extends SolicitudCitaRepository {
       consentimiento: domain.consentimiento,
       estado: domain.estado,
       citaId: domain.citaId,
+      resueltaEn: domain.resueltaEn,
     };
     if (domain.id !== undefined) orm.id = domain.id;
     return orm;
