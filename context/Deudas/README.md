@@ -26,7 +26,7 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-15](DT-15.md) | No se puede buscar un paciente | 🔴 alta | abierta | [us06](../Features/us06-dashboard-citas.md) |
 | [DT-02](DT-02.md) | El rol se emite y nadie lo verifica | 🟠 media→alta | abierta | [ADR-01 §4](../Decisions/ADR-01.md) |
 | [DT-07](DT-07.md) | No existe alta de un segundo usuario | 🟠 media | abierta | [us00a](../Features/us00a-registro-inicial.md) |
-| [DT-12](DT-12.md) | Solapamiento de citas no detectado | 🟠 media | abierta | [us06](../Features/us06-dashboard-citas.md) |
+| [DT-12](DT-12.md) | Solapamiento de citas no detectado | 🟠 media | 🟢 resuelta en diseño ([ADR-11](../Decisions/ADR-11.md)) | [us06](../Features/us06-dashboard-citas.md) |
 | [DT-14](DT-14.md) | El instante de la cita se acepta sin zona horaria | 🟠 media | abierta | [ADR-07](../Decisions/ADR-07.md) |
 | [DT-19](DT-19.md) | Sin observabilidad | 🟠 media→alta | abierta | RNF-08 |
 | [DT-20](DT-20.md) | Las pruebas e2e nunca se han ejecutado | 🟠 media | abierta | [us06](../Features/us06-dashboard-citas.md) |
@@ -78,6 +78,7 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [ADR-04](../Decisions/ADR-04.md) — modelo de Cita | DT-10 ✅ cerrada, DT-11, DT-22 ✅ cerrada |
 | [ADR-07](../Decisions/ADR-07.md) — zona de la clínica | DT-14, DT-17 |
 | [ADR-09](../Decisions/ADR-09.md) — gestión de citas | *cierra* DT-10 y DT-22 · *contrae* DT-23, DT-24, DT-25, DT-26, DT-27, DT-28 · *depende de* DT-15 y DT-18 · *deja abierta* DT-12 |
+| [ADR-11](../Decisions/ADR-11.md) — solapamiento | *cierra en diseño* DT-12 |
 | [us00a](../Features/us00a-registro-inicial.md) — registro | DT-03, DT-06, DT-07, DT-09 |
 | [us00b](../Features/us00b-login.md) — login | DT-03, DT-04 |
 | [us06](../Features/us06-dashboard-citas.md) — dashboard | DT-12, DT-13, DT-15, DT-16, DT-20 |

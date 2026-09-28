@@ -3,6 +3,8 @@
 **Fecha:** 2026-09-23
 **Estado:** **Propuesto** · sin implementar · pendiente de [H7](../PREGUNTAS-ABIERTAS.md) y
 [Q11](../PREGUNTAS-ABIERTAS.md) (ver [Pendiente para aceptar](#pendiente-para-aceptar))
+**Estado (2026-09-25):** 🔵 **Aplazada fuera de la v1 (Q11 → C, 2026-09-25).** El diseño se conserva
+tal cual para retomarlo cuando exista canal hacia el paciente (RF-06); no se implementa en la v1.
 **Commits:** — (pendiente)
 **Subtarea:** [US-02.07](../US/02.07-paciente-reagenda-cancela.md) — *subtarea de US-02 (gestión de
 citas)*, no una historia propia.

@@ -94,6 +94,8 @@ etiqueta.**
 
 ### Q4 — Solapamiento: ¿avisar o rechazar?
 
+> ✅ **Respondida (2026-09-25): avisar y permitir.** Ver [ADR-11](Decisions/ADR-11.md).
+
 Hoy el sistema acepta dos citas del mismo profesional a la misma hora, en silencio.
 
 **Pregunta:** ¿hay consultas que sobrevenden a propósito, o un choque es siempre un error?
@@ -111,6 +113,9 @@ registro abierto necesita defensas que hoy no existen.
 **Coordinar con el hacker ético**, que tiene la otra mitad de esta pregunta.
 
 ### Q11 — ¿Cómo le llega al paciente el enlace de su cita?
+
+> ✅ **Respondida (2026-09-25): C — US-02.07 sale de la v1.** [ADR-10](Decisions/ADR-10.md) queda
+> propuesto y aplazado.
 
 **El problema concreto:** [US-02.07](US/02.07-paciente-reagenda-cancela.md) quiere que el paciente cancele
 o pida reagendar **sin cuenta**, desde un enlace que sirve para una sola cita. El mecanismo está
@@ -164,7 +169,8 @@ igual cuando entren recordatorios, así que la pregunta real es **si conviene pa
    barre todas las organizaciones. Que sea explícito, no accidental.
 
 **Entregable:** ADR corto + el job + tests. *(El número 10 lo tomó [ADR-10](Decisions/ADR-10.md),
-enlace por cita de US-02.07; este ADR usa el siguiente número libre.)* Debe recoger además la regla
+enlace por cita de US-02.07, y el 11 [ADR-11](Decisions/ADR-11.md), solapamiento; este ADR usa el
+siguiente número libre: **ADR-12**.)* Debe recoger además la regla
 que ADR-10 §5 le deja anotada: **una petición de reagendamiento sin atender no debería terminar en
 `ghosting`** — el paciente avisó.
 
