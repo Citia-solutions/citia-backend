@@ -86,6 +86,32 @@ class InMemoryCitaRepository extends CitaRepository {
         .sort((a, b) => a.inicio.getTime() - b.inicio.getTime()),
     );
   }
+
+  buscarPorProfesionalEnRango(
+    tenantId: string,
+    usuarioId: string,
+    desde: Date,
+    hasta: Date,
+    opciones?: { estados?: readonly EstadoCita[] },
+  ): Promise<Cita[]> {
+    return Promise.resolve(
+      [...this.citas.values()]
+        .filter(
+          (c) =>
+            c.tenantId === tenantId &&
+            c.usuarioId === usuarioId &&
+            c.inicio >= desde &&
+            c.inicio < hasta &&
+            (opciones?.estados === undefined ||
+              opciones.estados.includes(c.estado)),
+        )
+        .sort(
+          (a, b) =>
+            a.inicio.getTime() - b.inicio.getTime() ||
+            a.creadoEn.getTime() - b.creadoEn.getTime(),
+        ),
+    );
+  }
 }
 
 class InMemoryCambioCitaRepository extends CambioCitaRepository {
@@ -124,6 +150,14 @@ class InMemoryPacienteRepository extends PacienteRepository {
       (x) => x.rut === rut && x.tenantId === tenantId,
     );
     return Promise.resolve(p ?? null);
+  }
+
+  buscarPorIds(ids: readonly string[], tenantId: string): Promise<Paciente[]> {
+    return Promise.resolve(
+      [...this.pacientes.values()].filter(
+        (x) => ids.includes(x.id) && x.tenantId === tenantId,
+      ),
+    );
   }
 }
 

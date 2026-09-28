@@ -1,4 +1,12 @@
-import { AccionCita, Cita, CrearCitaProps, EstadoCita } from './cita.entity';
+import {
+  AccionCita,
+  Cita,
+  CrearCitaProps,
+  DURACION_MAXIMA_MIN,
+  ESTADOS_VIGENTES,
+  EstadoCita,
+  ReconstituirCitaProps,
+} from './cita.entity';
 import { TransicionEstadoInvalidaError } from './exceptions/transicion-estado-invalida.error';
 
 describe('Cita (dominio)', () => {
@@ -519,5 +527,98 @@ describe('Cita.accionesPermitidas (US-02.08)', () => {
       // Assert: la entidad no comparte estado con el llamador.
       expect(cita.accionesPermitidas()).toEqual(accionesDePendiente);
     });
+  });
+});
+
+describe('Cita.fin y Cita.chocaCon (ADR-11)', () => {
+  // Base: 10:00Z–10:50Z del profesional usuario-1 en tenant-1.
+  const cita = (over: Partial<ReconstituirCitaProps> = {}): Cita =>
+    Cita.reconstituir({
+      id: 'cita-a',
+      inicio: new Date('2026-09-22T10:00:00Z'),
+      duracionMin: 50,
+      tipoConsulta: 'Control',
+      estado: EstadoCita.PENDIENTE,
+      tenantId: 'tenant-1',
+      pacienteId: 'paciente-1',
+      usuarioId: 'usuario-1',
+      creadoEn: new Date(),
+      actualizadoEn: new Date(),
+      ...over,
+    });
+
+  it('exporta los estados vigentes y la duración máxima', () => {
+    expect(ESTADOS_VIGENTES).toEqual([
+      EstadoCita.PENDIENTE,
+      EstadoCita.CONFIRMADA,
+    ]);
+    expect(DURACION_MAXIMA_MIN).toBe(1440);
+  });
+
+  it('fin = inicio + duracionMin', () => {
+    expect(cita().fin.toISOString()).toBe('2026-09-22T10:50:00.000Z');
+  });
+
+  it('se cruza con otra vigente del mismo profesional que se intersecta', () => {
+    const otra = cita({
+      id: 'cita-b',
+      inicio: new Date('2026-09-22T10:30:00Z'),
+      estado: EstadoCita.CONFIRMADA,
+    });
+    expect(cita().chocaCon(otra)).toBe(true);
+    expect(otra.chocaCon(cita())).toBe(true);
+  });
+
+  it('detecta una cita contenida dentro de otra', () => {
+    const otra = cita({
+      id: 'cita-b',
+      inicio: new Date('2026-09-22T10:10:00Z'),
+      duracionMin: 10,
+    });
+    expect(cita().chocaCon(otra)).toBe(true);
+  });
+
+  it('citas pegadas NO se cruzan (intervalo semiabierto)', () => {
+    const despues = cita({
+      id: 'cita-b',
+      inicio: new Date('2026-09-22T10:50:00Z'),
+    });
+    const antes = cita({
+      id: 'cita-c',
+      inicio: new Date('2026-09-22T09:10:00Z'),
+    });
+    expect(cita().chocaCon(despues)).toBe(false);
+    expect(cita().chocaCon(antes)).toBe(false);
+  });
+
+  it('una cita no choca consigo misma (misma instancia o mismo id)', () => {
+    const a = cita();
+    expect(a.chocaCon(a)).toBe(false);
+    expect(a.chocaCon(cita())).toBe(false);
+  });
+
+  it('no choca con citas de otro profesional ni de otro tenant', () => {
+    const inicio = new Date('2026-09-22T10:30:00Z');
+    expect(
+      cita().chocaCon(cita({ id: 'cita-b', inicio, usuarioId: 'usuario-2' })),
+    ).toBe(false);
+    expect(
+      cita().chocaCon(cita({ id: 'cita-b', inicio, tenantId: 'tenant-2' })),
+    ).toBe(false);
+  });
+
+  it.each([
+    EstadoCita.CANCELADA,
+    EstadoCita.ASISTIO,
+    EstadoCita.NO_ASISTIO,
+    EstadoCita.GHOSTING,
+  ])('una cita %s no ocupa la agenda', (estado) => {
+    const terminal = cita({
+      id: 'cita-b',
+      inicio: new Date('2026-09-22T10:30:00Z'),
+      estado,
+    });
+    expect(cita().chocaCon(terminal)).toBe(false);
+    expect(terminal.chocaCon(cita())).toBe(false);
   });
 });
