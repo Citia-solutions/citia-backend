@@ -29,10 +29,12 @@ import { DataSource } from 'typeorm';
 import { AppModule } from '../app.module';
 import { Cita, EstadoCita } from '../modules/cita/domain/cita.entity';
 import { CitaRepository } from '../modules/cita/domain/cita.repository';
+import { CambioCitaOrmEntity } from '../modules/cita/infrastructure/persistence/cambio-cita.orm-entity';
 import { CitaOrmEntity } from '../modules/cita/infrastructure/persistence/cita.orm-entity';
 import { PacientesService } from '../modules/paciente/application/pacientes.service';
 import { PacienteOrmEntity } from '../modules/paciente/infrastructure/persistence/paciente.orm-entity';
 import { PacienteResponseDto } from '../modules/paciente/presentation/dto/paciente-response.dto';
+import { SolicitudCitaOrmEntity } from '../modules/solicitud/infrastructure/persistence/solicitud-cita.orm-entity';
 import { TipoTenant } from '../modules/tenant/domain/tenant.entity';
 import { ITenantRepository } from '../modules/tenant/domain/tenant.repository';
 import { TenantOrmEntity } from '../modules/tenant/infrastructure/persistence/tenant.orm-entity';
@@ -165,6 +167,9 @@ async function limpiarDatosDemo(
   tenantId: string,
 ): Promise<void> {
   await dataSource.transaction(async (m) => {
+    // cambios_cita → citas y solicitudes_cita → usuarios/tenants tienen FK.
+    await m.delete(CambioCitaOrmEntity, { tenantId });
+    await m.delete(SolicitudCitaOrmEntity, { tenantId });
     await m.delete(CitaOrmEntity, { tenantId });
     await m.delete(PacienteOrmEntity, { tenantId });
     await m.delete(UsuarioOrmEntity, { tenantId });
