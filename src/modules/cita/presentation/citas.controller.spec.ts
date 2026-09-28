@@ -11,6 +11,7 @@ import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import { CitasService } from '../application/citas.service';
 import { CitaNoEncontradaError } from '../application/cita-no-encontrada.error';
 import { PacienteNoEncontradoError } from '../application/paciente-no-encontrado.error';
+import { RangoFechasInvalidoError } from '../application/rango-fechas-invalido.error';
 import { EstadoCita } from '../domain/cita.entity';
 import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-estado-invalida.error';
 import { CitaDashboardDto } from './dto/cita-dashboard.dto';
@@ -26,6 +27,7 @@ describe('CitasController', () => {
     crearCita: jest.Mock;
     citasDeHoy: jest.Mock;
     detalle: jest.Mock;
+    listarEnRango: jest.Mock;
   };
 
   const usuario: AuthenticatedUser = {
@@ -40,6 +42,7 @@ describe('CitasController', () => {
       crearCita: jest.fn(),
       citasDeHoy: jest.fn(),
       detalle: jest.fn(),
+      listarEnRango: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -139,6 +142,7 @@ describe('CitasController', () => {
       const dashboard = new CitaDashboardDto({
         id: 'cita-1',
         pacienteNombre: 'Ana',
+        fecha: '2026-06-30',
         hora: '10:30',
         inicio: new Date('2026-06-30T10:30:00Z'),
         duracionMin: 30,
@@ -206,6 +210,100 @@ describe('CitasController', () => {
 
       // Act & Assert
       await expect(controller.detalle('cita-1', usuario)).rejects.toBe(error);
+    });
+  });
+
+  describe('listar (GET /citas?desde&hasta)', () => {
+    const query = { desde: '2026-09-21', hasta: '2026-09-27' };
+
+    it('debería delegar en listarEnRango con desde, hasta y el @CurrentUser', async () => {
+      // Arrange
+      const dashboard = new CitaDashboardDto({
+        id: 'cita-1',
+        pacienteNombre: 'María González',
+        fecha: '2026-09-22',
+        hora: '10:00',
+        inicio: new Date('2026-09-22T13:00:00.000Z'),
+        duracionMin: 50,
+        tipoConsulta: 'Terapia individual',
+        estado: EstadoCita.CONFIRMADA,
+      });
+      mockCitasService.listarEnRango.mockResolvedValue([dashboard]);
+
+      // Act
+      const result = await controller.listar(query, usuario);
+
+      // Assert
+      expect(mockCitasService.listarEnRango).toHaveBeenCalledWith(
+        '2026-09-21',
+        '2026-09-27',
+        usuario,
+      );
+      expect(result).toEqual([dashboard]);
+    });
+
+    it('debería traducir RangoFechasInvalidoError a 400 conservando el mensaje', async () => {
+      // Arrange
+      mockCitasService.listarEnRango.mockRejectedValue(
+        new RangoFechasInvalidoError('El rango máximo es de 42 días'),
+      );
+
+      // Act
+      const error = await controller
+        .listar(query, usuario)
+        .catch((e: unknown) => e);
+
+      // Assert
+      expect(error).toBeInstanceOf(BadRequestException);
+      expect((error as BadRequestException).getStatus()).toBe(400);
+      expect((error as BadRequestException).message).toBe(
+        'El rango máximo es de 42 días',
+      );
+    });
+
+    it.each([
+      [
+        'CitaNoEncontradaError',
+        new CitaNoEncontradaError('x'),
+        NotFoundException,
+        404,
+      ],
+      [
+        'TransicionEstadoInvalidaError',
+        new TransicionEstadoInvalidaError(EstadoCita.CANCELADA, 'confirmar'),
+        ConflictException,
+        409,
+      ],
+      [
+        'PacienteNoEncontradoError',
+        new PacienteNoEncontradoError('p'),
+        BadRequestException,
+        400,
+      ],
+    ])(
+      'debería pasar por la traducción común: %s -> %i',
+      async (_nombre, errorDominio, Excepcion, status) => {
+        // Arrange
+        mockCitasService.listarEnRango.mockRejectedValue(errorDominio);
+
+        // Act
+        const error = await controller
+          .listar(query, usuario)
+          .catch((e: unknown) => e);
+
+        // Assert
+        expect(error).toBeInstanceOf(Excepcion);
+        expect((error as NotFoundException).getStatus()).toBe(status);
+      },
+    );
+
+    it('debería propagar un error inesperado sin transformarlo (500)', async () => {
+      // Arrange
+      const error = new Error('fallo inesperado');
+      mockCitasService.listarEnRango.mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(controller.listar(query, usuario)).rejects.toBe(error);
     });
   });
 });

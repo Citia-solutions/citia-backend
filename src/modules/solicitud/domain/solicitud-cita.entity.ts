@@ -60,6 +60,12 @@ export class SolicitudCita {
   /** Cita generada al aceptar. Nula mientras no se acepte. */
   citaId: string | null;
   recibidaEn: Date;
+  /**
+   * Cuándo salió de la bandeja (aceptada o rechazada). Nulo mientras está
+   * `recibida`. Ordena la bandeja de resueltas y da la base para retener por
+   * antigüedad las rechazadas (DT-26).
+   */
+  resueltaEn: Date | null;
 
   private _estado: EstadoSolicitud;
 
@@ -80,6 +86,7 @@ export class SolicitudCita {
     solicitud.preferenciaHoraria = props.preferenciaHoraria;
     solicitud.consentimiento = props.consentimiento;
     solicitud.citaId = null;
+    solicitud.resueltaEn = null;
     solicitud._estado = EstadoSolicitud.RECIBIDA;
     return solicitud;
   }
@@ -92,6 +99,7 @@ export class SolicitudCita {
       estado: EstadoSolicitud;
       citaId: string | null;
       recibidaEn: Date;
+      resueltaEn: Date | null;
     },
   ): SolicitudCita {
     const solicitud = SolicitudCita.recibir(props);
@@ -100,6 +108,7 @@ export class SolicitudCita {
     solicitud._estado = props.estado;
     solicitud.citaId = props.citaId;
     solicitud.recibidaEn = props.recibidaEn;
+    solicitud.resueltaEn = props.resueltaEn;
     return solicitud;
   }
 
@@ -112,24 +121,32 @@ export class SolicitudCita {
   }
 
   /**
-   * recibida -> aceptada. Queda registrado quién la aceptó y con qué cita.
-   * De un terminal no se sale: aceptar dos veces generaría dos citas.
+   * recibida -> aceptada. Queda registrado quién la aceptó, con qué cita y
+   * cuándo. De un terminal no se sale: aceptar dos veces generaría dos citas.
+   * `ahora` se puede inyectar para los tests; por defecto, el reloj del sistema.
    */
-  aceptar(usuarioId: string, citaId: string): void {
-    this.asegurarRecibida('aceptar');
+  aceptar(usuarioId: string, citaId: string, ahora: Date = new Date()): void {
+    this.asegurarResolvible('aceptar');
     this.usuarioId = usuarioId;
     this.citaId = citaId;
+    this.resueltaEn = ahora;
     this._estado = EstadoSolicitud.ACEPTADA;
   }
 
   /** recibida -> rechazada. NO genera cita ni deja rastro en el historial. */
-  rechazar(usuarioId: string): void {
-    this.asegurarRecibida('rechazar');
+  rechazar(usuarioId: string, ahora: Date = new Date()): void {
+    this.asegurarResolvible('rechazar');
     this.usuarioId = usuarioId;
+    this.resueltaEn = ahora;
     this._estado = EstadoSolicitud.RECHAZADA;
   }
 
-  private asegurarRecibida(evento: string): void {
+  /**
+   * Lanza el 409 de dominio si la solicitud ya no está `recibida`. Es público
+   * para que la aplicación lo compruebe ANTES de crear nada al aceptar (ni
+   * paciente, ni cita, ni evento); `aceptar`/`rechazar` lo vuelven a exigir.
+   */
+  asegurarResolvible(evento: string): void {
     if (this._estado !== EstadoSolicitud.RECIBIDA) {
       throw new TransicionSolicitudInvalidaError(this._estado, evento);
     }

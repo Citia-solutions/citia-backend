@@ -11,6 +11,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
@@ -21,6 +22,7 @@ import type { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { CitaNoEncontradaError } from '../application/cita-no-encontrada.error';
 import { DatosPacienteRequeridosError } from '../application/datos-paciente-requeridos.error';
 import { PacienteNoEncontradoError } from '../application/paciente-no-encontrado.error';
+import { RangoFechasInvalidoError } from '../application/rango-fechas-invalido.error';
 import { CitasService } from '../application/citas.service';
 import { CambioCita } from '../domain/cambio-cita.entity';
 import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-estado-invalida.error';
@@ -29,6 +31,7 @@ import { CitaDetalleDto } from './dto/cita-detalle.dto';
 import { CitaResponseDto } from './dto/cita-response.dto';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { EditarCitaDto } from './dto/editar-cita.dto';
+import { ListarCitasQueryDto } from './dto/listar-citas-query.dto';
 import { MotivoCitaDto } from './dto/motivo-cita.dto';
 import { ReagendarCitaDto } from './dto/reagendar-cita.dto';
 
@@ -45,6 +48,19 @@ export class CitasController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<CitaResponseDto> {
     return this.ejecutar(() => this.citasService.crearCita(dto, user));
+  }
+
+  // Agenda por rango: GET /api/citas?desde=YYYY-MM-DD&hasta=YYYY-MM-DD.
+  // Ruta sin segmento: no compite con `hoy` ni con `:id` (esas exigen un
+  // segmento mas). Misma forma que `/hoy` (CitaDashboardDto[]).
+  @Get()
+  async listar(
+    @Query() query: ListarCitasQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CitaDashboardDto[]> {
+    return this.ejecutar(() =>
+      this.citasService.listarEnRango(query.desde, query.hasta, user),
+    );
   }
 
   // US-06 (RF-03): GET /api/citas/hoy -> dashboard del profesional logueado.
@@ -166,6 +182,10 @@ export class CitasController {
       }
       // RUT con digito verificador incorrecto -> 400.
       if (error instanceof RutInvalidoError) {
+        throw new BadRequestException(error.message);
+      }
+      // Agenda por rango: `hasta` anterior a `desde` o mas de 42 dias -> 400.
+      if (error instanceof RangoFechasInvalidoError) {
         throw new BadRequestException(error.message);
       }
       throw error;

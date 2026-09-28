@@ -21,7 +21,7 @@ deuda de historial) · **adopta la fase 1 de** [ADR-08](ADR-08.md) en la ruta p�
 | 8 | Ruta pública + límite de tasa | ruta ✅ · límite de tasa 🔵 **aplazado mientras el entorno sea local** ([DT-18](../Deudas/DT-18.md)) |
 | 9 | Formulario propio, no de terceros | ✅ (backend listo; el formulario es del frontend) |
 | 10 | Campos del formulario | 🟡 ✅ provisionales — a confirmar cuando el frontend los cierre |
-| — | Bandeja: listar, aceptar, rechazar | ❌ el dominio lo soporta; falta exponerlo |
+| — | Bandeja: listar, aceptar, rechazar | 📐 contrato definido (2026-09-25, [us02 §c](../Features/us02-gestion-citas.md#c-bandeja-de-solicitudes-autenticada)); falta implementar |
 
 > **Requisito de despliegue:** el límite de tasa de la decisión 8 no existe. Es irrelevante mientras
 > se trabaje en local, y pasa a bloqueante el día que el backend quede accesible o se comparta el
@@ -473,7 +473,7 @@ Para dimensionar el riesgo:
 | Tema | Por qué se aplaza |
 |---|---|
 | **Modelo de disponibilidad** (horarios, huecos, reserva real) | Fase 2. ADR propio. |
-| **Solapamiento de citas** | Hoy se aceptan citas solapadas y en el pasado. **Ojo: elegir B1 no resuelve esto.** B1 evita que un *tercero* provoque el choque; no evita que el profesional se lo provoque a sí mismo al agendar o reagendar. *Detectar* el choque es una consulta sobre las citas del profesional en ese rango —sin modelo de disponibilidad, sin concepto nuevo—; *impedirlo* sí requeriría B2. La recomendación es **avisar y permitir**. Decisión de producto pendiente. |
+| **Solapamiento de citas** | ✅ **Resuelta el 2026-09-25 por [ADR-11](ADR-11.md): avisar y permitir.** Texto original: Hoy se aceptan citas solapadas y en el pasado. **Ojo: elegir B1 no resuelve esto.** B1 evita que un *tercero* provoque el choque; no evita que el profesional se lo provoque a sí mismo al agendar o reagendar. *Detectar* el choque es una consulta sobre las citas del profesional en ese rango —sin modelo de disponibilidad, sin concepto nuevo—; *impedirlo* sí requeriría B2. La recomendación es **avisar y permitir**. Decisión de producto pendiente. |
 | **Fusión de pacientes duplicados** | Con RUT el problema queda acotado a las altas manuales sin documento. Decidir con datos si merece herramienta. |
 | **Verificación del contacto del paciente** | Encadenada a RF-06 (canal de recordatorios). Mismo canal, misma decisión — y es también lo que cerraría la suplantación de RUT. |
 | **Vista de organización** (que un colega o administrador vea la agenda ajena) | Hoy la cita es del profesional. Cambiarlo es una decisión de producto sobre si "clínica" es un cliente viable. |

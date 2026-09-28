@@ -18,6 +18,23 @@ const ESTADOS_TERMINALES: ReadonlySet<EstadoCita> = new Set([
 ]);
 
 /**
+ * Estados vigentes: la cita sigue siendo un compromiso abierto y OCUPA la
+ * agenda (ADR-04, ADR-11 §1). Se exporta como arreglo para que el repositorio
+ * pueda pre-filtrar con `IN (...)` sin redefinir la lista por su cuenta.
+ */
+export const ESTADOS_VIGENTES: readonly EstadoCita[] = [
+  EstadoCita.PENDIENTE,
+  EstadoCita.CONFIRMADA,
+];
+
+/**
+ * Duración máxima de una cita, en minutos: un día (ADR-11 §2). Da la cota
+ * inferior de la consulta de solapamientos (`inicio - DURACION_MAXIMA_MIN`) y
+ * la aplican los DTO de entrada con `@Max`.
+ */
+export const DURACION_MAXIMA_MIN = 1440;
+
+/**
  * Acciones que una PERSONA puede disparar sobre una cita (US-02.08).
  *
  * El vocabulario coincide con las rutas HTTP (`PATCH /citas/:id/<accion>`, y
@@ -112,6 +129,36 @@ export class Cita {
 
   esTerminal(): boolean {
     return ESTADOS_TERMINALES.has(this._estado);
+  }
+
+  // Fin de la cita: inicio + duracionMin. Extremo abierto del intervalo
+  // [inicio, fin): a las `fin` la agenda ya está libre.
+  get fin(): Date {
+    return new Date(this.inicio.getTime() + this.duracionMin * 60_000);
+  }
+
+  /**
+   * ¿Esta cita se cruza con `otra` en la agenda de su profesional? (ADR-11 §1)
+   *
+   * UNICA fuente de la regla: el repositorio solo pre-filtra candidatas; la
+   * decisión fina se toma aquí. Se cruzan si y solo si:
+   *  - son citas distintas (misma instancia o mismo id => no);
+   *  - son del mismo tenant y del mismo profesional DUEÑO (`usuarioId`), no de
+   *    quien hace la petición;
+   *  - ambas están vigentes: una terminal no ocupa la agenda;
+   *  - los intervalos semiabiertos [inicio, fin) se intersectan. Por eso las
+   *    citas pegadas (10:00–10:50 y 10:50–11:40) NO se cruzan.
+   */
+  chocaCon(otra: Cita): boolean {
+    if (this === otra) return false;
+    if (this.id !== undefined && this.id === otra.id) return false;
+    if (this.tenantId !== otra.tenantId) return false;
+    if (this.usuarioId !== otra.usuarioId) return false;
+    if (!this.estaVigente() || !otra.estaVigente()) return false;
+    return (
+      this.inicio.getTime() < otra.fin.getTime() &&
+      otra.inicio.getTime() < this.fin.getTime()
+    );
   }
 
   /**
@@ -230,10 +277,7 @@ export class Cita {
 
   // pendiente | confirmada: la cita sigue siendo un compromiso abierto.
   private estaVigente(): boolean {
-    return (
-      this._estado === EstadoCita.PENDIENTE ||
-      this._estado === EstadoCita.CONFIRMADA
-    );
+    return ESTADOS_VIGENTES.includes(this._estado);
   }
 
   // Lanza el error de dominio si la guarda no se cumple. `evento` conserva el

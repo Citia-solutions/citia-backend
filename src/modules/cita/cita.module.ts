@@ -68,5 +68,9 @@ import { CitasController } from './presentation/citas.controller';
       useClass: TypeOrmCambioCitaRepository,
     },
   ],
+  // `solicitud` (bandeja) reutiliza `CitasService.agendar` para crear la cita
+  // al aceptar una solicitud. La dependencia es solicitud -> cita: este modulo
+  // no importa nada de `solicitud` (sin ciclo).
+  exports: [CitasService],
 })
 export class CitaModule {}

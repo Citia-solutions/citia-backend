@@ -2,58 +2,103 @@
 
 Hoja de ruta de las historias de usuario (US-02 a US-10). Sirve para tener el orden, las
 dependencias y el estado real de cada pieza en un solo lugar.
+
+**Última revisión:** 2026-09-25 (cierre de Fase 1)
+
 ## Convenciones
 
-- ✅ hecho · 🔶 parcial · ⬜ pendiente.
+- ✅ hecho · 🔶 parcial · ⬜ pendiente · 🚧 bloqueado · ⏸ aplazado.
 - Cada fase es entregable y testeable por sí sola.
-- Orden por dependencias: US-02 → US-03 → US-04 → US-05 → US-07 → US-08 → US-10.
-- El enlace público `/agendar-cita` y la reserva pública quedan **fuera** de este roadmap
-  (ver [Frontend-Decisions/FD-01](../context/Frontend-Decisions/FD-01.md)).
+- Orden por dependencias: US-02 (+ US-06 en paralelo) → US-03 → US-04 → US-05 → US-07 → US-08.
+  US-10 no depende de nada y puede entrar en cualquier momento. US-09 sigue sin definir.
+- Auth y registro (US-00a/US-00b) quedan fuera: ya están cerrados (ver
+  [Features/us00a-registro-inicial.md](Features/us00a-registro-inicial.md) y
+  [Features/us00b-login.md](Features/us00b-login.md)).
+- La solicitud pública de hora del paciente (`/agendar-cita`) **sí** está implementada, pero se
+  sigue en [ADR-09](Decisions/ADR-09.md) y no como fase propia (ver Fase 1 → Vía pública).
+- Las deudas técnicas viven en [Deudas/](Deudas/); aquí solo se citan las que bloquean una fase.
 
 ---
 
 ## Fase 0 — US-06: Dashboard de citas del día (RF-03)
 
-**Estado:** 🔶 UI implementada; integración con backend pendiente.
+**Estado:** ✅ UI conectada al backend real (solo falta la prueba manual de US-02.09).
 
 ### Hecho
 - Layout del dashboard (sidebar, topbar, métricas, lista "Citas de hoy", badges de estado).
 - UI de citas del día con paciente, hora, duración, tipo de consulta y estado.
+- ✅ Conectado a `GET /citas/hoy` real (las métricas del diseño siguen en el mock de `dashboardApi.ts`).
+- ✅ Clic en una cita → voucher con reagendar/cancelar ([US-02.08](US/02.08-voucher-cita.md)).
+- ✅ Citas pasadas marcadas visualmente (tachado) en `TodayAppointments.vue`.
 
 ### Pendiente
-- Conectar a `GET /citas/hoy` real (hoy usa mock en `dashboardApi.ts`).
-- Clic en una cita → detalle con opciones de reagendar/cancelar.
-- Marcar visualmente las citas pasadas (gris/tachado).
+- 🔶 Prueba manual contra el backend real de que los cambios se reflejan
+  ([US-02.09](../../citia-frontend/context/us/02.09-dashboard-refleja-cambios.md)).
 
-> Depende de US-02 (la lista real de citas).a
+> Depende de US-02 (la lista real de citas).
+
 ---
 
 ## Fase 1 — US-02: Gestión de cita
 
-**Estado:** backend casi completo; front con modal crear + dashboard del día.
+**Estado:** ✅ implementada en ambos lados (2026-09-25, rama `feature/us02-cierre-fase1`, sin commit).
+Solo falta la **prueba manual contra Postgres**. US-02.07 (lado paciente) quedó **fuera de la v1**
+(Q11 → C). Detalle en [Features/us02-gestion-citas.md](Features/us02-gestion-citas.md) § "Cierre de Fase 1".
+
+### Subtareas
+
+| Subtarea | Lado | Estado |
+|---|---|---|
+| [US-02.07](US/02.07-paciente-reagenda-cancela.md) — el paciente cancela o pide reagendar | paciente | ⏸ aplazada fuera de la v1 (Q11 → C); pasa a la Fase 3 con US-04 |
+| [US-02.08](US/02.08-voucher-cita.md) — voucher con reagendar y cancelar | profesional | ✅ mergeada en `develop` |
+| [US-02.09](../../citia-frontend/context/us/02.09-dashboard-refleja-cambios.md) — el dashboard refleja los cambios | profesional (solo front) | ✅ mergeada · falta prueba manual |
+| Agenda semanal + lista ([agenda-profesional](../../citia-frontend/context/Features/agenda-profesional.md)) | profesional | ✅ implementada, sin commit |
+| Bandeja de solicitudes ([bandeja-solicitudes](../../citia-frontend/context/Features/bandeja-solicitudes.md)) | profesional | ✅ implementada, sin commit |
+| Aviso de solapamiento ([ADR-11](Decisions/ADR-11.md), cierra DT-12 en diseño) | profesional | ✅ implementado, sin commit |
 
 ### Backend
-- ✅ `POST /citas` (crear).
-- ✅ `GET /citas/hoy`.
-- ✅ `PATCH :id/confirmar|cancelar|asistencia|inasistencia|reagendar`.
+- ✅ `POST /citas` (crear) — ahora con `avisos.solapamientos`.
+- ✅ `GET /citas/hoy` — ahora con `fecha`.
+- ✅ `GET /citas?desde&hasta` (máx. 42 días, agrupable por `fecha` en la zona de la clínica).
+- ✅ `GET /citas/:id` (detalle + `accionesPermitidas`, US-02.08).
+- ✅ `PATCH /citas/:id` (editar) — con `avisos`.
+- ✅ `PATCH :id/confirmar|cancelar|asistencia|inasistencia|reagendar` — reagendar con `avisos`.
 - ✅ `GET :id/historial` (bitácora).
 - ✅ Validación de transiciones por estado (máquina de estados en dominio).
-- ⬜ `GET /citas` por rango/lista (para calendario; hoy solo existe `/hoy`).
+- ✅ Bandeja: `GET /solicitudes?estado=`, `POST /solicitudes/:id/aceptar` (crea paciente + cita en
+  una transacción con `FOR UPDATE`), `POST /solicitudes/:id/rechazar`.
+- ✅ `POST /auth/login` devuelve `usuario.tenantSlug` (para el enlace público).
+- 🔶 Migración `1750000007000-AddResueltaEnASolicitudesCita` creada, **sin aplicar**.
 
 ### Frontend
-- 🔶 Modal "Nueva cita" (crear) — hecho.
-- ⬜ Lista/calendario de citas del profesional.
-- ⬜ Detalle de cita con acciones.
-- ⬜ Reagendar (UI).
-- ⬜ Cancelar (UI).
-- ⬜ Reflejar cambios en agenda tras crear/reagendar/cancelar.
+- ✅ Modal "Nueva cita" (crear).
+- ✅ Detalle de cita con acciones (voucher, US-02.08).
+- ✅ Reagendar y cancelar (UI).
+- ✅ Reflejar cambios en el dashboard tras crear/reagendar/cancelar (US-02.09).
+- ✅ Agenda del profesional: vista semanal + lista (`/agenda`).
+- ✅ Bandeja de solicitudes con aceptar/rechazar (`/solicitudes`) y contador en el sidebar.
+- ✅ Aviso no bloqueante de solapamiento al crear, reagendar y aceptar.
+- ✅ Botón "Copiar enlace de agenda", con advertencia mientras siga abierta DT-18.
+
+### Vía pública (solicitud del paciente — [ADR-09](Decisions/ADR-09.md))
+- ✅ `POST /publico/:tenantSlug/solicitudes`: el paciente **pide** hora, no reserva.
+- ✅ Frontend: flujo multi-paso `/agendar-cita`
+  ([agendar-cita-paciente](../../citia-frontend/context/Features/agendar-cita-paciente.md)).
+- 🚧 Publicarla fuera del equipo requiere [DT-18](Deudas/DT-18.md) (límite de tasa).
+- ⚠️ **Contradicción abierta:** [FD-01](Frontend-Decisions/FD-01.md) (tomada 2026-09-10) dice que el
+  enlace **reserva** la hora al instante; ADR-09 y el código de ambos repos implementan que el
+  paciente **pide** y el profesional acepta en la bandeja. Hay que decidir cuál rige: si gana FD-01,
+  hace falta un modelo de disponibilidad y la bandeja pasa a ser opcional.
 
 ### Integración
-- 🔶 Modal conectado a `POST /citas` — hecho.
-- ⬜ Conectar lista/calendario + acciones (reagendar/cancelar).
-- ⬜ Validación del flujo completo.
+- ✅ Modal, voucher, agenda y bandeja conectados según el contrato.
+- ⬜ **Prueba manual completa contra Postgres**: aplicar la migración; crear hoy y mañana; cancelar;
+  reagendar dentro de hoy y a otro día; aceptar y rechazar una solicitud; comprobar el solapamiento.
+- ⬜ Suites que requieren BD: `auth-login`, `citas-dashboard`, `app`, integración de registro, más
+  las que recomienda [DT-20](Deudas/DT-20.md) (`FOR UPDATE` concurrente, `NULLS LAST`, migración).
 
-**Entregable:** el profesional ve sus citas, abre detalle, reagenda y cancela, todo reflejado.
+**Entregable:** el profesional ve su agenda, abre el detalle, reagenda y cancela, atiende las
+solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
 
 ---
 
@@ -83,21 +128,28 @@ dependencias y el estado real de cada pieza en un solo lugar.
 
 **Entregable:** el profesional configura recordatorios; el sistema los programa y envía; refleja reagendar/cancelar.
 
-> Requiere decidir canal (email primero recomendado) y proveedor de envío (Resend/SendGrid).
+> Requiere decidir canal (email primero recomendado), proveedor de envío (Resend/SendGrid) y el
+> **planificador/cola de jobs** (puntos 4 y 8; ver [Q6](PREGUNTAS-ABIERTAS.md) y RNF-03).
 
 ---
 
 ## Fase 3 — US-04: Respuesta del paciente
 
-**Estado:** ⬜ nada (diseño en [FD-06](../context/Frontend-Decisions/FD-06.md)).
+**Estado:** ⬜ nada. Diseño de producto en [FD-06](Frontend-Decisions/FD-06.md) (propuesta). El mecanismo de enlace por cita se está diseñando en
+[ADR-10](Decisions/ADR-10.md) (propuesto) para [US-02.07](US/02.07-paciente-reagenda-cancela.md).
+
+> **Relación con US-02.07.** US-04 **se construye sobre** el enlace por cita de ADR-10: mismo token,
+> misma página pública. US-02.07 aporta cancelar y pedir reagendar; US-04 añade "Confirmar", el
+> envío del enlace dentro del recordatorio y el registro de la respuesta para el scoring. No hay que
+> diseñar un segundo mecanismo de token.
 
 ### Backend
-1. Enlaces públicos con token único para "Confirmar" y "Cancelar".
+1. Enlaces públicos con token único para "Confirmar" y "Cancelar" (reutiliza el enlace de ADR-10).
 2. Modelo para registrar la respuesta (fecha/hora) → alimenta US-07.
 3. API pública que procesa la respuesta usando el token.
 4. Validación: rechazar/caducar tras la hora de la cita.
 5. Marcar cita confirmada al confirmar.
-6. Cancelar cita y liberar el bloque horario al cancelar.
+6. Cancelar cita y liberar el bloque horario al cancelar (transición existente, ADR-10).
 7. Guardar respuesta exacta (para scoring).
 
 ### Frontend (página pública responsive, sin cuenta)
@@ -112,7 +164,9 @@ dependencias y el estado real de cada pieza en un solo lugar.
 
 **Entregable:** el paciente confirma/cancela desde el correo; agenda y alertas se actualizan.
 
-> Depende de Fase 2 (recordatorios) y de ADR-08 (tenant/profesional en URL, sin implementar).
+> Depende de la Fase 2 (el recordatorio es lo que lleva el enlace) y de que se **acepte ADR-10**
+> (bloqueado por [H7 y Q11](PREGUNTAS-ABIERTAS.md)). **No** depende de ADR-08: el enlace no lleva
+> `tenantSlug`. Para publicarlo hace falta [DT-18](Deudas/DT-18.md).
 
 ---
 
@@ -127,7 +181,8 @@ dependencias y el estado real de cada pieza en un solo lugar.
 4. API para consultar historial (filtrar leídas/no leídas).
 5. API para marcar leídas (una o varias).
 6. Servicio de envío de email de alerta (si configurado).
-7. Conectar triggers de US-02 (reagendar/cancelar) y US-04 (confirmar/cancelar) → generan alerta.
+7. Conectar triggers de US-02 (reagendar/cancelar, incluidos los del paciente en US-02.07) y US-04
+   (confirmar/cancelar) → generan alerta.
 8. Push en tiempo real al front.
 
 ### Frontend
@@ -164,6 +219,10 @@ dependencias y el estado real de cada pieza en un solo lugar.
 - Conectar lista/detalle con APIs actualizadas.
 
 **Entregable:** el profesional ve el historial de comportamiento de cada paciente.
+
+> El punto 4 depende del **proceso de cierre** y su planificador ([Q6](PREGUNTAS-ABIERTAS.md)).
+> Mientras no exista, el historial no se acumula ([DT-11](Deudas/DT-11.md)) y no se puede
+> reconstruir hacia atrás: es la dependencia más urgente del roadmap aunque la fase vaya quinta.
 
 ---
 
@@ -230,12 +289,12 @@ dependencias y el estado real de cada pieza en un solo lugar.
 
 | Fase | US | Depende de | Estado |
 |---|---|---|---|
-| 0 | US-06 Dashboard | US-02 | 🔶 UI hecha, integración pendiente |
-| 1 | US-02 Gestión de citas | — | 🔶 cerrar front + `GET /citas` |
-| 2 | US-03 Recordatorios | US-02 | ⬜ |
-| 3 | US-04 Respuesta paciente | US-03, ADR-08 | ⬜ |
+| 0 | US-06 Dashboard | US-02 | ✅ conectado · falta prueba manual US-02.09 |
+| 1 | US-02 Gestión de citas | — | ✅ falta prueba manual con Postgres · US-02.07 ⏸ aplazada |
+| 2 | US-03 Recordatorios | US-02, planificador (Q6) | ⬜ |
+| 3 | US-04 Respuesta paciente (+ US-02.07) | US-03, ADR-10 | ⬜ |
 | 4 | US-05 Alertas | US-02/03/04 | ⬜ (solo puerto) |
-| 5 | US-07 Scoring | US-02/04 | ⬜ |
+| 5 | US-07 Scoring | US-02/04, proceso de cierre (Q6) | ⬜ |
 | 6 | US-08 Monitoreo | US-02/07 | 🔶 solo alta |
 | 7 | US-10 Perfil/soporte | — | ⬜ |
 | — | US-09 | — | ⬜ pendiente |
@@ -245,5 +304,12 @@ dependencias y el estado real de cada pieza en un solo lugar.
 1. Canal de recordatorios (Fase 2): email primero vs WhatsApp/SMS.
 2. Proveedor de email (Fase 2 y 4): Resend/SendGrid.
 3. Tiempo real (Fase 4): WebSockets vs SSE.
-4. Reagendar desde el correo (Fase 3): ver FD-06 (decidir si se incluye "cambiar hora", no solo confirmar/cancelar).
-5. ADR-08 (tenant en URL): prerrequisito para Fase 3.
+4. **Planificador/cola de jobs** (Fases 2 y 5): temporizador en proceso vs cola con reintentos
+   ([Q6](PREGUNTAS-ABIERTAS.md)). Lo necesitan el proceso de cierre y los recordatorios; decidir si
+   se paga la cola ahora o después.
+5. Enlace por cita (Fases 1 y 3): aceptar [ADR-10](Decisions/ADR-10.md) tras
+   [H7 y Q11](PREGUNTAS-ABIERTAS.md), incluido si el correo ofrece "cambiar hora" además de
+   confirmar/cancelar ([FD-06](Frontend-Decisions/FD-06.md)).
+6. **FD-01 vs ADR-09** (Fase 1, vía pública): ¿el enlace reserva o solo pide? Ver arriba.
+7. [ADR-08](Decisions/ADR-08.md) (tenant en URL): la fase 1 ya se aplica en la ruta pública
+   (ADR-09 §11.b); falta el login. Ya no bloquea la Fase 3.

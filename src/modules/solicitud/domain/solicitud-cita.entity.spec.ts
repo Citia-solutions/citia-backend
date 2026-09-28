@@ -100,11 +100,43 @@ describe('SolicitudCita (dominio)', () => {
         estado: EstadoSolicitud.ACEPTADA,
         citaId: 'cita-1',
         recibidaEn: new Date('2026-08-24T12:00:00Z'),
+        resueltaEn: new Date('2026-08-25T09:00:00Z'),
       });
 
       expect(solicitud.id).toBe('solicitud-1');
       expect(solicitud.estado).toBe(EstadoSolicitud.ACEPTADA);
       expect(solicitud.esTerminal()).toBe(true);
+      expect(solicitud.resueltaEn?.toISOString()).toBe(
+        '2026-08-25T09:00:00.000Z',
+      );
+    });
+  });
+
+  describe('resueltaEn y asegurarResolvible', () => {
+    it('nace sin resueltaEn', () => {
+      expect(SolicitudCita.recibir(props).resueltaEn).toBeNull();
+    });
+
+    it('aceptar y rechazar fijan resueltaEn', () => {
+      const ahora = new Date('2026-09-25T15:40:00Z');
+      const aceptada = SolicitudCita.recibir(props);
+      aceptada.aceptar('usuario-1', 'cita-1', ahora);
+      expect(aceptada.resueltaEn).toBe(ahora);
+
+      // Sin `ahora` explícito, usa el reloj del sistema.
+      const rechazada = SolicitudCita.recibir(props);
+      rechazada.rechazar('usuario-1');
+      expect(rechazada.resueltaEn).toBeInstanceOf(Date);
+    });
+
+    it('asegurarResolvible deja pasar una recibida y rechaza una resuelta', () => {
+      const solicitud = SolicitudCita.recibir(props);
+      expect(() => solicitud.asegurarResolvible('aceptar')).not.toThrow();
+
+      solicitud.rechazar('usuario-1');
+      expect(() => solicitud.asegurarResolvible('aceptar')).toThrow(
+        'Transición inválida: no se puede aplicar "aceptar" a una solicitud "rechazada"',
+      );
     });
   });
 });

@@ -54,6 +54,8 @@ export class AuthService {
         nombreCompleto: usuario.nombreCompleto,
         rol: usuario.rol,
         tenantId: usuario.tenantId,
+        // El tenant ya está cargado (se resolvió por este mismo slug).
+        tenantSlug: tenant.slug,
       },
     });
   }

@@ -8,6 +8,7 @@ describe('PacientesService', () => {
     guardar: jest.Mock;
     buscarPorId: jest.Mock;
     buscarPorRut: jest.Mock;
+    buscarPorIds: jest.Mock;
   };
 
   const TENANT = 'tenant-1';
@@ -25,6 +26,7 @@ describe('PacientesService', () => {
       guardar: jest.fn(),
       buscarPorId: jest.fn(),
       buscarPorRut: jest.fn(),
+      buscarPorIds: jest.fn().mockResolvedValue([]),
     };
     service = new PacientesService(mockPacienteRepository);
   });

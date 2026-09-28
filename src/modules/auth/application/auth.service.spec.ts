@@ -163,12 +163,56 @@ describe('AuthService', () => {
         nombreCompleto: usuario.nombreCompleto,
         rol: usuario.rol,
         tenantId: usuario.tenantId,
+        tenantSlug: 'clinica-demo',
       });
 
       // Assert — el passwordHash nunca se expone
       expect(
         (result.usuario as unknown as Record<string, unknown>).passwordHash,
       ).toBeUndefined();
+    });
+
+    it('debería devolver tenantSlug desde el tenant cargado (cierre de Fase 1 §d)', async () => {
+      // Arrange — el slug de la respuesta es el persistido, no lo tecleado
+      mockTenantRepository.findBySlug.mockResolvedValue({
+        ...tenant,
+        slug: 'consulta-dra-perez',
+      });
+      mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(usuario);
+      bcryptCompareMock.mockResolvedValue(true);
+      mockTokenSigner.sign.mockReturnValue('signed.jwt.token');
+
+      // Act
+      const result = await service.login({
+        ...dto,
+        tenantSlug: 'consulta-dra-perez',
+      });
+
+      // Assert
+      expect(result.usuario.tenantSlug).toBe('consulta-dra-perez');
+    });
+
+    it('NO debería incluir tenantSlug en los claims del JWT', async () => {
+      // Arrange
+      mockTenantRepository.findBySlug.mockResolvedValue(tenant);
+      mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(usuario);
+      bcryptCompareMock.mockResolvedValue(true);
+      mockTokenSigner.sign.mockReturnValue('signed.jwt.token');
+
+      // Act
+      await service.login(dto);
+
+      // Assert — cambiar los claims obligaría a re-emitir tokens
+      const [payload] = mockTokenSigner.sign.mock.calls[0] as [
+        Record<string, unknown>,
+      ];
+      expect(payload).not.toHaveProperty('tenantSlug');
+      expect(Object.keys(payload).sort()).toEqual([
+        'email',
+        'rol',
+        'sub',
+        'tenantId',
+      ]);
     });
   });
 });

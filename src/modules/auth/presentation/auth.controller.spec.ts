@@ -53,6 +53,7 @@ describe('AuthController', () => {
           nombreCompleto: 'Admin Demo',
           rol: RolUsuario.ADMINISTRADOR,
           tenantId: 'tenant-uuid-001',
+          tenantSlug: 'clinica-demo',
         },
       });
       mockAuthService.login.mockResolvedValue(expectedResponse);

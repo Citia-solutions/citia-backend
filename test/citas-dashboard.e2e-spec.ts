@@ -7,6 +7,7 @@ import request from 'supertest';
 
 import { AuthModule } from '../src/modules/auth/auth.module';
 import { CitaModule } from '../src/modules/cita/cita.module';
+import { CambioCitaOrmEntity } from '../src/modules/cita/infrastructure/persistence/cambio-cita.orm-entity';
 import { CitaOrmEntity } from '../src/modules/cita/infrastructure/persistence/cita.orm-entity';
 import { PacienteModule } from '../src/modules/paciente/paciente.module';
 import { PacienteOrmEntity } from '../src/modules/paciente/infrastructure/persistence/paciente.orm-entity';
@@ -20,7 +21,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-secret-e2e';
 process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? '1d';
 
 // Config TypeORM de test que incluye TODAS las entidades que tocan las citas
-// (Tenant, Usuario, Paciente, Cita). La config compartida en
+// (Tenant, Usuario, Paciente, Cita, CambioCita). La config compartida en
 // test/typeorm-test.config.ts solo registra Tenant+Usuario; aquí ampliamos.
 const typeOrmCitasTestConfig: TypeOrmModuleOptions = {
   type: 'postgres',
@@ -34,6 +35,7 @@ const typeOrmCitasTestConfig: TypeOrmModuleOptions = {
     UsuarioOrmEntity,
     PacienteOrmEntity,
     CitaOrmEntity,
+    CambioCitaOrmEntity,
   ],
   synchronize: true, // SOLO aquí: BD efímera de test, nunca dev/prod
   dropSchema: true, // Limpia el schema en cada run de test
