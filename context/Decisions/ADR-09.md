@@ -12,20 +12,20 @@ deuda de historial) · **adopta la fase 1 de** [ADR-08](ADR-08.md) en la ruta p�
 | # | Decisión | Estado |
 |---|----------|--------|
 | 1 | `SolicitudCita` como agregado aparte | ✅ 2026-08-24 |
-| 2 | El paciente pide, no reserva | ✅ 2026-08-24 |
+| 2 | El paciente pide, no reserva | ✅ 2026-08-24 · reafirmada el 2026-09-29 frente a [FD-01](../Frontend-Decisions/FD-01.md), que queda descartada |
 | 3 | El RUT es la identidad del paciente | ✅ 2026-08-23 |
 | 4 | Editar ≠ reagendar ≠ cancelar | ✅ 2026-08-23 |
 | 5 | `Cita.reagendar()` | ✅ 2026-08-23 |
 | 6 | Bitácora `CambioCita` | ✅ 2026-08-23 |
 | 7 | Publicación de hechos | ✅ 2026-08-23 |
-| 8 | Ruta pública + límite de tasa | ruta ✅ · límite de tasa 🔵 **aplazado mientras el entorno sea local** ([DT-18](../Deudas/DT-18.md)) |
+| 8 | Ruta pública + límite de tasa | ruta ✅ · límite de tasa 🟠 **aceptado sin límite por ahora** (decisión de producto 2026-09-29, [DT-18](../Deudas/DT-18.md)) |
 | 9 | Formulario propio, no de terceros | ✅ (backend listo; el formulario es del frontend) |
 | 10 | Campos del formulario | 🟡 ✅ provisionales — a confirmar cuando el frontend los cierre |
-| — | Bandeja: listar, aceptar, rechazar | 📐 contrato definido (2026-09-25, [us02 §c](../Features/us02-gestion-citas.md#c-bandeja-de-solicitudes-autenticada)); falta implementar |
+| — | Bandeja: listar, aceptar, rechazar | ✅ 2026-09-28 (contrato en [us02 §c](../Features/us02-gestion-citas.md#c-bandeja-de-solicitudes-autenticada)) |
 
-> **Requisito de despliegue:** el límite de tasa de la decisión 8 no existe. Es irrelevante mientras
-> se trabaje en local, y pasa a bloqueante el día que el backend quede accesible o se comparta el
-> enlace fuera del equipo. Ver [DT-18](../Deudas/DT-18.md).
+> **Límite de tasa:** la decisión 8 no tiene límite de tasa. El 2026-09-29 se decidió desplegar y
+> seguir **sin límite por el momento**, asumiendo el riesgo de abuso de la ruta pública. Ver
+> [DT-18](../Deudas/DT-18.md).
 
 ---
 
