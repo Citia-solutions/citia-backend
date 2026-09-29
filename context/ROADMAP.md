@@ -3,7 +3,7 @@
 Hoja de ruta de las historias de usuario (US-02 a US-10). Sirve para tener el orden, las
 dependencias y el estado real de cada pieza en un solo lugar.
 
-**Última revisión:** 2026-09-25 (cierre de Fase 1)
+**Última revisión:** 2026-09-29 (FD-01 descartada, DT-18 aceptada)
 
 ## Convenciones
 
@@ -22,7 +22,7 @@ dependencias y el estado real de cada pieza en un solo lugar.
 
 ## Fase 0 — US-06: Dashboard de citas del día (RF-03)
 
-**Estado:** ✅ UI conectada al backend real (solo falta la prueba manual de US-02.09).
+**Estado:** ✅ cerrada: conectada al backend real y probada contra Postgres (2026-09-28).
 
 ### Hecho
 - Layout del dashboard (sidebar, topbar, métricas, lista "Citas de hoy", badges de estado).
@@ -31,9 +31,11 @@ dependencias y el estado real de cada pieza en un solo lugar.
 - ✅ Clic en una cita → voucher con reagendar/cancelar ([US-02.08](US/02.08-voucher-cita.md)).
 - ✅ Citas pasadas marcadas visualmente (tachado) en `TodayAppointments.vue`.
 
-### Pendiente
-- 🔶 Prueba manual contra el backend real de que los cambios se reflejan
+- ✅ Los cambios se reflejan tras crear/reagendar/cancelar
   ([US-02.09](../../citia-frontend/context/us/02.09-dashboard-refleja-cambios.md)).
+
+### Pendiente
+- Las métricas del dashboard (ausentismo, horas e ingresos recuperados) siguen siendo mock.
 
 > Depende de US-02 (la lista real de citas).
 
@@ -41,8 +43,8 @@ dependencias y el estado real de cada pieza en un solo lugar.
 
 ## Fase 1 — US-02: Gestión de cita
 
-**Estado:** ✅ implementada en ambos lados (2026-09-25, rama `feature/us02-cierre-fase1`, sin commit).
-Solo falta la **prueba manual contra Postgres**. US-02.07 (lado paciente) quedó **fuera de la v1**
+**Estado:** ✅ **cerrada**: mergeada en `develop` en ambos repos el 2026-09-28 y verificada contra
+Postgres. US-02.07 (lado paciente) quedó **fuera de la v1**
 (Q11 → C). Detalle en [Features/us02-gestion-citas.md](Features/us02-gestion-citas.md) § "Cierre de Fase 1".
 
 ### Subtareas
@@ -51,10 +53,10 @@ Solo falta la **prueba manual contra Postgres**. US-02.07 (lado paciente) quedó
 |---|---|---|
 | [US-02.07](US/02.07-paciente-reagenda-cancela.md) — el paciente cancela o pide reagendar | paciente | ⏸ aplazada fuera de la v1 (Q11 → C); pasa a la Fase 3 con US-04 |
 | [US-02.08](US/02.08-voucher-cita.md) — voucher con reagendar y cancelar | profesional | ✅ mergeada en `develop` |
-| [US-02.09](../../citia-frontend/context/us/02.09-dashboard-refleja-cambios.md) — el dashboard refleja los cambios | profesional (solo front) | ✅ mergeada · falta prueba manual |
-| Agenda semanal + lista ([agenda-profesional](../../citia-frontend/context/Features/agenda-profesional.md)) | profesional | ✅ implementada, sin commit |
-| Bandeja de solicitudes ([bandeja-solicitudes](../../citia-frontend/context/Features/bandeja-solicitudes.md)) | profesional | ✅ implementada, sin commit |
-| Aviso de solapamiento ([ADR-11](Decisions/ADR-11.md), cierra DT-12 en diseño) | profesional | ✅ implementado, sin commit |
+| [US-02.09](../../citia-frontend/context/us/02.09-dashboard-refleja-cambios.md) — el dashboard refleja los cambios | profesional (solo front) | ✅ mergeada · probada contra el backend real |
+| Agenda semanal + lista ([agenda-profesional](../../citia-frontend/context/Features/agenda-profesional.md)) | profesional | ✅ en `develop` |
+| Bandeja de solicitudes ([bandeja-solicitudes](../../citia-frontend/context/Features/bandeja-solicitudes.md)) | profesional | ✅ en `develop` |
+| Aviso de solapamiento ([ADR-11](Decisions/ADR-11.md), cierra DT-12 en diseño) | profesional | ✅ en `develop` |
 
 ### Backend
 - ✅ `POST /citas` (crear) — ahora con `avisos.solapamientos`.
@@ -68,7 +70,7 @@ Solo falta la **prueba manual contra Postgres**. US-02.07 (lado paciente) quedó
 - ✅ Bandeja: `GET /solicitudes?estado=`, `POST /solicitudes/:id/aceptar` (crea paciente + cita en
   una transacción con `FOR UPDATE`), `POST /solicitudes/:id/rechazar`.
 - ✅ `POST /auth/login` devuelve `usuario.tenantSlug` (para el enlace público).
-- 🔶 Migración `1750000007000-AddResueltaEnASolicitudesCita` creada, **sin aplicar**.
+- ✅ Migración `1750000007000-AddResueltaEnASolicitudesCita` aplicada en local (up y down probados).
 
 ### Frontend
 - ✅ Modal "Nueva cita" (crear).
@@ -78,24 +80,25 @@ Solo falta la **prueba manual contra Postgres**. US-02.07 (lado paciente) quedó
 - ✅ Agenda del profesional: vista semanal + lista (`/agenda`).
 - ✅ Bandeja de solicitudes con aceptar/rechazar (`/solicitudes`) y contador en el sidebar.
 - ✅ Aviso no bloqueante de solapamiento al crear, reagendar y aceptar.
-- ✅ Botón "Copiar enlace de agenda", con advertencia mientras siga abierta DT-18.
+- ✅ Botón "Copiar enlace de agenda", con la advertencia de DT-18 (`ENLACE_PUBLICO_LISTO = false`).
 
 ### Vía pública (solicitud del paciente — [ADR-09](Decisions/ADR-09.md))
 - ✅ `POST /publico/:tenantSlug/solicitudes`: el paciente **pide** hora, no reserva.
 - ✅ Frontend: flujo multi-paso `/agendar-cita`
   ([agendar-cita-paciente](../../citia-frontend/context/Features/agendar-cita-paciente.md)).
-- 🚧 Publicarla fuera del equipo requiere [DT-18](Deudas/DT-18.md) (límite de tasa).
-- ⚠️ **Contradicción abierta:** [FD-01](Frontend-Decisions/FD-01.md) (tomada 2026-09-10) dice que el
-  enlace **reserva** la hora al instante; ADR-09 y el código de ambos repos implementan que el
-  paciente **pide** y el profesional acepta en la bandeja. Hay que decidir cuál rige: si gana FD-01,
-  hace falta un modelo de disponibilidad y la bandeja pasa a ser opcional.
+- 🟠 Sin límite de tasa **por decisión** (2026-09-29): riesgo asumido, a revisar antes de difundir el
+  enlace de forma masiva ([DT-18](Deudas/DT-18.md)).
+- ✅ **Decidido (2026-09-29):** el enlace **solo envía una solicitud** y el profesional la acepta en la
+  bandeja (ADR-09). [FD-01](Frontend-Decisions/FD-01.md), que proponía reservar al instante, queda
+  descartada.
 
 ### Integración
 - ✅ Modal, voucher, agenda y bandeja conectados según el contrato.
-- ⬜ **Prueba manual completa contra Postgres**: aplicar la migración; crear hoy y mañana; cancelar;
-  reagendar dentro de hoy y a otro día; aceptar y rechazar una solicitud; comprobar el solapamiento.
-- ⬜ Suites que requieren BD: `auth-login`, `citas-dashboard`, `app`, integración de registro, más
-  las que recomienda [DT-20](Deudas/DT-20.md) (`FOR UPDATE` concurrente, `NULLS LAST`, migración).
+- ✅ Prueba manual contra Postgres (2026-09-28): 29/29 casos en la API, 5 aceptar concurrentes →
+  una sola cita, y recorrido en el navegador (agenda, aceptar con aviso, rechazar).
+- ✅ Suites con BD: e2e 89/89 y `test:integration` 6/6.
+- ⬜ Tests automáticos de lo que recomienda [DT-20](Deudas/DT-20.md) (`FOR UPDATE` concurrente,
+  `NULLS LAST`): hoy solo están verificados a mano.
 
 **Entregable:** el profesional ve su agenda, abre el detalle, reagenda y cancela, atiende las
 solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
@@ -166,7 +169,8 @@ solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
 
 > Depende de la Fase 2 (el recordatorio es lo que lleva el enlace) y de que se **acepte ADR-10**
 > (bloqueado por [H7 y Q11](PREGUNTAS-ABIERTAS.md)). **No** depende de ADR-08: el enlace no lleva
-> `tenantSlug`. Para publicarlo hace falta [DT-18](Deudas/DT-18.md).
+> `tenantSlug`. Sin límite de tasa por decisión ([DT-18](Deudas/DT-18.md)): revisarlo antes de
+> difundir enlaces de forma masiva.
 
 ---
 
@@ -289,8 +293,8 @@ solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
 
 | Fase | US | Depende de | Estado |
 |---|---|---|---|
-| 0 | US-06 Dashboard | US-02 | ✅ conectado · falta prueba manual US-02.09 |
-| 1 | US-02 Gestión de citas | — | ✅ falta prueba manual con Postgres · US-02.07 ⏸ aplazada |
+| 0 | US-06 Dashboard | US-02 | ✅ cerrada |
+| 1 | US-02 Gestión de citas | — | ✅ cerrada (develop 2026-09-28) · US-02.07 ⏸ aplazada |
 | 2 | US-03 Recordatorios | US-02, planificador (Q6) | ⬜ |
 | 3 | US-04 Respuesta paciente (+ US-02.07) | US-03, ADR-10 | ⬜ |
 | 4 | US-05 Alertas | US-02/03/04 | ⬜ (solo puerto) |
@@ -310,6 +314,7 @@ solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
 5. Enlace por cita (Fases 1 y 3): aceptar [ADR-10](Decisions/ADR-10.md) tras
    [H7 y Q11](PREGUNTAS-ABIERTAS.md), incluido si el correo ofrece "cambiar hora" además de
    confirmar/cancelar ([FD-06](Frontend-Decisions/FD-06.md)).
-6. **FD-01 vs ADR-09** (Fase 1, vía pública): ¿el enlace reserva o solo pide? Ver arriba.
-7. [ADR-08](Decisions/ADR-08.md) (tenant en URL): la fase 1 ya se aplica en la ruta pública
+6. ~~FD-01 vs ADR-09~~ → **resuelta 2026-09-29**: el enlace solo envía una solicitud (ADR-09).
+7. ~~Límite de tasa antes de desplegar~~ → **resuelta 2026-09-29**: se sigue sin límite por ahora (DT-18).
+8. [ADR-08](Decisions/ADR-08.md) (tenant en URL): la fase 1 ya se aplica en la ruta pública
    (ADR-09 §11.b); falta el login. Ya no bloquea la Fase 3.

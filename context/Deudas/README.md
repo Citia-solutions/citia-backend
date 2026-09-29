@@ -37,7 +37,7 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-05](DT-05.md) | La respuesta de login no es uniforme en el tiempo | 🟡 baja | abierta | [ADR-03 §5](../Decisions/ADR-03.md) |
 | [DT-08](DT-08.md) | Colisión de identificador público bajo concurrencia | 🟡 baja | abierta | [ADR-03 §2](../Decisions/ADR-03.md) |
 | [DT-09](DT-09.md) | Comprobación de correo duplicado inalcanzable | 🟡 baja | abierta | [us00a](../Features/us00a-registro-inicial.md) |
-| [DT-18](DT-18.md) | No existe límite de tasa en ninguna superficie | 🔵→🔴 al desplegar | 🔵 aplazada · **requisito de despliegue** | transversal |
+| [DT-18](DT-18.md) | No existe límite de tasa en ninguna superficie | 🟠 riesgo asumido | **aceptada sin límite por ahora** (2026-09-29) | transversal |
 | [DT-17](DT-17.md) | Zona horaria única para toda la instalación | 🟡 baja | 🔵 aplazada | [ADR-07 §2](../Decisions/ADR-07.md) |
 | [DT-21](DT-21.md) | Carpetas vacías con nombres mal escritos | 🟢 cosmética | abierta | estructura |
 | [DT-29](DT-29.md) | Funcionalidad implementada y no conectada (7 de 14 rutas) | 🟡 baja | abierta (mitigada) | release 1 de US-02 |
@@ -59,9 +59,10 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-26](DT-26.md) | Sin política de retención para las solicitudes | 🟠 media | ⚪ prevista | [ADR-09 §1, §10](../Decisions/ADR-09.md) |
 | [DT-24](DT-24.md) | Sin taxonomía de tipos de consulta | 🟡 baja | 🔵 aplazada | [ADR-09 §10](../Decisions/ADR-09.md) |
 
-> **DT-18 es la única deuda con disparador de entorno**, no de requisito: hoy es irrelevante porque
-> nada está expuesto, y pasa a bloqueante el día que exista un despliegue accesible o se comparta el
-> enlace público. Es un **requisito de despliegue**, no una tarea de desarrollo.
+> **DT-18 tenía un disparador de entorno** (el primer despliegue accesible), que ya se cumplió. El
+> 2026-09-29 se decidió seguir **sin límite de tasa por el momento**: ya no bloquea el despliegue y
+> pasa a ser un riesgo aceptado, que hay que revisar antes de difundir el enlace de forma masiva o
+> al entrar el primer cliente real.
 
 > **`→` en la severidad** significa que la deuda escala sola cuando entre cierto requisito. DT-02
 > escala con DT-07; DT-16 y DT-19 escalan con RF-06 (recordatorios); DT-13 escala cuando exista el
