@@ -9,7 +9,7 @@ contexto, las opciones evaluadas, la decisión tomada y sus consecuencias.
 | [ADR-01](ADR-01.md) | Autenticación con Passport.js + JWT (tenantId del token) | Aceptado · Implementado | 2026-06-22 | `45198c3`, `346a034` |
 | [ADR-02](ADR-02.md) | Convenciones: español + arquitectura hexagonal | Aceptado | 2026-06-22 | `718fe1f` |
 | [ADR-03](ADR-03.md) | Login multi-tenant por `tenantSlug` | Aceptado | 2026-06-22 | `195431b`, `cfa35f3` |
-| [ADR-04](ADR-04.md) | Modelo de Cita: máquina de estados en el dominio + estado materializado | Aceptado | 2026-06-30 | `e592d74`, `77523c9` |
+| [ADR-04](ADR-04.md) | Modelo de Cita: máquina de estados en el dominio + estado materializado | Aceptado · mecanismo del §4 (BullMQ) reemplazado por ADR-12 | 2026-06-30 | `e592d74`, `77523c9` |
 | [ADR-05](ADR-05.md) | Contenedorización Docker multi-stage + migraciones en el arranque | Aceptado · Implementado | 2026-06-22 | `b8cac2a`, `df53128`, `0e54f0b`, `77a97c9`, `b623b6a` |
 | [ADR-06](ADR-06.md) | Atomicidad del registro: puerto `TransactionRunner` con contexto opaco | Aceptado · Implementado | 2026-06-23 | `d4fa476`, `f573485` |
 | [ADR-07](ADR-07.md) | Día y hora del dashboard en la zona de la clínica (DST-safe con `Intl`) | Aceptado · Implementado | 2026-07-06 | `08dad63` |
@@ -17,6 +17,8 @@ contexto, las opciones evaluadas, la decisión tomada y sus consecuencias.
 | [ADR-09](ADR-09.md) | Gestión de citas: `SolicitudCita` como agregado aparte, RUT como identidad del paciente, reagendar con bitácora | Aceptado · **release 1 implementado** · vía pública pendiente | 2026-08-23 | — |
 | [ADR-10](ADR-10.md) | Enlace por cita para el paciente (US-02.07): token opaco hasheado, cancelar con la transición existente, pedir reagendar sin mover la cita | **Propuesto** · **aplazado fuera de la v1** (Q11 → C, 2026-09-25) | 2026-09-23 | — |
 | [ADR-11](ADR-11.md) | Solapamiento de citas: avisar y permitir, regla en la entidad `Cita` (`chocaCon`), campo opcional `avisos.solapamientos` | Aceptado · sin implementar | 2026-09-25 | — |
+| [ADR-12](ADR-12.md) | Outbox transaccional (`eventos_salida`) y planificador en proceso con `@nestjs/schedule` sobre Postgres (`FOR UPDATE SKIP LOCKED`); cierre de citas aplazado | Aceptado · sin implementar | 2026-09-30 | — |
+| [ADR-13](ADR-13.md) | Recordatorios al paciente por correo (RF-06): entidad `Recordatorio` con estado, planificación pura, Resend detrás de `CanalMensajeria`, webhooks firmados, cuota del modo prueba | Aceptado · sin implementar · decisiones confirmadas (2026-09-30) | 2026-09-30 | — |
 
 ## Relaciones entre ADRs
 
@@ -45,5 +47,20 @@ contexto, las opciones evaluadas, la decisión tomada y sus consecuencias.
   permitir. **Se apoya en** ADR-04 (vigente vs terminal; la regla vive en la entidad) y en ADR-07
   (hora y fecha del aviso en la zona de la clínica). Toma el número 11, así que el ADR de Q6
   (proceso de cierre) pasa a ser el ADR-12.
+- ADR-12 (outbox + planificador) **cierra en diseño** DT-27 y **responde** Q6 en cuanto al mecanismo.
+  **Reemplaza** la mención a BullMQ de ADR-04 §4 (la materialización vía proceso programado sigue
+  vigente, pero el job de cierre queda aplazado con el scoring). **Implementa** la "fase 2" del
+  adaptador de `PublicadorEventos` que ADR-09 §7 dejó prevista, y **reutiliza** el `TransactionRunner`
+  de ADR-06: el puerto pasa a exigir el `tx`. Deja anotada para el futuro job de cierre la regla de
+  ADR-10 §5 (petición de reagendamiento sin atender ≠ `ghosting`).
+- ADR-13 (recordatorios) **es el primer suscriptor** de ADR-12 y usa su planificador. **Se apoya en**
+  ADR-04 (vigente/terminal decide si un recordatorio vive), ADR-09 §4 (editar no lo toca, reagendar lo
+  reprograma, cancelar lo anula) y ADR-07 (horas sin envío y texto en la zona de la clínica).
+  **Matiza** ADR-09 §3: al vincular un paciente por RUT, un correo vacío se completa (ADR-09 lleva una
+  nota que apunta aquí). **Prepara**
+  ADR-10: el enlace por cita de la Fase 3 viaja en este mismo correo (bloque `accion` de la
+  plantilla), y el seguimiento de clics se desactiva para que el token no pase por el proveedor.
+  **Contradice a sabiendas** la nota de consentimiento de ADR-10 §6 (con la salida B, DT-16 pasaba a
+  bloqueante): el usuario aceptó el riesgo el 2026-09-30 (ver DT-16).
 
 Ver la matriz completa commit ↔ doc en [`../TRAZABILIDAD.md`](../TRAZABILIDAD.md).

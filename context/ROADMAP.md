@@ -3,7 +3,7 @@
 Hoja de ruta de las historias de usuario (US-02 a US-10). Sirve para tener el orden, las
 dependencias y el estado real de cada pieza en un solo lugar.
 
-**Última revisión:** 2026-09-29 (FD-01 descartada, DT-18 aceptada)
+**Última revisión:** 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
 
 ## Convenciones
 
@@ -11,6 +11,9 @@ dependencias y el estado real de cada pieza en un solo lugar.
 - Cada fase es entregable y testeable por sí sola.
 - Orden por dependencias: US-02 (+ US-06 en paralelo) → US-03 → US-04 → US-05 → US-07 → US-08.
   US-10 no depende de nada y puede entrar en cualquier momento. US-09 sigue sin definir.
+- **Alcance del MVP (2026-09-30):** Fase 0 (dashboard) + Fase 1 (gestión de citas) + **Fase 2
+  (recordatorios)**. La Fase 5 (scoring) sale del MVP y pasa a la v2. Ver
+  [Descripcion/fase-3-mvp.md](Descripcion/fase-3-mvp.md).
 - Auth y registro (US-00a/US-00b) quedan fuera: ya están cerrados (ver
   [Features/us00a-registro-inicial.md](Features/us00a-registro-inicial.md) y
   [Features/us00b-login.md](Features/us00b-login.md)).
@@ -107,32 +110,71 @@ solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
 
 ## Fase 2 — US-03: Recordatorios al paciente
 
-**Estado:** ⬜ nada.
+**Estado:** 🔶 **diseño cerrado y decisiones confirmadas (2026-09-30)**, implementación sin empezar.
+Entra en el MVP (Q1 → A).
+Diseño en [ADR-12](Decisions/ADR-12.md) (outbox + planificador) y [ADR-13](Decisions/ADR-13.md)
+(recordatorios); plan de construcción en [US/03-recordatorios.md](US/03-recordatorios.md).
+
+### Decisiones (usuario, 2026-09-30)
+
+| Tema | Decisión |
+|---|---|
+| Canal | correo transaccional vía **Resend**. WhatsApp y SMS fuera del MVP (otro adaptador del mismo puerto, después) |
+| Remitente | uno solo para toda la plataforma, nombre visible **"Citia"**. Dominio **aún sin comprar** |
+| Contenido | solo informativo: fecha, hora, profesional, cómo contactar. Sin tipo de consulta. El enlace para responder llega en la Fase 3 |
+| Momentos | configurables por profesional; predeterminado **24 h y 2 h antes** |
+| Correo del paciente | **obligatorio** en el alta manual |
+| Consentimiento | **no se revisa** por ahora: riesgo aceptado ([DT-16](Deudas/DT-16.md)), revisión antes de la Ley 21.719 |
+| Hechos de dominio | outbox transaccional: **cierra [DT-27](Deudas/DT-27.md)** antes del primer suscriptor |
+| Planificador ([Q6](PREGUNTAS-ABIERTAS.md)) | cron dentro del proceso sobre Postgres con `FOR UPDATE SKIP LOCKED`; sin Redis ni BullMQ |
+| Hosting | backend + Postgres en **Railway** (siempre encendido); SPA en **Cloudflare** |
+| Observabilidad | **Better Stack** gratis: uptime, latido del job, logs, alertas ([DT-19](Deudas/DT-19.md)) |
+| Modo prueba | Resend Free: 3.000/mes y 100/día → ~50 citas al día en toda la plataforma; aviso al 80 % |
+| Asistencia en el voucher | **no**: se espera a la Fase 3, cuando el paciente confirme desde el enlace; no se toca el grafo de ADR-04 → [DT-30](Deudas/DT-30.md) |
+| Detalle (confirmado el mismo día) | `Reply-To` = correo que configure el profesional · sin envíos de 21:00 a 08:00 · activos por defecto a las 24 h y 2 h · un tardío si faltan ≥ 60 min · pacientes sin correo `omitido` + `PATCH /pacientes/:id` · completar el correo vacío al vincular por RUT · nombre de la organización en el cuerpo · subdominio de envío · 40 envíos al día por tenant · alerta sobre 5 % con n ≥ 20 ([ADR-13](Decisions/ADR-13.md#decisiones-confirmadas-2026-09-30)) |
 
 ### Backend
-1. Modelo de configuración de recordatorios por profesional (tiempos + canal).
-2. Modelo de recordatorios por cita con estado de envío.
-3. API para guardar/actualizar configuración.
-4. Lógica para programar recordatorios según fecha/hora de la cita.
-5. Generación del contenido (fecha, hora, profesional, medio de respuesta).
-6. Envío por canal (email como base; WhatsApp/SMS después).
-7. Registro de estado: enviado / entregado / fallido.
-8. Reintento automático ante fallo.
-9. Actualizar/cancelar recordatorios pendientes al reagendar/cancelar (vínculo con US-02).
 
-### Frontend
-1. Interfaz para configurar tiempos de envío.
-2. Interfaz para elegir canal (WhatsApp/SMS/email).
-3. Vista de estado de recordatorios por cita.
+| # | Pieza | Agente | Estado |
+|---|---|---|---|
+| 1 | Outbox `eventos_salida` + `publicar(evento, tx)` + despachador ([ADR-12](Decisions/ADR-12.md)) | database → backend → api | ⬜ |
+| 2 | Planificador (`@nestjs/schedule`), apagado ordenado, latidos | backend | ⬜ |
+| 3 | Tablas `configuraciones_recordatorio`, `recordatorios`, `supresiones_correo` | database | ⬜ |
+| 4 | Dominio: `Recordatorio` (estados), configuración, planificación pura (silencio, tardíos, vencimiento) | api | ⬜ |
+| 5 | Suscriptor + reconciliación (crear, reagendar, cancelar, configurar) + respaldo cada hora | api | ⬜ |
+| 6 | Envío con revalidación, políticas, reintentos, cuota y límite por tenant | api | ⬜ |
+| 7 | Adaptador `ResendCanalMensajeria` + `RegistroCanalMensajeria` + plantilla (con hueco para el enlace de la Fase 3) | api | ⬜ |
+| 8 | Webhooks de Resend con firma verificada (entregado, rebote, queja) | backend (cuerpo crudo) + api | ⬜ |
+| 9 | API: `GET/PUT /recordatorios/configuracion`, `GET /citas/:id/recordatorios` | api | ⬜ |
+| 10 | Correo obligatorio del paciente + `PATCH /pacientes/:id` mínimo | api | ⬜ |
+| 11 | CORS con lista de orígenes, logs JSON con `pino`, `GET /health` | backend | ⬜ |
+| 12 | Tests: planificación, outbox, concurrencia `SKIP LOCKED`, webhooks, e2e del flujo | testing | ⬜ |
+
+### Frontend (`citia-frontend`)
+1. Correo obligatorio en el modal "Nueva cita" (mismo release que el punto 10 del backend).
+2. Pantalla de configuración: activar, momentos de envío (1 a 3), teléfono y correo de contacto (el
+   correo es el `Reply-To`). Solo canal correo en esta fase.
+3. Estado de los recordatorios en el voucher de la cita (programado, enviado, entregado, fallido,
+   cancelado, omitido, con su motivo).
+4. Despliegue en Cloudflare con *fallback* de SPA a `index.html` (incluye `/agendar-cita`).
+
+### Prerrequisitos operativos (usuario)
+- Comprar el dominio `.cl`, delegar el DNS a Cloudflare y verificar el subdominio de envío en Resend
+  (SPF, DKIM, DMARC).
+  **Sin esto no se puede escribir a pacientes reales.**
+- Cuentas de Resend y Better Stack; Railway con "App Sleeping" desactivado.
 
 ### Integración
-- Conectar configuración con API.
-- Conectar cambios de cita → actualización de recordatorios.
+- Crear / reagendar / cancelar una cita → los recordatorios se programan, reprograman o anulan (vía
+  outbox).
+- Configuración ↔ API; estado por cita ↔ voucher.
 
-**Entregable:** el profesional configura recordatorios; el sistema los programa y envía; refleja reagendar/cancelar.
+**Entregable:** el profesional configura sus recordatorios; el sistema los programa, los envía por
+correo, registra su entrega y refleja reagendar y cancelar; si algo falla, el equipo se entera por
+una alerta antes que por el cliente.
 
-> Requiere decidir canal (email primero recomendado), proveedor de envío (Resend/SendGrid) y el
-> **planificador/cola de jobs** (puntos 4 y 8; ver [Q6](PREGUNTAS-ABIERTAS.md) y RNF-03).
+> **Sin decisiones abiertas** (2026-09-30). Queda solo verificar al implementar algunos datos de
+> Resend y Better Stack ([ADR-13](Decisions/ADR-13.md#lo-que-queda-por-verificar-al-implementar)).
 
 ---
 
@@ -167,6 +209,14 @@ solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
 
 **Entregable:** el paciente confirma/cancela desde el correo; agenda y alertas se actualizan.
 
+> **Fuera del MVP** (2026-09-30): el MVP termina en la Fase 2. Con los recordatorios diseñados, el
+> canal que ADR-10 echaba en falta va a existir; al retomar esta fase, ADR-10 se reabre con la salida B
+> de Q11 (el enlace viaja en el recordatorio, bloque `accion` de la plantilla de ADR-13 §12).
+>
+> **Al entrar esta fase se reabre [DT-30](Deudas/DT-30.md)** (decisión del 2026-09-30): la
+> confirmación del paciente es lo que lleva las citas a `confirmada`, y recién entonces los botones de
+> asistencia e inasistencia del voucher funcionan sin tocar el grafo de ADR-04.
+>
 > Depende de la Fase 2 (el recordatorio es lo que lleva el enlace) y de que se **acepte ADR-10**
 > (bloqueado por [H7 y Q11](PREGUNTAS-ABIERTAS.md)). **No** depende de ADR-08: el enlace no lleva
 > `tenantSlug`. Sin límite de tasa por decisión ([DT-18](Deudas/DT-18.md)): revisarlo antes de
@@ -176,7 +226,9 @@ solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
 
 ## Fase 4 — US-05: Alertas al profesional
 
-**Estado:** ⬜ solo existe el puerto `PublicadorEventos`, sin suscriptores.
+**Estado:** ⬜ solo existe el puerto `PublicadorEventos`, sin suscriptores. Con la Fase 2 las alertas
+se enchufan como otro suscriptor del outbox ([ADR-12 §4](Decisions/ADR-12.md)); para entregar en menos
+de 3 s hará falta `LISTEN/NOTIFY` (evolución anotada en ADR-12).
 
 ### Backend
 1. Modelo/tabla de historial de alertas (tipo, mensaje, fecha, leído).
@@ -204,7 +256,8 @@ solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
 
 ## Fase 5 — US-07: Calificación de asistencia (scoring)
 
-**Estado:** ⬜ nada.
+**Estado:** ⏸ **fuera del MVP, pasa a la v2** (decisión del usuario, 2026-09-30). Es el segundo valor
+agregado del negocio; se retoma después de validar el MVP con recordatorios.
 
 ### Backend
 1. Cálculo del % de asistencia.
@@ -224,9 +277,11 @@ solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
 
 **Entregable:** el profesional ve el historial de comportamiento de cada paciente.
 
-> El punto 4 depende del **proceso de cierre** y su planificador ([Q6](PREGUNTAS-ABIERTAS.md)).
-> Mientras no exista, el historial no se acumula ([DT-11](Deudas/DT-11.md)) y no se puede
-> reconstruir hacia atrás: es la dependencia más urgente del roadmap aunque la fase vaya quinta.
+> El punto 4 depende del **proceso de cierre**. Su mecanismo ya está decidido ([ADR-12](Decisions/ADR-12.md))
+> y el job se aplaza con esta fase ([DT-11](Deudas/DT-11.md)): el `ghosting` se puede reconstruir
+> después, con una fecha de corte. **Lo que no se reconstruye es la asistencia real**
+> ([DT-30](Deudas/DT-30.md)): los botones del voucher esperan a la Fase 3 (decisión del 2026-09-30),
+> así que esta fase arrancará sin el historial de asistencia anterior a esa fecha.
 
 ---
 
@@ -295,22 +350,21 @@ solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
 |---|---|---|---|
 | 0 | US-06 Dashboard | US-02 | ✅ cerrada |
 | 1 | US-02 Gestión de citas | — | ✅ cerrada (develop 2026-09-28) · US-02.07 ⏸ aplazada |
-| 2 | US-03 Recordatorios | US-02, planificador (Q6) | ⬜ |
-| 3 | US-04 Respuesta paciente (+ US-02.07) | US-03, ADR-10 | ⬜ |
+| 2 | US-03 Recordatorios | US-02, ADR-12 (outbox + planificador), dominio verificado | 🔶 diseño cerrado (ADR-12, ADR-13) · **en el MVP** |
+| 3 | US-04 Respuesta paciente (+ US-02.07) | US-03, ADR-10 | ⬜ · fuera del MVP |
 | 4 | US-05 Alertas | US-02/03/04 | ⬜ (solo puerto) |
-| 5 | US-07 Scoring | US-02/04, proceso de cierre (Q6) | ⬜ |
+| 5 | US-07 Scoring | US-02/04, proceso de cierre (ADR-12), asistencia registrada (DT-30) | ⏸ v2 (fuera del MVP, 2026-09-30) |
 | 6 | US-08 Monitoreo | US-02/07 | 🔶 solo alta |
 | 7 | US-10 Perfil/soporte | — | ⬜ |
 | — | US-09 | — | ⬜ pendiente |
 
 ## Decisiones previas
 
-1. Canal de recordatorios (Fase 2): email primero vs WhatsApp/SMS.
-2. Proveedor de email (Fase 2 y 4): Resend/SendGrid.
+1. ~~Canal de recordatorios (Fase 2)~~ → **resuelta 2026-09-30**: correo; WhatsApp/SMS después ([ADR-13](Decisions/ADR-13.md)).
+2. ~~Proveedor de email (Fase 2 y 4)~~ → **resuelta 2026-09-30**: Resend (Brevo y SendGrid descartados).
 3. Tiempo real (Fase 4): WebSockets vs SSE.
-4. **Planificador/cola de jobs** (Fases 2 y 5): temporizador en proceso vs cola con reintentos
-   ([Q6](PREGUNTAS-ABIERTAS.md)). Lo necesitan el proceso de cierre y los recordatorios; decidir si
-   se paga la cola ahora o después.
+4. ~~Planificador/cola de jobs (Fases 2 y 5)~~ → **resuelta 2026-09-30**: planificador en proceso sobre
+   Postgres con `SKIP LOCKED`, sin Redis ([ADR-12](Decisions/ADR-12.md)).
 5. Enlace por cita (Fases 1 y 3): aceptar [ADR-10](Decisions/ADR-10.md) tras
    [H7 y Q11](PREGUNTAS-ABIERTAS.md), incluido si el correo ofrece "cambiar hora" además de
    confirmar/cancelar ([FD-06](Frontend-Decisions/FD-06.md)).

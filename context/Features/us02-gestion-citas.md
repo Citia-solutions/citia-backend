@@ -603,6 +603,9 @@ para el front actual. Solo rompe a un cliente que mande `inicio` sin zona, y nin
   público, y ADR-09 §8 regla 5 dice "ni uno más" → se decide con una enmienda a ADR-09, no aquí.
 - **Marcar "paciente ya conocido"** en la bandeja (búsqueda por RUT por solicitud).
 - **Actualizar datos de contacto** de un paciente existente al aceptar (hoy se vincula sin tocarlo).
+  *Parcialmente decidido (2026-09-30, [ADR-13 §14](../Decisions/ADR-13.md)):* un correo vacío se
+  completa; un correo o teléfono ya guardado no se reemplaza al aceptar (se edita con
+  `PATCH /api/pacientes/:id`).
 - **Citas en el pasado** ([DT-13](../Deudas/DT-13.md)): aceptar, como crear, las sigue admitiendo.
 
 ---

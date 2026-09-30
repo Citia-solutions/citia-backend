@@ -1,7 +1,15 @@
 # ADR-04: Modelo de Cita — máquina de estados en el dominio y estado materializado
 
 **Fecha:** 2026-06-30
-**Estado:** Aceptado · ➕ **extendido por [ADR-09](ADR-09.md)** (propuesto)
+**Estado:** Aceptado · ➕ **extendido por [ADR-09](ADR-09.md)** (propuesto) · 🔁 **mecanismo del §4
+reemplazado por [ADR-12](ADR-12.md)** (2026-09-30)
+
+> **Nota (2026-09-30).** La decisión 4 nombraba BullMQ como el worker que materializaría el
+> `ghosting`. [ADR-12](ADR-12.md) elige otro mecanismo: planificador dentro del proceso
+> (`@nestjs/schedule`) sobre tablas de Postgres con `FOR UPDATE SKIP LOCKED`, sin Redis. **La decisión
+> de fondo sigue vigente** (el estado se materializa, no se calcula al vuelo), pero el job queda
+> **aplazado**: el scoring (RF-08) salió del MVP. Ver [DT-11](../Deudas/DT-11.md) y
+> [DT-30](../Deudas/DT-30.md).
 
 > **Nota.** [ADR-09](ADR-09.md) **añade** la transición `reagendar()` al grafo de la decisión 2 —sin
 > redefinir ninguna de las existentes— y salda la deuda que este ADR dejó abierta: al decir que una
@@ -111,7 +119,8 @@ fuente de verdad estable.
 ## Deudas técnicas asociadas
 
 - [DT-10](../Deudas/DT-10.md) — la máquina de estados de la decisión 1 no tiene ningún endpoint que la ejerza. 🟢 resuelta en diseño por ADR-09.
-- [DT-11](../Deudas/DT-11.md) — el job de la decisión 4 no existe, así que el historial de RF-08 no se acumula. **⏳ es la única deuda que se encarece sola.**
+- [DT-11](../Deudas/DT-11.md) — el job de la decisión 4 no existe, así que el historial de RF-08 no se acumula. 🔵 aplazada (2026-09-30): el `ghosting` se puede reconstruir después, con una fecha de corte.
+- [DT-30](../Deudas/DT-30.md) — la asistencia real de las citas pasadas no se registra y no se puede reconstruir. **⏳ es la deuda que se encarece sola.** Salida elegida (2026-09-30): esperar a la Fase 3; **el grafo de la decisión 2 no se toca**.
 - [DT-22](../Deudas/DT-22.md) — la regla "de un terminal no se sale" de la decisión 2 dejaba las citas reagendadas sin vínculo entre sí. 🟢 resuelta en diseño por ADR-09.
 
 Índice completo: [`../Deudas/README.md`](../Deudas/README.md).

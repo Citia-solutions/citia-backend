@@ -185,6 +185,12 @@ datos ni servicio externo. Ninguna otra pieza de identidad del sistema tiene esa
 3. crear la `Cita` con la hora que fijó el profesional;
 4. registrar el `CambioCita` de tipo `creada`.
 
+> **Matiz (2026-09-30, [ADR-13 §14](ADR-13.md)).** El paso 2 se implementó como "se vincula al
+> paciente existente **sin tocarlo**". Con los recordatorios, el correo del paciente pasa a ser
+> obligatorio: si el paciente existente tiene el **correo vacío**, se completa con el que llega. Un
+> correo ya guardado **nunca** se reemplaza. Aplica igual al alta manual por RUT. El resto de esta
+> sección no cambia.
+
 Es el mismo patrón de escritura multi-tabla que ya resolvió el registro inicial.
 
 > **Ganancia legal no obvia.** Que el consentimiento lo marque **el propio paciente** es

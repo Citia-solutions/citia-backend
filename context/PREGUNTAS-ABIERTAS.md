@@ -1,7 +1,10 @@
 # Preguntas abiertas — reparto por rol
 
-Once decisiones pendientes que bloquean el MVP. Aquí están reformuladas **en el lenguaje de quien
-puede responderlas**, con el entregable que se espera de cada una.
+Once decisiones que bloqueaban el MVP. Aquí están reformuladas **en el lenguaje de quien puede
+responderlas**, con el entregable que se espera de cada una.
+
+> **Estado (2026-09-30):** respondidas Q1 (A), Q4, Q11 (C) y Q6 en cuanto al mecanismo
+> ([ADR-12](Decisions/ADR-12.md)). Siguen abiertas Q2, Q3, Q5, Q7, Q8, Q9 y Q10, y las H del hacker.
 
 **Equipo:** 1 I+D · 2 desarrolladores · 1 hacker ético.
 
@@ -17,12 +20,12 @@ compromete, y los desarrolladores eligen el mecanismo que cumpla ese requisito.
 | # | Pregunta | Responde | Bloquea |
 |---|----------|----------|---------|
 | 10 | Validación con usuarios reales | **I+D** | 1, 2, 3, 5 — y de facto todo lo demás |
-| 1 | ¿El MVP incluye recordatorios? | **I+D** → decisión conjunta | alcance de la v1 |
+| 1 | ¿El MVP incluye recordatorios? | **I+D** → decisión conjunta | ✅ **respondida (2026-09-30): A** — entran en el MVP |
 | 2 | ¿El prepago entra alguna vez? | **I+D** → decisión conjunta | modelo de negocio |
 | 3 | ¿La agenda es del profesional o de la organización? | **I+D** | si "clínica" es cliente viable |
 | 5 | ¿Registro abierto, por invitación o lista de espera? | **I+D** + **hacker** | DT-06 |
 | 4 | Solapamiento: ¿avisar o rechazar? | **I+D** decide, **dev** ejecuta | nada; es barato |
-| 6 | Planificador del proceso de cierre | **desarrolladores** | DT-11 — la única con reloj |
+| 6 | Planificador del proceso de cierre | **desarrolladores** | ✅ **mecanismo decidido (2026-09-30)** en [ADR-12](Decisions/ADR-12.md); el job de cierre se aplaza con el scoring (DT-11) |
 | 7 | Renovación de sesión | **hacker** define requisito, **dev** elige mecanismo | DT-01 |
 | 8 | ADR-08 — tenant en la URL | **desarrolladores**, revisión del **hacker** | toda la vía pública |
 | 9 | Modelo de disponibilidad | **desarrolladores** (solo evaluar riesgo) | nada hoy |
@@ -52,6 +55,12 @@ que dijo uno solo es anécdota — salvo que contradiga nuestra hipótesis, en c
 de una hora— así que conviene llevarlas preparadas.
 
 ### Q1 — ¿El MVP incluye recordatorios automáticos?
+
+> ✅ **Respondida (2026-09-30): A — los recordatorios (RF-06) entran en el MVP.** Canal: correo vía
+> Resend; contenido solo informativo; el enlace para responder llega en la Fase 3. En la misma
+> decisión **el scoring (RF-08) sale del MVP** y pasa a la v2. Diseño en
+> [ADR-13](Decisions/ADR-13.md) y plan en [US-03](US/03-recordatorios.md). El MVP queda en tres
+> piezas: dashboard, gestión de citas y recordatorios ([fase 3](Descripcion/fase-3-mvp.md)).
 
 **El problema concreto:** los criterios de éxito dicen que el profesional *deja de mandar WhatsApps*
 y *se desliga de presionar al paciente*. Las tres piezas del MVP son todas del lado del profesional:
@@ -116,6 +125,10 @@ registro abierto necesita defensas que hoy no existen.
 
 > ✅ **Respondida (2026-09-25): C — US-02.07 sale de la v1.** [ADR-10](Decisions/ADR-10.md) queda
 > propuesto y aplazado.
+>
+> **Nota (2026-09-30):** con Q1 → A, el canal que faltaba va a existir ([ADR-13](Decisions/ADR-13.md)).
+> La respuesta C no se reabre, pero el motivo de fondo ("no hay canal") desaparece: cuando se aborde
+> la Fase 3, ADR-10 se retoma con la salida **B** (el sistema emite el enlace dentro del recordatorio).
 
 **El problema concreto:** [US-02.07](US/02.07-paciente-reagenda-cancela.md) quiere que el paciente cancele
 o pida reagendar **sin cuenta**, desde un enlace que sirve para una sola cita. El mecanismo está
@@ -146,7 +159,18 @@ Sugerencia de reparto entre los dos, porque las dos mitades no se bloquean entre
 - **Dev A — parar el reloj:** Q6 (planificador) y el proceso de cierre.
 - **Dev B — habilitar la vía pública:** Q8 (ADR-08) y coordinar el límite de tasa con el hacker.
 
-### Q6 — Planificador para el proceso de cierre *(Dev A · prioridad 1)*
+### Q6 — Planificador para el proceso de cierre *(Dev A · ~~prioridad 1~~)*
+
+> ✅ **Respondida en cuanto al mecanismo (2026-09-30):** [ADR-12](Decisions/ADR-12.md). Planificador
+> dentro del proceso (`@nestjs/schedule`, Railway siempre encendido) sobre tablas de Postgres con
+> `FOR UPDATE SKIP LOCKED`; **sin Redis ni BullMQ** por ahora (quedan como evolución). La cola se pagó
+> "ahora", pero en Postgres: es el outbox de los hechos y la tabla de recordatorios.
+>
+> **El job de cierre se aplaza:** el scoring salió del MVP, así que deja de ser prioridad 1
+> ([DT-11](Deudas/DT-11.md)). Las preguntas 3, 4 y 5 de abajo quedan resueltas en general por ADR-12
+> §8; **siguen abiertas la 1 y la 2** y la regla de ADR-10 §5, para cuando se retome. Lo que sí se
+> pierde cada día es la asistencia real de las citas pasadas ([DT-30](Deudas/DT-30.md)), no el
+> `ghosting`; sus botones esperan a la Fase 3 (decisión del 2026-09-30).
 
 **Por qué es lo más urgente del tablero:** el historial de comportamiento del paciente
 —[DT-11](Deudas/DT-11.md), el diferenciador del producto y un pilar del MVP— **no se está
@@ -168,7 +192,7 @@ igual cuando entren recordatorios, así que la pregunta real es **si conviene pa
 5. **Rompe un patrón a propósito:** todas las consultas del sistema están acotadas a un tenant; esta
    barre todas las organizaciones. Que sea explícito, no accidental.
 
-**Entregable:** ADR corto + el job + tests. *(El número 10 lo tomó [ADR-10](Decisions/ADR-10.md),
+**Entregable:** ~~ADR corto + el job + tests.~~ ADR-12 escrito; el job y sus tests, aplazados. *(El número 10 lo tomó [ADR-10](Decisions/ADR-10.md),
 enlace por cita de US-02.07, y el 11 [ADR-11](Decisions/ADR-11.md), solapamiento; este ADR usa el
 siguiente número libre: **ADR-12**.)* Debe recoger además la regla
 que ADR-10 §5 le deja anotada: **una petición de reagendamiento sin atender no debería terminar en
@@ -326,6 +350,10 @@ primeros clientes llegan por recomendación, no se pierde nada.
 
 ### 3. Recordatorios en el MVP (Q1)
 
+> ✅ **Decidida (2026-09-30): entran.** El coste quedó con número en [ADR-12](Decisions/ADR-12.md) y
+> [ADR-13](Decisions/ADR-13.md) (cola en Postgres, un canal, observabilidad en plan gratis). El
+> consentimiento efectivo se aceptó como riesgo con fecha de revisión ([DT-16](Deudas/DT-16.md)).
+
 I+D dirá que los criterios de éxito los exigen. Desarrollo dirá que arrastran cola con reintentos,
 canal de mensajería y observabilidad. El hacker añadirá que arrastran verificación de contacto y
 consentimiento efectivo. **Es alcance contra coste, y hay que ponerle número al coste antes de
@@ -337,7 +365,9 @@ decidir.**
 
 **Semana 1, en paralelo:**
 - I+D sale a conversar (Q10). Sin esto, cuatro preguntas siguen siendo opinión.
-- Dev A ataca el planificador y el proceso de cierre (Q6). **Es lo único con reloj.**
+- ~~Dev A ataca el planificador y el proceso de cierre (Q6). **Es lo único con reloj.**~~
+  *(2026-09-30: el planificador se decidió en ADR-12 y se construye con la Fase 2; el cierre se aplaza.
+  El reloj que sigue corriendo es [DT-30](Deudas/DT-30.md).)*
 - Dev B implementa ADR-08 (Q8).
 - Hacker entrega H1 (requisito de revocación) y H2 (abuso del registro).
 
