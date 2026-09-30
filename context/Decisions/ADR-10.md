@@ -1,5 +1,7 @@
 # ADR-10: El paciente actúa sobre su cita con un enlace por cita — cancela con la transición existente y pide reagendar sin mover la cita
 
+> **Fase:** [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md) (aplazada), [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) (se retoma) · **Feature:** [us02](../Features/us02-gestion-citas.md) · **Plan:** [US-02.07](../US/02.07-paciente-reagenda-cancela.md) · **Relacionado:** [ADR-09](../Decisions/ADR-09.md), [ADR-13](../Decisions/ADR-13.md), [FD-06](../Frontend-Decisions/FD-06.md), [DT-16](../Deudas/DT-16.md), [DT-30](../Deudas/DT-30.md), [Q11](../PREGUNTAS-ABIERTAS.md#q11--cómo-le-llega-al-paciente-el-enlace-de-su-cita), [H7](../PREGUNTAS-ABIERTAS.md#h7--modelo-de-amenazas-del-enlace-por-cita-antes-de-construirlo--la-otra-mitad-de-q11)
+
 **Fecha:** 2026-09-23
 **Estado:** **Propuesto** · sin implementar · pendiente de [H7](../PREGUNTAS-ABIERTAS.md) y
 [Q11](../PREGUNTAS-ABIERTAS.md) (ver [Pendiente para aceptar](#pendiente-para-aceptar))
@@ -288,8 +290,8 @@ a "emitir".
 > actúa como puerta del envío. Con **B**, escribe **Citia**, y el consentimiento pasa a ser condición
 > legal de cada envío: DT-16 se vuelve bloqueante para B, no para este ADR.
 
-La salida A es, reconocidamente, el mensaje manual que el producto promete eliminar (criterio 1 de
-[fase 0](../Descripcion/fase-0-problema.md)); se acepta solo como puente.
+La salida A es, reconocidamente, el mensaje manual que el producto promete eliminar (criterio 1 de la
+[etapa 0 del producto](../Descripcion/fase-0-problema.md)); se acepta solo como puente.
 
 ### 7. Hechos publicados
 

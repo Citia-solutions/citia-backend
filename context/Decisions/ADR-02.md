@@ -1,5 +1,7 @@
 # ADR-02: Convenciones de código: español + arquitectura hexagonal
 
+> **Fase:** [Fundaciones](../Fases/fase-base-fundaciones.md) · **Feature:** [us00a](../Features/us00a-registro-inicial.md) · **Plan:** [US-00](../US/00-auth.md) · **Relacionado:** [ADR-06](../Decisions/ADR-06.md), [DT-21](../Deudas/DT-21.md)
+
 **Fecha:** 2026-06-22
 **Estado:** Aceptado
 

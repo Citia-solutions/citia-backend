@@ -1,5 +1,7 @@
 # ADR-03: Login multi-tenant por tenantSlug
 
+> **Fase:** [Fundaciones](../Fases/fase-base-fundaciones.md) · **Feature:** [us00b](../Features/us00b-login.md), [us00a](../Features/us00a-registro-inicial.md) · **Plan:** [US-00](../US/00-auth.md) · **Relacionado:** [ADR-01](../Decisions/ADR-01.md), [ADR-08](../Decisions/ADR-08.md), [DT-05](../Deudas/DT-05.md), [DT-08](../Deudas/DT-08.md)
+
 **Fecha:** 2026-06-22
 **Estado:** Aceptado · ⚠️ **regla 4 superseded por [ADR-08](ADR-08.md)** (propuesto)
 

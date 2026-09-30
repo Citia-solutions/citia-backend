@@ -15,6 +15,8 @@
 
 # Feature: Registrar usuario en la base de datos
 
+> **Fase:** [Fundaciones](../Fases/fase-base-fundaciones.md) (histórico) · **Feature:** [us00a](../Features/us00a-registro-inicial.md) · **Plan:** [US-00](../US/00-auth.md) · **Relacionado:** —
+
 **Epic:** 06 — Dashboard de citas del día  
 **Tarea:** Registrar un usuario en la base de datos  
 **Estado:** ⛔ DESUSO — Superseded por `us00a-registro-inicial.md` (el contenido de abajo NO refleja el código actual)

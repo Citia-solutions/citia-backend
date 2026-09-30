@@ -1,5 +1,7 @@
 # ADR-06: Atomicidad del registro — puerto `TransactionRunner` con contexto opaco
 
+> **Fase:** [Fundaciones](../Fases/fase-base-fundaciones.md) (origen), [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) · **Feature:** [us00a](../Features/us00a-registro-inicial.md) · **Plan:** [US-00](../US/00-auth.md) · **Relacionado:** [ADR-02](../Decisions/ADR-02.md), [ADR-09](../Decisions/ADR-09.md), [ADR-12](../Decisions/ADR-12.md)
+
 **Fecha:** 2026-06-23
 **Estado:** Aceptado · Implementado (2026-06-23)
 **Commits:** `d4fa476` (feat: registro atómico), `f573485` (test: rollback)

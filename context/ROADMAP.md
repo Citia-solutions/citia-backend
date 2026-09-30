@@ -5,6 +5,11 @@ dependencias y el estado real de cada pieza en un solo lugar.
 
 **Última revisión:** 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
 
+**Por fases:** este documento es la fuente del **estado**. Para leer todo lo que toca a una fase
+(decisiones, deudas, commits, contraparte del frontend) en orden, entra por [`Fases/`](Fases/README.md).
+Aquí "fase" es siempre una fase de construcción; las etapas del producto están en
+[`Descripcion/`](Descripcion/README.md).
+
 ## Convenciones
 
 - ✅ hecho · 🔶 parcial · ⬜ pendiente · 🚧 bloqueado · ⏸ aplazado.
@@ -16,7 +21,8 @@ dependencias y el estado real de cada pieza en un solo lugar.
   [Descripcion/fase-3-mvp.md](Descripcion/fase-3-mvp.md).
 - Auth y registro (US-00a/US-00b) quedan fuera: ya están cerrados (ver
   [Features/us00a-registro-inicial.md](Features/us00a-registro-inicial.md) y
-  [Features/us00b-login.md](Features/us00b-login.md)).
+  [Features/us00b-login.md](Features/us00b-login.md)). Guía de lectura de esa base:
+  [`Fases/fase-base-fundaciones.md`](Fases/fase-base-fundaciones.md).
 - La solicitud pública de hora del paciente (`/agendar-cita`) **sí** está implementada, pero se
   sigue en [ADR-09](Decisions/ADR-09.md) y no como fase propia (ver Fase 1 → Vía pública).
 - Las deudas técnicas viven en [Deudas/](Deudas/); aquí solo se citan las que bloquean una fase.
@@ -24,6 +30,8 @@ dependencias y el estado real de cada pieza en un solo lugar.
 ---
 
 ## Fase 0 — US-06: Dashboard de citas del día (RF-03)
+
+> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-0-us06-dashboard.md`](Fases/fase-0-us06-dashboard.md).
 
 **Estado:** ✅ cerrada: conectada al backend real y probada contra Postgres (2026-09-28).
 
@@ -45,6 +53,8 @@ dependencias y el estado real de cada pieza en un solo lugar.
 ---
 
 ## Fase 1 — US-02: Gestión de cita
+
+> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-1-us02-gestion-citas.md`](Fases/fase-1-us02-gestion-citas.md).
 
 **Estado:** ✅ **cerrada**: mergeada en `develop` en ambos repos el 2026-09-28 y verificada contra
 Postgres. US-02.07 (lado paciente) quedó **fuera de la v1**
@@ -109,6 +119,8 @@ solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
 ---
 
 ## Fase 2 — US-03: Recordatorios al paciente
+
+> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-2-us03-recordatorios.md`](Fases/fase-2-us03-recordatorios.md).
 
 **Estado:** 🔶 **diseño cerrado y decisiones confirmadas (2026-09-30)**, implementación sin empezar.
 Entra en el MVP (Q1 → A).
@@ -180,6 +192,8 @@ una alerta antes que por el cliente.
 
 ## Fase 3 — US-04: Respuesta del paciente
 
+> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-3-us04-respuesta-paciente.md`](Fases/fase-3-us04-respuesta-paciente.md).
+
 **Estado:** ⬜ nada. Diseño de producto en [FD-06](Frontend-Decisions/FD-06.md) (propuesta). El mecanismo de enlace por cita se está diseñando en
 [ADR-10](Decisions/ADR-10.md) (propuesto) para [US-02.07](US/02.07-paciente-reagenda-cancela.md).
 
@@ -226,6 +240,8 @@ una alerta antes que por el cliente.
 
 ## Fase 4 — US-05: Alertas al profesional
 
+> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-4-us05-alertas.md`](Fases/fase-4-us05-alertas.md).
+
 **Estado:** ⬜ solo existe el puerto `PublicadorEventos`, sin suscriptores. Con la Fase 2 las alertas
 se enchufan como otro suscriptor del outbox ([ADR-12 §4](Decisions/ADR-12.md)); para entregar en menos
 de 3 s hará falta `LISTEN/NOTIFY` (evolución anotada en ADR-12).
@@ -255,6 +271,8 @@ de 3 s hará falta `LISTEN/NOTIFY` (evolución anotada en ADR-12).
 ---
 
 ## Fase 5 — US-07: Calificación de asistencia (scoring)
+
+> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-5-us07-scoring.md`](Fases/fase-5-us07-scoring.md).
 
 **Estado:** ⏸ **fuera del MVP, pasa a la v2** (decisión del usuario, 2026-09-30). Es el segundo valor
 agregado del negocio; se retoma después de validar el MVP con recordatorios.
@@ -287,6 +305,8 @@ agregado del negocio; se retoma después de validar el MVP con recordatorios.
 
 ## Fase 6 — US-08: Monitoreo y seguimiento del paciente
 
+> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fases-6-7-us09-sin-diseno.md`](Fases/fases-6-7-us09-sin-diseno.md#fase-6--us-08-monitoreo-y-seguimiento-del-paciente).
+
 **Estado:** 🔶 solo `POST /pacientes`.
 
 ### Backend
@@ -311,6 +331,8 @@ agregado del negocio; se retoma después de validar el MVP con recordatorios.
 ---
 
 ## Fase 7 — US-10: Perfil, suscripción y soporte
+
+> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fases-6-7-us09-sin-diseno.md`](Fases/fases-6-7-us09-sin-diseno.md#fase-7--us-10-perfil-suscripción-y-soporte).
 
 **Estado:** ⬜ nada.
 
@@ -337,6 +359,8 @@ agregado del negocio; se retoma después de validar el MVP con recordatorios.
 ---
 
 ## US-09 — (pendiente de definir)
+
+> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fases-6-7-us09-sin-diseno.md`](Fases/fases-6-7-us09-sin-diseno.md#us-09--sin-definir).
 
 **Estado:** ⬜ pendiente.
 

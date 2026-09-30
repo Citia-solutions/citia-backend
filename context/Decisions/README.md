@@ -3,22 +3,25 @@
 Registro de decisiones de arquitectura de citia-backend. Cada ADR captura **una** decisión: su
 contexto, las opciones evaluadas, la decisión tomada y sus consecuencias.
 
-| ADR | Título | Estado | Fecha | Commits |
-|-----|--------|--------|-------|---------|
-| [ADR-00](ADR-00.md) | TypeORM como ORM definitivo (`synchronize:false`, migraciones versionadas) | Aceptado | 2026-06-22 | `389eb81`, `b8cac2a` |
-| [ADR-01](ADR-01.md) | Autenticación con Passport.js + JWT (tenantId del token) | Aceptado · Implementado | 2026-06-22 | `45198c3`, `346a034` |
-| [ADR-02](ADR-02.md) | Convenciones: español + arquitectura hexagonal | Aceptado | 2026-06-22 | `718fe1f` |
-| [ADR-03](ADR-03.md) | Login multi-tenant por `tenantSlug` | Aceptado | 2026-06-22 | `195431b`, `cfa35f3` |
-| [ADR-04](ADR-04.md) | Modelo de Cita: máquina de estados en el dominio + estado materializado | Aceptado · mecanismo del §4 (BullMQ) reemplazado por ADR-12 | 2026-06-30 | `e592d74`, `77523c9` |
-| [ADR-05](ADR-05.md) | Contenedorización Docker multi-stage + migraciones en el arranque | Aceptado · Implementado | 2026-06-22 | `b8cac2a`, `df53128`, `0e54f0b`, `77a97c9`, `b623b6a` |
-| [ADR-06](ADR-06.md) | Atomicidad del registro: puerto `TransactionRunner` con contexto opaco | Aceptado · Implementado | 2026-06-23 | `d4fa476`, `f573485` |
-| [ADR-07](ADR-07.md) | Día y hora del dashboard en la zona de la clínica (DST-safe con `Intl`) | Aceptado · Implementado | 2026-07-06 | `08dad63` |
-| [ADR-08](ADR-08.md) | El tenant sale del body del login y pasa a la URL (puerto `TenantResolver`) | **Propuesto** · sin implementar | 2026-08-16 | — |
-| [ADR-09](ADR-09.md) | Gestión de citas: `SolicitudCita` como agregado aparte, RUT como identidad del paciente, reagendar con bitácora | Aceptado · **release 1 implementado** · vía pública pendiente | 2026-08-23 | — |
-| [ADR-10](ADR-10.md) | Enlace por cita para el paciente (US-02.07): token opaco hasheado, cancelar con la transición existente, pedir reagendar sin mover la cita | **Propuesto** · **aplazado fuera de la v1** (Q11 → C, 2026-09-25) | 2026-09-23 | — |
-| [ADR-11](ADR-11.md) | Solapamiento de citas: avisar y permitir, regla en la entidad `Cita` (`chocaCon`), campo opcional `avisos.solapamientos` | Aceptado · sin implementar | 2026-09-25 | — |
-| [ADR-12](ADR-12.md) | Outbox transaccional (`eventos_salida`) y planificador en proceso con `@nestjs/schedule` sobre Postgres (`FOR UPDATE SKIP LOCKED`); cierre de citas aplazado | Aceptado · sin implementar | 2026-09-30 | — |
-| [ADR-13](ADR-13.md) | Recordatorios al paciente por correo (RF-06): entidad `Recordatorio` con estado, planificación pura, Resend detrás de `CanalMensajeria`, webhooks firmados, cuota del modo prueba | Aceptado · sin implementar · decisiones confirmadas (2026-09-30) | 2026-09-30 | — |
+*(Estados y commits revisados el 2026-09-30. La columna **Fase** enlaza a la guía de lectura de cada
+fase del roadmap, en [`../Fases/`](../Fases/README.md).)*
+
+| ADR | Título | Estado | Fecha | Fase | Commits |
+|-----|--------|--------|-------|------|---------|
+| [ADR-00](ADR-00.md) | TypeORM como ORM definitivo (`synchronize:false`, migraciones versionadas) | Aceptado | 2026-06-22 | [Fundaciones](../Fases/fase-base-fundaciones.md) | `389eb81`, `b8cac2a` |
+| [ADR-01](ADR-01.md) | Autenticación con Passport.js + JWT (tenantId del token) | Aceptado · Implementado | 2026-06-22 | [Fundaciones](../Fases/fase-base-fundaciones.md) | `45198c3`, `346a034` |
+| [ADR-02](ADR-02.md) | Convenciones: español + arquitectura hexagonal | Aceptado | 2026-06-22 | [Fundaciones](../Fases/fase-base-fundaciones.md) (transversal) | `718fe1f` |
+| [ADR-03](ADR-03.md) | Login multi-tenant por `tenantSlug` | Aceptado | 2026-06-22 | [Fundaciones](../Fases/fase-base-fundaciones.md) | `195431b`, `cfa35f3` |
+| [ADR-04](ADR-04.md) | Modelo de Cita: máquina de estados en el dominio + estado materializado | Aceptado · mecanismo del §4 (BullMQ) reemplazado por ADR-12 | 2026-06-30 | [Fase 0](../Fases/fase-0-us06-dashboard.md) · toca 1, 2 y 5 | `e592d74`, `77523c9`, `ab30bb7` (nota) |
+| [ADR-05](ADR-05.md) | Contenedorización Docker multi-stage + migraciones en el arranque | Aceptado · Implementado | 2026-06-22 | [Fundaciones](../Fases/fase-base-fundaciones.md) | `b8cac2a`, `df53128`, `0e54f0b`, `77a97c9`, `b623b6a` |
+| [ADR-06](ADR-06.md) | Atomicidad del registro: puerto `TransactionRunner` con contexto opaco | Aceptado · Implementado | 2026-06-23 | [Fundaciones](../Fases/fase-base-fundaciones.md) · reutilizado en 1 y 2 | `d4fa476`, `f573485` |
+| [ADR-07](ADR-07.md) | Día y hora del dashboard en la zona de la clínica (DST-safe con `Intl`) | Aceptado · Implementado | 2026-07-06 | [Fase 0](../Fases/fase-0-us06-dashboard.md) | `08dad63`, `717800e` (rangos) |
+| [ADR-08](ADR-08.md) | El tenant sale del body del login y pasa a la URL (puerto `TenantResolver`) | **Propuesto** · sin implementar en el login · su fase 1 la usa la ruta pública | 2026-08-16 | [Fundaciones](../Fases/fase-base-fundaciones.md) · [Fase 1](../Fases/fase-1-us02-gestion-citas.md) | `bfeada0` (doc), `e1253c3` (fase 1 en la ruta pública) |
+| [ADR-09](ADR-09.md) | Gestión de citas: `SolicitudCita` como agregado aparte, RUT como identidad del paciente, reagendar con bitácora | Aceptado · **implementado** (release 1, vía pública y bandeja) · límite de tasa aceptado sin límite (DT-18) | 2026-08-23 | [Fase 1](../Fases/fase-1-us02-gestion-citas.md) | `f2a7dff`, `e1253c3`, `e06862a` |
+| [ADR-10](ADR-10.md) | Enlace por cita para el paciente (US-02.07): token opaco hasheado, cancelar con la transición existente, pedir reagendar sin mover la cita | **Propuesto** · **aplazado fuera de la v1** (Q11 → C, 2026-09-25) | 2026-09-23 | [Fase 1](../Fases/fase-1-us02-gestion-citas.md) → [Fase 3](../Fases/fase-3-us04-respuesta-paciente.md) | `2877b13` (doc) |
+| [ADR-11](ADR-11.md) | Solapamiento de citas: avisar y permitir, regla en la entidad `Cita` (`chocaCon`), campo opcional `avisos.solapamientos` | Aceptado · **Implementado** (2026-09-28) | 2026-09-25 | [Fase 1](../Fases/fase-1-us02-gestion-citas.md) | `4c543a5` (doc), `538657e`, `9140bc3` |
+| [ADR-12](ADR-12.md) | Outbox transaccional (`eventos_salida`) y planificador en proceso con `@nestjs/schedule` sobre Postgres (`FOR UPDATE SKIP LOCKED`); cierre de citas aplazado | Aceptado · sin implementar | 2026-09-30 | [Fase 2](../Fases/fase-2-us03-recordatorios.md) · toca 4 y 5 | `ab30bb7` (doc) |
+| [ADR-13](ADR-13.md) | Recordatorios al paciente por correo (RF-06): entidad `Recordatorio` con estado, planificación pura, Resend detrás de `CanalMensajeria`, webhooks firmados, cuota del modo prueba | Aceptado · sin implementar · decisiones confirmadas (2026-09-30) | 2026-09-30 | [Fase 2](../Fases/fase-2-us03-recordatorios.md) · toca 3 | `ab30bb7` (doc) |
 
 ## Relaciones entre ADRs
 

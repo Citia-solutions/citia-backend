@@ -1,5 +1,7 @@
 # ADR-13: Recordatorios al paciente por correo (RF-06) — el recordatorio es una entidad con estado, se planifica con una función pura y se envía por Resend detrás del puerto `CanalMensajeria`
 
+> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) (origen), [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) · **Feature:** ninguna todavía (diseñada, sin implementar) · **Plan:** [US-03](../US/03-recordatorios.md) · **Relacionado:** [ADR-12](../Decisions/ADR-12.md), [ADR-10](../Decisions/ADR-10.md), [DT-16](../Deudas/DT-16.md), [DT-19](../Deudas/DT-19.md), [DT-21](../Deudas/DT-21.md), [DT-30](../Deudas/DT-30.md), [Q1](../PREGUNTAS-ABIERTAS.md#q1--el-mvp-incluye-recordatorios-automáticos), [stack](../stack-tecnologico.md)
+
 **Fecha:** 2026-09-30
 **Estado:** Aceptado · sin implementar · **todas las decisiones confirmadas por el usuario el
 2026-09-30** (ver [Decisiones confirmadas](#decisiones-confirmadas-2026-09-30)); quedan solo datos de

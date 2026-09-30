@@ -1,5 +1,7 @@
 # Feature: US-00b — Login (autenticación JWT multi-tenant)
 
+> **Fase:** [Fundaciones](../Fases/fase-base-fundaciones.md) · **Feature:** este documento · **Plan:** [US-00](../US/00-auth.md) · **Relacionado:** [ADR-01](../Decisions/ADR-01.md), [ADR-03](../Decisions/ADR-03.md), [ADR-08](../Decisions/ADR-08.md), [DT-01](../Deudas/DT-01.md), [DT-02](../Deudas/DT-02.md), [DT-04](../Deudas/DT-04.md), [DT-05](../Deudas/DT-05.md)
+
 **Epic:** 00 — Autenticación y registro  
 **Historia:** US-00b  
 **Estado:** ✅ Implementado (2026-06-22) · 25 unit · 8 e2e · 5 integration — todos verdes
@@ -80,6 +82,10 @@ coherente con ADR-02.
 }
 ```
 El `passwordHash` nunca aparece en la respuesta.
+
+> **Nota (2026-09-30).** Desde el 2026-09-28 (`7635645`, Fase 1) `usuario` incluye además
+> **`tenantSlug`**, para que el front arme el enlace público. No va dentro del JWT. Contrato en
+> [us02 §d](us02-gestion-citas.md#d-enlace-para-compartir-la-url-pública).
 
 **Errores:**
 - `400` — validación del DTO

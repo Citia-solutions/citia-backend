@@ -1,5 +1,7 @@
 # ADR-12: Outbox transaccional para los hechos de dominio y planificador en proceso sobre Postgres
 
+> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) (origen), [Fase 4 — US-05](../Fases/fase-4-us05-alertas.md), [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) · **Feature:** ninguna todavía (diseñada, sin implementar) · **Plan:** [US-03](../US/03-recordatorios.md) · **Relacionado:** [ADR-13](../Decisions/ADR-13.md), [ADR-04](../Decisions/ADR-04.md), [ADR-06](../Decisions/ADR-06.md), [ADR-09](../Decisions/ADR-09.md), [DT-27](../Deudas/DT-27.md), [DT-11](../Deudas/DT-11.md), [DT-19](../Deudas/DT-19.md), [Q6](../PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1)
+
 **Fecha:** 2026-09-30
 **Estado:** Aceptado · sin implementar
 **Commits:** — (pendiente)

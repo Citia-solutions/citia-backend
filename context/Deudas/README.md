@@ -23,13 +23,13 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-01](DT-01.md) | Sin renovación ni revocación de sesión | 🔴 alta | abierta | [ADR-01](../Decisions/ADR-01.md) |
 | [DT-03](DT-03.md) | Sin verificación de correo ni recuperación de contraseña | 🔴 alta | abierta | [us00a](../Features/us00a-registro-inicial.md) |
 | [DT-06](DT-06.md) | Registro público sin ningún freno | 🔴 alta | abierta | [us00a](../Features/us00a-registro-inicial.md) |
-| [DT-15](DT-15.md) | No se puede buscar un paciente | 🔴 alta | abierta | [us06](../Features/us06-dashboard-citas.md) |
+| [DT-15](DT-15.md) | No se puede buscar un paciente | 🔴 alta | abierta · neutralizada para crear cita por el RUT (ver nota) | [us06](../Features/us06-dashboard-citas.md) |
 | [DT-02](DT-02.md) | El rol se emite y nadie lo verifica | 🟠 media→alta | abierta | [ADR-01 §4](../Decisions/ADR-01.md) |
 | [DT-07](DT-07.md) | No existe alta de un segundo usuario | 🟠 media | abierta | [us00a](../Features/us00a-registro-inicial.md) |
-| [DT-12](DT-12.md) | Solapamiento de citas no detectado | 🟠 media | 🟢 resuelta en diseño ([ADR-11](../Decisions/ADR-11.md)) | [us06](../Features/us06-dashboard-citas.md) |
+| [DT-12](DT-12.md) | Solapamiento de citas no detectado | 🟠 media | 🟢 resuelta en diseño ([ADR-11](../Decisions/ADR-11.md)) · **implementada** en `develop` (2026-09-28): cumple su criterio de cierre, falta confirmarlo | [us06](../Features/us06-dashboard-citas.md) |
 | [DT-14](DT-14.md) | El instante de la cita se acepta sin zona horaria | 🟠 media | abierta | [ADR-07](../Decisions/ADR-07.md) |
 | [DT-19](DT-19.md) | Sin observabilidad | 🔴 alta (RF-06 en el MVP) | 🟢 resuelta en diseño ([ADR-13 §16](../Decisions/ADR-13.md)) | RNF-08 |
-| [DT-20](DT-20.md) | Las pruebas e2e nunca se han ejecutado | 🟠 media | abierta | [us06](../Features/us06-dashboard-citas.md) |
+| [DT-20](DT-20.md) | Las pruebas e2e nunca se han ejecutado | 🟠 media | abierta · avance: suites con BD en verde el 2026-09-28, sin pipeline | [us06](../Features/us06-dashboard-citas.md) |
 | [DT-04](DT-04.md) | Login sin límite de intentos | 🟠 media | abierta | [us00b](../Features/us00b-login.md) |
 | [DT-16](DT-16.md) | El consentimiento se captura y nadie lo lee | 🔴 alta (RF-06 en el MVP) | 🟠 **riesgo aceptado** (2026-09-30) · revisar antes del 2026-12-01 (Ley 21.719) | [us06](../Features/us06-dashboard-citas.md) |
 | [DT-27](DT-27.md) | Los hechos se publican fuera de la transacción | 🔴 alta (RF-06 en el MVP) | 🟢 resuelta en diseño ([ADR-12](../Decisions/ADR-12.md)) | [ADR-09 §7](../Decisions/ADR-09.md) |
@@ -52,6 +52,11 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-28](DT-28.md) | Una solicitud sin revisar bloquea al paciente | 🟢 mitigada con una ventana de tiempo · 2026-08-24 |
 
 ## Previstas — se contraen al implementar la vía pública de [ADR-09](../Decisions/ADR-09.md)
+
+> **Nota (2026-09-30).** La vía pública está implementada desde el 2026-09-10 (`e1253c3`) y la bandeja
+> desde el 2026-09-28, así que, según la definición de `prevista` de arriba, **DT-23, DT-25 y DT-26 ya
+> están contraídas** (existen hoy en el código). Su estado no se cambió en esta pasada de navegación:
+> queda para confirmarlo y pasarlas a `abierta`. Guía de la fase: [Fase 1](../Fases/fase-1-us02-gestion-citas.md).
 
 | ID | Deuda | Severidad | Estado | Origen |
 |----|-------|-----------|--------|--------|
@@ -99,6 +104,26 @@ Todavía sin número: se fichan al implementar, como hizo ADR-10. La lista compl
 | [us06](../Features/us06-dashboard-citas.md) — dashboard | DT-12, DT-13, DT-15, DT-16, DT-20 |
 | Transversal / RNF | DT-18, DT-19, DT-21 |
 | Integración front ↔ back | DT-29 (ver también `citia-frontend/context/Deudas/`) |
+
+---
+
+## Por fase del roadmap
+
+*(2026-09-30.)* Qué deudas creó, cerró o movió cada fase. El detalle y el orden de lectura están en
+la guía de cada una, en [`../Fases/`](../Fases/README.md).
+
+| Fase | Creadas (origen) | Cerradas o mitigadas | Afectadas |
+|---|---|---|---|
+| [Fundaciones](../Fases/fase-base-fundaciones.md) | DT-01…DT-09, DT-18, DT-19, DT-21 | — | — |
+| [Fase 0 — US-06](../Fases/fase-0-us06-dashboard.md) | DT-10…DT-17, DT-20, DT-22 | — | — |
+| [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md) | DT-23…DT-29 | cierra DT-10 y DT-22 · mitiga DT-28 | DT-12 (implementada), DT-14, DT-15, DT-18 (aceptada), DT-20 (avance) |
+| [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) | DT-30 · 8 previstas sin número | resueltas en diseño: DT-19, DT-21, DT-27 | DT-11 (aplazada), DT-16 (riesgo aceptado), DT-17, DT-23, DT-26, DT-29 |
+| [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) | 4 previstas de ADR-10, sin número | — | DT-30 se reabre y se cierra con los botones de asistencia · DT-11, DT-16, DT-18, DT-23, DT-26 |
+| [Fase 4 — US-05](../Fases/fase-4-us05-alertas.md) | — | — | DT-28 (aviso al profesional) |
+| [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) | — | — | DT-11 se cierra aquí · depende de DT-30 (que se cierra en la Fase 3) · DT-13, DT-23 |
+
+> Las deudas de Fundaciones y de la Fase 0 se **ficharon** el 2026-08-24 (`f2a7dff`), cuando se creó
+> este registro; su origen es anterior.
 
 ---
 

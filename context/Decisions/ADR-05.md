@@ -1,5 +1,7 @@
 # ADR-05: Contenedorización Docker multi-stage y migraciones en el arranque del contenedor
 
+> **Fase:** [Fundaciones](../Fases/fase-base-fundaciones.md), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) · **Feature:** [infra](../Features/infra-contenedores.md) · **Plan:** — · **Relacionado:** [ADR-00](../Decisions/ADR-00.md), [ADR-12](../Decisions/ADR-12.md), [DT-19](../Deudas/DT-19.md), [stack](../stack-tecnologico.md)
+
 **Fecha:** 2026-06-22
 **Estado:** Aceptado · Implementado (2026-06-22)
 **Commits:** `b8cac2a` (Docker), `df53128` (fix build), `0e54f0b` (scripts de migración prod), `77a97c9` (puerto pgAdmin), `b623b6a` (carga de `.env` en CLI/e2e)

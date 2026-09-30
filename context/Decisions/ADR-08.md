@@ -1,5 +1,7 @@
 # ADR-08: El tenant sale del body del login y pasa a la URL (puerto `TenantResolver`)
 
+> **Fase:** [Fundaciones](../Fases/fase-base-fundaciones.md) (login), [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md) (ruta pública) · **Feature:** [us00b](../Features/us00b-login.md), [us02](../Features/us02-gestion-citas.md) · **Plan:** — · **Relacionado:** [ADR-03](../Decisions/ADR-03.md), [ADR-09](../Decisions/ADR-09.md), [FD-02](../Frontend-Decisions/FD-02.md), [DT-05](../Deudas/DT-05.md), [Q8](../PREGUNTAS-ABIERTAS.md#q8--adr-08-el-tenant-en-la-url-dev-b--prioridad-2), [H4](../PREGUNTAS-ABIERTAS.md#h4--revisión-de-adr-08-antes-del-merge)
+
 **Fecha:** 2026-08-16
 **Estado:** Propuesto · **Sin implementar**
 **Commits:** — (pendiente)

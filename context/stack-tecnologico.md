@@ -60,7 +60,10 @@ alerta de prueba recibidos en Better Stack.
 ## Decisiones relacionadas (ADRs)
 
 Índice completo en [`Decisions/README.md`](./Decisions/README.md); trazabilidad commit ↔ doc en
-[`TRAZABILIDAD.md`](./TRAZABILIDAD.md).
+[`TRAZABILIDAD.md`](./TRAZABILIDAD.md). Por fase: los puntos 1–3, 8 y 10 vienen de
+[Fundaciones](./Fases/fase-base-fundaciones.md), el 11 de la [Fase 0](./Fases/fase-0-us06-dashboard.md),
+y los puntos 4–7, 9 y el *Modo prueba* los actualizó la [Fase 2](./Fases/fase-2-us03-recordatorios.md)
+el 2026-09-30.
 
 - ADR-00 TypeORM · ADR-01 Auth JWT · ADR-02 Español+hexagonal · ADR-03 Login por slug
 - ADR-04 Máquina de estados de Cita · **ADR-05 Docker** · **ADR-06 Atomicidad transaccional** · **ADR-07 Zona horaria**

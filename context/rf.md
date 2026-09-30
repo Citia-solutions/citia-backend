@@ -7,4 +7,4 @@ RF-04: Perfil: El sistema debe permitir tener un vista para las configuraciones 
 RF-05: Alertas: El sistema debe enviar alertas al usuario en caso de los siguiente eventos: reagendamiento, cancelación de cita, solicitud de cita.
 RF-06 — Recordatorios al paciente: programar y enviar recordatorios automáticos al paciente (canal a definir: WhatsApp/SMS/email) en momentos configurables. (Aquí cuelga tu RNF-03.)
 RF-07 — Respuesta del paciente: el paciente confirma, cancela o solicita reagendar desde el recordatorio; el sistema actualiza la cita y dispara tu RF-05 (alerta al profesional). (Esto cierra el loop.)
-RF-08 — Calificación de asistencia: calcular el % de asistencia / comportamiento histórico del paciente. (Tu diferenciador de Fase 0.)
+RF-08 — Calificación de asistencia: calcular el % de asistencia / comportamiento histórico del paciente. (Tu diferenciador de la etapa 0 del producto: [Descripcion/fase-0-problema.md](Descripcion/fase-0-problema.md).)

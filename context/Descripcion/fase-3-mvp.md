@@ -1,4 +1,9 @@
-# Fase 3 — MVP
+# Etapa 3 del producto — MVP
+
+> **Etapa 3 del producto**, no una fase del roadmap. Las etapas (problema → validación → requisitos → MVP)
+> explican cómo se llegó al alcance; el archivo conserva el nombre `fase-*` por historia. Las fases de
+> construcción están en [`Fases/`](../Fases/README.md). **El MVP que define esta etapa son las fases 0, 1 y 2
+> del roadmap**; la "Fase 3" del roadmap es la [respuesta del paciente](../Fases/fase-3-us04-respuesta-paciente.md), fuera del MVP.
 
 **Objetivo:** decidir la **versión más pequeña** que entrega valor real y permite aprender.
 **Estado:** ✅ alcance decidido (2026-09-30: Q1 → A) · la tercera pieza, diseñada y sin construir
@@ -35,7 +40,7 @@
 |---|---|
 | correo con fecha, hora, profesional y cómo contactar | WhatsApp y SMS (después, otro adaptador) |
 | momentos configurables por profesional (predeterminado 24 h y 2 h antes) | tipo de consulta o cualquier dato de salud en el mensaje |
-| reprogramar al reagendar, anular al cancelar | que el paciente **responda** desde el correo (Fase 3, US-04 / [ADR-10](../Decisions/ADR-10.md)) |
+| reprogramar al reagendar, anular al cancelar | que el paciente **responda** desde el correo (Fase 3 del roadmap, US-04 / [ADR-10](../Decisions/ADR-10.md)) |
 | registro de entrega y alertas si fallan (RNF-03, RNF-08) | revisar el consentimiento antes de enviar ([DT-16](../Deudas/DT-16.md), riesgo aceptado) |
 
 ### La calificación sale del MVP, pero su materia prima corre
@@ -45,7 +50,7 @@ que marca `ghosting` las citas vencidas también se aplaza ([DT-11](../Deudas/DT
 hacer sin pérdida: la regla depende de datos guardados y se aplica después, con una fecha de corte.
 
 **Lo que sí se pierde** es la asistencia real: si el paciente llegó o no llegó a una cita solo lo sabe
-el profesional ese día, y el voucher **no** tendrá los botones hasta la Fase 3, cuando el paciente
+el profesional ese día, y el voucher **no** tendrá los botones hasta la Fase 3 del roadmap, cuando el paciente
 pueda confirmar desde el enlace (decisión del 2026-09-30, [DT-30](../Deudas/DT-30.md)).
 **Traducción para la planificación: cada semana sin esos botones es una semana de historial que la v2
 no podrá mostrar.** Es una pérdida aceptada, no un descuido.
@@ -54,7 +59,7 @@ no podrá mostrar.** Es una pérdida aceptada, no un descuido.
 
 ## 2. Qué queda fuera de la v1
 
-Heredado de [Fase 0](fase-0-problema.md):
+Heredado de la [etapa 0](fase-0-problema.md):
 
 - ❌ Todo lo relativo a **dinero** (cobros, prepagos, retenciones, facturación)
 - ❌ **Inventarios**
@@ -73,7 +78,7 @@ Y por no estar entre las tres piezas, quedan fuera también:
 
 **Respondida el 2026-09-30 con la salida A** (meter los recordatorios en el MVP).
 
-Los criterios de éxito de [Fase 0](fase-0-problema.md) son:
+Los criterios de éxito de la [etapa 0](fase-0-problema.md) son:
 
 1. el usuario deja de mandar mensajes por WhatsApp;
 2. se desliga de presionar al paciente;
@@ -84,7 +89,7 @@ paciente**. Con los recordatorios:
 
 | Criterio | Con el MVP actual |
 |---|---|
-| 1. Deja de mandar WhatsApps | **En parte.** Deja de mandar el "te recuerdo tu hora de mañana": lo manda Citia. Pero la **respuesta** del paciente (voy, no voy, cámbiame la hora) sigue llegando por teléfono o por correo al profesional hasta la Fase 3. |
+| 1. Deja de mandar WhatsApps | **En parte.** Deja de mandar el "te recuerdo tu hora de mañana": lo manda Citia. Pero la **respuesta** del paciente (voy, no voy, cámbiame la hora) sigue llegando por teléfono o por correo al profesional hasta la Fase 3 del roadmap. |
 | 2. Se desliga de presionar al paciente | **En parte.** El recordatorio sale solo y a tiempo; lo que no existe todavía es el registro de quién cumple (calificación, v2). |
 | 3. Monitorea el estado de sus consultas | **Sí**, y además ve si cada recordatorio salió, llegó o falló. |
 
@@ -124,4 +129,4 @@ Pieza 3 · Recordatorios          ██░░░░░░░░ diseño cerrado
 
 ---
 
-**Anterior:** [Fase 2 — Requisitos](fase-2-requisitos.md) · **Índice:** [README](README.md)
+**Anterior:** [Etapa 2 — Requisitos](fase-2-requisitos.md) · **Índice:** [README](README.md)

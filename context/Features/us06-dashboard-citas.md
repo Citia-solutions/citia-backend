@@ -1,5 +1,7 @@
 # Feature: US-06 — Dashboard de citas del día
 
+> **Fase:** [Fase 0 — US-06](../Fases/fase-0-us06-dashboard.md) · **Feature:** este documento · **Plan:** [US-06](../US/06-epic.md) · **Relacionado:** [ADR-04](../Decisions/ADR-04.md), [ADR-07](../Decisions/ADR-07.md), [DT-10](../Deudas/DT-10.md), [DT-11](../Deudas/DT-11.md), [DT-12](../Deudas/DT-12.md), [DT-20](../Deudas/DT-20.md), [dashboard-citas-del-dia (front)](../../../citia-frontend/context/Features/dashboard-citas-del-dia.md)
+
 **Epic:** 06 — Dashboard de citas del día (RF-03)
 **Historia:** US-06
 **Estado:** ✅ Implementado backend (2026-06-30) · ✅ Fix zona horaria de la clínica (2026-07-06, ADR-07) · 77 unit verdes (dominio 100%) · ⚠️ e2e escrito, pendiente de correr contra Postgres
@@ -236,6 +238,15 @@ Las horas se generan relativas a "ahora", así que las citas siempre caen en el 
    exponerlos vía HTTP.
 5. Scoring y reporte de comportamiento del paciente (RF-08).
 
+> **Nota (2026-09-30).** Esta lista es de junio y casi toda quedó resuelta o reencauzada:
+> (1) e2e con Postgres en verde el 2026-09-28 (89/89, ver [ROADMAP § Fase 1](../ROADMAP.md#integración));
+> (2) el job de ghosting **ya no usa BullMQ**: el mecanismo es un planificador en proceso sobre
+> Postgres ([ADR-12](../Decisions/ADR-12.md)) y el job queda aplazado con el scoring
+> ([DT-11](../Deudas/DT-11.md), [Fase 5](../Fases/fase-5-us07-scoring.md)); (3) el frontend consume
+> `/hoy`, marca las citas pasadas y abre el voucher (Fase 0 cerrada el 2026-09-28,
+> [Fase 0](../Fases/fase-0-us06-dashboard.md)); (4) las transiciones se expusieron en el release 1
+> ([DT-10](../Deudas/DT-10.md) cerrada); (5) el scoring pasó a la v2.
+
 ---
 
 ## Deudas técnicas asociadas
@@ -248,5 +259,10 @@ Las horas se generan relativas a "ahora", así que las citas siempre caen en el 
 - [DT-15](../Deudas/DT-15.md) — no se puede buscar un paciente; el flujo se rompe en la segunda cita.
 - [DT-16](../Deudas/DT-16.md) — el consentimiento se captura y nadie lo lee.
 - [DT-20](../Deudas/DT-20.md) — los e2e nunca se han ejecutado contra Postgres.
+
+> **Nota (2026-09-30).** Estados vigentes: DT-10 **cerrada** (release 1, 2026-08-23), DT-12 resuelta
+> por [ADR-11](../Decisions/ADR-11.md) e implementada (2026-09-28), DT-11 **aplazada** con el scoring:
+> la propiedad de "se encarece sola" pasó a [DT-30](../Deudas/DT-30.md). Tablero completo en
+> [Deudas/README](../Deudas/README.md).
 
 Índice completo: [`../Deudas/README.md`](../Deudas/README.md).

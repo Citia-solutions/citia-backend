@@ -1,5 +1,7 @@
 # ADR-01: Autenticación con Passport.js + JWT
 
+> **Fase:** [Fundaciones](../Fases/fase-base-fundaciones.md) · **Feature:** [us00b](../Features/us00b-login.md) · **Plan:** [US-00](../US/00-auth.md) · **Relacionado:** [ADR-02](../Decisions/ADR-02.md), [ADR-03](../Decisions/ADR-03.md), [ADR-08](../Decisions/ADR-08.md), [DT-01](../Deudas/DT-01.md), [DT-02](../Deudas/DT-02.md), [Q7](../PREGUNTAS-ABIERTAS.md#q7--renovación-de-sesión-bloqueado-hasta-que-el-hacker-defina-el-requisito), [H1](../PREGUNTAS-ABIERTAS.md#h1--requisito-de-revocación-de-sesión-desbloquea-q7)
+
 **Fecha:** 2026-06-22
 **Estado:** Aceptado · Implementado (2026-06-22)
 

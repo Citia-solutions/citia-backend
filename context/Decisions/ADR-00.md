@@ -1,5 +1,7 @@
 # ADR-00: TypeORM como ORM definitivo para citia-backend
 
+> **Fase:** [Fundaciones](../Fases/fase-base-fundaciones.md) · **Feature:** [us00a](../Features/us00a-registro-inicial.md), [infra](../Features/infra-contenedores.md) · **Plan:** [US-00](../US/00-auth.md) · **Relacionado:** [ADR-02](../Decisions/ADR-02.md), [ADR-05](../Decisions/ADR-05.md)
+
 **Fecha:** 2026-06-22
 **Estado:** Aceptado
 

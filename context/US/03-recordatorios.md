@@ -1,5 +1,7 @@
 # Plan US-03 — Recordatorios al paciente (RF-06)
 
+> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) · **Feature:** ninguna todavía (diseñada, sin implementar) · **Plan:** este documento · **Relacionado:** [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-27](../Deudas/DT-27.md), [DT-19](../Deudas/DT-19.md), [DT-21](../Deudas/DT-21.md), [DT-16](../Deudas/DT-16.md), [DT-30](../Deudas/DT-30.md), [stack](../stack-tecnologico.md)
+
 > **Estado (2026-09-30):** ✅ diseño cerrado en [ADR-12](../Decisions/ADR-12.md) (outbox +
 > planificador) y [ADR-13](../Decisions/ADR-13.md) (recordatorios), con **todas sus decisiones
 > confirmadas por el usuario** el mismo día. ⬜ Sin implementar. Entra en el MVP por decisión del

@@ -1,8 +1,11 @@
 # ADR-04: Modelo de Cita — máquina de estados en el dominio y estado materializado
 
+> **Fase:** [Fase 0 — US-06](../Fases/fase-0-us06-dashboard.md) (origen), [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md), [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) · **Feature:** [us06](../Features/us06-dashboard-citas.md), [us02](../Features/us02-gestion-citas.md) · **Plan:** [US-06](../US/06-epic.md) · **Relacionado:** [ADR-09](../Decisions/ADR-09.md), [ADR-12](../Decisions/ADR-12.md), [DT-10](../Deudas/DT-10.md), [DT-11](../Deudas/DT-11.md), [DT-22](../Deudas/DT-22.md), [DT-30](../Deudas/DT-30.md), [Q6](../PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1)
+
 **Fecha:** 2026-06-30
 **Estado:** Aceptado · ➕ **extendido por [ADR-09](ADR-09.md)** (propuesto) · 🔁 **mecanismo del §4
 reemplazado por [ADR-12](ADR-12.md)** (2026-09-30)
+*(Nota del 2026-09-30: ADR-09 ya no está "propuesto": está aceptado e implementado.)*
 
 > **Nota (2026-09-30).** La decisión 4 nombraba BullMQ como el worker que materializaría el
 > `ghosting`. [ADR-12](ADR-12.md) elige otro mecanismo: planificador dentro del proceso

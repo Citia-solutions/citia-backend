@@ -31,6 +31,21 @@ compromete, y los desarrolladores eligen el mecanismo que cumpla ese requisito.
 | 9 | Modelo de disponibilidad | **desarrolladores** (solo evaluar riesgo) | nada hoy |
 | 11 | ¿Cómo llega al paciente el enlace de su cita, y cómo se sabe que es él? | **I+D** → decisión conjunta, **hacker** (H7) | US-02.07 entera |
 
+### Por fase del roadmap
+
+*(2026-09-30.)* A qué fase de construcción ([`Fases/`](Fases/README.md)) toca cada pregunta. Las que no
+tienen fase son de producto o de modelo de negocio.
+
+| Fase | Preguntas |
+|---|---|
+| [Fundaciones](Fases/fase-base-fundaciones.md) | Q5 + H2 (registro) · Q7 + H1 (sesión) · Q8 + H4 (ADR-08 en el login) · H6 (hallazgos fichados) |
+| [Fase 0 — US-06](Fases/fase-0-us06-dashboard.md) | Q4 (solapamiento, ✅) · Q6 (job de ghosting) |
+| [Fase 1 — US-02](Fases/fase-1-us02-gestion-citas.md) | Q4 ✅ · Q11 ✅ C · Q8 (ruta pública) · Q9 (disponibilidad) · H3 · H5 |
+| [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | Q1 ✅ A · Q6 ✅ (mecanismo) |
+| [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | Q11 (se reabre con B) · H7 |
+| [Fase 5 — US-07](Fases/fase-5-us07-scoring.md) | Q6 (preguntas 1 y 2 del job de cierre) |
+| sin fase | Q2 (prepago) · Q3 (agenda de la organización) · Q10 (validación, [etapa 1 del producto](Descripcion/fase-1-validacion.md)) |
+
 ---
 
 ## Para I+D
@@ -60,7 +75,7 @@ de una hora— así que conviene llevarlas preparadas.
 > Resend; contenido solo informativo; el enlace para responder llega en la Fase 3. En la misma
 > decisión **el scoring (RF-08) sale del MVP** y pasa a la v2. Diseño en
 > [ADR-13](Decisions/ADR-13.md) y plan en [US-03](US/03-recordatorios.md). El MVP queda en tres
-> piezas: dashboard, gestión de citas y recordatorios ([fase 3](Descripcion/fase-3-mvp.md)).
+> piezas: dashboard, gestión de citas y recordatorios ([etapa 3 del producto](Descripcion/fase-3-mvp.md)).
 
 **El problema concreto:** los criterios de éxito dicen que el profesional *deja de mandar WhatsApps*
 y *se desliga de presionar al paciente*. Las tres piezas del MVP son todas del lado del profesional:
@@ -219,7 +234,8 @@ renovación expulsa usuarios a mitad de consulta.
 
 ### Q9 — Modelo de disponibilidad *(no construir · solo evaluar)*
 
-Aplazado a fase 2 conscientemente. **La única pregunta ahora es defensiva:** ¿algo de lo que vamos a
+Aplazado a fase 2 conscientemente *(la segunda fase de ADR-09, no la Fase 2 del roadmap, que son
+los recordatorios; nota del 2026-09-30)*. **La única pregunta ahora es defensiva:** ¿algo de lo que vamos a
 construir en los próximos dos meses hace más caro añadirlo después?
 
 **Entregable:** una respuesta de un párrafo. Si es "no", se archiva y no se vuelve a tocar. Si es
