@@ -4,24 +4,26 @@ import {
   EventoDominio,
   PublicadorEventos,
 } from '../application/publicador-eventos';
+import { TransactionContext } from '../application/transaction-runner';
 
 /**
- * Adaptador de Fase 1: deja constancia del hecho y nada mas. No hay
+ * Adaptador de Fase 1: deja constancia del hecho en el log y nada mas. No hay
  * suscriptores todavia.
  *
- * DEUDA CONOCIDA (DT-27): la publicacion ocurre FUERA de la transaccion que
- * persiste el cambio. Si el proceso muere en medio, el cambio queda guardado y
- * el hecho se pierde. Hoy es inofensivo porque nadie escucha; deja de serlo
- * cuando un evento perdido signifique un recordatorio que nunca se envia
- * (RNF-03 exige >=99% de entrega). La solucion es escribir el evento en la
- * misma transaccion, en una tabla de salida, y entregarlo desde un proceso
- * aparte con reintentos. Conviene hacerlo ANTES del primer suscriptor.
+ * TRANSITORIO (ADR-12 §2): ya recibe el `tx` del caso de uso pero lo IGNORA, asi
+ * que sigue teniendo el problema de DT-27: escribe en el log antes del commit
+ * y, si la transaccion se revierte despues, el log cuenta algo que no paso. Lo
+ * reemplaza `PublicadorEventosEnSalida` (`shared/infrastructure/salida/`), que
+ * inserta el hecho en `eventos_salida` con el `EntityManager` de ese mismo
+ * `tx`. Entonces este archivo se borra.
  */
 @Injectable()
 export class PublicadorEventosEnProceso extends PublicadorEventos {
   private readonly logger = new Logger(PublicadorEventosEnProceso.name);
 
-  publicar(evento: EventoDominio): Promise<void> {
+  publicar(evento: EventoDominio, tx: TransactionContext): Promise<void> {
+    // Se ignora a proposito (ver arriba); el sustituto lo usara.
+    void tx;
     this.logger.log(
       `evento=${evento.nombre} tenant=${evento.tenantId} payload=${JSON.stringify(evento.payload)}`,
     );

@@ -69,6 +69,9 @@ export class BandejaSolicitudesService {
    *     resolver-o-crear paciente por RUT, cita, bitácora, `CitaCreada`,
    *     avisos) dentro de ESTA transacción.
    *  4. Resuelve la solicitud y publica `SolicitudCitaAceptada`.
+   *
+   * Los dos hechos (`CitaCreada` y `SolicitudCitaAceptada`) se publican con el
+   * `tx` de esta transaccion (ADR-12 §2).
    */
   async aceptar(
     solicitudId: string,
@@ -106,18 +109,22 @@ export class BandejaSolicitudesService {
       solicitud.aceptar(usuario.userId, cita.id);
       await this.solicitudRepository.guardar(solicitud, tx);
 
-      // Sin RUT ni nombre: el adaptador actual escribe el payload en el log
-      // (ADR-09 §3 regla 5).
-      await this.eventos.publicar({
-        nombre: 'SolicitudCitaAceptada',
-        ocurridoEn: new Date(),
-        tenantId: solicitud.tenantId,
-        payload: {
-          solicitudId: solicitud.id,
-          citaId: cita.id,
-          usuarioId: usuario.userId,
+      // En ESTE tx, como `CitaCreada` dentro de `agendar`: los dos hechos se
+      // confirman con la cita y la solicitud resuelta, o ninguno (ADR-12 §2).
+      // Sin RUT ni nombre: el payload se guarda tal cual (ADR-09 §3 regla 5).
+      await this.eventos.publicar(
+        {
+          nombre: 'SolicitudCitaAceptada',
+          ocurridoEn: new Date(),
+          tenantId: solicitud.tenantId,
+          payload: {
+            solicitudId: solicitud.id,
+            citaId: cita.id,
+            usuarioId: usuario.userId,
+          },
         },
-      });
+        tx,
+      );
 
       return new SolicitudAceptadaDto({
         solicitud: BandejaSolicitudesService.aBandeja(solicitud),
@@ -146,15 +153,19 @@ export class BandejaSolicitudesService {
       solicitud.rechazar(usuario.userId);
       await this.solicitudRepository.guardar(solicitud, tx);
 
-      await this.eventos.publicar({
-        nombre: 'SolicitudCitaRechazada',
-        ocurridoEn: new Date(),
-        tenantId: solicitud.tenantId,
-        payload: {
-          solicitudId: solicitud.id,
-          usuarioId: usuario.userId,
+      // En el mismo tx que la solicitud rechazada (ADR-12 §2).
+      await this.eventos.publicar(
+        {
+          nombre: 'SolicitudCitaRechazada',
+          ocurridoEn: new Date(),
+          tenantId: solicitud.tenantId,
+          payload: {
+            solicitudId: solicitud.id,
+            usuarioId: usuario.userId,
+          },
         },
-      });
+        tx,
+      );
 
       return BandejaSolicitudesService.aBandeja(solicitud);
     });

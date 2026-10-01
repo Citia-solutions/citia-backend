@@ -18,8 +18,8 @@ import { TypeOrmTransactionRunner } from './infrastructure/typeorm-transaction-r
       useClass: TypeOrmTransactionRunner,
     },
     {
-      // Fase 1: sin suscriptores. El adaptador se cambia por uno sobre cola
-      // cuando entren recordatorios (RF-06), sin tocar `application`.
+      // Transitorio: solo log. Se cambia por `PublicadorEventosEnSalida`
+      // (outbox, ADR-12 §2) sin tocar `application`.
       provide: PublicadorEventos,
       useClass: PublicadorEventosEnProceso,
     },

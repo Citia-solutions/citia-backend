@@ -131,6 +131,12 @@ describe('BandejaSolicitudesService', () => {
   const primerEvento = (): EventoDominio =>
     (mockEventos.publicar.mock.calls as unknown as EventoDominio[][])[0][0];
 
+  // tx con el que se publicó el primer hecho (ADR-12 §2).
+  const txDelPrimerEvento = (): unknown =>
+    (
+      mockEventos.publicar.mock.calls as unknown as [EventoDominio, unknown][]
+    )[0][1];
+
   const primerAgendar = (): [CrearCitaDto, AuthenticatedUser, unknown] =>
     (
       mockCitasService.agendar.mock.calls as unknown as [
@@ -376,6 +382,7 @@ describe('BandejaSolicitudesService', () => {
 
       // Assert
       expect(mockEventos.publicar).toHaveBeenCalledTimes(1);
+      expect(txDelPrimerEvento()).toBe('tx');
       const evento = primerEvento();
       expect(evento.nombre).toBe('SolicitudCitaAceptada');
       expect(evento.tenantId).toBe('tenant-1');
@@ -508,6 +515,8 @@ describe('BandejaSolicitudesService', () => {
       await service.rechazar(SOLICITUD_ID, usuario);
 
       // Assert
+      expect(mockEventos.publicar).toHaveBeenCalledTimes(1);
+      expect(txDelPrimerEvento()).toBe('tx');
       const evento = primerEvento();
       expect(evento.nombre).toBe('SolicitudCitaRechazada');
       expect(evento.tenantId).toBe('tenant-1');
@@ -553,6 +562,73 @@ describe('BandejaSolicitudesService', () => {
       ).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
       expect(mockSolicitudRepository.guardar).not.toHaveBeenCalled();
       expect(mockEventos.publicar).not.toHaveBeenCalled();
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // ADR-12 §2: el hecho se escribe en la MISMA transacción que el cambio. Se
+  // verifica que aceptar y rechazar publican DENTRO del callback de
+  // `TransactionRunner.run` y con el contexto que ese callback recibe (el
+  // mismo que reciben `agendar` y `guardar`).
+  describe('publicación de hechos dentro de la transacción (ADR-12 §2)', () => {
+    const txOperacion = { soy: 'tx-de-la-bandeja' };
+
+    // ¿Estaba el callback de `run` en curso cuando se llamó a `publicar`?
+    let enTransaccion: boolean;
+    let publicadoEnTransaccion: boolean[];
+
+    beforeEach(() => {
+      enTransaccion = false;
+      publicadoEnTransaccion = [];
+      mockTx.run.mockImplementation(
+        async (work: (tx: unknown) => Promise<unknown>) => {
+          enTransaccion = true;
+          try {
+            return await work(txOperacion);
+          } finally {
+            enTransaccion = false;
+          }
+        },
+      );
+      mockEventos.publicar.mockImplementation(() => {
+        publicadoEnTransaccion.push(enTransaccion);
+        return Promise.resolve();
+      });
+      mockSolicitudRepository.buscarPorIdParaActualizar.mockResolvedValue(
+        solicitudEn(EstadoSolicitud.RECIBIDA),
+      );
+    });
+
+    it('aceptar: publica SolicitudCitaAceptada dentro del callback, con el tx con el que agenda y guarda', async () => {
+      // Act
+      await service.aceptar(SOLICITUD_ID, dto, usuario);
+
+      // Assert
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(publicadoEnTransaccion).toEqual([true]);
+      expect(primerEvento().nombre).toBe('SolicitudCitaAceptada');
+      expect(txDelPrimerEvento()).toBe(txOperacion);
+      // `CitaCreada` lo publica `agendar` con este mismo tx
+      expect(primerAgendar()[2]).toBe(txOperacion);
+      expect(mockSolicitudRepository.guardar).toHaveBeenCalledWith(
+        expect.any(SolicitudCita),
+        txOperacion,
+      );
+    });
+
+    it('rechazar: publica SolicitudCitaRechazada dentro del callback, con el tx con el que guarda', async () => {
+      // Act
+      await service.rechazar(SOLICITUD_ID, usuario);
+
+      // Assert
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(publicadoEnTransaccion).toEqual([true]);
+      expect(primerEvento().nombre).toBe('SolicitudCitaRechazada');
+      expect(txDelPrimerEvento()).toBe(txOperacion);
+      expect(mockSolicitudRepository.guardar).toHaveBeenCalledWith(
+        expect.any(SolicitudCita),
+        txOperacion,
+      );
     });
   });
 });
