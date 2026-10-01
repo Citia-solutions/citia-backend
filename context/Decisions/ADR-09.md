@@ -1,8 +1,17 @@
 # ADR-09: Gestión de citas — la solicitud del paciente es un agregado aparte, y reagendar mueve la cita registrando el hecho
 
+> **Fase:** [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md) (origen), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) · **Feature:** [us02](../Features/us02-gestion-citas.md) · **Plan:** [US-02.08](../US/02.08-voucher-cita.md) · **Relacionado:** [ADR-04](../Decisions/ADR-04.md), [ADR-08](../Decisions/ADR-08.md), [ADR-10](../Decisions/ADR-10.md), [ADR-11](../Decisions/ADR-11.md), [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [FD-01](../Frontend-Decisions/FD-01.md), [DT-18](../Deudas/DT-18.md), [DT-27](../Deudas/DT-27.md)
+
 **Fecha:** 2026-08-23
 **Estado:** Aceptado · **implementado por partes** — ver tabla abajo
 **Commits:** — (pendiente)
+
+> **Nota (2026-09-30).** Commits que implementan este ADR: `f2a7dff` (release 1, §3–§7), `e1253c3`
+> (vía pública, §1, §2, §8–§11) y `e06862a` (bandeja), más los docs `439a5fe`, `4c543a5`, `31ea490`
+> y `ab30bb7` (ver [TRAZABILIDAD](../TRAZABILIDAD.md)). Donde este ADR dice "Fase 1" y "Fase 2" habla
+> de **sus** fases (pedir hora → modelo de disponibilidad), no de las del roadmap: todo lo implementado
+> es de la [Fase 1 del roadmap](../Fases/fase-1-us02-gestion-citas.md).
+
 **Relación:** **extiende** [ADR-04](ADR-04.md) (añade `reagendar()` al grafo de estados y salda su
 deuda de historial) · **adopta la fase 1 de** [ADR-08](ADR-08.md) en la ruta pública (ver §11.b) ·
 **replica** el patrón de puerto opaco de [ADR-06](ADR-06.md).
@@ -184,6 +193,12 @@ datos ni servicio externo. Ninguna otra pieza de identidad del sistema tiene esa
    marcó él mismo;
 3. crear la `Cita` con la hora que fijó el profesional;
 4. registrar el `CambioCita` de tipo `creada`.
+
+> **Matiz (2026-09-30, [ADR-13 §14](ADR-13.md)).** El paso 2 se implementó como "se vincula al
+> paciente existente **sin tocarlo**". Con los recordatorios, el correo del paciente pasa a ser
+> obligatorio: si el paciente existente tiene el **correo vacío**, se completa con el que llega. Un
+> correo ya guardado **nunca** se reemplaza. Aplica igual al alta manual por RUT. El resto de esta
+> sección no cambia.
 
 Es el mismo patrón de escritura multi-tabla que ya resolvió el registro inicial.
 

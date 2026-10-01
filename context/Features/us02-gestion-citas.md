@@ -1,8 +1,18 @@
 # US-02 — Gestión de citas
 
+> **Fase:** [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md) (origen), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md), [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) · **Feature:** este documento · **Plan:** [US-02.07](../US/02.07-paciente-reagenda-cancela.md), [US-02.08](../US/02.08-voucher-cita.md) · **Relacionado:** [ADR-09](../Decisions/ADR-09.md), [ADR-11](../Decisions/ADR-11.md), [ADR-10](../Decisions/ADR-10.md), [ADR-08](../Decisions/ADR-08.md), [DT-27](../Deudas/DT-27.md), [DT-29](../Deudas/DT-29.md)
+
 **Estado:** ✅ Release 1 (2026-08-23) · ✅ Vía pública del paciente (2026-09-10) · 📐 cierre de Fase 1 diseñado (2026-09-25): agenda por rango, solapamiento, bandeja — [contrato](#cierre-de-fase-1--contrato-2026-09-25), sin implementar
 **Commits:** `f2a7dff` (release 1 + RUT + conexión con el frontend), `e1253c3` (vía pública)
 **ADRs:** **[09](../Decisions/ADR-09.md)** · **[11](../Decisions/ADR-11.md)** (solapamiento) · extiende [04](../Decisions/ADR-04.md) · adopta la fase 1 de [08](../Decisions/ADR-08.md) en la ruta pública · replica [06](../Decisions/ADR-06.md)
+
+> **Nota (2026-09-30).** El cierre de Fase 1 **ya está implementado**: en `develop` desde el
+> 2026-09-28 (`717800e` … `06858f2`, merge `abe9045`) y verificado contra Postgres. Donde este
+> documento dice "sin implementar" o "falta implementar" (cabecera, § Cierre de Fase 1, § Pendientes)
+> es el estado del 2026-09-25. Estado vigente y resumen del cierre en
+> [Fases/fase-1-us02-gestion-citas.md](../Fases/fase-1-us02-gestion-citas.md#cierre-de-la-fase-resumen)
+> y en el [ROADMAP](../ROADMAP.md#fase-1--us-02-gestión-de-cita). Los tests del cierre (`06858f2`) no
+> están listados en § Tests.
 
 ---
 
@@ -268,6 +278,9 @@ Son **subtareas de esta historia**, no historias propias (sus archivos usan el p
 
 > **Estado:** ✅ diseñado · ⬜ sin implementar. Es el contrato con el que trabajan los sub-agentes de
 > implementación **y** el frontend. Si algo de aquí cambia al implementar, se cambia aquí primero.
+>
+> **Estado (2026-09-30):** ✅ implementado y mergeado en `develop` el 2026-09-28. La recomendación
+> separable de cerrar DT-14 **no** se aplicó: solo `AceptarSolicitudDto` usa `@IsInstanteConZona`.
 
 **Decisiones de producto tomadas (no reabrir):**
 
@@ -603,6 +616,9 @@ para el front actual. Solo rompe a un cliente que mande `inicio` sin zona, y nin
   público, y ADR-09 §8 regla 5 dice "ni uno más" → se decide con una enmienda a ADR-09, no aquí.
 - **Marcar "paciente ya conocido"** en la bandeja (búsqueda por RUT por solicitud).
 - **Actualizar datos de contacto** de un paciente existente al aceptar (hoy se vincula sin tocarlo).
+  *Parcialmente decidido (2026-09-30, [ADR-13 §14](../Decisions/ADR-13.md)):* un correo vacío se
+  completa; un correo o teléfono ya guardado no se reemplaza al aceptar (se edita con
+  `PATCH /api/pacientes/:id`).
 - **Citas en el pasado** ([DT-13](../Deudas/DT-13.md)): aceptar, como crear, las sigue admitiendo.
 
 ---
@@ -618,6 +634,11 @@ para el front actual. Solo rompe a un cliente que mande `inicio` sin zona, y nin
 | Límite de tasa | [DT-18](../Deudas/DT-18.md) — aplazado mientras el entorno sea local; **requisito de despliegue**. |
 | Solapamiento y citas en el pasado | [DT-12](../Deudas/DT-12.md): **avisar y permitir** ([ADR-11](../Decisions/ADR-11.md)), falta implementar · [DT-13](../Deudas/DT-13.md) sigue abierta. |
 | `inicio` sin zona horaria en la entrada | [DT-14](../Deudas/DT-14.md) — resuelto del lado del cliente, el backend sigue aceptándolo. Cierre propuesto en [§Recomendado](#recomendado-separable-cerrar-dt-14-en-crear-y-reagendar). |
+
+> **Nota (2026-09-30).** Bandeja, agenda por rango, enlace (`tenantSlug`) y solapamiento están
+> **implementados** (2026-09-28). El límite de tasa ya no es requisito de despliegue: se aceptó seguir
+> sin él (2026-09-29, DT-18). Siguen pendientes los campos definitivos del formulario, DT-13 y DT-14.
+> Lista vigente en [Fases/fase-1 § Qué quedó pendiente](../Fases/fase-1-us02-gestion-citas.md#qué-quedó-pendiente).
 
 ---
 

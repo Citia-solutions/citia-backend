@@ -1,8 +1,17 @@
 # ADR-11: Solapamiento de citas — avisar y permitir, con la regla en la entidad `Cita`
 
+> **Fase:** [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md) · **Feature:** [us02](../Features/us02-gestion-citas.md) · **Plan:** — · **Relacionado:** [ADR-09](../Decisions/ADR-09.md), [DT-12](../Deudas/DT-12.md), [Q4](../PREGUNTAS-ABIERTAS.md#q4--solapamiento-avisar-o-rechazar)
+
 **Fecha:** 2026-09-25
 **Estado:** Aceptado · sin implementar (contrato en [us02-gestion-citas §Cierre de Fase 1](../Features/us02-gestion-citas.md#cierre-de-fase-1--contrato-2026-09-25))
 **Commits:** — (pendiente)
+
+> **Nota (2026-09-30).** Implementado: `538657e` (`Cita.fin` y `chocaCon`), `9140bc3`
+> (`avisos.solapamientos` en crear, editar y reagendar) y tests en `06858f2`; en `develop` desde el
+> 2026-09-28 (merge `abe9045`). Ver [Fase 1](../Fases/fase-1-us02-gestion-citas.md). Cuando este ADR
+> habla de "rechazar en Fase 2" se refiere al modelo de disponibilidad de ADR-09, no a la Fase 2 del
+> roadmap.
+
 **Relación:** **resuelve** la decisión que [ADR-09](ADR-09.md) dejó abierta a propósito (solapamiento)
 · **responde** [Q4](../PREGUNTAS-ABIERTAS.md) · **cierra en diseño** [DT-12](../Deudas/DT-12.md) · se
 apoya en [ADR-04](ADR-04.md) (estados vigentes/terminales) sin tocar su grafo.

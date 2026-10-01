@@ -1,7 +1,14 @@
 # Plan US-06 — Alimentar el dashboard de citas del día (RF-03)
 
+> **Fase:** [Fase 0 — US-06](../Fases/fase-0-us06-dashboard.md) · **Feature:** [us06](../Features/us06-dashboard-citas.md) · **Plan:** este documento · **Relacionado:** [ADR-04](../Decisions/ADR-04.md), [ADR-07](../Decisions/ADR-07.md), [US-02.08](../US/02.08-voucher-cita.md), [06-epic (front)](../../../citia-frontend/context/us/06-epic.md)
+
 > **Estado (2026-06-30):** ✅ Backend implementado (pasos 1–5). Ver `context/Features/us06-dashboard-citas.md`
 > y `context/Decisions/ADR-04.md`. Pendiente: e2e contra Postgres, frontend (paso 6) y job de ghosting (paso 7).
+>
+> **Estado (2026-09-30):** ✅ **Fase 0 cerrada** el 2026-09-28: el frontend consume el endpoint real y
+> se probó contra Postgres ([ROADMAP](../ROADMAP.md#fase-0--us-06-dashboard-de-citas-del-día-rf-03)). El
+> paso 7 (job de ghosting) y el 8 (scoring) están aplazados a la v2. Guía de la fase:
+> [Fases/fase-0-us06-dashboard.md](../Fases/fase-0-us06-dashboard.md).
 
 
 ## Decripcion
@@ -67,6 +74,12 @@ Enum: `pendiente · confirmada · cancelada · asistio · no_asistio · ghosting
 - El estado queda **materializado en la BD** (no calculado al vuelo), para que el reporte histórico sea confiable.
 - **Es pieza nueva P1** → se anota, no se construye en este primer corte. Modelar el estado ahora; construir el job después.
 
+> **Nota (2026-09-30).** BullMQ **no** es el mecanismo vigente (y no era "infra ya existente": el
+> proyecto nunca tuvo Redis ni cola). [ADR-12](../Decisions/ADR-12.md) eligió un planificador dentro
+> del proceso sobre Postgres con `FOR UPDATE SKIP LOCKED`, sin Redis. El job de ghosting queda
+> **aplazado** con el scoring ([DT-11](../Deudas/DT-11.md), [Fase 5](../Fases/fase-5-us07-scoring.md)).
+> La decisión de materializar el estado sigue en pie ([ADR-04](../Decisions/ADR-04.md)).
+
 ### 5. Endpoint del dashboard: `GET /api/citas/hoy`
 - **Protegido con `JwtAuthGuard`** ← primer uso real del guard.
 - **Filtrado por `tenantId` (del token, nunca del body)** y por el profesional logueado (`usuarioId` del token).
@@ -74,7 +87,7 @@ Enum: `pendiente · confirmada · cancelada · asistio · no_asistio · ghosting
 - Orden cronológico ascendente. Objetivo <2s (RNF-01/05).
 
 ### 6. Alcance del dashboard vs "qué NO hará" — ✅ DECIDIDO (2026-06-30)
-- El dashboard actual muestra tarjetas de **dinero** (ingresos recuperados, prepago). Fase 0 dijo "no hace nada de dinero".
+- El dashboard actual muestra tarjetas de **dinero** (ingresos recuperados, prepago). La [etapa 0 del producto](../Descripcion/fase-0-problema.md) dijo "no hace nada de dinero".
 - **Decisión tomada: US-06 se ciñe a RF-03 — solo citas del día.** Las métricas de dinero quedan FUERA; el endpoint `GET /api/citas/hoy` no expone ningún campo de dinero. Se retoma el scope de dinero cuando tú y tu socio lo decidan conscientemente.
 
 ---

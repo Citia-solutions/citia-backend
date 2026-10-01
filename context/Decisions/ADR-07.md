@@ -1,5 +1,7 @@
 # ADR-07: Día y hora del dashboard calculados en la zona de la clínica (DST-safe con `Intl`)
 
+> **Fase:** [Fase 0 — US-06](../Fases/fase-0-us06-dashboard.md) (origen), [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) · **Feature:** [us06](../Features/us06-dashboard-citas.md) · **Plan:** [US-06](../US/06-epic.md) · **Relacionado:** [ADR-04](../Decisions/ADR-04.md), [ADR-13](../Decisions/ADR-13.md), [DT-14](../Deudas/DT-14.md), [DT-17](../Deudas/DT-17.md)
+
 **Fecha:** 2026-07-06
 **Estado:** Aceptado · Implementado (2026-07-06)
 **Commit:** `08dad63` (fix: calcular día y hora del dashboard en la zona de la clínica)

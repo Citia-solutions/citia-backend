@@ -1,5 +1,7 @@
 # Feature: Contenedorización (Docker + compose + migraciones en arranque)
 
+> **Fase:** [Fundaciones](../Fases/fase-base-fundaciones.md) (origen), [Fase 0 — US-06](../Fases/fase-0-us06-dashboard.md) (seed demo), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) (despliegue y observabilidad) · **Feature:** este documento · **Plan:** — · **Relacionado:** [ADR-05](../Decisions/ADR-05.md), [ADR-00](../Decisions/ADR-00.md), [DT-18](../Deudas/DT-18.md), [DT-19](../Deudas/DT-19.md), [DT-20](../Deudas/DT-20.md), [DT-21](../Deudas/DT-21.md), [stack](../stack-tecnologico.md)
+
 **Tipo:** Infraestructura / cross-cutting (no es una US de negocio)
 **Estado:** ✅ Implementado (2026-06-22) · ✅ Tooling de entorno local y seed demo (2026-08-16)
 **Commits:** `b8cac2a` (Docker + compose + entrypoint), `df53128` (fix build), `0e54f0b` (scripts migración prod), `77a97c9` (puerto pgAdmin), `b623b6a` (carga de `.env` en CLI/e2e), `f200557` (seed demo)
@@ -147,6 +149,14 @@ Los tests e2e usan además `TEST_DB_*`, cargadas por `test/setup-env.ts`.
    de escalar a >1 réplica (evita carrera entre réplicas) — ver ADR-05.
 2. **Deploy en Railway** y, más adelante, VPS (DigitalOcean) — stack-tecnologico.md.
 3. **Observabilidad** (Sentry, logs estructurados) — aún no incorporada.
+
+> **Nota (2026-09-30).** Dos puntos de esta lista quedaron atrás. **Observabilidad:** el proveedor es
+> **Better Stack**, no Sentry (descartado), con logs JSON vía `pino` y `GET /api/health`; ver
+> [stack-tecnologico.md](../stack-tecnologico.md) punto 6, [ADR-13 §16](../Decisions/ADR-13.md) y
+> [DT-19](../Deudas/DT-19.md). Se implementa con la [Fase 2](../Fases/fase-2-us03-recordatorios.md).
+> **Despliegue:** según [DT-18](../Deudas/DT-18.md) (2026-09-29) el backend ya se despliega desde
+> `develop` en Railway; la Fase 2 exige además el contenedor siempre encendido
+> ([ADR-12 §7](../Decisions/ADR-12.md)).
 
 ---
 

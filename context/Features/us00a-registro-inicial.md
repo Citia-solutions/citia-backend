@@ -1,5 +1,7 @@
 # Feature: US-00a — Registro inicial (Tenant + Usuario)
 
+> **Fase:** [Fundaciones](../Fases/fase-base-fundaciones.md) · **Feature:** este documento · **Plan:** [US-00](../US/00-auth.md) · **Relacionado:** [ADR-00](../Decisions/ADR-00.md), [ADR-02](../Decisions/ADR-02.md), [ADR-03](../Decisions/ADR-03.md), [ADR-06](../Decisions/ADR-06.md), [DT-03](../Deudas/DT-03.md), [DT-06](../Deudas/DT-06.md), [DT-07](../Deudas/DT-07.md), [DT-09](../Deudas/DT-09.md)
+
 **Epic:** 00 — Autenticación y registro  
 **Historia:** US-00a  
 **Estado:** ✅ Implementado (2026-06-22) · ✅ Atomicidad transaccional (2026-06-23, ADR-06) · ✅ Migración aplicable + tests de integración en verde

@@ -1,4 +1,9 @@
-# Fase 0 — Problema, usuario y alcance
+# Etapa 0 del producto — Problema, usuario y alcance
+
+> **Etapa 0 del producto**, no una fase del roadmap. Las etapas (problema → validación → requisitos → MVP)
+> explican cómo se llegó al alcance; el archivo conserva el nombre `fase-*` por historia. Las fases de
+> construcción están en [`Fases/`](../Fases/README.md): la "Fase 0" del roadmap es el
+> [dashboard de citas](../Fases/fase-0-us06-dashboard.md).
 
 **Estado:** ✅ definida
 **Entregable:** one-pager (este documento)
@@ -96,7 +101,7 @@ Y el alcance lo excluye explícitamente.
 Puede ser la decisión correcta —manejar dinero multiplica la complejidad regulatoria y técnica— pero
 conviene que quede escrito que **se está renunciando a la palanca que los propios usuarios ya usan**,
 y que la apuesta es que recordatorios y reputación basten sin ella. Es una hipótesis, no un hecho:
-[Fase 1](fase-1-validacion.md) debería ponerla a prueba.
+[la etapa 1](fase-1-validacion.md) debería ponerla a prueba.
 
 ### 2. Los criterios de éxito 1 y 2 exigen algo que el MVP no incluye
 
@@ -104,9 +109,9 @@ y que la apuesta es que recordatorios y reputación basten sin ella. Es una hip�
 el sistema **le habla al paciente**: recordatorios automáticos (RF-06) y respuesta del paciente
 (RF-07).
 
-Ninguno de los dos está entre las tres piezas del MVP. Ver [Fase 3](fase-3-mvp.md), donde está
+Ninguno de los dos está entre las tres piezas del MVP. Ver [etapa 3](fase-3-mvp.md), donde está
 desarrollado.
 
 ---
 
-**Siguiente:** [Fase 1 — Validación](fase-1-validacion.md)
+**Siguiente:** [Etapa 1 — Validación](fase-1-validacion.md)

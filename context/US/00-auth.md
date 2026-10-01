@@ -1,5 +1,7 @@
 ## US-00 — Autenticación y registro
 
+> **Fase:** [Fundaciones](../Fases/fase-base-fundaciones.md) · **Feature:** [us00a](../Features/us00a-registro-inicial.md), [us00b](../Features/us00b-login.md) · **Plan:** este documento · **Relacionado:** [ADR-01](../Decisions/ADR-01.md), [ADR-03](../Decisions/ADR-03.md), [ADR-06](../Decisions/ADR-06.md)
+
 ---
 
 ### US-00a — Registro inicial (signup)

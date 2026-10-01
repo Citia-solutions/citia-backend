@@ -1,4 +1,9 @@
-# Fase 1 — Validación del problema
+# Etapa 1 del producto — Validación del problema
+
+> **Etapa 1 del producto**, no una fase del roadmap. Las etapas (problema → validación → requisitos → MVP)
+> explican cómo se llegó al alcance; el archivo conserva el nombre `fase-*` por historia. Las fases de
+> construcción están en [`Fases/`](../Fases/README.md): la "Fase 1" del roadmap es la
+> [gestión de citas](../Fases/fase-1-us02-gestion-citas.md).
 
 **Objetivo:** confirmar que el problema es real **antes** de invertir semanas de código.
 **Estado:** ⚠️ **pendiente** — sin evidencia registrada
@@ -17,16 +22,16 @@ patrones.
 
 ## Estado real
 
-**Ninguna de las tres está respondida con evidencia.** [Fase 0](fase-0-problema.md) describe el
+**Ninguna de las tres está respondida con evidencia.** [La etapa 0](fase-0-problema.md) describe el
 problema con seguridad y detalle, pero esa descripción es **hipótesis**, no hallazgo de campo.
 
-Conviene decirlo sin rodeos porque el objetivo declarado de esta fase es literalmente *"antes de
+Conviene decirlo sin rodeos porque el objetivo declarado de esta etapa es literalmente *"antes de
 invertir semanas de código"* — y ya hay varias semanas invertidas. Eso no invalida el trabajo hecho:
 la fundación construida (identidad, aislamiento entre clientes, agenda) sirve casi para cualquier
 versión del producto. Pero **las decisiones que dependen del cliente concreto siguen sin base**:
 
 - qué canal usar para los recordatorios (RF-06),
-- si el prepago debe entrar al alcance pese a estar excluido (ver tensión 1 de Fase 0),
+- si el prepago debe entrar al alcance pese a estar excluido (ver tensión 1 de la etapa 0),
 - qué tipos de consulta poblar,
 - si el segmento "clínica" es real o si todos son independientes.
 
@@ -42,7 +47,7 @@ transcriben a mano— y responde la pregunta que más importa antes de construir
 completa: *¿los pacientes realmente llenan un enlace que les mandan por WhatsApp?*
 
 Y por el lado del profesional, la conversación que falta es más corta de lo que parece: media hora
-con dos o tres profesionales responde a la vez las tres preguntas de esta fase **y** la lista de
+con dos o tres profesionales responde a la vez las tres preguntas de esta etapa **y** la lista de
 tipos de consulta que [ADR-09 §10](../Decisions/ADR-09.md) dejó abierta.
 
 ---
@@ -50,8 +55,8 @@ tipos de consulta que [ADR-09 §10](../Decisions/ADR-09.md) dejó abierta.
 ## Cuando haya evidencia
 
 Registrarla aquí: quién, qué dijo, y —lo importante— **qué patrón se repitió**. Una sola conversación
-que contradiga [Fase 0](fase-0-problema.md) vale más que cinco que la confirmen.
+que contradiga [la etapa 0](fase-0-problema.md) vale más que cinco que la confirmen.
 
 ---
 
-**Anterior:** [Fase 0 — Problema](fase-0-problema.md) · **Siguiente:** [Fase 2 — Requisitos](fase-2-requisitos.md)
+**Anterior:** [Etapa 0 — Problema](fase-0-problema.md) · **Siguiente:** [Etapa 2 — Requisitos](fase-2-requisitos.md)
