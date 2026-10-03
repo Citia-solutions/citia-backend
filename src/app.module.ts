@@ -13,6 +13,7 @@ import {
   validarEntorno,
 } from './shared/infrastructure/config/entorno';
 import { ObservabilidadModule } from './shared/observabilidad.module';
+import { PlanificacionModule } from './shared/planificacion.module';
 
 @Module({
   imports: [
@@ -48,6 +49,10 @@ import { ObservabilidadModule } from './shared/observabilidad.module';
     PacienteModule, //Modulo de pacientes
     CitaModule, //Modulo de citas (dashboard US-06)
     SolicitudModule, //Solicitudes de hora del paciente (via publica, US-02)
+    //Planificador en proceso (ADR-12 §5): despachador del outbox y purga.
+    //Solo aqui, para que las e2e parciales no levanten jobs. Con
+    //PLANIFICADOR_ACTIVO=false (default en tests) no programa nada.
+    PlanificacionModule,
   ],
 })
 export class AppModule {}
