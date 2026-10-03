@@ -19,9 +19,10 @@ import { RutInvalidoError } from '../../../shared/domain/rut-invalido.error';
 import { CurrentUser } from '../../auth/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import type { AuthenticatedUser } from '../../auth/jwt-payload.interface';
+import { PacienteNoEncontradoError } from '../../paciente/application/paciente-no-encontrado.error';
+import { CorreoPacienteRequeridoError } from '../../paciente/domain/exceptions/correo-paciente-requerido.error';
 import { CitaNoEncontradaError } from '../application/cita-no-encontrada.error';
 import { DatosPacienteRequeridosError } from '../application/datos-paciente-requeridos.error';
-import { PacienteNoEncontradoError } from '../application/paciente-no-encontrado.error';
 import { RangoFechasInvalidoError } from '../application/rango-fechas-invalido.error';
 import { CitasService } from '../application/citas.service';
 import { CambioCita } from '../domain/cambio-cita.entity';
@@ -182,6 +183,11 @@ export class CitasController {
       }
       // RUT con digito verificador incorrecto -> 400.
       if (error instanceof RutInvalidoError) {
+        throw new BadRequestException(error.message);
+      }
+      // Paciente nuevo sin correo -> 400 (ADR-13 §14). El DTO ya lo rechaza;
+      // esto cubre a quien llegue al caso de uso sin pasar por el.
+      if (error instanceof CorreoPacienteRequeridoError) {
         throw new BadRequestException(error.message);
       }
       // Agenda por rango: `hasta` anterior a `desde` o mas de 42 dias -> 400.

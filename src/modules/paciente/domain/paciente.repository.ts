@@ -1,5 +1,5 @@
 import { TransactionContext } from '../../../shared/application/transaction-runner';
-import { Paciente } from './paciente.entity';
+import { CambioContactoPaciente, Paciente } from './paciente.entity';
 
 export abstract class PacienteRepository {
   abstract guardar(
@@ -30,4 +30,25 @@ export abstract class PacienteRepository {
     tenantId: string,
     tx?: TransactionContext,
   ): Promise<Paciente[]>;
+
+  // Escribe SOLO los campos de `cambio` (ya preparados por el dominio) y
+  // filtra por tenant en la propia escritura. `false` si no hay fila: el
+  // paciente no existe o es de otro tenant (no se distinguen).
+  abstract actualizarContacto(
+    id: string,
+    tenantId: string,
+    cambio: CambioContactoPaciente,
+    tx?: TransactionContext,
+  ): Promise<boolean>;
+
+  // Completa el correo SOLO si el guardado esta vacio (NULL o en blanco), con
+  // la condicion en la misma escritura: dos vinculaciones concurrentes por el
+  // mismo RUT no se pisan y un correo ya guardado nunca se reemplaza
+  // (ADR-13 §14). `true` si escribio.
+  abstract completarCorreoSiVacio(
+    id: string,
+    tenantId: string,
+    correo: string,
+    tx?: TransactionContext,
+  ): Promise<boolean>;
 }

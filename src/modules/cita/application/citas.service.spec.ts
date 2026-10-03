@@ -18,7 +18,7 @@ import { PacientesService } from '../../paciente/application/pacientes.service';
 import { CitasService, MAX_DIAS_RANGO } from './citas.service';
 import { CitaNoEncontradaError } from './cita-no-encontrada.error';
 import { DatosPacienteRequeridosError } from './datos-paciente-requeridos.error';
-import { PacienteNoEncontradoError } from './paciente-no-encontrado.error';
+import { PacienteNoEncontradoError } from '../../paciente/application/paciente-no-encontrado.error';
 import { RangoFechasInvalidoError } from './rango-fechas-invalido.error';
 
 describe('CitasService', () => {
@@ -42,6 +42,8 @@ describe('CitasService', () => {
     buscarPorId: jest.Mock;
     buscarPorRut: jest.Mock;
     buscarPorIds: jest.Mock;
+    actualizarContacto: jest.Mock;
+    completarCorreoSiVacio: jest.Mock;
   };
   let mockPacientesService: { resolverOCrear: jest.Mock };
   // TransactionRunner de mentira: ejecuta el trabajo con un contexto ficticio,
@@ -76,6 +78,8 @@ describe('CitasService', () => {
       buscarPorId: jest.fn(),
       buscarPorRut: jest.fn(),
       buscarPorIds: jest.fn().mockResolvedValue([]),
+      actualizarContacto: jest.fn(),
+      completarCorreoSiVacio: jest.fn(),
     };
     mockPacientesService = { resolverOCrear: jest.fn() };
     mockTx = {
@@ -299,6 +303,7 @@ describe('CitasService', () => {
           paciente: {
             nombre: 'Sin RUT',
             telefono: '+56 9 0000 0000',
+            correo: 'sin.rut@mail.com',
             consentimiento: false,
           },
         },

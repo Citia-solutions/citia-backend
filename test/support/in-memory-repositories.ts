@@ -13,7 +13,10 @@ import { CambioCita } from '../../src/modules/cita/domain/cambio-cita.entity';
 import { CambioCitaRepository } from '../../src/modules/cita/domain/cambio-cita.repository';
 import { Cita, EstadoCita } from '../../src/modules/cita/domain/cita.entity';
 import { CitaRepository } from '../../src/modules/cita/domain/cita.repository';
-import { Paciente } from '../../src/modules/paciente/domain/paciente.entity';
+import {
+  CambioContactoPaciente,
+  Paciente,
+} from '../../src/modules/paciente/domain/paciente.entity';
 import { PacienteRepository } from '../../src/modules/paciente/domain/paciente.repository';
 import {
   EstadoSolicitud,
@@ -174,6 +177,31 @@ export class InMemoryPacienteRepository extends PacienteRepository {
         .filter((x) => ids.includes(x.id) && x.tenantId === tenantId)
         .map((x) => ({ ...x })),
     );
+  }
+
+  actualizarContacto(
+    id: string,
+    tenantId: string,
+    cambio: CambioContactoPaciente,
+  ): Promise<boolean> {
+    const p = this.pacientes.get(id);
+    if (!p || p.tenantId !== tenantId) return Promise.resolve(false);
+    this.pacientes.set(id, { ...p, ...cambio });
+    return Promise.resolve(true);
+  }
+
+  // Misma condición que el UPDATE real: solo si el correo es NULL o blanco.
+  completarCorreoSiVacio(
+    id: string,
+    tenantId: string,
+    correo: string,
+  ): Promise<boolean> {
+    const p = this.pacientes.get(id);
+    if (!p || p.tenantId !== tenantId || (p.correo ?? '').trim() !== '') {
+      return Promise.resolve(false);
+    }
+    this.pacientes.set(id, { ...p, correo });
+    return Promise.resolve(true);
   }
 }
 

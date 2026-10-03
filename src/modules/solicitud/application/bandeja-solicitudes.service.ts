@@ -66,8 +66,9 @@ export class BandejaSolicitudesService {
    *     concurrentes se serializan y la segunda ve el estado ya resuelto.
    *  2. Si ya no está `recibida` -> 409 ANTES de crear nada.
    *  3. Crea la cita con `CitasService.agendar` (mismo flujo que `POST /citas`:
-   *     resolver-o-crear paciente por RUT, cita, bitácora, `CitaCreada`,
-   *     avisos) dentro de ESTA transacción.
+   *     resolver-o-crear paciente por RUT —completando su correo si lo tenía
+   *     vacío—, cita, bitácora, `CitaCreada`, avisos) dentro de ESTA
+   *     transacción.
    *  4. Resuelve la solicitud y publica `SolicitudCitaAceptada`.
    *
    * Los dos hechos (`CitaCreada` y `SolicitudCitaAceptada`) se publican con el
@@ -93,7 +94,9 @@ export class BandejaSolicitudesService {
           tipoConsulta: dto.tipoConsulta,
           // Los datos del paciente son los que escribió el paciente, incluido
           // SU consentimiento. Si el RUT ya existe en la organización se
-          // vincula al paciente existente sin tocarlo.
+          // vincula al paciente existente sin tocar su ficha, salvo una cosa
+          // (ADR-13 §14): si su correo está vacío, se completa con este, en
+          // esta misma transacción. Un correo ya guardado nunca se reemplaza.
           paciente: {
             rut: solicitud.rut,
             nombre: solicitud.nombrePaciente,

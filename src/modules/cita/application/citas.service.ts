@@ -1,4 +1,5 @@
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
+import { PacienteNoEncontradoError } from '../../paciente/application/paciente-no-encontrado.error';
 import { PacientesService } from '../../paciente/application/pacientes.service';
 import { Paciente } from '../../paciente/domain/paciente.entity';
 import { PacienteRepository } from '../../paciente/domain/paciente.repository';
@@ -39,7 +40,6 @@ import { EditarCitaDto } from '../presentation/dto/editar-cita.dto';
 import { ReagendarCitaDto } from '../presentation/dto/reagendar-cita.dto';
 import { CitaNoEncontradaError } from './cita-no-encontrada.error';
 import { DatosPacienteRequeridosError } from './datos-paciente-requeridos.error';
-import { PacienteNoEncontradoError } from './paciente-no-encontrado.error';
 import { RangoFechasInvalidoError } from './rango-fechas-invalido.error';
 
 /**

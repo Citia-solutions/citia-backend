@@ -114,26 +114,29 @@ const PLAN_CITAS: PlanCita[] = [
   },
 ];
 
+// El correo es obligatorio al crear (ADR-13 §14). Siempre en `example.com`
+// (reservado, RFC 2606): con los recordatorios activos, un seed corrido con el
+// adaptador de Resend no debe escribirle a un buzón real.
 const PACIENTES = [
   {
     rut: '11.111.111-1',
     nombre: 'María Fernández',
     telefono: '+56 9 1111 1111',
-    correo: 'maria.fernandez@demo.cl',
+    correo: 'maria.fernandez@example.com',
     consentimiento: true,
   },
   {
     rut: '12.345.678-5',
     nombre: 'Juan Pérez',
     telefono: '+56 9 2222 2222',
-    correo: 'juan.perez@demo.cl',
+    correo: 'juan.perez@example.com',
     consentimiento: true,
   },
   {
     rut: '18.765.432-7',
     nombre: 'Camila Rojas',
     telefono: '+56 9 3333 3333',
-    correo: 'camila.rojas@demo.cl',
+    correo: 'camila.rojas@example.com',
     consentimiento: false,
   },
 ];

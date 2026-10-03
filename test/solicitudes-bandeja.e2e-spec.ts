@@ -589,6 +589,30 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
       expect(body.cita.pacienteId).toBe(PACIENTE_CONOCIDO);
       expect(body.cita.paciente.nombre).toBe('Ana Pérez (ficha)');
       expect(pacienteRepo.pacientes.size).toBe(1);
+      // Ya tenía un correo distinto: nunca se reemplaza (ADR-13 §14).
+      expect(body.cita.paciente.correo).toBe('ana@mail.com');
+      expect(pacienteRepo.pacientes.get(PACIENTE_CONOCIDO)?.correo).toBe(
+        'ana@mail.com',
+      );
+    });
+
+    it('debería completar el correo vacío del paciente existente con el de la solicitud (ADR-13 §14)', async () => {
+      // Arrange — ficha vieja, anterior al correo obligatorio
+      const ficha = pacienteRepo.pacientes.get(PACIENTE_CONOCIDO)!;
+      pacienteRepo.pacientes.set(PACIENTE_CONOCIDO, { ...ficha, correo: null });
+
+      // Act
+      const res = await aceptar(SOL_A_RUT_CONOCIDO, tokenA).expect(201);
+
+      // Assert — se completa SOLO el correo; el resto de la ficha no cambia
+      const body = res.body as AceptadaBody;
+      expect(body.cita.pacienteId).toBe(PACIENTE_CONOCIDO);
+      expect(body.cita.paciente.correo).toBe('publico@mail.com');
+      expect(pacienteRepo.pacientes.get(PACIENTE_CONOCIDO)).toEqual({
+        ...ficha,
+        correo: 'publico@mail.com',
+      });
+      expect(pacienteRepo.pacientes.size).toBe(1);
     });
 
     it('debería crear el paciente con el consentimiento que marcó el paciente', async () => {
