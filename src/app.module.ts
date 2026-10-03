@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'; //Integra el orm para conexion 
 import { AuthModule } from './modules/auth/auth.module';
 import { CitaModule } from './modules/cita/cita.module';
 import { PacienteModule } from './modules/paciente/paciente.module';
+import { RecordatorioModule } from './modules/recordatorio/recordatorio.module';
 import { SolicitudModule } from './modules/solicitud/solicitud.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { UsuariosModule } from './modules/usuario/usuarios.module';
@@ -49,6 +50,9 @@ import { PlanificacionModule } from './shared/planificacion.module';
     PacienteModule, //Modulo de pacientes
     CitaModule, //Modulo de citas (dashboard US-06)
     SolicitudModule, //Solicitudes de hora del paciente (via publica, US-02)
+    //Recordatorios (ADR-13). Por ahora solo tablas y puertos: sin jobs,
+    //suscriptor ni rutas. Ningun otro modulo lo importa (ADR-13 §1).
+    RecordatorioModule,
     //Planificador en proceso (ADR-12 §5): despachador del outbox y purga.
     //Solo aqui, para que las e2e parciales no levanten jobs. Con
     //PLANIFICADOR_ACTIVO=false (default en tests) no programa nada.
