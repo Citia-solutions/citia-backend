@@ -1,22 +1,38 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Logger } from 'nestjs-pino';
+
 import { AppModule } from './app.module';
+import type { Entorno } from './shared/infrastructure/config/entorno';
+import {
+  crearOpcionesCors,
+  crearPoliticaCors,
+} from './shared/infrastructure/config/origenes-cors';
 
 async function bootstrap(): Promise<void> {
-  //Para arrancar la aplicacion es NestFactory
-  const app = await NestFactory.create(AppModule);
+  //Para arrancar la aplicacion es NestFactory. bufferLogs: los logs del
+  //arranque esperan a pino en lugar de salir por el logger de consola de Nest.
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  //Todo `Logger` de Nest (incluidos los `new Logger(...)` de los servicios)
+  //sale por pino: JSON, id por peticion y redaccion (ADR-13 §16).
+  app.useLogger(app.get(Logger));
 
   app.setGlobalPrefix('api'); //Registra un prefijo para todas las "api"
 
-  const configService = app.get(ConfigService);
+  const config = app.get<ConfigService<Entorno, true>>(ConfigService);
 
-  app.enableCors({
-    //Cors habilitado
-    origin:
-      configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173', //Esta es la url que acepta nuestro backend
-    credentials: true,
-  });
+  //CORS: FRONTEND_URL (origen canonico) + CORS_ORIGENES_EXTRA (exactos y el
+  //comodin de vistas previas https://*.<proyecto>.pages.dev). credentials: true.
+  app.enableCors(
+    crearOpcionesCors(
+      crearPoliticaCors(
+        config.get('FRONTEND_URL', { infer: true }),
+        config.get('CORS_ORIGENES_EXTRA', { infer: true }),
+      ),
+    ),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -25,9 +41,7 @@ async function bootstrap(): Promise<void> {
     }), //Valida los dto automaticamente en cada request
   );
 
-  const port = configService.get<number>('PORT') ?? 3000;
-
-  await app.listen(port);
+  await app.listen(config.get('PORT', { infer: true }));
 }
 
 void bootstrap();
