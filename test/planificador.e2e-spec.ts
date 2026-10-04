@@ -9,6 +9,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
 import { AppModule } from '../src/app.module';
+import { ReconciliacionRespaldoService } from '../src/modules/recordatorio/application/reconciliacion-respaldo.service';
+import { SuscriptorRecordatorios } from '../src/modules/recordatorio/application/suscriptor-recordatorios';
+import { PlanificadorRecordatorios } from '../src/modules/recordatorio/infrastructure/planificacion/planificador-recordatorios';
 import { validarEntorno } from '../src/shared/infrastructure/config/entorno';
 import {
   CRON_PURGA_SALIDA,
@@ -17,6 +20,7 @@ import {
 } from '../src/shared/infrastructure/planificacion/planificador-salida';
 import { DespachadorEventosSalida } from '../src/shared/infrastructure/salida/despachador-eventos-salida';
 import { PurgaEventosSalida } from '../src/shared/infrastructure/salida/purga-eventos-salida';
+import { RegistroSuscriptores } from '../src/shared/infrastructure/salida/registro-suscriptores';
 import { ObservabilidadModule } from '../src/shared/observabilidad.module';
 import { PlanificacionModule } from '../src/shared/planificacion.module';
 import { typeOrmTestConfig } from './typeorm-test.config';
@@ -38,10 +42,15 @@ describe('Planificador (e2e)', () => {
     let app: INestApplication;
     let despachar: jest.SpyInstance;
     let purgar: jest.SpyInstance;
+    let respaldo: jest.SpyInstance;
 
     beforeAll(async () => {
       despachar = jest.spyOn(DespachadorEventosSalida.prototype, 'despachar');
       purgar = jest.spyOn(PurgaEventosSalida.prototype, 'purgar');
+      respaldo = jest.spyOn(
+        ReconciliacionRespaldoService.prototype,
+        'ejecutar',
+      );
 
       const moduleFixture = await Test.createTestingModule({
         imports: [AppModule],
@@ -73,6 +82,21 @@ describe('Planificador (e2e)', () => {
       expect(app.get(PlanificadorSalida)).toBeInstanceOf(PlanificadorSalida);
       expect(despachar).not.toHaveBeenCalled();
       expect(purgar).not.toHaveBeenCalled();
+    });
+
+    it('debería tener el job de recordatorios cargado sin ejecutar el respaldo (ADR-13 §6)', () => {
+      expect(app.get(PlanificadorRecordatorios)).toBeInstanceOf(
+        PlanificadorRecordatorios,
+      );
+      expect(respaldo).not.toHaveBeenCalled();
+    });
+
+    it('debería registrar SuscriptorRecordatorios en el outbox al iniciar', () => {
+      const registro = app.get(RegistroSuscriptores);
+
+      expect(registro.suscriptoresDe('CitaCreada')).toEqual([
+        app.get(SuscriptorRecordatorios),
+      ]);
     });
   });
 
