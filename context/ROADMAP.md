@@ -145,7 +145,7 @@ Diseño en [ADR-12](Decisions/ADR-12.md) (outbox + planificador) y [ADR-13](Deci
 | Consentimiento | **no se revisa** por ahora: riesgo aceptado ([DT-16](Deudas/DT-16.md)), revisión antes de la Ley 21.719 |
 | Hechos de dominio | outbox transaccional: **cierra [DT-27](Deudas/DT-27.md)** antes del primer suscriptor |
 | Planificador ([Q6](PREGUNTAS-ABIERTAS.md)) | cron dentro del proceso sobre Postgres con `FOR UPDATE SKIP LOCKED`; sin Redis ni BullMQ |
-| Hosting | backend + Postgres en **Railway** (siempre encendido); SPA en **Cloudflare** |
+| Hosting | backend + Postgres en **Railway** (siempre encendido); SPA en **Netlify** (revertido desde Cloudflare el 2026-10-04) |
 | Observabilidad | **Better Stack** gratis: uptime, latido del job, logs, alertas ([DT-19](Deudas/DT-19.md)) |
 | Modo prueba | Resend Free: 3.000/mes y 100/día → ~50 citas al día en toda la plataforma; aviso al 80 % |
 | Asistencia en el voucher | **no**: se espera a la Fase 3, cuando el paciente confirme desde el enlace; no se toca el grafo de ADR-04 → [DT-30](Deudas/DT-30.md) |
@@ -178,8 +178,9 @@ probado solo con respuestas simuladas.)*
 3. ✅ Estado de los recordatorios en el voucher de la cita (programado, enviado, entregado, fallido,
    cancelado, omitido, con su motivo), más la vista **Contacto** para completar el correo con
    `PATCH /pacientes/:id`.
-4. ✅ Despliegue en Cloudflare **Workers Static Assets** (`wrangler.jsonc`) con *fallback* de SPA a
-   `index.html` (incluye `/agendar-cita`); `VITE_API_URL` como variable de build. Falta publicarlo.
+4. ✅ Despliegue en **Netlify** con *fallback* de SPA a `index.html` (`public/_redirects`, incluye
+   `/agendar-cita`); `VITE_API_URL` como variable del sitio. *(El `wrangler.jsonc` de Cloudflare se
+   quitó el 2026-10-04 al decidir quedarse en Netlify.)*
 
 ### Prerrequisitos operativos (usuario)
 - ✅ Dominio **`citiahealth.cl`** comprado y su DNS delegado a Cloudflare.

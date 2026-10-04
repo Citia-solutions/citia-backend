@@ -142,7 +142,7 @@ adelantado, ~10–11 días de calendario para una persona.
 
 **Frontend (`citia-frontend`, fuera de estos agentes, ~2–3 días):** correo obligatorio en el modal
 (**mismo release que el paso 13**, o el modal recibirá 400) · pantalla de configuración · estado de
-los recordatorios en el voucher · despliegue en Cloudflare con *fallback* de SPA.
+los recordatorios en el voucher · despliegue en Netlify con *fallback* de SPA (revertido desde Cloudflare el 2026-10-04).
 
 ### Dependencias nuevas
 

@@ -15,9 +15,9 @@
 5. Correo transaccional (2026-09-30, ADR-13): **Resend**, detrás del puerto `CanalMensajeria`. Un solo remitente para toda la plataforma ("Citia <recordatorios@notificaciones.<dominio>>", desde un subdominio de envío). Webhooks de entrega firmados. Descartados: Brevo, SendGrid. WhatsApp y SMS, después, como otro adaptador. *(2026-10-04: implementado con el SDK `resend` 6.32 y `svix` 1.x; el dominio es **`citiahealth.cl`**, ya delegado a Cloudflare; falta verificar el subdominio de envío.)*
 6. Observabilidad (actualizado 2026-09-30): **Better Stack** (plan gratis) para uptime, latido (heartbeat) de los jobs, logs y alertas. Logs JSON con `pino` (`nestjs-pino`) con redacción de credenciales y datos personales; OpenTelemetry opcional. Estándares abiertos para poder sumar Grafana sin tocar código. Alerta cuando la tasa de fallo de recordatorios cruce un umbral (RNF-08). **Sentry, descartado.** *(2026-10-04: implementado en la rama de la Fase 2 —pino, `GET /api/health`, latidos, alertas por log—; falta crear la cuenta de Better Stack.)*
 7. Despliegue:
-	1. Lado del cliente: **Cloudflare** (Workers Static Assets o Pages) — la SPA Vue completa, incluido `/agendar-cita`, con *fallback* de SPA a `index.html`. **Netlify, descartado** (2026-09-30). *(2026-10-04: el frontend eligió **Workers Static Assets**: `wrangler.jsonc` con `assets.directory: "./dist"` y `not_found_handling: "single-page-application"`, sin código de Worker; deploy con `npx wrangler deploy` o Workers Builds; `VITE_API_URL` va como **variable de build** porque Vite la incrusta al compilar. Ver [Despliegue del frontend](#despliegue-del-frontend-cloudflare-workers-static-assets).)*
+	1. Lado del cliente: **Netlify** — la SPA Vue completa, incluido `/agendar-cita`, con *fallback* de SPA a `index.html` (`public/_redirects`). *(Historia: el 2026-09-30 se eligió Cloudflare Workers Static Assets y se descartó Netlify; el **2026-10-04 el usuario lo revirtió**: el frontend se queda en Netlify y Cloudflare queda solo como DNS. Un sitio por entorno —`develop` → staging, `main` → producción—, con `VITE_API_URL` como variable del sitio porque Vite la incrusta al compilar. Ver [Despliegue del frontend](#despliegue-del-frontend-netlify).)*
 	2. Lado del servidor: backend + Postgres en **Railway** (Docker, ADR-05), siempre encendido. Más adelante, un VPS (DigitalOcean). Imagen Docker multi-stage + migraciones en el arranque del contenedor (ADR-05).
-	3. CORS: lista de orígenes (producción + vistas previas de Cloudflare), no un solo `FRONTEND_URL`. *(2026-10-04: implementado: `FRONTEND_URL` canónico + `CORS_ORIGENES_EXTRA` con orígenes exactos y un único comodín `https://*.<proyecto>.pages.dev`. Las vistas previas de **Workers** (`*.workers.dev`) no calzan con ese comodín: van como orígenes exactos.)*
+	3. CORS: lista de orígenes, no un solo `FRONTEND_URL`. *(2026-10-04: implementado: `FRONTEND_URL` canónico + `CORS_ORIGENES_EXTRA` con orígenes exactos y un único comodín `https://*.<proyecto>.pages.dev`, pensado para Cloudflare Pages. Con el frontend en **Netlify**, cada sitio va en el `FRONTEND_URL` de su entorno y las *deploy previews* (`deploy-preview-N--<sitio>.netlify.app`), si se usan, como orígenes exactos.)*
 8. Arquitectura: Monolito + clean architecture (hexagonal, ADR-02)
 9. TLS y DNS: Cloudflare (también el DNS del subdominio de envío: SPF, DKIM y DMARC para Resend).
 10. Autenticacion: JWT + passport (ADR-01)
@@ -35,7 +35,8 @@ páginas de precios de cada proveedor a esa fecha; **verificarlos al crear cada 
 | Railway (backend + Postgres) | Hobby | recursos del plan; servicio siempre encendido | ~CLP 6.000–8.000 al mes (estimado) |
 | Resend (correo) | Free | **3.000 correos al mes y 100 al día**, un dominio | CLP 0 |
 | Better Stack (observabilidad) | Free | monitores, heartbeats y retención de logs acotados | CLP 0 |
-| Cloudflare (SPA, DNS, TLS) | Free | — | CLP 0 |
+| Netlify (SPA) | Free | ~300 créditos/mes (~15 deploys); **al agotarse, el sitio se pausa** | CLP 0 (Personal US$9/mes si hace falta) |
+| Cloudflare (DNS, TLS) | Free | — | CLP 0 |
 | Dominio `.cl` (NIC Chile) | — | necesario para verificar el remitente en Resend | ~CLP 11.829 al año |
 
 **Lo que eso alcanza.** Con dos recordatorios por cita, el tope de 100 correos al día da **unas 50
@@ -90,18 +91,18 @@ trajo la Fase 2.
 
 ---
 
-## Despliegue del frontend: Cloudflare Workers Static Assets
+## Despliegue del frontend: Netlify
 
-*(2026-10-04, `citia-frontend` `f98f760`.)* La SPA se publica como **Workers Static Assets**, sin código
-de Worker: Cloudflare sirve el `dist/` que genera `npm run build`.
+*(2026-10-04, decisión del usuario; reemplaza la configuración de Cloudflare Workers de `citia-frontend`
+`f98f760`.)* La SPA se publica en **Netlify**; Cloudflare queda solo como DNS de `citiahealth.cl`.
 
 | Pieza | Valor |
 |---|---|
-| Configuración | `wrangler.jsonc` en la raíz del frontend: `name: "citia-frontend"`, `compatibility_date`, `assets.directory: "./dist"` |
-| Rutas de la SPA | `assets.not_found_handling: "single-page-application"`: `/agenda`, `/recordatorios`, `/agendar-cita/<slug>` devuelven `index.html` con 200 y las resuelve vue-router |
-| Deploy | `npx wrangler deploy` o Cloudflare **Workers Builds** conectado al repo; `wrangler` no es dependencia |
-| URL de la API | `VITE_API_URL` como **variable de build** (Vite la incrusta al compilar); en producción, según el frontend, `https://api.citiahealth.cl/api` |
-| CORS en el backend | el origen publicado en `FRONTEND_URL` (sin ruta) y las vistas previas como orígenes exactos en `CORS_ORIGENES_EXTRA` |
+| Rutas de la SPA | `public/_redirects` con `/*  /index.html  200`: `/agenda`, `/recordatorios`, `/agendar-cita/<slug>` devuelven `index.html` y las resuelve vue-router |
+| Sitios | uno por entorno: **staging** ← `develop` (`staging.citiahealth.cl`) y **producción** ← `main` (`app.citiahealth.cl`), con CNAME en Cloudflare en modo *DNS only* |
+| URL de la API | `VITE_API_URL` como variable del sitio (Vite la incrusta al compilar), apuntando al backend de Railway del mismo entorno |
+| CORS en el backend | el dominio de cada sitio en el `FRONTEND_URL` de su entorno (sin ruta) |
+| Plan | Free (~15 deploys al mes; al agotarse el sitio se pausa) |
 
 Detalle en `citia-frontend/context/stack-tecnologico.md`.
 
