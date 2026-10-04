@@ -159,6 +159,15 @@ class InMemoryPacienteRepository extends PacienteRepository {
       ),
     );
   }
+
+  // Este suite no edita pacientes: basta con cumplir el puerto.
+  actualizarContacto(): Promise<boolean> {
+    return Promise.resolve(false);
+  }
+
+  completarCorreoSiVacio(): Promise<boolean> {
+    return Promise.resolve(false);
+  }
 }
 
 // --- Formas de respuesta -----------------------------------------------------

@@ -132,7 +132,7 @@ describe('Agenda por rango y avisos de solapamiento (e2e sin BD)', () => {
     citaRepo.citas.clear();
     cambioRepo.cambios.length = 0;
     pacienteRepo.pacientes.clear();
-    eventos.eventos.length = 0;
+    eventos.limpiar();
 
     for (const [id, nombre, tenantId] of [
       [PACIENTE_A1, 'María González', TENANT_A],
@@ -538,6 +538,96 @@ describe('Agenda por rango y avisos de solapamiento (e2e sin BD)', () => {
         // Assert — la clave no viaja
         expect(res.body).not.toHaveProperty('avisos');
         expect(res.text).not.toContain('avisos');
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------
+  describe('hechos de dominio en la transacción de la operación (ADR-12 §2)', () => {
+    const conToken = (r: request.Test) =>
+      r.set('Authorization', `Bearer ${tokenA}`);
+
+    it.each<[string, string, number, () => request.Test]>([
+      [
+        'POST /citas',
+        'CitaCreada',
+        201,
+        () =>
+          conToken(request(server()).post('/api/citas')).send({
+            inicio: '2026-09-24T10:00:00-03:00',
+            duracionMin: 20,
+            tipoConsulta: 'Control',
+            pacienteId: PACIENTE_A1,
+          }),
+      ],
+      [
+        'PATCH …/reagendar',
+        'CitaReagendada',
+        200,
+        () =>
+          conToken(request(server()).patch(`/api/citas/${C3}/reagendar`)).send({
+            inicio: '2026-09-25T10:00:00-03:00',
+          }),
+      ],
+      [
+        'PATCH /citas/:id (editar)',
+        'CitaEditada',
+        200,
+        () =>
+          conToken(request(server()).patch(`/api/citas/${C2}`)).send({
+            duracionMin: 40,
+          }),
+      ],
+      [
+        'PATCH …/confirmar',
+        'CitaConfirmada',
+        200,
+        () =>
+          conToken(request(server()).patch(`/api/citas/${C3}/confirmar`)).send(
+            {},
+          ),
+      ],
+      [
+        'PATCH …/cancelar',
+        'CitaCancelada',
+        200,
+        () =>
+          conToken(request(server()).patch(`/api/citas/${C3}/cancelar`)).send(
+            {},
+          ),
+      ],
+      [
+        'PATCH …/asistencia',
+        'CitaAsistida',
+        200,
+        () =>
+          conToken(request(server()).patch(`/api/citas/${C1}/asistencia`)).send(
+            {},
+          ),
+      ],
+      [
+        'PATCH …/inasistencia',
+        'CitaNoAsistida',
+        200,
+        () =>
+          conToken(
+            request(server()).patch(`/api/citas/${C1}/inasistencia`),
+          ).send({}),
+      ],
+    ])(
+      '%s debería publicar %s con el tx de SU única transacción',
+      async (_ruta, nombre, status, peticion) => {
+        // Arrange
+        const abiertasAntes = tx.abiertas;
+
+        // Act
+        await peticion().expect(status);
+
+        // Assert
+        expect(tx.abiertas).toBe(abiertasAntes + 1);
+        expect(eventos.eventos.map((e) => e.nombre)).toEqual([nombre]);
+        expect(eventos.contextos).toHaveLength(1);
+        expect(eventos.contextos[0]).toBe(tx.ultimoContexto);
       },
     );
   });

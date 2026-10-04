@@ -45,6 +45,14 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
       # Origen del frontend permitido por CORS.
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      # Recordatorios (ADR-13 §13): registro | resend. Con la imagen de
+      # produccion (NODE_ENV=production) es OBLIGATORIA y sin default: si no
+      # esta en el .env, la app no arranca (asi nunca queda en registro por
+      # omision). Con resend hacen falta RESEND_API_KEY y RESEND_WEBHOOK_SECRET.
+      MENSAJERIA_ADAPTADOR: ${MENSAJERIA_ADAPTADOR:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_WEBHOOK_SECRET: ${RESEND_WEBHOOK_SECRET:-}
+      CORREO_DOMINIO: ${CORREO_DOMINIO:-}
     ports:
       - '${PORT:-3000}:${PORT:-3000}'
 

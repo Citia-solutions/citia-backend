@@ -14,6 +14,7 @@ import { PacienteOrmEntity } from '../src/modules/paciente/infrastructure/persis
 import { TenantOrmEntity } from '../src/modules/tenant/infrastructure/persistence/tenant.orm-entity';
 import { UsuariosModule } from '../src/modules/usuario/usuarios.module';
 import { UsuarioOrmEntity } from '../src/modules/usuario/infrastructure/persistence/usuario.orm-entity';
+import { EventoSalidaOrmEntity } from '../src/shared/infrastructure/salida/evento-salida.orm-entity';
 
 // AuthModule lee JWT_SECRET vía ConfigService (getOrThrow). Garantizamos un
 // secreto de test antes de construir el módulo.
@@ -36,6 +37,9 @@ const typeOrmCitasTestConfig: TypeOrmModuleOptions = {
     PacienteOrmEntity,
     CitaOrmEntity,
     CambioCitaOrmEntity,
+    // POST /citas publica CitaCreada en el outbox, en la misma transacción
+    // (ADR-12 §2): sin esta entidad, crear una cita falla.
+    EventoSalidaOrmEntity,
   ],
   synchronize: true, // SOLO aquí: BD efímera de test, nunca dev/prod
   dropSchema: true, // Limpia el schema en cada run de test

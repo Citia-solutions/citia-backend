@@ -1,9 +1,13 @@
 import {
   diasCalendarioInclusivos,
   formatearFechaEnZona,
+  formatearFechaLargaEnZona,
   formatearHoraEnZona,
+  instanteDeHoraLocal,
+  minutoDelDiaEnZona,
   rangoDeFechasEnZona,
   rangoDelDiaEnZona,
+  sumarDiasAFecha,
 } from './timezone';
 
 // Zona de la clínica por defecto. En invierno (jun-jul) Chile va en UTC-4.
@@ -141,6 +145,118 @@ describe('timezone', () => {
 
     it('es <= 0 si hasta es anterior a desde', () => {
       expect(diasCalendarioInclusivos('2026-09-27', '2026-09-21')).toBe(-5);
+    });
+  });
+  describe('formatearFechaLargaEnZona (ADR-13 §12)', () => {
+    it('debería dar "día de la semana, día de mes, hora" en es-CL', () => {
+      // 2025-10-14 13:30Z = martes 10:30 en Santiago (UTC-3): el ejemplo de ADR-13.
+      expect(
+        formatearFechaLargaEnZona(new Date('2025-10-14T13:30:00Z'), TZ),
+      ).toBe('martes 14 de octubre, 10:30');
+    });
+
+    it('debería escribir el día sin cero y los nombres en minúsculas', () => {
+      // 2026-10-05 12:05Z = lunes 09:05 en Santiago.
+      expect(
+        formatearFechaLargaEnZona(new Date('2026-10-05T12:05:00Z'), TZ),
+      ).toBe('lunes 5 de octubre, 09:05');
+    });
+
+    it('debería usar la fecha de la clínica, no la UTC', () => {
+      // 2026-10-15 02:00Z = miércoles 14 a las 23:00 en Santiago.
+      expect(
+        formatearFechaLargaEnZona(new Date('2026-10-15T02:00:00Z'), TZ),
+      ).toBe('miércoles 14 de octubre, 23:00');
+    });
+
+    it('debería respetar el horario de invierno (UTC-4)', () => {
+      // 2026-07-01 14:00Z = miércoles 10:00 en Santiago (UTC-4).
+      expect(
+        formatearFechaLargaEnZona(new Date('2026-07-01T14:00:00Z'), TZ),
+      ).toBe('miércoles 1 de julio, 10:00');
+    });
+
+    it('con conHora=false debería dar solo la fecha', () => {
+      expect(
+        formatearFechaLargaEnZona(new Date('2025-10-14T13:30:00Z'), TZ, {
+          conHora: false,
+        }),
+      ).toBe('martes 14 de octubre');
+    });
+
+    it('el domingo del fin del horario de verano debería salir con la hora nueva', () => {
+      // 2027-04-04 14:00Z = domingo 10:00 en Santiago, ya en UTC-4.
+      expect(
+        formatearFechaLargaEnZona(new Date('2027-04-04T14:00:00Z'), TZ),
+      ).toBe('domingo 4 de abril, 10:00');
+    });
+  });
+
+  describe('minutoDelDiaEnZona', () => {
+    it('debería contar minutos del reloj de pared de la clínica', () => {
+      // 00:00Z = 21:00 del día anterior en Santiago (UTC-3).
+      expect(minutoDelDiaEnZona(new Date('2026-10-14T00:00:00Z'), TZ)).toBe(
+        21 * 60,
+      );
+      expect(minutoDelDiaEnZona(new Date('2026-10-14T03:00:00Z'), TZ)).toBe(0);
+    });
+  });
+
+  describe('sumarDiasAFecha', () => {
+    it('debería mover la fecha de calendario en ambos sentidos', () => {
+      expect(sumarDiasAFecha('2026-12-31', 1)).toBe('2027-01-01');
+      expect(sumarDiasAFecha('2026-03-01', -1)).toBe('2026-02-28');
+      expect(sumarDiasAFecha('2028-03-01', -1)).toBe('2028-02-29');
+    });
+  });
+
+  describe('instanteDeHoraLocal', () => {
+    it('debería convertir una hora local de un día normal', () => {
+      // 21:00 del 14-oct en Santiago (UTC-3) = 15-oct 00:00Z.
+      expect(instanteDeHoraLocal('2026-10-14', '21:00', TZ).toISOString()).toBe(
+        '2026-10-15T00:00:00.000Z',
+      );
+      // Invierno (UTC-4).
+      expect(instanteDeHoraLocal('2026-07-01', '08:00', TZ).toISOString()).toBe(
+        '2026-07-01T12:00:00.000Z',
+      );
+    });
+
+    it('víspera del inicio del horario de verano: 21:00 aún en UTC-4', () => {
+      expect(instanteDeHoraLocal('2027-09-04', '21:00', TZ).toISOString()).toBe(
+        '2027-09-05T01:00:00.000Z',
+      );
+      // El domingo, las 08:00 ya son UTC-3.
+      expect(instanteDeHoraLocal('2027-09-05', '08:00', TZ).toISOString()).toBe(
+        '2027-09-05T11:00:00.000Z',
+      );
+    });
+
+    it('una hora que no existe (salto de 00:00 a 01:00) se corre hacia adelante', () => {
+      // 2027-09-05 00:30 no existe en Santiago -> 01:30 (UTC-3) = 04:30Z.
+      expect(instanteDeHoraLocal('2027-09-05', '00:30', TZ).toISOString()).toBe(
+        '2027-09-05T04:30:00.000Z',
+      );
+    });
+
+    it('una hora que existe dos veces (se atrasa el reloj) da la primera', () => {
+      // 2027-04-03 23:30 ocurre en UTC-3 (02:30Z) y otra vez en UTC-4 (03:30Z).
+      expect(instanteDeHoraLocal('2027-04-03', '23:30', TZ).toISOString()).toBe(
+        '2027-04-04T02:30:00.000Z',
+      );
+      // El domingo, las 08:00 ya son UTC-4.
+      expect(instanteDeHoraLocal('2027-04-04', '08:00', TZ).toISOString()).toBe(
+        '2027-04-04T12:00:00.000Z',
+      );
+    });
+
+    it('rechaza una hora mal formada', () => {
+      expect(() => instanteDeHoraLocal('2026-10-14', '9:00', TZ)).toThrow(
+        RangeError,
+      );
+      expect(() => instanteDeHoraLocal('2026-10-14', '24:00', TZ)).toThrow(
+        RangeError,
+      );
     });
   });
 });

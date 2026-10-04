@@ -1,4 +1,5 @@
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
+import { PacienteNoEncontradoError } from '../../paciente/application/paciente-no-encontrado.error';
 import { PacientesService } from '../../paciente/application/pacientes.service';
 import { Paciente } from '../../paciente/domain/paciente.entity';
 import { PacienteRepository } from '../../paciente/domain/paciente.repository';
@@ -39,7 +40,6 @@ import { EditarCitaDto } from '../presentation/dto/editar-cita.dto';
 import { ReagendarCitaDto } from '../presentation/dto/reagendar-cita.dto';
 import { CitaNoEncontradaError } from './cita-no-encontrada.error';
 import { DatosPacienteRequeridosError } from './datos-paciente-requeridos.error';
-import { PacienteNoEncontradoError } from './paciente-no-encontrado.error';
 import { RangoFechasInvalidoError } from './rango-fechas-invalido.error';
 
 /**
@@ -136,7 +136,9 @@ export class CitasService {
       tx,
     );
 
-    await this.publicar('CitaCreada', guardada, usuario);
+    // Dentro del `tx` de quien llama: el hecho se confirma con la cita o no
+    // existe (ADR-12 §2).
+    await this.publicar('CitaCreada', guardada, usuario, tx);
 
     const avisos = await this.calcularAvisos(guardada, tx);
 
@@ -393,7 +395,7 @@ export class CitasService {
         tx,
       );
 
-      await this.publicar(nombreEvento, guardada, usuario, detalle);
+      await this.publicar(nombreEvento, guardada, usuario, tx, detalle);
 
       const avisos = opciones.conAvisos
         ? await this.calcularAvisos(guardada, tx)
@@ -434,25 +436,36 @@ export class CitasService {
     );
   }
 
+  /**
+   * Publica el hecho de una cita en la transaccion `tx` de la operacion
+   * (ADR-12 §2). Sus dos llamadores (`agendar` y `mutar`) lo invocan DENTRO del
+   * callback de `TransactionRunner.run`, despues de guardar la cita y la
+   * bitacora: si algo falla despues (p. ej. `calcularAvisos`), el hecho se
+   * revierte junto con el cambio.
+   */
   private async publicar(
     nombre: string,
     cita: Cita,
     usuario: AuthenticatedUser,
+    tx: TransactionContext,
     detalle?: DetalleCambio,
   ): Promise<void> {
-    await this.eventos.publicar({
-      nombre,
-      ocurridoEn: new Date(),
-      tenantId: cita.tenantId,
-      payload: {
-        citaId: cita.id,
-        pacienteId: cita.pacienteId,
-        usuarioId: usuario.userId,
-        estado: cita.estado,
-        inicio: cita.inicio,
-        inicioAnterior: detalle?.inicioAnterior ?? null,
+    await this.eventos.publicar(
+      {
+        nombre,
+        ocurridoEn: new Date(),
+        tenantId: cita.tenantId,
+        payload: {
+          citaId: cita.id,
+          pacienteId: cita.pacienteId,
+          usuarioId: usuario.userId,
+          estado: cita.estado,
+          inicio: cita.inicio,
+          inicioAnterior: detalle?.inicioAnterior ?? null,
+        },
       },
-    });
+      tx,
+    );
   }
 
   /**
