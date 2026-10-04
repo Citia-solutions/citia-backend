@@ -56,7 +56,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 | Buscas… | Camino |
 |---|---|
 | ponerte al día con el proyecto | este README → [ROADMAP § Resumen](ROADMAP.md#resumen) → [Fases/](Fases/README.md) → la guía de la fase en curso |
-| entender el diseño de hoy (recordatorios) | [Fase 2](Fases/fase-2-us03-recordatorios.md), que está escrita como guía de lectura de ADR-12, ADR-13, US-03 y las deudas que cambiaron |
+| entender los recordatorios (lo último construido) | [Fase 2](Fases/fase-2-us03-recordatorios.md) —guía de lectura del diseño y de la implementación, checklist de salida a producción— y la feature [us03-recordatorios](Features/us03-recordatorios.md) |
 | qué quedó al cerrar la gestión de citas | [Fase 1 § Cierre](Fases/fase-1-us02-gestion-citas.md#cierre-de-la-fase-resumen) |
 | por qué una pieza es como es | la feature → su ADR → las alternativas descartadas del ADR |
 | qué riesgo se está aceptando | [Deudas/README § Lo que hay que mirar primero](Deudas/README.md#lo-que-hay-que-mirar-primero) → la deuda |
@@ -85,7 +85,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
   que afectan al backend.
 - **`US/`** — planes de historias de usuario previos a implementar: decisiones y orden de
   construcción, sin código. [US-00](US/00-auth.md) autenticación · [US-06](US/06-epic.md) dashboard ·
-  [US-03](US/03-recordatorios.md) recordatorios al paciente (diseño cerrado, sin construir).
+  [US-03](US/03-recordatorios.md) recordatorios al paciente (✅ implementada en rama, pendiente de merge).
   **Subtareas de US-02** (archivos `02.NN-*`, no son historias propias):
   [US-02.07](US/02.07-paciente-reagenda-cancela.md) el paciente cancela o pide reagendar (⏸ aplazada
   fuera de la v1; [ADR-10](Decisions/ADR-10.md) propuesto; se retoma en la
@@ -103,14 +103,14 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 - **[`stack-tecnologico.md`](stack-tecnologico.md)** — stack y despliegue objetivo.
 - **[`PREGUNTAS-ABIERTAS.md`](PREGUNTAS-ABIERTAS.md)** — las once decisiones que bloqueaban el MVP
   (cuatro ya respondidas), repartidas por rol (I+D, desarrollo, seguridad) con el entregable esperado
-  de cada una.
+  de cada una, más cuatro pendientes que dejó la implementación de la Fase 2 (Q12–Q15, no bloquean).
 - **[`TRAZABILIDAD.md`](TRAZABILIDAD.md)** — matriz commit ↔ documentación, con la fase de cada commit.
 
 ---
 
 ## Estado, de un vistazo
 
-*(Actualizado el 2026-09-30. Fuente: [ROADMAP § Resumen](ROADMAP.md#resumen).)*
+*(Actualizado el 2026-10-04. Fuente: [ROADMAP § Resumen](ROADMAP.md#resumen).)*
 
 **Alcance del MVP:** dashboard de citas (Fase 0) · gestión de citas (Fase 1) · **recordatorios al
 paciente** (Fase 2). La calificación de asistencia (scoring, Fase 5) pasó a la v2 el 2026-09-30
@@ -121,33 +121,42 @@ paciente** (Fase 2). La calificación de asistencia (scoring, Fase 5) pasó a la
 | [Fundaciones](Fases/fase-base-fundaciones.md) — registro, login, infraestructura | ✅ cerrada |
 | [Fase 0](Fases/fase-0-us06-dashboard.md) — US-06 dashboard | ✅ cerrada (2026-09-28) · métricas aún de prueba |
 | [Fase 1](Fases/fase-1-us02-gestion-citas.md) — US-02 gestión de citas | ✅ cerrada (2026-09-28) · US-02.07 aplazada |
-| [Fase 2](Fases/fase-2-us03-recordatorios.md) — US-03 recordatorios | 🔶 diseño cerrado, sin construir |
+| [Fase 2](Fases/fase-2-us03-recordatorios.md) — US-03 recordatorios | ✅ implementada en rama (2026-10-04) · ⏳ pendiente de merge y de los prerrequisitos operativos |
 | [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) — US-04 respuesta del paciente | ⬜ fuera del MVP |
 | [Fase 4](Fases/fase-4-us05-alertas.md) — US-05 alertas | ⬜ fuera del MVP |
 | [Fase 5](Fases/fase-5-us07-scoring.md) — US-07 scoring | ⏸ v2 |
 | [Fases 6, 7 y US-09](Fases/fases-6-7-us09-sin-diseno.md) | ⬜ sin diseño |
 
-**Implementado** (en `develop`, Fase 0 y Fase 1 cerradas el 2026-09-28): alta de organización y
-administrador · login · dashboard de citas del día · **gestión de citas completa** (agendar, editar,
-reagendar, cancelar, transiciones de estado, bitácora de cambios, publicación de hechos) · agenda
-semanal · detalle de cita con `accionesPermitidas` para el voucher (US-02.08) · aviso de solapamiento
-([ADR-11](Decisions/ADR-11.md)) · recepción pública de solicitudes de hora · **bandeja de solicitudes**
-(listar, aceptar creando paciente y cita en una transacción, rechazar).
+**En `develop`** (Fase 0 y Fase 1 cerradas el 2026-09-28): alta de organización y administrador · login ·
+dashboard de citas del día · **gestión de citas completa** (agendar, editar, reagendar, cancelar,
+transiciones de estado, bitácora de cambios, publicación de hechos) · agenda semanal · detalle de cita
+con `accionesPermitidas` para el voucher (US-02.08) · aviso de solapamiento ([ADR-11](Decisions/ADR-11.md)) ·
+recepción pública de solicitudes de hora · **bandeja de solicitudes** (listar, aceptar creando paciente
+y cita en una transacción, rechazar). También el **diseño** de la Fase 2 (ADR-12, ADR-13, US-03), desde
+el merge `510015a` (2026-10-01).
 
-**Diseñado, sin construir (Fase 2):** recordatorios por correo con Resend ([ADR-13](Decisions/ADR-13.md))
-sobre un outbox transaccional y un planificador en Postgres ([ADR-12](Decisions/ADR-12.md)). Plan en
-[US-03](US/03-recordatorios.md). El commit de ese diseño (`ab30bb7`) está en la rama
-`docs/fase2-recordatorios`, todavía no en `develop`.
+**Implementado en la rama `feature/fase2-recordatorios`, pendiente de merge** (2026-10-04,
+[PR #1](https://github.com/Citia-solutions/citia-backend/pull/1); el frontend en
+[PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2), mismo release): **recordatorios por
+correo** con Resend sobre un **outbox** transaccional y un **planificador** en Postgres, con logs JSON,
+`GET /api/health`, latidos y alertas para Better Stack; correo del paciente obligatorio y
+`PATCH /api/pacientes/:id`. 1274 unitarios, 212 e2e y 80 de integración en verde. Ver
+[us03-recordatorios](Features/us03-recordatorios.md).
 
 **Lo más urgente:**
 
-1. **Comprar el dominio y verificarlo en Resend.** Sin eso no se puede escribir a un paciente real, y
-   la verificación depende de DNS, fuera del control del equipo.
-2. **El outbox antes que los recordatorios** ([DT-27](Deudas/DT-27.md)): es barato mientras no haya
-   ningún suscriptor.
-3. **La asistencia real de las citas pasadas se está perdiendo** ([DT-30](Deudas/DT-30.md)): es la
+1. **Los prerrequisitos operativos de la Fase 2**
+   ([checklist](Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción)). El dominio
+   `citiahealth.cl` ya está comprado y delegado a Cloudflare; falta **verificar el subdominio de envío en
+   Resend** y crear el webhook (dependen de DNS y del proveedor), Better Stack, las variables en Railway
+   y "App Sleeping" apagado. Sin eso no se escribe a pacientes reales.
+2. **Mergear los dos PR en el mismo release** y hacer la prueba manual del frontend contra el backend
+   real. Sin el frontend nuevo, el modal "Nueva cita" recibe 400 por el correo.
+3. **Cuatro decisiones del usuario** que dejó la implementación, ninguna bloqueante:
+   [Q12–Q15](PREGUNTAS-ABIERTAS.md#fase-2--decisiones-pendientes-tras-implementar-2026-10-04).
+4. **La asistencia real de las citas pasadas se está perdiendo** ([DT-30](Deudas/DT-30.md)): es la
    única deuda cuyo coste crece solo con el tiempo. Decisión (2026-09-30): esperar a la Fase 3, cuando
    el paciente confirme desde el enlace; hasta entonces no se registra. El `ghosting`, en cambio, se
    puede reconstruir después ([DT-11](Deudas/DT-11.md)).
-4. **Consentimiento sin revisar, con fecha** ([DT-16](Deudas/DT-16.md)): riesgo aceptado hasta que
-   entre en vigor la Ley 21.719 (prevista para el 2026-12-01).
+5. **Consentimiento sin revisar, con fecha** ([DT-16](Deudas/DT-16.md)): riesgo aceptado hasta que
+   entre en vigor la Ley 21.719 (prevista para el 2026-12-01). La política ya existe y está apagada.

@@ -1,9 +1,11 @@
 # US-02 — Gestión de citas
 
-> **Fase:** [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md) (origen), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md), [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) · **Feature:** este documento · **Plan:** [US-02.07](../US/02.07-paciente-reagenda-cancela.md), [US-02.08](../US/02.08-voucher-cita.md) · **Relacionado:** [ADR-09](../Decisions/ADR-09.md), [ADR-11](../Decisions/ADR-11.md), [ADR-10](../Decisions/ADR-10.md), [ADR-08](../Decisions/ADR-08.md), [DT-27](../Deudas/DT-27.md), [DT-29](../Deudas/DT-29.md)
+> **Fase:** [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md) (origen), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md), [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) · **Feature:** este documento · **Plan:** [US-02.07](../US/02.07-paciente-reagenda-cancela.md), [US-02.08](../US/02.08-voucher-cita.md) · **Relacionado:** [ADR-09](../Decisions/ADR-09.md), [ADR-11](../Decisions/ADR-11.md), [ADR-10](../Decisions/ADR-10.md), [ADR-08](../Decisions/ADR-08.md), [ADR-13 §14](../Decisions/ADR-13.md), [DT-27](../Deudas/DT-27.md), [DT-29](../Deudas/DT-29.md), [DT-35](../Deudas/DT-35.md), [us03-recordatorios](us03-recordatorios.md)
 
 **Estado:** ✅ Release 1 (2026-08-23) · ✅ Vía pública del paciente (2026-09-10) · 📐 cierre de Fase 1 diseñado (2026-09-25): agenda por rango, solapamiento, bandeja — [contrato](#cierre-de-fase-1--contrato-2026-09-25), sin implementar
-**Commits:** `f2a7dff` (release 1 + RUT + conexión con el frontend), `e1253c3` (vía pública)
+**Commits:** `f2a7dff` (release 1 + RUT + conexión con el frontend), `e1253c3` (vía pública) · Fase 2
+(rama `feature/fase2-recordatorios`, pendiente de merge): `a6c237f` (`publicar(evento, tx)`), `a37f175`
+(correo obligatorio y `PATCH /api/pacientes/:id`), `f95b637` (outbox real)
 **ADRs:** **[09](../Decisions/ADR-09.md)** · **[11](../Decisions/ADR-11.md)** (solapamiento) · extiende [04](../Decisions/ADR-04.md) · adopta la fase 1 de [08](../Decisions/ADR-08.md) en la ruta pública · replica [06](../Decisions/ADR-06.md)
 
 > **Nota (2026-09-30).** El cierre de Fase 1 **ya está implementado**: en `develop` desde el
@@ -13,6 +15,13 @@
 > [Fases/fase-1-us02-gestion-citas.md](../Fases/fase-1-us02-gestion-citas.md#cierre-de-la-fase-resumen)
 > y en el [ROADMAP](../ROADMAP.md#fase-1--us-02-gestión-de-cita). Los tests del cierre (`06858f2`) no
 > están listados en § Tests.
+
+> **Nota (2026-10-04, Fase 2).** La Fase 2 cambió tres cosas de esta feature, en la rama
+> `feature/fase2-recordatorios` (PR #1, pendiente de merge a `develop`): el **correo del paciente es
+> obligatorio** al crearlo, existe **`PATCH /api/pacientes/:id`** y, al vincular por RUT, un correo
+> vacío **se completa** ([§ Correo del paciente](#correo-del-paciente-obligatorio-fase-2)). Además los
+> hechos ya no se pierden: van a un **outbox** en la misma transacción y tienen su primer suscriptor, los
+> recordatorios ([§ Publicación de hechos](#publicación-de-hechos), [us03-recordatorios](us03-recordatorios.md)).
 
 ---
 
@@ -149,6 +158,37 @@ Se almacena **canónico** (`208929933`) y se devuelve **formateado** (`20.892.99
 
 ---
 
+## Correo del paciente obligatorio (Fase 2)
+
+*(2026-10-03, `a37f175`, rama `feature/fase2-recordatorios`; decisión en [ADR-13 §14](../Decisions/ADR-13.md).)*
+Sin correo no hay recordatorios, así que el correo pasa a ser obligatorio **al crear** un paciente.
+
+| Pieza | Cómo quedó |
+|---|---|
+| `CrearPacienteDto.correo` | obligatorio: `@NormalizarCorreo()` (trim + minúsculas, **antes** de validar), `@IsEmail()`, `@IsNotEmpty()`, `@MaxLength(254)`. El DTO es el mismo para `POST /api/pacientes` y para el **paciente en línea de `POST /api/citas`**: los dos responden **400** sin correo y no crean nada |
+| Dominio | `Paciente.crear` exige el correo (`CorreoPacienteRequeridoError` → 400) y lo normaliza con `shared/domain/correo.ts`. `reconstituir` sigue aceptando `NULL`: las filas viejas no se tocan (sin migración ni relleno) |
+| **Completar por RUT** | `resolverOCrear` encuentra al paciente por RUT y, **solo si su correo está vacío**, lo completa con el que llega, con un **`UPDATE` condicional** (`correo IS NULL OR btrim(correo) = ''`) dentro del `tx`. Un correo ya guardado, igual o distinto, **nunca** se reemplaza; si otra transacción lo completó primero, se devuelve lo que quedó. Vale para el modal (`POST /api/citas`), el alta directa y **aceptar una solicitud** de la bandeja, que pasa por el mismo `resolverOCrear`. Matiza ADR-09 §3 ("vincular sin tocar") para ese único caso |
+| `PATCH /api/pacientes/:id` | JWT, filtrado por tenant (404 si es ajeno, nunca 403). Solo `telefono` y `correo`, cada uno opcional pero validado como al crear; sin ninguno → 400. Aquí **sí** se puede reemplazar un correo: es una edición explícita. Responde 200 con el DTO del alta. Contrato completo en [us03 § `PATCH /api/pacientes/:id`](us03-recordatorios.md#patch-apipacientesid) |
+| `PacienteNoEncontradoError` | se movió de `cita/application` a `paciente/application`; lo usan `POST /api/citas` (con `pacienteId`) y el `PATCH` |
+| Seed demo | pacientes con correos `@example.com` |
+
+- **`POST /api/citas` con `pacienteId` de un paciente sin correo:** la cita se crea igual; sus
+  recordatorios quedan `omitido` (`sin_correo`) y el voucher ofrece *"Agregar correo"*. La agenda nunca
+  se bloquea por un dato de contacto.
+- **Frontend, mismo release:** el modal "Nueva cita" marca el correo como obligatorio y el voucher
+  tiene la vista *Contacto* que usa el `PATCH`
+  ([citia-frontend#2](https://github.com/Citia-solutions/citia-frontend/pull/2)). Sin ese release, el
+  modal recibe 400.
+- **Antes de desplegar:** contar los pacientes sin correo en Railway
+  (`SELECT count(*) FROM pacientes WHERE correo IS NULL OR btrim(correo) = ''`).
+- **Nadie verifica que el correo sea del paciente:** [DT-35](../Deudas/DT-35.md). Y por la vía pública,
+  quien escriba el RUT de otro con su propio correo completaría un correo vacío ([DT-23](../Deudas/DT-23.md)).
+
+Tests: `paciente/domain/paciente.entity.spec.ts`, `paciente/application/pacientes.service.spec.ts`,
+`paciente/presentation/dto/*.spec.ts`, `typeorm-paciente.repository.spec.ts` y `test/pacientes.e2e-spec.ts`.
+
+---
+
 ## Reagendar y la bitácora
 
 `Cita.reagendar(nuevoInicio)` **mueve** la cita conservando su id, y la **devuelve a `pendiente`**:
@@ -177,6 +217,14 @@ Es deliberado: US-03 (recordatorios) y US-05 (alertas) se enchufan después **si
 caso de uso**. Deuda asumida: [DT-27](../Deudas/DT-27.md) — el hecho se publica fuera de la
 transacción, así que puede perderse. Hoy inofensivo porque nadie escucha.
 
+> **Actualizado 2026-10-04 (Fase 2, rama `feature/fase2-recordatorios`).** `publicar(evento, tx)` exige
+> la transacción del caso de uso (`a6c237f`) y el adaptador `PublicadorEventosEnSalida` escribe el hecho
+> en la tabla `eventos_salida` **en esa misma transacción** (`f95b637`): o existen el cambio y el hecho,
+> o ninguno. Un despachador los entrega cada 5 s. El primer suscriptor son los recordatorios, que
+> reconcilian la cita con cada `CitaCreada`, `CitaReagendada`, `CitaCancelada`, `CitaAsistida`,
+> `CitaNoAsistida`, `CitaConfirmada` y `CitaEditada`. **DT-27 está cerrada.** Ver
+> [ADR-12](../Decisions/ADR-12.md) y [us03-recordatorios](us03-recordatorios.md).
+
 ---
 
 ## Esquema de BD
@@ -184,7 +232,8 @@ transacción, así que puede perderse. Hoy inofensivo porque nadie escucha.
 **`pacientes`** — migración `1750000004000`
 `contacto` se renombró a `telefono` (rename, conserva datos) y se añadieron `correo` y `rut`, ambos
 nullable. Índice único **parcial** `(tenant_id, rut) WHERE rut IS NOT NULL`, para que varios
-pacientes sin RUT convivan.
+pacientes sin RUT convivan. *(2026-10-04: `correo` sigue nullable en la base; desde la Fase 2 lo exige
+toda escritura nueva —[§ Correo del paciente](#correo-del-paciente-obligatorio-fase-2)—, sin migración.)*
 
 **`cambios_cita`** — migración `1750000005000`
 Bitácora append-only, sin `actualizado_en` a propósito. Índice `(cita_id, ocurrido_en)`.
@@ -618,7 +667,8 @@ para el front actual. Solo rompe a un cliente que mande `inicio` sin zona, y nin
 - **Actualizar datos de contacto** de un paciente existente al aceptar (hoy se vincula sin tocarlo).
   *Parcialmente decidido (2026-09-30, [ADR-13 §14](../Decisions/ADR-13.md)):* un correo vacío se
   completa; un correo o teléfono ya guardado no se reemplaza al aceptar (se edita con
-  `PATCH /api/pacientes/:id`).
+  `PATCH /api/pacientes/:id`). *Implementado el 2026-10-03 (`a37f175`, en rama):*
+  [§ Correo del paciente](#correo-del-paciente-obligatorio-fase-2).
 - **Citas en el pasado** ([DT-13](../Deudas/DT-13.md)): aceptar, como crear, las sigue admitiendo.
 
 ---

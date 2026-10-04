@@ -22,7 +22,9 @@ import { DURACION_MAXIMA_MIN } from '../../domain/cita.entity';
  *  - `pacienteId`: cuando ya se conoce (p. ej. elegido de una busqueda).
  *  - `paciente`:   los datos del formulario. Si trae RUT y ese RUT ya existe
  *                  en la organizacion, se vincula al paciente existente en
- *                  vez de duplicarlo; si no existe, se crea.
+ *                  vez de duplicarlo (y se completa su correo si lo tenia
+ *                  vacio); si no existe, se crea. `paciente.correo` es
+ *                  obligatorio desde la Fase 2 (ADR-13 §14).
  *
  * `tenantId` y `usuarioId` NO viajan en el cuerpo: salen del token (ADR-01 §2).
  */

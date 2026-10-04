@@ -1,12 +1,17 @@
 # ADR-13: Recordatorios al paciente por correo (RF-06) — el recordatorio es una entidad con estado, se planifica con una función pura y se envía por Resend detrás del puerto `CanalMensajeria`
 
-> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) (origen), [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) · **Feature:** ninguna todavía (diseñada, sin implementar) · **Plan:** [US-03](../US/03-recordatorios.md) · **Relacionado:** [ADR-12](../Decisions/ADR-12.md), [ADR-10](../Decisions/ADR-10.md), [DT-16](../Deudas/DT-16.md), [DT-19](../Deudas/DT-19.md), [DT-21](../Deudas/DT-21.md), [DT-30](../Deudas/DT-30.md), [Q1](../PREGUNTAS-ABIERTAS.md#q1--el-mvp-incluye-recordatorios-automáticos), [stack](../stack-tecnologico.md)
+> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) (origen), [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) · **Feature:** [us03-recordatorios](../Features/us03-recordatorios.md) · **Plan:** [US-03](../US/03-recordatorios.md) · **Relacionado:** [ADR-12](../Decisions/ADR-12.md), [ADR-10](../Decisions/ADR-10.md), [DT-16](../Deudas/DT-16.md), [DT-19](../Deudas/DT-19.md), [DT-21](../Deudas/DT-21.md), [DT-30](../Deudas/DT-30.md), [Q1](../PREGUNTAS-ABIERTAS.md#q1--el-mvp-incluye-recordatorios-automáticos), [stack](../stack-tecnologico.md)
 
 **Fecha:** 2026-09-30
-**Estado:** Aceptado · sin implementar · **todas las decisiones confirmadas por el usuario el
-2026-09-30** (ver [Decisiones confirmadas](#decisiones-confirmadas-2026-09-30)); quedan solo datos de
-proveedores por verificar al implementar ([Lo que queda por verificar](#lo-que-queda-por-verificar-al-implementar))
-**Commits:** — (pendiente)
+**Estado:** Aceptado · **implementado** (rama `feature/fase2-recordatorios`,
+[PR #1](https://github.com/Citia-solutions/citia-backend/pull/1), pendiente de merge a `develop`; el
+frontend sale en el mismo release, [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2)) ·
+**todas las decisiones confirmadas por el usuario el 2026-09-30** (ver
+[Decisiones confirmadas](#decisiones-confirmadas-2026-09-30)) · desvíos y datos de proveedores
+verificados en [Notas de implementación](#notas-de-implementación-2026-10-04)
+**Commits:** `ab30bb7` (diseño) · `d45de20` (pino, health, latidos, entorno, CORS) · `a37f175` (correo
+obligatorio y `PATCH /pacientes/:id`) · `f2d80aa` (persistencia) · `a13d80a` (dominio, planificación y
+reconciliación) · `f719c66` (envío por Resend, webhook y rutas) · `a938f9d` (Definición de Terminado)
 **Historia:** US-03 — plan de construcción en [US/03-recordatorios.md](../US/03-recordatorios.md)
 **Relación:** **se apoya en** [ADR-12](ADR-12.md) (outbox + planificador; este es su primer suscriptor)
 · **se apoya en** [ADR-04](ADR-04.md) (estados vigentes y terminales) y en [ADR-09 §4](ADR-09.md)
@@ -721,6 +726,120 @@ Si alguno no se cumple, cambia el adaptador, no el diseño.
 | Alertas por consulta de logs en Better Stack gratis | disponibles (decisión 16) | la alerta se reporta como fallo del latido |
 | Entrada en vigor de la Ley 21.719 | 1 de diciembre de 2026 (decisión 15) | se mueve la fecha de revisión de DT-16 |
 
+> El resultado de esta verificación está en
+> [Notas de implementación → Datos de proveedores](#datos-de-proveedores-lo-que-queda-por-verificar-resuelto).
+
+---
+
+## Notas de implementación (2026-10-04)
+
+> Las decisiones de arriba **no cambian**. Esta sección registra cómo quedó el código en la rama
+> `feature/fase2-recordatorios` ([PR #1](https://github.com/Citia-solutions/citia-backend/pull/1)) y
+> dónde se precisó o se apartó del diseño. Descripción completa del módulo, contratos y tablas:
+> [us03-recordatorios](../Features/us03-recordatorios.md). Reglas locales para los agentes:
+> `src/modules/recordatorio/CLAUDE.md`.
+
+### Qué se construyó y dónde
+
+| Pieza | Commit |
+|---|---|
+| `nestjs-pino` con redacción, `GET /api/health`, puerto `Latidos`, validación del entorno, CORS por lista (§16, §18) | `d45de20` |
+| Correo obligatorio en `CrearPacienteDto` y en `Paciente.crear`, completar por RUT, `PATCH /api/pacientes/:id` (§14) | `a37f175` |
+| Migraciones `1750000009000` (configuraciones), `1750000010000` (recordatorios), `1750000011000` (supresiones); puertos, adaptadores SQL y `SqlLectorCitas`; `RecordatorioModule` rehecho (§1, §2) | `f2d80aa` |
+| `Recordatorio` y `ConfiguracionRecordatorio`, `planificar` / `resolverTardios` / `reconciliar`, nueve políticas, puerto `CanalMensajeria`, `SuscriptorRecordatorios`, job de respaldo, `formatearFechaLargaEnZona` (§3–§8) | `a13d80a` |
+| `EnviarRecordatoriosService`, plantilla, `ResendCanalMensajeria` y `RegistroCanalMensajeria`, cuota y fusible, tasa de fallo, webhook firmado, rutas de configuración y estado, `CLAUDE.md` del módulo (§7–§13, §16, §17) | `f719c66` |
+| Integración con Postgres, e2e de políticas y de redacción de logs, `src/arquitectura.spec.ts` | `a938f9d` |
+
+### Desvíos y precisiones
+
+**Planificación y reconciliación (§5, §6)**
+
+| # | Diseño | Cómo quedó | Por qué |
+|---|---|---|---|
+| 1 | 5.d: el último recordatorio vence `margen mínimo` antes del `inicio` | **`max(inicio − margen, min(inicio, programadoPara + margen))`** (`planificacion.ts`, `vencimientoDelUltimo`) | con la regla literal, una antelación de 30 min y un margen de 30 vencería en el mismo instante en que toca y no saldría nunca. Para antelaciones ≥ 2 × margen da lo mismo |
+| 2 | 5.e: tardío si "faltan al menos 60 min" | Se mide **desde la hora a la que el tardío saldría de verdad** (el fin del silencio si `ahora` cae dentro), no desde `ahora`; y **no se crea tardío si ya salió** (`enviado`/`entregado`) **otro recordatorio para ese mismo `inicio`** | fuera del silencio es lo mismo; dentro, evita un "tardío" que llegaría con menos de 60 min. Lo segundo evita recordar dos veces la misma hora |
+| 3 | §6: respaldo con candado consultivo (ADR-12 §5) | **Sin candado global**: cada cita se reconcilia en su propia transacción con el candado por cita, y la reconciliación es idempotente. Paginado por cursor `(inicio, id)`, horizonte de 8 días | a este volumen repetir el trabajo es más barato que coordinarlo; el candado por cita ya evita que dos procesos se crucen |
+| 4 | §6: respaldo "cada hora" | **Cron `0 15 * * * *` en `APP_TZ`** (cada hora, en el minuto 15), no un intervalo de 1 h | un intervalo vuelve a contar desde cero en cada despliegue: con despliegues más seguidos que una hora no correría nunca |
+| 5 | §1: jobs en `infrastructure/planificacion/` | Igual, y se cargan desde **`RecordatorioPlanificacionModule`**, que solo importa `AppModule`; `RecordatorioModule` no tiene jobs | las e2e que cargan `RecordatorioModule` no levantan jobs ni necesitan `ScheduleModule` ni `Latidos` |
+
+**Envío y proveedor (§7, §8, §11)**
+
+| # | Diseño | Cómo quedó | Por qué |
+|---|---|---|---|
+| 6 | §8: reintentos a los 1, 5, 15, 30 y 60 min; al agotar `RECORDATORIO_MAX_INTENTOS` (5) → `fallido` | **`RECORDATORIO_MAX_INTENTOS` cuenta reintentos**, no llamadas: con 5 se recorre el calendario completo y el **sexto** fallo transitorio lo agota, así que la columna `intentos` puede llegar a **6**. Si la espera cae a menos de 1 min de `vence_en`, **el último reintento se adelanta a `vence_en − 1 min`**; si ni eso queda en el futuro, `fallido` (`vencido`) | así lo dice §18 ("reintentos por errores transitorios"); el adelanto da una última oportunidad que la política de vencimiento todavía deja salir |
+| 7 | §8: tabla de clasificación de Resend | **Ajustada a la documentación real** (verificada el 2026-10-03 contra la API y el SDK `resend` 6.32): `validation_error` llega como **400** (no 422); un **403 por dominio no verificado** (o "solo puedes escribir a tu correo") va como `configuracion`; **404 / 405 e `invalid_idempotency_key`** van como `configuracion` (la URL, el método o nuestra clave están mal y afectarían a todos); un **400/422 sobre `to`** es `permanente` (`correo_invalido`), sobre `from` es `configuracion`, y cualquier otro 4xx es `permanente` (`rechazado`). Además `monthly_quota_exceeded` es `cuota_agotada` (mes), y un 200 sin `id` se trata como `posible_duplicado` | el `codigo` guardado es el nombre del error (o `http_<status>`), nunca su mensaje, que puede traer direcciones |
+| 8 | §7.5: "esperar al menos 500 ms" | **Pausa fija de 500 ms** entre dos llamadas al proveedor (`PAUSA_ENTRE_ENVIOS_MS`), y un tope propio del caso de uso de **11 s** por llamada además de los 10 s del adaptador | el tope del caso de uso es la defensa si el adaptador no corta: la fila está bloqueada mientras dura la llamada |
+| 9 | §11: cuota agotada por el proveedor | Tras un 429 de cuota, **el proceso deja de llamar al proveedor hasta el reinicio del periodo** (día o mes UTC). El bloqueo vive **en memoria**: un reinicio del contenedor lo olvida y la siguiente llamada recibe otro 429, que lo vuelve a armar | inofensivo (una llamada de más) y evita una tabla para un estado de horas |
+| 10 | §7: una fila que lanza dentro de su transacción | **Los errores internos por fila se registran como reintento** con código `interno:<error.name>` (en una transacción aparte), con log `recordatorios.envio_error_interno`, y el lote sigue | que una fila rota no bloquee la cola ni se reintente en cada tick sin espera |
+
+**Webhooks y supresiones (§9, §10)**
+
+| # | Diseño | Cómo quedó | Por qué |
+|---|---|---|---|
+| 11 | §10: `email.bounced` / `email.failed` pasan `enviado` → `fallido` | **Monótono también desde `programado`**: `rebotado` y `rechazado` se aplican igual que `entregado` (§9.4) a una fila que quedó en `programado` por una caída tras la aceptación | mismo caso que `entregado` desde `programado`; sin esto, el reintento volvería a escribir a una dirección que rebotó |
+| 12 | §10: supresión por rebote permanente o queja | **Solo suprimen los webhooks**: rebote permanente, queja y **`email.suppressed`** (Resend no lo envió porque la dirección está en *su* lista), que se trata como rebote. **Un `permanente` síncrono (400/422) no suprime**: la dirección mal escrita se corrige con `PATCH /pacientes/:id` | un rechazo síncrono no dañó la reputación del remitente |
+
+**Persistencia (§2)**
+
+| # | Diseño | Cómo quedó | Por qué |
+|---|---|---|---|
+| 13 | §2: tablas | **Restricciones extra**: CHECK `canal IN ('email')` en `recordatorios` y en `configuraciones_recordatorio`; CHECK de formato del hash en `supresiones_correo` (`^[0-9a-f]{64}$`) y de su `motivo`; **CHECK de `motivo` emparejado con el `estado`** (sin motivo en `programado`/`enviado`/`entregado`; cada final negativo solo con los suyos). En la primera versión, un final negativo **sin** motivo pasaba el CHECK (`NULL IN (…)` da NULL y un CHECK que evalúa NULL se da por cumplido); se corrigió con `motivo IS NOT NULL` explícito | la base es la última defensa de la máquina de estados; el hash impide guardar una dirección en claro por error |
+| 14 | §1: puertos con `tx` | **`tx` obligatorio en todos los puertos, también en las lecturas**: las rutas GET abren una transacción con `TransactionRunner.run`, y los adaptadores lanzan si no la reciben | el candado consultivo por cita y la coherencia de las lecturas dependen de ella |
+
+**API (§17)**
+
+| # | Diseño | Cómo quedó | Por qué |
+|---|---|---|---|
+| 15 | `GET /api/citas/:citaId/recordatorios` → `[{ id, canal, antelacionMin, programadoPara, estado, motivo, enviadoEn, entregadoEn }]` | **Se agregó `proximoIntentoEn`** a `RecordatorioCitaDto`: la hora real del próximo intento, solo mientras está `programado` (`null` en otro estado). Incluye los `cancelado`; orden por `programadoPara` | difiere de `programadoPara` en un tardío, un reintento o una espera por silencio o cuota; el voucher lo muestra como "se enviará" |
+| 16 | `GET/PUT /api/recordatorios/configuracion` | La respuesta lleva `predeterminada: true` mientras el profesional no guardó; **PUT es reemplazo completo** (lo que no viaja, o viaja vacío, queda `null`); `canal` no se recibe | el frontend distingue la configuración del entorno de la guardada |
+| 17 | `POST /api/webhooks/resend` | Responde `200 { recibido: true }`; firma inválida, vieja (> 5 min) o ausente → `400` uniforme | cualquier 2xx confirma la entrega a Resend |
+
+**Observabilidad (§16)**
+
+| # | Diseño | Cómo quedó | Por qué |
+|---|---|---|---|
+| 18 | Latido del job de envío | **El latido `recordatorios` lo da solo el job de envío** (cada minuto). La reconciliación de respaldo **no late** al terminar bien: solo `informarFallo` si falla. Un rechazo de `configuracion` del proveedor también informa fallo | un latido por hora no prueba nada y "resolvería" en falso un envío caído |
+| 19 | Tasa de fallo cada 15 min | Igual, y **la alerta se repite en cada medición mientras siga sobre el umbral** (el incidente sigue abierto); la medición sale siempre como `recordatorios.tasa_fallo_medida` (info) | — |
+| 20 | Eventos con nombre estable | Además de los de la tabla: `recordatorio.cancelado`, `.pospuesto`, `.reintento`, `.posible_duplicado`, `recordatorios.configuracion_proveedor`, `recordatorios.envio_error_interno`, `recordatorios.webhook_rechazado` / `_ignorado`, `recordatorios.respaldo` | — |
+
+**Dependencias y entorno (§18)**
+
+| # | Diseño | Cómo quedó | Por qué |
+|---|---|---|---|
+| 21 | `svix` para la firma | **`svix` fijado en 1.x** (1.99.1) | la 2.x es solo ESM y Jest (CommonJS) no la carga |
+| 22 | §13: `MENSAJERIA_ADAPTADOR=registro` por defecto | Por defecto `registro` **fuera de producción**; **en producción es obligatoria, sin default** (el arranque falla si falta). Con `resend`, `RESEND_API_KEY` y `RESEND_WEBHOOK_SECRET` (que debe empezar con `whsec_`) son obligatorias. `CORREO_REMITENTE` se deriva de `CORREO_DOMINIO` si no se define | que producción nunca quede en `registro` (que no envía nada) por omisión |
+| 23 | Variables de §18 | Todas validadas en `shared/infrastructure/config/entorno.ts`. Se agregaron `LOG_NIVEL`, `LOG_FORMATO` y `BETTERSTACK_INGESTING_HOST`. `docker-compose.yml` reenvía las cuatro de mensajería (`MENSAJERIA_ADAPTADOR`, `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`, `CORREO_DOMINIO`) | — |
+
+**Correo del paciente (§14)**
+
+| # | Diseño | Cómo quedó |
+|---|---|---|
+| 24 | `@IsEmail()` + fábrica de dominio | La **normalización** (sin espacios, en minúsculas) está **en el DTO** (`@NormalizarCorreo()`, antes de validar) **y en el dominio** (`shared/domain/correo.ts`, la misma forma que usa el hash de supresiones) |
+| 25 | Completar un correo vacío al vincular por RUT | Con un **`UPDATE` condicional** (`… WHERE id AND tenant_id AND (correo IS NULL OR btrim(correo) = '')`) dentro del `tx`: una vinculación concurrente no lo pisa y un correo ya guardado nunca se reemplaza |
+| 26 | — | `PacienteNoEncontradoError` **se movió** de `cita/application` a `paciente/application` (lo usan `PATCH /pacientes/:id` y `POST /citas`) |
+| 27 | — | El seed demo usa correos `@example.com` (dominio reservado: nunca llega a nadie) |
+
+### Datos de proveedores (lo que queda por verificar, resuelto)
+
+| Dato | Resultado (2026-10-03) |
+|---|---|
+| Nombres de los errores de Resend | ✅ verificados; la tabla del adaptador cambió (desvío 7) |
+| Ventana de la clave de idempotencia | ✅ **24 h**, de sobra para el calendario de reintentos |
+| Etiquetas en el webhook | ✅ `data.tags` llega como **objeto** `{ recordatorio_id: … }`, no como la lista del envío; el traductor acepta las dos formas y, si falta, busca por `proveedor_mensaje_id` |
+| Reinicio de la cuota diaria | ✅ **día calendario en UTC** |
+| Límite de peticiones | ✅ **10 por segundo** según la documentación; la pausa de 500 ms deja el envío en 2 por segundo |
+| Reinicio de la **cuota mensual** del plan gratis | ❓ **sin confirmar**: el contador local asume mes calendario UTC. Pregunta abierta en [PREGUNTAS-ABIERTAS](../PREGUNTAS-ABIERTAS.md#q15--cuándo-reinicia-resend-la-cuota-mensual-del-plan-gratis) |
+| Tipo de rebote: `Temporary` frente a `Transient` | ❓ **sin confirmar** cuál usa Resend. No cambia nada: solo `Permanent` (sin distinguir mayúsculas) suprime; cualquier otro tipo se registra y se ignora |
+| Direcciones de prueba de Resend | los tests automáticos no las usan: los webhooks se prueban con eventos firmados con Svix (`test/recordatorios-http.e2e-spec.ts`, `test/recordatorios-flujo.e2e-spec.ts`). Quedan para la prueba manual con el dominio verificado |
+| Alertas por consulta de logs en Better Stack gratis | pendiente hasta crear la cuenta. Si no están, las alertas críticas ya se ven como fallo de latido (desvío 18) |
+
+### Prerrequisitos operativos (estado al 2026-10-04)
+
+El dominio ya está comprado: **`citiahealth.cl`**, delegado a Cloudflare. Falta verificar el
+subdominio de envío en Resend, crear el webhook, configurar Better Stack y cargar las variables en
+Railway. Checklist completo en la
+[Fase 2 → salida a producción](../Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción).
+
 ---
 
 ## Referencias
@@ -735,14 +854,19 @@ Si alguno no se cumple, cambia el adaptador, no el diseño.
 - `src/modules/paciente/presentation/dto/crear-paciente.dto.ts`,
   `src/modules/paciente/application/pacientes.service.ts` (`resolverOCrear`),
   `src/modules/cita/presentation/dto/crear-cita.dto.ts`, `src/shared/domain/timezone.ts`.
+- Implementación (2026-10-04): `src/modules/recordatorio/` (con su `CLAUDE.md`),
+  `src/shared/infrastructure/observabilidad/`, `src/shared/infrastructure/config/entorno.ts`,
+  `src/shared/presentation/salud.controller.ts`.
 
 ---
 
 ## Deudas técnicas asociadas
 
-**Cierra (en diseño):** [DT-21](../Deudas/DT-21.md) (el módulo `recordatorio/` se rehace).
+**Cierra:** [DT-21](../Deudas/DT-21.md) (el módulo `recordatorio/` se rehízo en `f2d80aa`; las
+carpetas mal escritas de `paciente/` ya no existen) — **cerrada** el 2026-10-03.
 
-**Avanza:** [DT-19](../Deudas/DT-19.md) (logs, latidos, alertas).
+**Avanza:** [DT-19](../Deudas/DT-19.md) (logs, health, latidos y alertas implementados; falta la
+verificación manual en Better Stack).
 
 **Toca:** [DT-16](../Deudas/DT-16.md) — riesgo aceptado con punto de extensión (decisión 15) ·
 [DT-17](../Deudas/DT-17.md) — silencio y zona globales · [DT-23](../Deudas/DT-23.md) — completar un
@@ -750,13 +874,20 @@ correo vacío por RUT · [DT-26](../Deudas/DT-26.md) — se amplía a recordator
 [DT-29](../Deudas/DT-29.md) — `POST /pacientes` sigue sin consumidor · [DT-30](../Deudas/DT-30.md) —
 el recordatorio no registra asistencia; sus botones esperan a la Fase 3 (2026-09-30).
 
-**Previstas (a fichar al implementar; sin número todavía):**
+**Previstas, ya contraídas** (se ficharon al implementar, 2026-10-04):
 
-1. **El correo del paciente no se verifica:** un error de tipeo envía fecha y profesional a un tercero.
-2. **Cuota compartida por toda la plataforma**, solo acotada por el fusible por tenant.
+1. **El correo del paciente no se verifica:** un error de tipeo envía fecha y profesional a un tercero
+   → [DT-35](../Deudas/DT-35.md).
+2. **Cuota compartida por toda la plataforma**, solo acotada por el fusible por tenant
+   → [DT-36](../Deudas/DT-36.md).
 3. **`enviado` que nunca llega a `entregado`** si los webhooks no están configurados (desarrollo) o se
-   pierden.
-4. **Carrera aceptada** con un reagendamiento en el mismo segundo del envío (decisión 7).
-5. **Sin herramienta para quitar una dirección de `supresiones_correo`** (se hace con SQL).
+   pierden → [DT-37](../Deudas/DT-37.md).
+4. **Carrera aceptada** con un reagendamiento en el mismo segundo del envío (decisión 7)
+   → [DT-38](../Deudas/DT-38.md).
+5. **Sin herramienta para quitar una dirección de `supresiones_correo`** (se hace con SQL)
+   → [DT-39](../Deudas/DT-39.md).
+
+**Detectada al implementar:** [DT-31](../Deudas/DT-31.md) — imports que cruzan capas en los módulos
+anteriores (`recordatorio` no tiene servicios que importen DTOs de `presentation/`).
 
 Índice completo: [`../Deudas/README.md`](../Deudas/README.md).

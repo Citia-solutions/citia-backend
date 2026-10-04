@@ -10,7 +10,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import { CitasService } from '../application/citas.service';
 import { CitaNoEncontradaError } from '../application/cita-no-encontrada.error';
-import { PacienteNoEncontradoError } from '../application/paciente-no-encontrado.error';
+import { PacienteNoEncontradoError } from '../../paciente/application/paciente-no-encontrado.error';
 import { RangoFechasInvalidoError } from '../application/rango-fechas-invalido.error';
 import { EstadoCita } from '../domain/cita.entity';
 import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-estado-invalida.error';

@@ -34,6 +34,8 @@ import { CitaOrmEntity } from '../modules/cita/infrastructure/persistence/cita.o
 import { PacientesService } from '../modules/paciente/application/pacientes.service';
 import { PacienteOrmEntity } from '../modules/paciente/infrastructure/persistence/paciente.orm-entity';
 import { PacienteResponseDto } from '../modules/paciente/presentation/dto/paciente-response.dto';
+import { ConfiguracionRecordatorioOrmEntity } from '../modules/recordatorio/infrastructure/persistence/configuracion-recordatorio.orm-entity';
+import { RecordatorioOrmEntity } from '../modules/recordatorio/infrastructure/persistence/recordatorio.orm-entity';
 import { SolicitudCitaOrmEntity } from '../modules/solicitud/infrastructure/persistence/solicitud-cita.orm-entity';
 import { TipoTenant } from '../modules/tenant/domain/tenant.entity';
 import { ITenantRepository } from '../modules/tenant/domain/tenant.repository';
@@ -114,26 +116,29 @@ const PLAN_CITAS: PlanCita[] = [
   },
 ];
 
+// El correo es obligatorio al crear (ADR-13 §14). Siempre en `example.com`
+// (reservado, RFC 2606): con los recordatorios activos, un seed corrido con el
+// adaptador de Resend no debe escribirle a un buzón real.
 const PACIENTES = [
   {
     rut: '11.111.111-1',
     nombre: 'María Fernández',
     telefono: '+56 9 1111 1111',
-    correo: 'maria.fernandez@demo.cl',
+    correo: 'maria.fernandez@example.com',
     consentimiento: true,
   },
   {
     rut: '12.345.678-5',
     nombre: 'Juan Pérez',
     telefono: '+56 9 2222 2222',
-    correo: 'juan.perez@demo.cl',
+    correo: 'juan.perez@example.com',
     consentimiento: true,
   },
   {
     rut: '18.765.432-7',
     nombre: 'Camila Rojas',
     telefono: '+56 9 3333 3333',
-    correo: 'camila.rojas@demo.cl',
+    correo: 'camila.rojas@example.com',
     consentimiento: false,
   },
 ];
@@ -168,6 +173,10 @@ async function limpiarDatosDemo(
 ): Promise<void> {
   await dataSource.transaction(async (m) => {
     // cambios_cita → citas y solicitudes_cita → usuarios/tenants tienen FK.
+    // recordatorios → citas y configuraciones_recordatorio → usuarios/tenants
+    // también (ADR-13). `supresiones_correo` es global: no se toca.
+    await m.delete(RecordatorioOrmEntity, { tenantId });
+    await m.delete(ConfiguracionRecordatorioOrmEntity, { tenantId });
     await m.delete(CambioCitaOrmEntity, { tenantId });
     await m.delete(SolicitudCitaOrmEntity, { tenantId });
     await m.delete(CitaOrmEntity, { tenantId });
