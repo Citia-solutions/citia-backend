@@ -1,0 +1,2 @@
+- Aplica Hexagonal Architecture.
+- Sigue las reglas de negocio que aplicamos.

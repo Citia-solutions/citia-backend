@@ -1,0 +1,224 @@
+# Plan US-03 — Recordatorios al paciente (RF-06)
+
+> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) · **Feature:** ninguna todavía (diseñada, sin implementar) · **Plan:** este documento · **Relacionado:** [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-27](../Deudas/DT-27.md), [DT-19](../Deudas/DT-19.md), [DT-21](../Deudas/DT-21.md), [DT-16](../Deudas/DT-16.md), [DT-30](../Deudas/DT-30.md), [stack](../stack-tecnologico.md)
+
+> **Estado (2026-09-30):** ✅ diseño cerrado en [ADR-12](../Decisions/ADR-12.md) (outbox +
+> planificador) y [ADR-13](../Decisions/ADR-13.md) (recordatorios), con **todas sus decisiones
+> confirmadas por el usuario** el mismo día. ⬜ Sin implementar. Entra en el MVP por decisión del
+> usuario (Q1 → A). Fase 2 del [roadmap](../ROADMAP.md).
+
+> Solo decisiones y orden. Sin código. Brief para los agentes. El porqué de cada pieza está en los ADR;
+> aquí va el qué, en qué orden y cuándo está terminado.
+
+---
+
+## Descripción
+
+- Como **profesional de la salud** quiero que mis pacientes reciban **un recordatorio automático por
+  correo** antes de su hora, para no tener que escribirles yo.
+- Como **paciente** quiero recibir la fecha, la hora y con quién es mi cita, y saber cómo avisar si no
+  puedo ir.
+
+**Criterios de aceptación**
+
+- Al crear una cita (desde el modal o aceptando una solicitud) se programan sus recordatorios según la
+  configuración del profesional; por defecto, **24 h y 2 h antes**.
+- Al **reagendar**, se reprograman a la hora nueva; al **cancelar** (o cerrar la cita), se anulan.
+  Editar duración o tipo de consulta no los toca.
+- El correo solo lleva fecha, hora, profesional, organización y cómo contactar. **Nunca** el tipo de
+  consulta ni datos del paciente.
+- No se envía entre las 21:00 y las 08:00, hora de la clínica, ningún día.
+- El profesional ve el estado de cada recordatorio de una cita (programado, enviado, entregado,
+  fallido, cancelado, omitido) y el motivo cuando no salió.
+- El profesional puede cambiar los momentos (1 a 3), apagar los recordatorios y dejar un teléfono y un
+  correo de contacto. Si deja un correo, las respuestas del paciente le llegan a él (`Reply-To`); si no,
+  el correo dice que no recibe respuestas.
+- Si los envíos fallan por encima del umbral, o se acerca el tope de la cuota, el equipo recibe una
+  alerta.
+
+---
+
+## Punto de partida (lo que ya existe)
+
+- Los casos de uso de cita y de la bandeja **publican hechos** (`CitaCreada`, `CitaReagendada`,
+  `CitaCancelada`, …) dentro de su transacción, pero el adaptador solo escribe en el log y no hay
+  suscriptores ([DT-27](../Deudas/DT-27.md)).
+- **No hay planificador** ni nada que corra sin una petición.
+- `src/modules/recordatorio/` son carpetas vacías y mal escritas ([DT-21](../Deudas/DT-21.md)).
+- `Paciente.correo` es opcional en el alta manual; obligatorio en la solicitud pública.
+- CORS acepta un solo origen (`FRONTEND_URL`). No hay logs estructurados ni health check
+  ([DT-19](../Deudas/DT-19.md)).
+
+---
+
+## Decisiones tomadas (resumen)
+
+| Tema | Decisión | Dónde |
+|---|---|---|
+| Entrega de hechos | outbox `eventos_salida` en la misma transacción; `publicar(evento, tx)` | ADR-12 §1–§4 |
+| Planificador | `@nestjs/schedule` en el proceso, `FOR UPDATE SKIP LOCKED`, sin Redis | ADR-12 §5–§7 |
+| Módulo | `recordatorio/` rehecho; solo **lee** cita, paciente, usuario y tenant | ADR-13 §1 |
+| Estado | entidad `Recordatorio` con seis estados y motivo | ADR-13 §4 |
+| Planificación | funciones puras: aritmética de instantes, horas sin envío, tardíos, vencimiento | ADR-13 §5 |
+| Reprogramar / anular | el suscriptor **reconcilia** contra el estado actual de la cita | ADR-13 §6 |
+| Envío | barrido cada 60 s, revalidación y políticas justo antes de enviar | ADR-13 §7 |
+| Proveedor | Resend detrás de `CanalMensajeria`; adaptador `registro` en desarrollo | ADR-13 §8, §13 |
+| Duplicados | clave única + `SKIP LOCKED` + `Idempotency-Key` + webhooks monótonos | ADR-13 §9 |
+| Entrega | webhooks de Resend firmados (Svix) | ADR-13 §10 |
+| Cuota | contador local, aviso al 80 %, cuota agotada como caso propio, fusible por tenant | ADR-13 §11 |
+| Privacidad | asunto neutro, sin seguimiento, logs sin datos personales | ADR-13 §12 |
+| Correo del paciente | obligatorio al crear; completar si está vacío al vincular por RUT; `omitido` si falta; `PATCH /pacientes/:id` para completar | ADR-13 §14 |
+| Consentimiento | política implementada y **apagada** (riesgo aceptado) | ADR-13 §15, [DT-16](../Deudas/DT-16.md) |
+| Observabilidad | `pino` + Better Stack (uptime, latidos, alertas) | ADR-13 §16, [DT-19](../Deudas/DT-19.md) |
+
+---
+
+## Prerrequisitos operativos (usuario, en paralelo desde el día 1)
+
+1. **Comprar el dominio `.cl`** (NIC Chile) y delegar su DNS a Cloudflare.
+2. **Cuenta de Resend:** agregar el **subdominio de envío** (p. ej. `notificaciones.<dominio>`), crear en Cloudflare
+   SPF, DKIM, MX de retorno y DMARC (`p=none` al inicio), esperar la verificación, **desactivar el
+   seguimiento de aperturas y clics**, crear la clave de API y el webhook (eventos `email.*`) con su
+   secreto.
+3. **Cuenta de Better Stack:** monitor de uptime sobre `GET /api/health`, dos heartbeats
+   (recordatorios, despachador de salida), fuente de logs y destino de las alertas.
+4. **Railway:** confirmar "App Sleeping" desactivado; cargar las variables de entorno nuevas
+   ([ADR-13 §18](../Decisions/ADR-13.md)).
+
+> Sin el punto 2 terminado, el sistema funciona en todo menos en escribir a pacientes reales.
+
+---
+
+## Orden de construcción
+
+Dos PR sobre `develop` (Git Flow): **PR 1** = outbox + planificador + observabilidad (cierra DT-27 por
+sí solo, sin recordatorios); **PR 2** = recordatorios. Ramas sugeridas:
+`feature/fase2-outbox-planificador` y `feature/fase2-recordatorios`.
+
+### PR 1 — outbox, planificador y observabilidad
+
+| # | Agente | Tarea | Depende de | Días |
+|---|---|---|---|---|
+| 1 | `database-agent` | Migración `eventos_salida` + índice parcial; entidad ORM; consulta de reclamo con `FOR UPDATE SKIP LOCKED`; purga por antigüedad | — | 0,5 |
+| 2 | `backend-agent` | `PublicadorEventosEnSalida`, `SuscriptorEventos` + `RegistroSuscriptores`, `DespachadorEventosSalida` con reintentos y carta muerta, `ScheduleModule`, `PLANIFICADOR_ACTIVO`, `enableShutdownHooks`, bandera anti-solapamiento | 1 | 1,5 |
+| 3 | `backend-agent` | `nestjs-pino` con identificador por petición y redacción; transporte a Better Stack opcional; `GET /api/health`; cliente de latidos; validación de variables de entorno al arrancar (sin librería nueva: `validate` de `ConfigModule`) | — (en paralelo con 1–2) | 1 |
+| 4 | `backend-agent` | **CORS con lista de orígenes:** `FRONTEND_URL` sigue siendo el origen canónico; `CORS_ORIGENES_EXTRA` (separado por comas) admite orígenes exactos y el comodín de vistas previas `https://*.<proyecto>.pages.dev`, traducido a una expresión anclada de un solo nivel de subdominio; `credentials: true` se mantiene | — | 0,5 |
+| 5 | `api-agent` | Firma `publicar(evento, tx)` en `CitasService.publicar` y en `BandejaSolicitudesService`; actualizar el doble en memoria de `test/support/` | 2 | 0,5 |
+| 6 | `testing-agent` | Integración con Postgres: transacción revertida → sin fila de salida; dos despachadores concurrentes → cada hecho una vez; reintento con espera y paso a `fallido`. CORS: origen permitido / ajeno. Suites existentes en verde | 1–5 | 1 |
+
+### PR 2 — recordatorios
+
+| # | Agente | Tarea | Depende de | Días |
+|---|---|---|---|---|
+| 7 | `database-agent` | Migraciones `configuraciones_recordatorio`, `recordatorios` (clave única parcial, índice de cola, `enviado_en`), `supresiones_correo`; entidades ORM; adaptadores con los métodos de BARRIDO GLOBAL; lector SQL de solo lectura (`LectorCitas`), incluido "citas vigentes de los próximos 8 días sin recordatorio para su inicio"; candado consultivo por cita | PR 1 | 1,5 |
+| 8 | `api-agent` | Limpieza de DT-21 (commit aparte). Dominio: `Recordatorio`, `ConfiguracionRecordatorio`, `planificar` / `resolverTardios`, `PoliticaEnvio` y las nueve políticas, puerto `CanalMensajeria`; `formatearFechaLargaEnZona` en `shared/domain/timezone.ts` | 7 | 1,5 |
+| 9 | `api-agent` | Suscriptor + reconciliación (tabla de disparadores de ADR-13 §6), job de respaldo cada hora | 8 | 1 |
+| 10 | `api-agent` | Envío: reclamo, revalidación, plantilla (con bloque `accion?` vacío), `ResendCanalMensajeria` con clasificación de errores e `Idempotency-Key`, `RegistroCanalMensajeria`, contador de cuota, aviso al 80 %, fusible por tenant, métricas de tasa de fallo | 8 | 1,5 |
+| 11 | `backend-agent` + `api-agent` | Webhook: `rawBody: true` en `main.ts` (backend); `POST /api/webhooks/resend` con verificación Svix y efectos monótonos (api) | 10 | 0,5 |
+| 12 | `api-agent` | Rutas `GET/PUT /api/recordatorios/configuracion` (publica `ConfiguracionRecordatorioActualizada`), `GET /api/citas/:citaId/recordatorios`; `CLAUDE.md` del módulo | 9 | 0,5 |
+| 13 | `api-agent` | Correo obligatorio: `CrearPacienteDto`, fábrica de dominio, completar si está vacío en `resolverOCrear`; `PATCH /api/pacientes/:id` mínimo (`telefono`, `correo`) | — (puede ir antes) | 0,5 |
+| 14 | `testing-agent` | La Definición de Terminado de abajo | 7–13 | 2 |
+
+**Total backend:** ~14 días-persona (PR 1 ≈ 5, PR 2 ≈ 9). Con los pasos 3–4 en paralelo y el paso 13
+adelantado, ~10–11 días de calendario para una persona.
+
+**Frontend (`citia-frontend`, fuera de estos agentes, ~2–3 días):** correo obligatorio en el modal
+(**mismo release que el paso 13**, o el modal recibirá 400) · pantalla de configuración · estado de
+los recordatorios en el voucher · despliegue en Cloudflare con *fallback* de SPA.
+
+### Dependencias nuevas
+
+| Paquete | Para qué | Quién |
+|---|---|---|
+| `@nestjs/schedule` (6.x, compatible con Nest 11) | planificador | backend-agent |
+| `nestjs-pino`, `pino`, `pino-http` | logs JSON | backend-agent |
+| `@logtail/pino` | transporte a Better Stack (opcional, solo si hay token) | backend-agent |
+| `pino-pretty` (dev) | logs legibles en local | backend-agent |
+| `resend` | SDK oficial del proveedor | api-agent |
+| `svix` | verificación de la firma de los webhooks | api-agent |
+
+**No** se instalan Redis, BullMQ ni OpenTelemetry en esta fase.
+
+---
+
+## Definición de Terminado
+
+**Outbox y planificador**
+- [ ] Una transacción revertida no deja fila en `eventos_salida` (integración con Postgres).
+- [ ] Dos despachadores concurrentes entregan cada hecho una sola vez (integración).
+- [ ] Un suscriptor que falla reintenta con espera creciente y termina en `fallido` con log de alerta.
+- [ ] Con `PLANIFICADOR_ACTIVO=false` ningún job corre (lo usan los e2e).
+
+**Planificación (unitarios, sin base ni reloj)**
+- [ ] 24 h y 2 h para una cita normal; ajuste por horas sin envío; fusión de dos recordatorios
+      cercanos; tardío único o `omitido` según el margen; cita en el pasado → nada.
+- [ ] Fines de semana de cambio de horario en `America/Santiago` (inicio y fin del horario de verano).
+- [ ] Reconciliar dos veces la misma cita no cambia nada (idempotencia).
+
+**Flujo (e2e con el adaptador `registro`, invocando los jobs a mano)**
+- [ ] `POST /citas` y aceptar una solicitud → recordatorios `programado` con las horas correctas.
+- [ ] Reagendar → los anteriores `cancelado` (`reprogramado`) y los nuevos `programado`.
+- [ ] Cancelar, asistencia e inasistencia → `cancelado` (`cita_terminal`).
+- [ ] Repetir un mismo hecho N veces → sin duplicados.
+- [ ] Cita cancelada entre la programación y el envío → `cancelado` al revalidar, sin llamar al proveedor.
+- [ ] Paciente sin correo → `omitido` (`sin_correo`); dirección suprimida → `omitido`; tope del
+      tenant → `omitido` (`limite_tenant`).
+- [ ] Cambiar la configuración reprograma las citas futuras del profesional; apagarla las anula.
+- [ ] `GET /citas/:id/recordatorios` de otro tenant → 404; la respuesta no trae destinatario.
+
+**Proveedor, cuota y webhooks**
+- [ ] Clasificación del adaptador de Resend con respuestas grabadas: 200, 422, 429 por ritmo, 429 por
+      cuota diaria, 401/403, 5xx, tiempo agotado, 409 de idempotencia.
+- [ ] Con la cuota local agotada no se llama al proveedor; lo que no alcanza queda `fallido`
+      (`cuota_agotada`); el aviso del 80 % se emite una vez por período.
+- [ ] Webhook con firma válida → 200 y estado actualizado; firma inválida o vieja → 400 sin cambios;
+      evento repetido → sin cambios; id desconocido → 200; rebote y queja → supresión.
+
+**Correo del paciente**
+- [ ] `POST /pacientes` y `POST /citas` con paciente en línea sin correo → 400.
+- [ ] Paciente existente por RUT con correo vacío → se completa; con otro correo → no se toca.
+
+**Privacidad y operación**
+- [ ] Los logs no contienen correo, RUT, teléfono ni el cuerpo del mensaje (test de redacción).
+- [ ] El check de ADR-02 (`grep` de `typeorm` / `@nestjs` en `domain` y `application`) sigue en 0.
+- [ ] `npm run lint`, `npm test`, `npm run test:e2e` y `npm run test:integration` en verde.
+- [ ] *(Manual, en Railway)* el latido y una alerta de prueba llegan a Better Stack; detener el job
+      dispara el aviso.
+- [ ] *(Manual, con el dominio verificado)* un recordatorio real llega a una casilla de prueba con SPF,
+      DKIM y DMARC en `pass`, sin enlaces reescritos.
+
+---
+
+## Fuera de alcance
+
+- WhatsApp y SMS (otro adaptador de `CanalMensajeria`, después).
+- Que el paciente confirme, cancele o pida reagendar desde el correo: Fase 3, US-04 /
+  [ADR-10](../Decisions/ADR-10.md). La plantilla deja el hueco (`accion`).
+- Revisar el consentimiento antes de enviar ([DT-16](../Deudas/DT-16.md)).
+- Botones de asistencia en el voucher: se espera a la Fase 3 (decisión del 2026-09-30,
+  [DT-30](../Deudas/DT-30.md)). Tampoco el proceso de cierre ([DT-11](../Deudas/DT-11.md)).
+- Horas sin envío por profesional y zona horaria por organización ([DT-17](../Deudas/DT-17.md)).
+- Recibir y mostrar las respuestas del paciente dentro de Citia.
+
+---
+
+## Decisiones confirmadas (usuario, 2026-09-30)
+
+Todas las que ADR-13 dejaba abiertas quedaron confirmadas tal como se recomendaron; la tabla está en
+[ADR-13 — Decisiones confirmadas](../Decisions/ADR-13.md#decisiones-confirmadas-2026-09-30):
+`Reply-To` al correo que configure el profesional · horas sin envío 21:00–08:00 · pacientes sin correo
+`omitido` + `PATCH /pacientes/:id` · activos por defecto a las 24 h y 2 h · un tardío si faltan ≥ 60
+min · completar el correo vacío al vincular por RUT · nombre de la organización en el cuerpo ·
+subdominio de envío · tope de 40 por tenant al día · alerta sobre 5 % con n ≥ 20.
+
+**Queda por verificar al implementar** (datos de proveedores, no decisiones):
+[ADR-13 — Lo que queda por verificar](../Decisions/ADR-13.md#lo-que-queda-por-verificar-al-implementar).
+
+---
+
+## Deudas que toca
+
+**Cierra:** [DT-27](../Deudas/DT-27.md) (PR 1) · [DT-21](../Deudas/DT-21.md) (PR 2) ·
+[DT-19](../Deudas/DT-19.md) (en lo que respecta a recordatorios).
+**Acepta como riesgo:** [DT-16](../Deudas/DT-16.md).
+**Deja anotadas:** las previstas de [ADR-12](../Decisions/ADR-12.md) y [ADR-13](../Decisions/ADR-13.md).

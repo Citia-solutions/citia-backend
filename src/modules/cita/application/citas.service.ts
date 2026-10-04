@@ -1,0 +1,594 @@
+import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
+import { PacientesService } from '../../paciente/application/pacientes.service';
+import { Paciente } from '../../paciente/domain/paciente.entity';
+import { PacienteRepository } from '../../paciente/domain/paciente.repository';
+import { PublicadorEventos } from '../../../shared/application/publicador-eventos';
+import {
+  TransactionContext,
+  TransactionRunner,
+} from '../../../shared/application/transaction-runner';
+import {
+  diasCalendarioInclusivos,
+  formatearFechaEnZona,
+  formatearHoraEnZona,
+  rangoDeFechasEnZona,
+} from '../../../shared/domain/timezone';
+import {
+  ActorCambio,
+  CambioCita,
+  CrearCambioCitaProps,
+  TipoCambio,
+} from '../domain/cambio-cita.entity';
+import { CambioCitaRepository } from '../domain/cambio-cita.repository';
+import {
+  Cita,
+  DURACION_MAXIMA_MIN,
+  ESTADOS_VIGENTES,
+  EstadoCita,
+} from '../domain/cita.entity';
+import { CitaRepository } from '../domain/cita.repository';
+import { AvisosCitaDto } from '../presentation/dto/avisos-cita.dto';
+import { CitaDashboardDto } from '../presentation/dto/cita-dashboard.dto';
+import {
+  CitaDetalleDto,
+  CitaDetallePacienteDto,
+} from '../presentation/dto/cita-detalle.dto';
+import { CitaResponseDto } from '../presentation/dto/cita-response.dto';
+import { CrearCitaDto } from '../presentation/dto/crear-cita.dto';
+import { EditarCitaDto } from '../presentation/dto/editar-cita.dto';
+import { ReagendarCitaDto } from '../presentation/dto/reagendar-cita.dto';
+import { CitaNoEncontradaError } from './cita-no-encontrada.error';
+import { DatosPacienteRequeridosError } from './datos-paciente-requeridos.error';
+import { PacienteNoEncontradoError } from './paciente-no-encontrado.error';
+import { RangoFechasInvalidoError } from './rango-fechas-invalido.error';
+
+/**
+ * Tope de la agenda por rango, en dias calendario INCLUSIVOS: seis semanas, lo
+ * que ocupa la grilla de un mes (la vista semanal usa 7). Acota el volumen sin
+ * necesidad de paginar.
+ */
+export const MAX_DIAS_RANGO = 42;
+
+// Props del cambio que el caso de uso decide; el resto (cita, tenant, actor)
+// lo rellena `mutar`, que es quien conoce el contexto de la peticion.
+type DetalleCambio = Omit<
+  CrearCambioCitaProps,
+  'citaId' | 'tenantId' | 'actorTipo' | 'actorId'
+>;
+
+// Opciones de `mutar`. `conAvisos`: la operacion fija o mueve la ventana de la
+// cita y la respuesta debe llevar `avisos` (ADR-11 §3).
+interface OpcionesMutacion {
+  conAvisos?: boolean;
+}
+
+export class CitasService {
+  constructor(
+    private readonly citaRepository: CitaRepository,
+    private readonly cambioCitaRepository: CambioCitaRepository,
+    private readonly pacienteRepository: PacienteRepository,
+    private readonly pacientesService: PacientesService,
+    private readonly tx: TransactionRunner,
+    private readonly eventos: PublicadorEventos,
+    // Zona horaria de la clínica (ej. 'America/Santiago'). El "día" y la "hora"
+    // se calculan en esta zona, no en la del servidor (contenedor en UTC).
+    private readonly tz: string,
+  ) {}
+
+  // ---------------------------------------------------------------------
+  // Crear
+  // ---------------------------------------------------------------------
+
+  /**
+   * US-02: agenda una cita desde el formulario "nueva cita" del profesional.
+   *
+   * Abre la transaccion y delega en `agendar`. Quien ya tiene una transaccion
+   * abierta (aceptar una solicitud) llama a `agendar` directamente: llamar
+   * aqui abriria una segunda.
+   */
+  async crearCita(
+    dto: CrearCitaDto,
+    usuario: AuthenticatedUser,
+  ): Promise<CitaResponseDto> {
+    return this.tx.run((tx) => this.agendar(dto, usuario, tx));
+  }
+
+  /**
+   * Cuerpo del alta de una cita, DENTRO de una transaccion que abre quien
+   * llama (ADR-06): resolver-o-crear el paciente, crear la cita en
+   * `pendiente`, registrar el cambio `creada`, publicar `CitaCreada` y
+   * calcular los avisos de solapamiento. Si algo falla, no queda un paciente
+   * creado a medias ni una cita sin rastro en la bitacora.
+   *
+   * Publico para que la bandeja de solicitudes (modulo `solicitud`) cree la
+   * cita con EXACTAMENTE este flujo y en SU transaccion, junto con la
+   * resolucion de la solicitud. La dependencia es solicitud -> cita, nunca al
+   * reves.
+   *
+   * tenantId y usuarioId vienen SIEMPRE del token, nunca del body.
+   */
+  async agendar(
+    dto: CrearCitaDto,
+    usuario: AuthenticatedUser,
+    tx: TransactionContext,
+  ): Promise<CitaResponseDto> {
+    const paciente = await this.resolverPaciente(dto, usuario.tenantId, tx);
+
+    const cita = Cita.crear({
+      inicio: new Date(dto.inicio),
+      duracionMin: dto.duracionMin,
+      tipoConsulta: dto.tipoConsulta,
+      tenantId: usuario.tenantId,
+      pacienteId: paciente.id,
+      usuarioId: usuario.userId,
+    });
+
+    const guardada = await this.citaRepository.guardar(cita, tx);
+
+    await this.registrarCambio(
+      guardada,
+      usuario,
+      {
+        tipo: TipoCambio.CREADA,
+        estadoNuevo: guardada.estado,
+        inicioNuevo: guardada.inicio,
+      },
+      tx,
+    );
+
+    await this.publicar('CitaCreada', guardada, usuario);
+
+    const avisos = await this.calcularAvisos(guardada, tx);
+
+    return this.aResponse(guardada, paciente, avisos);
+  }
+
+  // ---------------------------------------------------------------------
+  // Transiciones de estado (ADR-04 §1: la regla vive en la entidad)
+  // No mueven la ventana de la cita: su respuesta NO lleva `avisos`.
+  // ---------------------------------------------------------------------
+
+  async confirmar(
+    citaId: string,
+    usuario: AuthenticatedUser,
+  ): Promise<CitaResponseDto> {
+    return this.mutar(citaId, usuario, 'CitaConfirmada', (cita) => {
+      cita.confirmar();
+      return { tipo: TipoCambio.CONFIRMADA };
+    });
+  }
+
+  async cancelar(
+    citaId: string,
+    usuario: AuthenticatedUser,
+    motivo?: string,
+  ): Promise<CitaResponseDto> {
+    return this.mutar(citaId, usuario, 'CitaCancelada', (cita) => {
+      cita.cancelar();
+      return { tipo: TipoCambio.CANCELADA, motivo };
+    });
+  }
+
+  async marcarAsistencia(
+    citaId: string,
+    usuario: AuthenticatedUser,
+  ): Promise<CitaResponseDto> {
+    return this.mutar(citaId, usuario, 'CitaAsistida', (cita) => {
+      cita.marcarAsistencia();
+      return { tipo: TipoCambio.ASISTIO };
+    });
+  }
+
+  async marcarInasistencia(
+    citaId: string,
+    usuario: AuthenticatedUser,
+  ): Promise<CitaResponseDto> {
+    return this.mutar(citaId, usuario, 'CitaNoAsistida', (cita) => {
+      cita.marcarInasistencia();
+      return { tipo: TipoCambio.NO_ASISTIO };
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // Reagendar y editar (ADR-09 §4 y §5). Mueven la ventana: llevan `avisos`.
+  // ---------------------------------------------------------------------
+
+  /**
+   * Mueve la cita conservando su identidad y la devuelve a `pendiente`: la
+   * confirmacion anterior era para otra hora. Deja el antes/despues en la
+   * bitacora, que es lo que RF-08 necesita para contar reagendamientos.
+   */
+  async reagendar(
+    citaId: string,
+    dto: ReagendarCitaDto,
+    usuario: AuthenticatedUser,
+  ): Promise<CitaResponseDto> {
+    const nuevoInicio = new Date(dto.inicio);
+
+    return this.mutar(
+      citaId,
+      usuario,
+      'CitaReagendada',
+      (cita) => {
+        const inicioAnterior = cita.inicio;
+        cita.reagendar(nuevoInicio);
+        return {
+          tipo: TipoCambio.REAGENDADA,
+          inicioAnterior,
+          inicioNuevo: nuevoInicio,
+          motivo: dto.motivo,
+        };
+      },
+      { conAvisos: true },
+    );
+  }
+
+  /**
+   * Corrige duracion o tipo de consulta. No avisa al paciente ni cuenta para
+   * el historial, pero SI calcula avisos: cambiar `duracionMin` mueve el fin.
+   */
+  async editar(
+    citaId: string,
+    dto: EditarCitaDto,
+    usuario: AuthenticatedUser,
+  ): Promise<CitaResponseDto> {
+    return this.mutar(
+      citaId,
+      usuario,
+      'CitaEditada',
+      (cita) => {
+        cita.editar({
+          duracionMin: dto.duracionMin,
+          tipoConsulta: dto.tipoConsulta,
+        });
+        return { tipo: TipoCambio.EDITADA };
+      },
+      { conAvisos: true },
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Lectura
+  // ---------------------------------------------------------------------
+
+  // US-06 (RF-03): citas del dia del profesional logueado, orden ASC (lo
+  // garantiza el repositorio). Resuelve el nombre del paciente de cada cita.
+  async citasDeHoy(usuario: AuthenticatedUser): Promise<CitaDashboardDto[]> {
+    const citas = await this.citaRepository.buscarDelDiaPorProfesional(
+      usuario.tenantId,
+      usuario.userId,
+      new Date(),
+    );
+
+    return this.aDashboard(citas, usuario.tenantId);
+  }
+
+  /**
+   * Agenda por rango (`GET /citas?desde&hasta`): citas del profesional del
+   * token cuyo `inicio` cae entre las 00:00 de `desde` y las 00:00 del dia
+   * siguiente a `hasta`, en la zona de la clinica (ADR-07). Todos los estados,
+   * orden `inicio ASC` + `creadoEn ASC` (lo garantiza el repositorio).
+   *
+   * `desde`/`hasta` llegan ya validados como fechas `YYYY-MM-DD` reales; aqui
+   * solo se comprueban las reglas entre ambos.
+   */
+  async listarEnRango(
+    desde: string,
+    hasta: string,
+    usuario: AuthenticatedUser,
+  ): Promise<CitaDashboardDto[]> {
+    const dias = diasCalendarioInclusivos(desde, hasta);
+    if (dias < 1) {
+      throw new RangoFechasInvalidoError(
+        'El parámetro "hasta" debe ser igual o posterior a "desde"',
+      );
+    }
+    if (dias > MAX_DIAS_RANGO) {
+      throw new RangoFechasInvalidoError(
+        `El rango máximo es de ${MAX_DIAS_RANGO} días`,
+      );
+    }
+
+    const rango = rangoDeFechasEnZona(desde, hasta, this.tz);
+    const citas = await this.citaRepository.buscarPorProfesionalEnRango(
+      usuario.tenantId,
+      usuario.userId,
+      rango.desde,
+      rango.hasta,
+    );
+
+    return this.aDashboard(citas, usuario.tenantId);
+  }
+
+  /**
+   * US-02.08: detalle de una cita para el voucher del profesional.
+   *
+   * Filtra SOLO por el tenant del token, igual que las transiciones (plan
+   * US-02.08 §1): no se agrega aqui una regla "solo del profesional" distinta
+   * a la del resto del recurso; eso se decide para todas a la vez con Q3.
+   * Cita inexistente u otro tenant -> CitaNoEncontradaError (mismo 404).
+   */
+  async detalle(
+    citaId: string,
+    usuario: AuthenticatedUser,
+  ): Promise<CitaDetalleDto> {
+    const cita = await this.cargar(citaId, usuario.tenantId);
+
+    const paciente = await this.pacienteRepository.buscarPorId(
+      cita.pacienteId,
+      usuario.tenantId,
+    );
+    if (!paciente) {
+      // Invariante rota: toda cita apunta a un paciente de su mismo tenant (FK).
+      // No es un 404 de la cita (si existe) ni un error del cliente: es un 500.
+      throw new Error(
+        `Integridad: el paciente "${cita.pacienteId}" de la cita "${cita.id}" no existe en su tenant`,
+      );
+    }
+
+    // Reutiliza el formateo del modulo paciente (RUT para mostrar, correo null).
+    const datosPaciente = PacientesService.aResponse(paciente);
+
+    return new CitaDetalleDto({
+      id: cita.id,
+      estado: cita.estado,
+      inicio: cita.inicio,
+      hora: formatearHoraEnZona(cita.inicio, this.tz),
+      duracionMin: cita.duracionMin,
+      tipoConsulta: cita.tipoConsulta,
+      paciente: new CitaDetallePacienteDto({
+        id: datosPaciente.id,
+        nombre: datosPaciente.nombre,
+        rut: datosPaciente.rut,
+        telefono: datosPaciente.telefono,
+        correo: datosPaciente.correo,
+      }),
+      // La regla vive en la entidad (ADR-04 §1); el service solo la transporta.
+      accionesPermitidas: cita.accionesPermitidas(),
+    });
+  }
+
+  /** Historial completo de cambios de una cita, del mas antiguo al mas reciente. */
+  async historial(
+    citaId: string,
+    usuario: AuthenticatedUser,
+  ): Promise<CambioCita[]> {
+    // Verifica pertenencia al tenant antes de exponer el historial.
+    await this.cargar(citaId, usuario.tenantId);
+    return this.cambioCitaRepository.historialDeCita(citaId, usuario.tenantId);
+  }
+
+  // ---------------------------------------------------------------------
+  // Internos
+  // ---------------------------------------------------------------------
+
+  /**
+   * Esqueleto compartido por toda mutacion de una cita ya existente:
+   * cargar -> aplicar la regla de dominio -> guardar -> registrar -> publicar
+   * (-> avisos, si la operacion mueve la ventana), todo dentro de una
+   * transaccion.
+   *
+   * La regla de que transiciones son legales NO vive aqui: vive en la entidad
+   * (ADR-04 §1). Este metodo solo orquesta.
+   */
+  private async mutar(
+    citaId: string,
+    usuario: AuthenticatedUser,
+    nombreEvento: string,
+    operacion: (cita: Cita) => DetalleCambio,
+    opciones: OpcionesMutacion = {},
+  ): Promise<CitaResponseDto> {
+    return this.tx.run(async (tx) => {
+      const cita = await this.cargar(citaId, usuario.tenantId, tx);
+      const estadoAnterior = cita.estado;
+
+      const detalle = operacion(cita);
+
+      const guardada = await this.citaRepository.guardar(cita, tx);
+
+      await this.registrarCambio(
+        guardada,
+        usuario,
+        { ...detalle, estadoAnterior, estadoNuevo: guardada.estado },
+        tx,
+      );
+
+      await this.publicar(nombreEvento, guardada, usuario, detalle);
+
+      const avisos = opciones.conAvisos
+        ? await this.calcularAvisos(guardada, tx)
+        : undefined;
+
+      return this.aResponse(guardada, undefined, avisos);
+    });
+  }
+
+  private async cargar(
+    citaId: string,
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<Cita> {
+    const cita = await this.citaRepository.buscarPorId(citaId, tenantId, tx);
+    if (!cita) {
+      throw new CitaNoEncontradaError(citaId);
+    }
+    return cita;
+  }
+
+  private async registrarCambio(
+    cita: Cita,
+    usuario: AuthenticatedUser,
+    detalle: DetalleCambio & { estadoAnterior?: EstadoCita | null },
+    tx: TransactionContext,
+  ): Promise<void> {
+    await this.cambioCitaRepository.registrar(
+      CambioCita.registrar({
+        ...detalle,
+        citaId: cita.id,
+        tenantId: cita.tenantId,
+        // Hoy toda mutacion llega por una ruta autenticada del profesional.
+        actorTipo: ActorCambio.PROFESIONAL,
+        actorId: usuario.userId,
+      }),
+      tx,
+    );
+  }
+
+  private async publicar(
+    nombre: string,
+    cita: Cita,
+    usuario: AuthenticatedUser,
+    detalle?: DetalleCambio,
+  ): Promise<void> {
+    await this.eventos.publicar({
+      nombre,
+      ocurridoEn: new Date(),
+      tenantId: cita.tenantId,
+      payload: {
+        citaId: cita.id,
+        pacienteId: cita.pacienteId,
+        usuarioId: usuario.userId,
+        estado: cita.estado,
+        inicio: cita.inicio,
+        inicioAnterior: detalle?.inicioAnterior ?? null,
+      },
+    });
+  }
+
+  /**
+   * Dos vias de entrada, un solo resultado (ADR-09 §3):
+   *
+   *  - `pacienteId`: paciente ya conocido. Se valida que sea del mismo tenant.
+   *  - `paciente`:   datos del formulario. Con RUT, se vincula al existente si
+   *                  lo hay; sin RUT, siempre se crea uno nuevo.
+   */
+  private async resolverPaciente(
+    dto: CrearCitaDto,
+    tenantId: string,
+    tx: TransactionContext,
+  ): Promise<Paciente> {
+    if (dto.pacienteId) {
+      // El paciente debe pertenecer al tenant del usuario (aislamiento).
+      const existente = await this.pacienteRepository.buscarPorId(
+        dto.pacienteId,
+        tenantId,
+        tx,
+      );
+      if (!existente) {
+        throw new PacienteNoEncontradoError(dto.pacienteId);
+      }
+      return existente;
+    }
+
+    if (dto.paciente) {
+      return this.pacientesService.resolverOCrear(dto.paciente, tenantId, tx);
+    }
+
+    throw new DatosPacienteRequeridosError();
+  }
+
+  /**
+   * Solapamientos de `cita` en la agenda de su profesional DUEÑO (ADR-11).
+   *
+   * Se llama dentro de la transaccion de la operacion y DESPUES de guardar,
+   * para comparar contra el estado ya escrito. El repositorio solo pre-filtra
+   * (citas vigentes del mismo profesional con `inicio` en
+   * `[cita.inicio - DURACION_MAXIMA_MIN, cita.fin)`, que cubre toda cita que
+   * pueda cruzarse porque ninguna dura mas); la decision fina es de
+   * `Cita.chocaCon`, unica fuente de la regla. La propia cita vuelve en el
+   * pre-filtro y `chocaCon` la descarta por id.
+   *
+   * Es informacion, no validacion: nunca lanza ni cambia el codigo de estado.
+   */
+  private async calcularAvisos(
+    cita: Cita,
+    tx: TransactionContext,
+  ): Promise<AvisosCitaDto> {
+    const candidatas = await this.citaRepository.buscarPorProfesionalEnRango(
+      cita.tenantId,
+      cita.usuarioId,
+      new Date(cita.inicio.getTime() - DURACION_MAXIMA_MIN * 60_000),
+      cita.fin,
+      { estados: ESTADOS_VIGENTES },
+      tx,
+    );
+
+    // `filter` conserva el orden `inicio ASC` que entrega el repositorio.
+    const choques = candidatas.filter((otra) => cita.chocaCon(otra));
+
+    return new AvisosCitaDto({
+      solapamientos: await this.aDashboard(choques, cita.tenantId, tx),
+    });
+  }
+
+  private aResponse(
+    cita: Cita,
+    paciente?: Paciente,
+    avisos?: AvisosCitaDto,
+  ): CitaResponseDto {
+    const response = new CitaResponseDto({
+      id: cita.id,
+      inicio: cita.inicio,
+      duracionMin: cita.duracionMin,
+      tipoConsulta: cita.tipoConsulta,
+      estado: cita.estado,
+      pacienteId: cita.pacienteId,
+      paciente: paciente ? PacientesService.aResponse(paciente) : undefined,
+    });
+    // Solo se asigna cuando se calculo: en confirmar/cancelar/asistencia/
+    // inasistencia la clave no debe existir (ADR-11 §3).
+    if (avisos) response.avisos = avisos;
+    return response;
+  }
+
+  /**
+   * Proyeccion comun de `/hoy`, de la agenda por rango y de los avisos:
+   * `fecha` y `hora` en la zona de la clinica (ADR-07) y solo el nombre del
+   * paciente, nunca su contacto.
+   */
+  private async aDashboard(
+    citas: Cita[],
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<CitaDashboardDto[]> {
+    const nombresPorPaciente = await this.resolverNombresPaciente(
+      citas,
+      tenantId,
+      tx,
+    );
+
+    return citas.map(
+      (cita) =>
+        new CitaDashboardDto({
+          id: cita.id,
+          pacienteNombre: nombresPorPaciente.get(cita.pacienteId) ?? 'Paciente',
+          fecha: formatearFechaEnZona(cita.inicio, this.tz),
+          hora: formatearHoraEnZona(cita.inicio, this.tz),
+          inicio: cita.inicio,
+          duracionMin: cita.duracionMin,
+          tipoConsulta: cita.tipoConsulta,
+          estado: cita.estado,
+        }),
+    );
+  }
+
+  // Resuelve los nombres de TODOS los pacientes de `citas` en UNA consulta
+  // (sin N+1), con los ids deduplicados. Un id que no vuelve (inexistente u
+  // otro tenant) cae en el nombre por defecto "Paciente".
+  private async resolverNombresPaciente(
+    citas: Cita[],
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<Map<string, string>> {
+    const idsUnicos = [...new Set(citas.map((c) => c.pacienteId))];
+    if (idsUnicos.length === 0) return new Map();
+
+    const pacientes = await this.pacienteRepository.buscarPorIds(
+      idsUnicos,
+      tenantId,
+      tx,
+    );
+
+    return new Map(pacientes.map((p) => [p.id, p.nombre]));
+  }
+}

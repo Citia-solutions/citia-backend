@@ -1,0 +1,38 @@
+import { config } from 'dotenv';
+import { DataSource } from 'typeorm';
+
+import { CitaOrmEntity } from '../modules/cita/infrastructure/persistence/cita.orm-entity';
+import { PacienteOrmEntity } from '../modules/paciente/infrastructure/persistence/paciente.orm-entity';
+import { TenantOrmEntity } from '../modules/tenant/infrastructure/persistence/tenant.orm-entity';
+import { UsuarioOrmEntity } from '../modules/usuario/infrastructure/persistence/usuario.orm-entity';
+
+// Carga variables de .env cuando el data-source se usa desde el host (CLI de
+// migraciones vía ts-node). En la imagen de produccion las vars vienen del
+// entorno del contenedor; config() simplemente no encuentra .env y no hace nada.
+config();
+
+// Detecta si este archivo corre como TypeScript (ts-node, dev) o como
+// JavaScript compilado (dist/, prod). Asi el mismo data-source sirve para
+// `migration:run` en dev (src/**/*.ts) y en la imagen de produccion
+// (dist/**/*.js), sin necesidad de ts-node ni de la carpeta src/ en prod.
+const isCompiled = __filename.endsWith('.js');
+const migrationsGlob = isCompiled
+  ? 'dist/database/migrations/*.js'
+  : 'src/database/migrations/*.ts';
+
+export const AppDataSource = new DataSource({
+  type: 'postgres',
+  host: process.env.DB_HOST ?? 'localhost',
+  port: parseInt(process.env.DB_PORT ?? '5432'),
+  username: process.env.DB_USER ?? 'postgres',
+  password: process.env.DB_PASS ?? 'postgres',
+  database: process.env.DB_NAME ?? 'citia_dev',
+  entities: [
+    TenantOrmEntity,
+    UsuarioOrmEntity,
+    PacienteOrmEntity,
+    CitaOrmEntity,
+  ],
+  migrations: [migrationsGlob],
+  synchronize: false,
+});
