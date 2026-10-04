@@ -7,7 +7,7 @@
 |---|---|
 | **Objetivo** | Que el profesional reciba en menos de 3 s una alerta cuando se reagenda, se cancela o llega una solicitud, y que pueda gestionarlas (leídas / no leídas, aviso por correo). |
 | **Entregable** | El profesional recibe alertas en < 3 s y las gestiona (ROADMAP). |
-| **Estado** | ⬜ solo existe el puerto `PublicadorEventos`, sin suscriptores. Fuera del MVP. |
+| **Estado** | ⬜ nada propio. Fuera del MVP. *(2026-10-04: la Fase 2, en rama, ya trae el outbox con despachador y un primer suscriptor, los recordatorios; ver [DT-32](../Deudas/DT-32.md) y [DT-33](../Deudas/DT-33.md).)* |
 | **Fechas** | — |
 | **Historia** | US-05 — sin plan. |
 | **Commits** | ninguno propio. |
@@ -46,7 +46,7 @@
 | ADR | Qué aporta a esta fase | Estado |
 |---|---|---|
 | [ADR-09](../Decisions/ADR-09.md) §7 | los hechos ya se publican | Aceptado · implementado |
-| [ADR-12](../Decisions/ADR-12.md) §4 | reglas de suscriptores; latencia y `LISTEN/NOTIFY` | Aceptado · sin implementar |
+| [ADR-12](../Decisions/ADR-12.md) §4 | reglas de suscriptores; latencia y `LISTEN/NOTIFY` | Aceptado · implementado en la rama de la Fase 2 (sin `LISTEN/NOTIFY`) |
 | [ADR-10](../Decisions/ADR-10.md) | prevé la deuda "sin aviso en tiempo real al profesional" mientras RF-05 esté fuera | Propuesto |
 
 **Decisiones del frontend:** ninguna.

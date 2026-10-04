@@ -49,7 +49,7 @@ src/modules/auth/
 se creó el puerto `ITokenSigner` (`domain/`) con adaptador `JwtTokenSigner` (`infrastructure/`),
 coherente con ADR-02.
 
-**Regla hexagonal verificada:** `grep -rE "from 'typeorm'|from '@nestjs'" src/modules/*/domain src/modules/*/application` → 0 coincidencias.
+**Regla hexagonal verificada:** `grep -rE "from 'typeorm'|from '@nestjs'" src/modules/*/domain src/modules/*/application` → 0 coincidencias. *(2026-10-04: ese `grep` no detecta imports reales —exige la comilla justo tras `@nestjs`— y no prueba nada; el check vigente es `src/arquitectura.spec.ts`, ver la [nota en ADR-02](../Decisions/ADR-02.md#nota-2026-10-04-el-check-del-4-pasa-a-ser-un-test).)*
 
 ---
 

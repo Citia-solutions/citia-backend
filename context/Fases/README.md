@@ -18,9 +18,10 @@ es solo navegación, y cada ADR, feature, deuda, US y FD enlaza de vuelta a su f
 >
 > Equivalencia útil: la **etapa 3 del producto (MVP)** son las **fases 0, 1 y 2 del roadmap**.
 
-**Estado al 2026-09-30** (según el [ROADMAP](../ROADMAP.md#resumen)): Fundaciones, Fase 0 y Fase 1
-cerradas en `develop` · Fase 2 con el diseño cerrado y sin implementar (su commit de diseño,
-`ab30bb7`, está solo en la rama `docs/fase2-recordatorios`) · el resto sin empezar.
+**Estado al 2026-10-04** (según el [ROADMAP](../ROADMAP.md#resumen)): Fundaciones, Fase 0 y Fase 1
+cerradas en `develop` · Fase 2 **implementada en la rama `feature/fase2-recordatorios`**, pendiente de
+merge (PR #1 del backend y PR #2 del frontend, mismo release) y de los prerrequisitos operativos (su
+diseño, `ab30bb7`, ya está en `develop` desde el merge `510015a`) · el resto sin empezar.
 
 ---
 
@@ -34,11 +35,11 @@ deudas que la fase cambió de estado sin crearlas ni cerrarlas.
 | [Fundaciones](fase-base-fundaciones.md) | US-00a, US-00b, infraestructura | ✅ cerrada | 2026-06-18 → 2026-06-29 · tooling y ADR-08 el 2026-08-16 | [us00a](../Features/us00a-registro-inicial.md), [us00b](../Features/us00b-login.md), [infra](../Features/infra-contenedores.md) | 00, 01, 02, 03, 05, 06 · 08 (propuesto) | **creadas:** DT-01…09, DT-18, DT-19, DT-21 · **cerradas:** — | — | [US-00](../US/00-auth.md) | filas 1–19 y 26–34 (`258542f` → `bfeada0`) | — |
 | [Fase 0](fase-0-us06-dashboard.md) | US-06 dashboard | ✅ cerrada (2026-09-28) | backend 2026-06-30 · zona horaria 2026-07-06 · conexión real 2026-09-28 | [us06](../Features/us06-dashboard-citas.md) | 04, 07 | **creadas:** DT-10…17, DT-20, DT-22 · **cerradas:** — (DT-10 y DT-22 se cierran en la Fase 1) | — | [US-06](../US/06-epic.md) | filas 20–25 y 28 (`9ab2bec` → `08dad63`, `f200557`) | Fundaciones · Fase 1 (lista real, voucher) |
 | [Fase 1](fase-1-us02-gestion-citas.md) | US-02 gestión de citas (+ US-02.07 ⏸, 02.08, 02.09) | ✅ cerrada (2026-09-28) | release 1 2026-08-24 · vía pública 2026-09-10 · cierre 2026-09-28 · decisiones 2026-09-29 | [us02](../Features/us02-gestion-citas.md) | 09, 11 · 10 (propuesto, aplazado) · 08 (su fase 1, en la ruta pública) | **creadas:** DT-23…29 · **cerradas:** DT-10, DT-22 · **mitigada:** DT-28 · **afectadas:** DT-12, DT-14, DT-15, DT-18, DT-20 | FD-01 (descartada), FD-02…05 | [US-02.07](../US/02.07-paciente-reagenda-cancela.md), [US-02.08](../US/02.08-voucher-cita.md) | filas 35–39 y 41–58 (`f2a7dff` → `c9ac69f`) | Fundaciones (el ROADMAP no le pone dependencias; reutiliza `Cita` y `Paciente` de la Fase 0) |
-| [Fase 2](fase-2-us03-recordatorios.md) | US-03 recordatorios | 🔶 diseño cerrado · sin implementar · **en el MVP** | diseño 2026-09-30 | — (diseñada, sin feature) | 12, 13 | **creada:** DT-30 · **resueltas en diseño:** DT-19, DT-21, DT-27 · **afectadas:** DT-11, DT-16, DT-17, DT-23, DT-26, DT-29 | — | [US-03](../US/03-recordatorios.md) | fila 59 (`ab30bb7`) | Fase 1 · dominio verificado en Resend |
+| [Fase 2](fase-2-us03-recordatorios.md) | US-03 recordatorios | ✅ implementada en rama · ⏳ pendiente de merge y de los prerrequisitos operativos · **en el MVP** | diseño 2026-09-30 · implementación 2026-10-01 → 2026-10-04 | [us03](../Features/us03-recordatorios.md) (nueva) · [us02](../Features/us02-gestion-citas.md), [infra](../Features/infra-contenedores.md) (actualizadas) | 12, 13 · nota en 02 | **creadas:** DT-30, DT-31…DT-39 · **cerradas:** DT-21, DT-27 · **implementada, abierta:** DT-19 · **afectadas:** DT-11, DT-16, DT-17, DT-20, DT-23, DT-26, DT-29 | — | [US-03](../US/03-recordatorios.md) | filas 59 y 61–73 (`ab30bb7` → `f2ccb01`; la 60, navegación por fases, es transversal) | Fase 1 · subdominio verificado en Resend |
 | [Fase 3](fase-3-us04-respuesta-paciente.md) | US-04 respuesta del paciente (+ US-02.07) | ⬜ fuera del MVP | — | — | 10 (propuesto) · 13 (bloque `accion`) | **afectadas:** DT-11, DT-16, DT-18, DT-23, DT-30 (se reabre) | FD-06 (propuesta) | [US-02.07](../US/02.07-paciente-reagenda-cancela.md) | — | Fase 2 · ADR-10 aceptado (H7, Q11) |
-| [Fase 4](fase-4-us05-alertas.md) | US-05 alertas | ⬜ solo el puerto | — | — | 12 §4 (suscriptores) · 09 §7 | **afectada:** DT-28 | — | — | — | Fases 1, 2 y 3 |
+| [Fase 4](fase-4-us05-alertas.md) | US-05 alertas | ⬜ nada propio (el outbox llega con la Fase 2) | — | — | 12 §4 (suscriptores) · 09 §7 | **afectada:** DT-28 | — | — | — | Fases 1, 2 y 3 |
 | [Fase 5](fase-5-us07-scoring.md) | US-07 scoring | ⏸ v2 (fuera del MVP) | — | — | 04 §4 · 12 §8 | **afectadas:** DT-11, DT-13, DT-23, DT-30 | — | — | — | Fases 1 y 3 · proceso de cierre (ADR-12) · DT-30 |
-| [Fase 6](fases-6-7-us09-sin-diseno.md#fase-6--us-08-monitoreo-y-seguimiento-del-paciente) | US-08 monitoreo | 🔶 solo `POST /pacientes` | — | — | — | — | — | — | — | Fases 1 y 5 |
+| [Fase 6](fases-6-7-us09-sin-diseno.md#fase-6--us-08-monitoreo-y-seguimiento-del-paciente) | US-08 monitoreo | 🔶 solo `POST /pacientes` (+ `PATCH /pacientes/:id` en la Fase 2) | — | — | — | — | — | — | — | Fases 1 y 5 |
 | [Fase 7](fases-6-7-us09-sin-diseno.md#fase-7--us-10-perfil-suscripción-y-soporte) | US-10 perfil y soporte | ⬜ | — | — | — | — | — | — | — | — |
 | [US-09](fases-6-7-us09-sin-diseno.md#us-09--sin-definir) | sin definir | ⬜ | — | — | — | — | — | — | — | — |
 
@@ -59,7 +60,7 @@ flowchart LR
   subgraph MVP["MVP (etapa 3 del producto)"]
     F1["Fase 1 · US-02<br/>gestión de citas"]:::hecho
     F0["Fase 0 · US-06<br/>dashboard"]:::hecho
-    F2["Fase 2 · US-03<br/>recordatorios"]:::disenada
+    F2["Fase 2 · US-03<br/>recordatorios<br/>(en rama)"]:::enrama
   end
 
   F3["Fase 3 · US-04 + US-02.07<br/>respuesta del paciente"]:::pendiente
@@ -69,7 +70,7 @@ flowchart LR
   F7["Fase 7 · US-10<br/>perfil y soporte"]:::pendiente
   U9["US-09<br/>sin definir"]:::pendiente
 
-  DOM[["dominio .cl verificado<br/>en Resend"]]
+  DOM[["subdominio de envío<br/>verificado en Resend"]]
   A10[["ADR-10 aceptado<br/>(H7, Q11)"]]
   D30[["asistencia registrada<br/>(DT-30)"]]
 
@@ -90,11 +91,13 @@ flowchart LR
 
   classDef hecho fill:#d4edda,stroke:#2e7d32
   classDef disenada fill:#fff3cd,stroke:#b8860b
+  classDef enrama fill:#d1ecf1,stroke:#0c7c8c
   classDef pendiente fill:#f1f3f5,stroke:#868e96
   classDef aplazada fill:#e7eaf6,stroke:#5c6bc0
 ```
 
-**Cómo leer el diagrama.** La Fase 0 depende de la Fase 1 aunque se construyó primero: su backend
+**Cómo leer el diagrama.** Verde = cerrada en `develop`; celeste = implementada en una rama, pendiente
+de merge (la Fase 2 desde el 2026-10-04). La Fase 0 depende de la Fase 1 aunque se construyó primero: su backend
 (junio) creó `Cita`, `Paciente` y `POST /citas`, pero el dashboard solo quedó cerrado cuando la
 Fase 1 entregó la lista real, el voucher (US-02.08) y el refresco tras cada cambio (US-02.09). La
 Fase 7 y US-09 no dependen de nada según el ROADMAP. La Fase 6 depende de US-07 (la Fase 5), no de
@@ -108,7 +111,7 @@ la subtarea US-02.07.
 |---|---|
 | [`rf.md`](../rf.md) · [`rnf.md`](../rnf.md) | requisitos; cada fase cita los suyos |
 | [`rules.md`](../rules.md) · [ADR-02](../Decisions/ADR-02.md) | reglas de código que aplican a todas |
-| [`stack-tecnologico.md`](../stack-tecnologico.md) | stack y despliegue; la Fase 2 lo actualizó el 2026-09-30 |
+| [`stack-tecnologico.md`](../stack-tecnologico.md) | stack y despliegue; la Fase 2 lo actualizó el 2026-09-30 y el 2026-10-04 (dependencias instaladas) |
 | [`PREGUNTAS-ABIERTAS.md`](../PREGUNTAS-ABIERTAS.md) | Q2 (prepago), Q3 (agenda de la organización) y Q10 (validación) no son de ninguna fase |
 | [`Descripcion/`](../Descripcion/README.md) | etapas del producto (ver arriba) |
 

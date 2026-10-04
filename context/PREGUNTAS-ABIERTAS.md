@@ -5,6 +5,9 @@ responderlas**, con el entregable que se espera de cada una.
 
 > **Estado (2026-09-30):** respondidas Q1 (A), Q4, Q11 (C) y Q6 en cuanto al mecanismo
 > ([ADR-12](Decisions/ADR-12.md)). Siguen abiertas Q2, Q3, Q5, Q7, Q8, Q9 y Q10, y las H del hacker.
+>
+> **2026-10-04:** la implementación de la Fase 2 dejó **cuatro preguntas nuevas, Q12 a Q15**, que no
+> bloquean el MVP ni el merge ([sección propia](#fase-2--decisiones-pendientes-tras-implementar-2026-10-04)).
 
 **Equipo:** 1 I+D · 2 desarrolladores · 1 hacker ético.
 
@@ -30,10 +33,14 @@ compromete, y los desarrolladores eligen el mecanismo que cumpla ese requisito.
 | 8 | ADR-08 — tenant en la URL | **desarrolladores**, revisión del **hacker** | toda la vía pública |
 | 9 | Modelo de disponibilidad | **desarrolladores** (solo evaluar riesgo) | nada hoy |
 | 11 | ¿Cómo llega al paciente el enlace de su cita, y cómo se sabe que es él? | **I+D** → decisión conjunta, **hacker** (H7) | US-02.07 entera |
+| 12 | ¿Se oculta `/recordatorios` al rol `recepcion`? | **I+D** (producto) → **dev** ejecuta | nada; afecta a la primera cuenta con ese rol |
+| 13 | Textos y colores de los estados de recordatorio | **I+D** (UX) | nada; es copy |
+| 14 | ¿Se mantiene la vista *Contacto* del voucher? | **I+D** (producto) | nada |
+| 15 | ¿Cuándo reinicia Resend la cuota mensual del plan gratis? | **desarrolladores** (verificar con el proveedor) | nada hoy; afina el contador ([DT-36](Deudas/DT-36.md)) |
 
 ### Por fase del roadmap
 
-*(2026-09-30.)* A qué fase de construcción ([`Fases/`](Fases/README.md)) toca cada pregunta. Las que no
+*(2026-09-30; Q12–Q15 el 2026-10-04.)* A qué fase de construcción ([`Fases/`](Fases/README.md)) toca cada pregunta. Las que no
 tienen fase son de producto o de modelo de negocio.
 
 | Fase | Preguntas |
@@ -41,7 +48,7 @@ tienen fase son de producto o de modelo de negocio.
 | [Fundaciones](Fases/fase-base-fundaciones.md) | Q5 + H2 (registro) · Q7 + H1 (sesión) · Q8 + H4 (ADR-08 en el login) · H6 (hallazgos fichados) |
 | [Fase 0 — US-06](Fases/fase-0-us06-dashboard.md) | Q4 (solapamiento, ✅) · Q6 (job de ghosting) |
 | [Fase 1 — US-02](Fases/fase-1-us02-gestion-citas.md) | Q4 ✅ · Q11 ✅ C · Q8 (ruta pública) · Q9 (disponibilidad) · H3 · H5 |
-| [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | Q1 ✅ A · Q6 ✅ (mecanismo) |
+| [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | Q1 ✅ A · Q6 ✅ (mecanismo) · Q12, Q13, Q14, Q15 (2026-10-04) |
 | [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | Q11 (se reabre con B) · H7 |
 | [Fase 5 — US-07](Fases/fase-5-us07-scoring.md) | Q6 (preguntas 1 y 2 del job de cierre) |
 | sin fase | Q2 (prepago) · Q3 (agenda de la organización) · Q10 (validación, [etapa 1 del producto](Descripcion/fase-1-validacion.md)) |
@@ -341,6 +348,58 @@ lo que se espera de esta revisión. **ADR-10 no se acepta sin ella.**
    la de [DT-18](Deudas/DT-18.md)?
 
 **Entregable:** el requisito, no la solución — igual que H1.
+
+---
+
+## Fase 2 — decisiones pendientes tras implementar (2026-10-04)
+
+Salieron al construir los recordatorios (backend [PR #1](https://github.com/Citia-solutions/citia-backend/pull/1),
+frontend [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2)). **Ninguna bloquea el merge**:
+el código tiene un comportamiento por defecto razonable para cada una. Guía de la fase:
+[Fase 2 § Decisiones pendientes](Fases/fase-2-us03-recordatorios.md#decisiones-pendientes-del-usuario-2026-10-04).
+
+### Q12 — ¿Ocultar `/recordatorios` al rol `recepcion`?
+
+La configuración de recordatorios es **por usuario** y se aplica a las citas de las que ese usuario es
+dueño (`cita.usuarioId`). Una cuenta `recepcion` también ve la pantalla y, si guarda, crea una
+configuración que no afecta a ninguna cita. Hoy no hay cuentas de recepción ([DT-07](Deudas/DT-07.md))
+y el rol no se verifica en ninguna ruta ([DT-02](Deudas/DT-02.md)).
+
+- **A.** Ocultar la entrada del menú y la ruta para `recepcion` (solo frontend).
+- **B.** Además, que el backend responda 403 en `PUT /api/recordatorios/configuracion` para ese rol
+  (estrena la verificación de rol de DT-02).
+- **C.** Dejarlo como está hasta que exista el alta de un segundo usuario (DT-07).
+
+**Entregable:** la elección; si es B, entra con DT-02.
+
+### Q13 — Textos y colores de los estados de recordatorio
+
+El frontend muestra *Programado* (azul), *Enviado* y *Entregado* (verde), *Falló* (rojo), *Cancelado*
+(gris) y *Omitido* (ámbar), y una frase por motivo (p. ej. *"El paciente no tiene correo registrado."*).
+La tabla completa está en `citia-frontend/context/Features/recordatorios.md`. Preguntas concretas: ¿*Falló*
+o *No enviado*? ¿Se distingue *Enviado* de *Entregado* para el profesional, o se muestran igual?
+
+**Entregable:** la tabla de textos aprobada (o corregida).
+
+### Q14 — ¿Se mantiene la vista *Contacto* del voucher?
+
+El frontend agregó al voucher una cuarta vista, **Contacto**, que completa o corrige teléfono y correo
+del paciente con `PATCH /api/pacientes/:id`, y botones *"Agregar correo"* / *"Revisar correo"* cuando
+un recordatorio no salió por eso. ADR-13 pedía la ruta, pero no dónde ponerla. La alternativa es una
+ficha de paciente (Fase 6, US-08), que todavía no existe.
+
+**Entregable:** sí / no; si es no, dónde se edita el contacto mientras tanto.
+
+### Q15 — ¿Cuándo reinicia Resend la cuota mensual del plan gratis?
+
+La documentación de Resend confirma que la cuota **diaria** se cuenta por día UTC, pero no dice si la
+**mensual** del plan gratis reinicia el día 1 (mes calendario) o en la fecha de alta de la cuenta. El
+contador local asume **mes calendario UTC**. Si fuera por fecha de alta, el contador podría dejar de
+llamar al proveedor unos días antes o después de lo debido; el 429 del proveedor sigue mandando
+([DT-36](Deudas/DT-36.md)).
+
+**Entregable:** el dato (soporte de Resend o la página de la cuenta) y, si no es mes calendario, el
+ajuste de `periodoMesUtc` en `recordatorio/domain/periodos-conteo.ts`.
 
 ---
 

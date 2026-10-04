@@ -3,7 +3,7 @@
 Hoja de ruta de las historias de usuario (US-02 a US-10). Sirve para tener el orden, las
 dependencias y el estado real de cada pieza en un solo lugar.
 
-**Última revisión:** 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
+**Última revisión:** 2026-10-04 (Fase 2 implementada en la rama `feature/fase2-recordatorios`, pendiente de merge y de los prerrequisitos operativos) · antes: 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
 
 **Por fases:** este documento es la fuente del **estado**. Para leer todo lo que toca a una fase
 (decisiones, deudas, commits, contraparte del frontend) en orden, entra por [`Fases/`](Fases/README.md).
@@ -122,17 +122,23 @@ solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
 
 > Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-2-us03-recordatorios.md`](Fases/fase-2-us03-recordatorios.md).
 
-**Estado:** 🔶 **diseño cerrado y decisiones confirmadas (2026-09-30)**, implementación sin empezar.
-Entra en el MVP (Q1 → A).
+**Estado:** ✅ **implementada en la rama `feature/fase2-recordatorios`** (2026-10-04) · ⏳ **pendiente de
+merge** ([PR #1](https://github.com/Citia-solutions/citia-backend/pull/1) del backend y
+[PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2) del frontend, en el mismo release) **y de
+los prerrequisitos operativos** ([checklist](Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción)).
+Entra en el MVP (Q1 → A). 1274 unitarios, 212 e2e y 80 de integración en verde; Definición de Terminado
+cumplida salvo los dos puntos manuales.
 Diseño en [ADR-12](Decisions/ADR-12.md) (outbox + planificador) y [ADR-13](Decisions/ADR-13.md)
-(recordatorios); plan de construcción en [US/03-recordatorios.md](US/03-recordatorios.md).
+(recordatorios); plan en [US/03-recordatorios.md](US/03-recordatorios.md); lo construido en
+[Features/us03-recordatorios.md](Features/us03-recordatorios.md). Cronología commit → documento en la
+[guía de la fase](Fases/fase-2-us03-recordatorios.md#cronología-commit--documento).
 
 ### Decisiones (usuario, 2026-09-30)
 
 | Tema | Decisión |
 |---|---|
 | Canal | correo transaccional vía **Resend**. WhatsApp y SMS fuera del MVP (otro adaptador del mismo puerto, después) |
-| Remitente | uno solo para toda la plataforma, nombre visible **"Citia"**. Dominio **aún sin comprar** |
+| Remitente | uno solo para toda la plataforma, nombre visible **"Citia"**. Dominio **`citiahealth.cl`**, comprado y delegado a Cloudflare (al 2026-10-04); falta verificar el subdominio de envío en Resend |
 | Contenido | solo informativo: fecha, hora, profesional, cómo contactar. Sin tipo de consulta. El enlace para responder llega en la Fase 3 |
 | Momentos | configurables por profesional; predeterminado **24 h y 2 h antes** |
 | Correo del paciente | **obligatorio** en el alta manual |
@@ -149,44 +155,56 @@ Diseño en [ADR-12](Decisions/ADR-12.md) (outbox + planificador) y [ADR-13](Deci
 
 | # | Pieza | Agente | Estado |
 |---|---|---|---|
-| 1 | Outbox `eventos_salida` + `publicar(evento, tx)` + despachador ([ADR-12](Decisions/ADR-12.md)) | database → backend → api | ⬜ |
-| 2 | Planificador (`@nestjs/schedule`), apagado ordenado, latidos | backend | ⬜ |
-| 3 | Tablas `configuraciones_recordatorio`, `recordatorios`, `supresiones_correo` | database | ⬜ |
-| 4 | Dominio: `Recordatorio` (estados), configuración, planificación pura (silencio, tardíos, vencimiento) | api | ⬜ |
-| 5 | Suscriptor + reconciliación (crear, reagendar, cancelar, configurar) + respaldo cada hora | api | ⬜ |
-| 6 | Envío con revalidación, políticas, reintentos, cuota y límite por tenant | api | ⬜ |
-| 7 | Adaptador `ResendCanalMensajeria` + `RegistroCanalMensajeria` + plantilla (con hueco para el enlace de la Fase 3) | api | ⬜ |
-| 8 | Webhooks de Resend con firma verificada (entregado, rebote, queja) | backend (cuerpo crudo) + api | ⬜ |
-| 9 | API: `GET/PUT /recordatorios/configuracion`, `GET /citas/:id/recordatorios` | api | ⬜ |
-| 10 | Correo obligatorio del paciente + `PATCH /pacientes/:id` mínimo | api | ⬜ |
-| 11 | CORS con lista de orígenes, logs JSON con `pino`, `GET /health` | backend | ⬜ |
-| 12 | Tests: planificación, outbox, concurrencia `SKIP LOCKED`, webhooks, e2e del flujo | testing | ⬜ |
+| 1 | Outbox `eventos_salida` + `publicar(evento, tx)` + despachador ([ADR-12](Decisions/ADR-12.md)) | database → backend → api | ✅ `daf0617`, `a6c237f`, `f95b637` |
+| 2 | Planificador (`@nestjs/schedule`), apagado ordenado, latidos | backend | ✅ `f95b637`, `d45de20` |
+| 3 | Tablas `configuraciones_recordatorio`, `recordatorios`, `supresiones_correo` | database | ✅ `f2d80aa` |
+| 4 | Dominio: `Recordatorio` (estados), configuración, planificación pura (silencio, tardíos, vencimiento) | api | ✅ `a13d80a` |
+| 5 | Suscriptor + reconciliación (crear, reagendar, cancelar, configurar) + respaldo cada hora | api | ✅ `a13d80a` |
+| 6 | Envío con revalidación, políticas, reintentos, cuota y límite por tenant | api | ✅ `f719c66` |
+| 7 | Adaptador `ResendCanalMensajeria` + `RegistroCanalMensajeria` + plantilla (con hueco para el enlace de la Fase 3) | api | ✅ `f719c66` |
+| 8 | Webhooks de Resend con firma verificada (entregado, rebote, queja) | backend (cuerpo crudo) + api | ✅ `f719c66` |
+| 9 | API: `GET/PUT /recordatorios/configuracion`, `GET /citas/:id/recordatorios` | api | ✅ `f719c66` |
+| 10 | Correo obligatorio del paciente + `PATCH /pacientes/:id` mínimo | api | ✅ `a37f175` |
+| 11 | CORS con lista de orígenes, logs JSON con `pino`, `GET /health` | backend | ✅ `d45de20` |
+| 12 | Tests: planificación, outbox, concurrencia `SKIP LOCKED`, webhooks, e2e del flujo | testing | ✅ `db46e37`, `a938f9d` |
 
 ### Frontend (`citia-frontend`)
-1. Correo obligatorio en el modal "Nueva cita" (mismo release que el punto 10 del backend).
-2. Pantalla de configuración: activar, momentos de envío (1 a 3), teléfono y correo de contacto (el
-   correo es el `Reply-To`). Solo canal correo en esta fase.
-3. Estado de los recordatorios en el voucher de la cita (programado, enviado, entregado, fallido,
-   cancelado, omitido, con su motivo).
-4. Despliegue en Cloudflare con *fallback* de SPA a `index.html` (incluye `/agendar-cita`).
+*(Todo ✅ en la rama `feature/fase2-recordatorios` de `citia-frontend`, [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2);
+probado solo con respuestas simuladas.)*
+
+1. ✅ Correo obligatorio en el modal "Nueva cita" (mismo release que el punto 10 del backend).
+2. ✅ Pantalla de configuración `/recordatorios`: activar, momentos de envío (1 a 3), teléfono y correo de
+   contacto (el correo es el `Reply-To`). Solo canal correo en esta fase.
+3. ✅ Estado de los recordatorios en el voucher de la cita (programado, enviado, entregado, fallido,
+   cancelado, omitido, con su motivo), más la vista **Contacto** para completar el correo con
+   `PATCH /pacientes/:id`.
+4. ✅ Despliegue en Cloudflare **Workers Static Assets** (`wrangler.jsonc`) con *fallback* de SPA a
+   `index.html` (incluye `/agendar-cita`); `VITE_API_URL` como variable de build. Falta publicarlo.
 
 ### Prerrequisitos operativos (usuario)
-- Comprar el dominio `.cl`, delegar el DNS a Cloudflare y verificar el subdominio de envío en Resend
-  (SPF, DKIM, DMARC).
+- ✅ Dominio **`citiahealth.cl`** comprado y su DNS delegado a Cloudflare.
+- ⬜ Verificar el subdominio de envío en Resend (SPF, DKIM, DMARC) y crear el webhook.
   **Sin esto no se puede escribir a pacientes reales.**
-- Cuentas de Resend y Better Stack; Railway con "App Sleeping" desactivado.
+- ⬜ Cuenta de Better Stack (monitor y latidos); Railway con "App Sleeping" desactivado y las variables
+  nuevas cargadas; frontend publicado; migraciones `1750000008000` a `1750000011000`; contar los pacientes
+  sin correo. Lista completa: [checklist de salida a producción](Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción).
 
 ### Integración
-- Crear / reagendar / cancelar una cita → los recordatorios se programan, reprograman o anulan (vía
-  outbox).
-- Configuración ↔ API; estado por cita ↔ voucher.
+- ✅ Crear / reagendar / cancelar una cita → los recordatorios se programan, reprograman o anulan (vía
+  outbox): probado en los e2e con Postgres.
+- 🔶 Configuración ↔ API; estado por cita ↔ voucher: contrato cerrado y probado por separado en cada
+  repo; **falta la prueba manual del frontend contra el backend real**.
 
 **Entregable:** el profesional configura sus recordatorios; el sistema los programa, los envía por
 correo, registra su entrega y refleja reagendar y cancelar; si algo falla, el equipo se entera por
 una alerta antes que por el cliente.
 
-> **Sin decisiones abiertas** (2026-09-30). Queda solo verificar al implementar algunos datos de
-> Resend y Better Stack ([ADR-13](Decisions/ADR-13.md#lo-que-queda-por-verificar-al-implementar)).
+> **Decisiones pendientes del usuario (2026-10-04),** ninguna bloquea el merge: ¿ocultar `/recordatorios`
+> al rol `recepcion`? (Q12) · textos y colores de los estados en el frontend (Q13) · ¿mantener la vista
+> Contacto del voucher? (Q14) · ¿cuándo reinicia Resend la cuota mensual del plan gratis? (Q15). Detalle
+> en la [Fase 2](Fases/fase-2-us03-recordatorios.md#decisiones-pendientes-del-usuario-2026-10-04). Los datos
+> de proveedores que el diseño suponía quedaron verificados salvo dos
+> ([ADR-13](Decisions/ADR-13.md#datos-de-proveedores-lo-que-queda-por-verificar-resuelto)).
 
 ---
 
@@ -242,9 +260,10 @@ una alerta antes que por el cliente.
 
 > Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-4-us05-alertas.md`](Fases/fase-4-us05-alertas.md).
 
-**Estado:** ⬜ solo existe el puerto `PublicadorEventos`, sin suscriptores. Con la Fase 2 las alertas
-se enchufan como otro suscriptor del outbox ([ADR-12 §4](Decisions/ADR-12.md)); para entregar en menos
-de 3 s hará falta `LISTEN/NOTIFY` (evolución anotada en ADR-12).
+**Estado:** ⬜ nada propio. Desde la Fase 2 (en rama, 2026-10-04) existe el **outbox** con su despachador
+y un primer suscriptor (recordatorios): las alertas se enchufan como otro suscriptor
+([ADR-12 §4](Decisions/ADR-12.md)); para entregar en menos de 3 s hará falta `LISTEN/NOTIFY`
+([DT-33](Deudas/DT-33.md)), y conviene resolver el orden entre hechos ([DT-32](Deudas/DT-32.md)).
 
 ### Backend
 1. Modelo/tabla de historial de alertas (tipo, mensaje, fecha, leído).
@@ -307,7 +326,7 @@ agregado del negocio; se retoma después de validar el MVP con recordatorios.
 
 > Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fases-6-7-us09-sin-diseno.md`](Fases/fases-6-7-us09-sin-diseno.md#fase-6--us-08-monitoreo-y-seguimiento-del-paciente).
 
-**Estado:** 🔶 solo `POST /pacientes`.
+**Estado:** 🔶 solo `POST /pacientes` y, desde la Fase 2 (en rama), `PATCH /pacientes/:id` (teléfono y correo).
 
 ### Backend
 1. Modelo de notas de seguimiento (fecha, contenido, vínculo profesional+paciente).
@@ -374,11 +393,11 @@ agregado del negocio; se retoma después de validar el MVP con recordatorios.
 |---|---|---|---|
 | 0 | US-06 Dashboard | US-02 | ✅ cerrada |
 | 1 | US-02 Gestión de citas | — | ✅ cerrada (develop 2026-09-28) · US-02.07 ⏸ aplazada |
-| 2 | US-03 Recordatorios | US-02, ADR-12 (outbox + planificador), dominio verificado | 🔶 diseño cerrado (ADR-12, ADR-13) · **en el MVP** |
+| 2 | US-03 Recordatorios | US-02, ADR-12 (outbox + planificador), subdominio verificado en Resend | ✅ implementada en rama (2026-10-04) · ⏳ pendiente de merge y de los prerrequisitos operativos · **en el MVP** |
 | 3 | US-04 Respuesta paciente (+ US-02.07) | US-03, ADR-10 | ⬜ · fuera del MVP |
 | 4 | US-05 Alertas | US-02/03/04 | ⬜ (solo puerto) |
 | 5 | US-07 Scoring | US-02/04, proceso de cierre (ADR-12), asistencia registrada (DT-30) | ⏸ v2 (fuera del MVP, 2026-09-30) |
-| 6 | US-08 Monitoreo | US-02/07 | 🔶 solo alta |
+| 6 | US-08 Monitoreo | US-02/07 | 🔶 solo alta y `PATCH` de contacto |
 | 7 | US-10 Perfil/soporte | — | ⬜ |
 | — | US-09 | — | ⬜ pendiente |
 
