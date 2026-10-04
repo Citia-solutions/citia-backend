@@ -28,7 +28,7 @@
   correo real con el dominio verificado) — [US-03](../US/03-recordatorios.md#definición-de-terminado).
 - **Frontend** listo en su rama ([PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2)):
   correo obligatorio en el modal, pantalla `/recordatorios`, estado de los recordatorios y vista
-  *Contacto* en el voucher, despliegue con Workers Static Assets. Probado solo con respuestas simuladas.
+  *Contacto* en el voucher, despliegue en Netlify (revertido desde Cloudflare el 2026-10-04). Probado solo con respuestas simuladas.
 - **Falta para producción:** el merge de los dos PR en el mismo release, los prerrequisitos operativos
   ([checklist](#checklist-de-salida-a-producción)) y cuatro decisiones del usuario
   ([abajo](#decisiones-pendientes-del-usuario-2026-10-04)).
@@ -76,14 +76,14 @@ importa: los tres primeros dependen de DNS y del proveedor.
       `NODE_ENV=production`; `JWT_SECRET` de **32 caracteres o más** (no de ejemplo); `FRONTEND_URL` =
       el origen del frontend publicado, **sin ruta**; `MENSAJERIA_ADAPTADOR=resend`; `RESEND_API_KEY`;
       `RESEND_WEBHOOK_SECRET`; `CORREO_DOMINIO` (el subdominio verificado); `CORS_ORIGENES_EXTRA` (vistas
-      previas: el comodín solo admite `*.<proyecto>.pages.dev`; las de Workers van como orígenes exactos);
+      previas: el comodín solo admite `*.<proyecto>.pages.dev`; las de Netlify van como orígenes exactos);
       `BETTERSTACK_SOURCE_TOKEN`, `BETTERSTACK_INGESTING_HOST`, `BETTERSTACK_HEARTBEAT_SALIDA_URL` y
       `BETTERSTACK_HEARTBEAT_RECORDATORIOS_URL`. Además de las `DB_*`. Tabla completa en
       [us03 § Variables](../Features/us03-recordatorios.md#variables-de-entorno).
 - [ ] **"App Sleeping" apagado** en el servicio del backend en Railway ([ADR-12 §7](../Decisions/ADR-12.md)).
-- [ ] **Frontend publicado en Cloudflare** (Workers Static Assets, `wrangler.jsonc`) con `VITE_API_URL`
-      como **variable de build** (`https://api.citiahealth.cl/api`, según el frontend), y su origen en
-      `FRONTEND_URL` / `CORS_ORIGENES_EXTRA`.
+- [ ] **Frontend publicado en Netlify**: un sitio por entorno (`develop` → `staging.citiahealth.cl`,
+      `main` → `app.citiahealth.cl`), con `public/_redirects`, `VITE_API_URL` apuntando al backend de
+      Railway de ese entorno, y su dominio en el `FRONTEND_URL` del backend correspondiente.
 - [ ] **Migraciones** `1750000008000` a `1750000011000` aplicadas (las corre el `entrypoint.sh` al
       arrancar; `eventos_salida`, `configuraciones_recordatorio`, `recordatorios`, `supresiones_correo`).
 - [ ] **Contar los pacientes sin correo** antes del despliegue:
@@ -169,7 +169,7 @@ decisión de producto al plan, y de la infraestructura a la feature— y qué mi
   PR 1 (outbox + planificador + observabilidad) y PR 2 (recordatorios) con agente, dependencia y días,
   paquetes nuevos y la Definición de Terminado.
 - **[stack-tecnologico.md](../stack-tecnologico.md)** — puntos 4 a 7 (cola en Postgres, Resend, Better
-  Stack, Railway + Cloudflare) y [Modo prueba](../stack-tecnologico.md#modo-prueba): cuánto alcanza el
+  Stack, Railway + Netlify) y [Modo prueba](../stack-tecnologico.md#modo-prueba): cuánto alcanza el
   plan gratis y cuándo pasar a pago.
 
 ### 6. Las deudas que cambiaron
@@ -215,7 +215,7 @@ En este orden (de la que más pesa a la más mecánica):
 | Correo del paciente | obligatorio en el alta manual; `PATCH /api/pacientes/:id` mínimo | ADR-13 §14 |
 | Consentimiento | política implementada y apagada | ADR-13 §15 · DT-16 |
 | Observabilidad | `pino`, `GET /api/health`, latidos y alertas en Better Stack | ADR-13 §16 · DT-19 |
-| Hosting | backend + Postgres en Railway, siempre encendido; SPA en Cloudflare | stack · ADR-12 §7 |
+| Hosting | backend + Postgres en Railway, siempre encendido; SPA en Netlify (2026-10-04) | stack · ADR-12 §7 |
 
 **Prerrequisitos operativos (usuario):** comprar el dominio `.cl`, delegar el DNS a Cloudflare y
 verificar el subdominio de envío en Resend; cuentas de Resend y Better Stack; Railway con "App
@@ -318,7 +318,7 @@ el backend. Verificada solo con respuestas simuladas; falta la prueba contra el 
 | Correo obligatorio en el modal "Nueva cita" | [crear-cita](../../../citia-frontend/context/Features/crear-cita.md) | `42976fe` |
 | Pantalla `/recordatorios`: activar, 1 a 3 momentos, teléfono y correo de contacto | [recordatorios](../../../citia-frontend/context/Features/recordatorios.md) | `7417a41` |
 | Estado de los recordatorios en el voucher y vista **Contacto** (`PATCH /api/pacientes/:id`) | [gestionar-cita](../../../citia-frontend/context/Features/gestionar-cita.md), [recordatorios](../../../citia-frontend/context/Features/recordatorios.md) | `2413eaf` |
-| Despliegue en Cloudflare **Workers Static Assets** (`wrangler.jsonc`, *fallback* de SPA, `VITE_API_URL` como variable de build) | `citia-frontend/context/stack-tecnologico.md` | `f98f760` |
+| ~~Despliegue en Cloudflare Workers Static Assets (`wrangler.jsonc`)~~ → reemplazado por **Netlify** (`public/_redirects`) el 2026-10-04 | `citia-frontend/context/stack-tecnologico.md` | `f98f760` → [citia-frontend#3](https://github.com/Citia-solutions/citia-frontend/pull/3) |
 | Documentación | `citia-frontend/context/` | `8dc2e9b` |
 
 Deudas del lado del frontend: DTF-06 (límites, horas sin envío y margen copiados del backend) y DTF-07
