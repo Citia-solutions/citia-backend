@@ -12,6 +12,9 @@ const PRODUCCION = {
   DB_NAME: 'citia',
   JWT_SECRET: SECRETO_FUERTE,
   FRONTEND_URL: 'https://app.citia.cl',
+  MENSAJERIA_ADAPTADOR: 'resend',
+  RESEND_API_KEY: 're_123',
+  RESEND_WEBHOOK_SECRET: 'whsec_abc',
 };
 
 function erroresDe(crudo: Record<string, unknown>): readonly string[] {
@@ -320,7 +323,39 @@ describe('validarEntorno', () => {
         'DB_PASS: es obligatoria en producción.',
         'DB_NAME: es obligatoria en producción.',
         'FRONTEND_URL: es obligatoria en producción.',
+        'MENSAJERIA_ADAPTADOR: es obligatoria en producción (registro o resend; registro no envía correos).',
       ]);
+    });
+
+    it('exige MENSAJERIA_ADAPTADOR explícito: nunca queda en registro por omisión', () => {
+      // Arrange
+      const sinAdaptador: Record<string, unknown> = { ...PRODUCCION };
+      delete sinAdaptador.MENSAJERIA_ADAPTADOR;
+
+      // Act & Assert
+      expect(erroresDe(sinAdaptador)).toEqual([
+        'MENSAJERIA_ADAPTADOR: es obligatoria en producción (registro o resend; registro no envía correos).',
+      ]);
+      expect(erroresDe({ ...PRODUCCION, MENSAJERIA_ADAPTADOR: '  ' })).toEqual([
+        'MENSAJERIA_ADAPTADOR: es obligatoria en producción (registro o resend; registro no envía correos).',
+      ]);
+    });
+
+    it('acepta registro en producción si se elige explícitamente', () => {
+      const e = validarEntorno({
+        ...PRODUCCION,
+        MENSAJERIA_ADAPTADOR: 'registro',
+        RESEND_API_KEY: undefined,
+        RESEND_WEBHOOK_SECRET: undefined,
+      });
+      expect(e.MENSAJERIA_ADAPTADOR).toBe('registro');
+    });
+
+    it('fuera de producción sigue usando registro por defecto', () => {
+      expect(
+        validarEntorno({ NODE_ENV: 'test', JWT_SECRET: 'x' })
+          .MENSAJERIA_ADAPTADOR,
+      ).toBe('registro');
     });
 
     it.each([

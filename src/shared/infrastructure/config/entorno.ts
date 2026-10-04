@@ -16,6 +16,8 @@ import { OrigenCorsInvalidoError, normalizarOrigen } from './origenes-cors';
  *    obligatoria siempre, como ya lo era.
  *  - En producción (`NODE_ENV=production`) no hay defaults para la base de
  *    datos ni para `FRONTEND_URL`, y `JWT_SECRET` debe ser fuerte.
+ *  - En producción `MENSAJERIA_ADAPTADOR` es obligatoria (sin default), para
+ *    que nunca quede en `registro` por omisión.
  *  - Las variables de Resend solo se exigen con `MENSAJERIA_ADAPTADOR=resend`.
  *  - Un valor vacío (`VAR=`) cuenta como no definido.
  *
@@ -464,7 +466,15 @@ export function validarEntorno(
     { defecto: 14, min: 1 },
   );
 
-  // Mensajería (ADR-13 §13 y §18).
+  // Mensajería (ADR-13 §13 y §18). En producción es OBLIGATORIA y sin
+  // default: nunca debe quedar en `registro` (que no envía nada) por omisión.
+  // `registro` sigue permitido si se elige explícitamente (p. ej. staging).
+  if (produccion && l.valor('MENSAJERIA_ADAPTADOR') === undefined) {
+    l.error(
+      'MENSAJERIA_ADAPTADOR',
+      `${enProduccion} (${ADAPTADORES_MENSAJERIA.join(' o ')}; registro no envía correos).`,
+    );
+  }
   const MENSAJERIA_ADAPTADOR = l.enumerado(
     'MENSAJERIA_ADAPTADOR',
     ADAPTADORES_MENSAJERIA,

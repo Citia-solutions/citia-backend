@@ -13,7 +13,14 @@ import {
 async function bootstrap(): Promise<void> {
   //Para arrancar la aplicacion es NestFactory. bufferLogs: los logs del
   //arranque esperan a pino en lugar de salir por el logger de consola de Nest.
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  //rawBody: ademas del cuerpo parseado (req.body, que sigue usando el
+  //ValidationPipe), guarda el cuerpo crudo en req.rawBody. Lo necesita la
+  //verificacion de la firma Svix de POST /api/webhooks/resend (ADR-13 §10):
+  //re-serializar el JSON romperia la firma.
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
 
   //Todo `Logger` de Nest (incluidos los `new Logger(...)` de los servicios)
   //sale por pino: JSON, id por peticion y redaccion (ADR-13 §16).

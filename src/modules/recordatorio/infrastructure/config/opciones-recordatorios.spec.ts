@@ -4,7 +4,12 @@ import {
   Entorno,
   validarEntorno,
 } from '../../../../shared/infrastructure/config/entorno';
-import { leerOpcionesRecordatorios } from './opciones-recordatorios';
+import {
+  leerCadenciaEnvio,
+  leerOpcionesEnvio,
+  leerOpcionesRecordatorios,
+  leerOpcionesTasaFallo,
+} from './opciones-recordatorios';
 
 function configDe(
   valores: Record<string, unknown>,
@@ -59,5 +64,62 @@ describe('leerOpcionesRecordatorios', () => {
     // …que son los mismos que pone validarEntorno.
     const entorno = validarEntorno({ JWT_SECRET: 'x' });
     expect(leerOpcionesRecordatorios(configDe(entorno))).toEqual(opciones);
+  });
+});
+
+describe('leerOpcionesEnvio / leerCadenciaEnvio / leerOpcionesTasaFallo', () => {
+  it('toman los valores del entorno validado', () => {
+    // Arrange
+    const entorno = validarEntorno({
+      JWT_SECRET: 'x',
+      APP_TZ: 'America/Punta_Arenas',
+      RECORDATORIO_EXIGIR_CONSENTIMIENTO: 'true',
+      RECORDATORIO_MAX_DIARIO_POR_TENANT: '10',
+      RESEND_CUOTA_DIARIA: '50',
+      RESEND_CUOTA_MENSUAL: '500',
+      CUOTA_UMBRAL_AVISO: '0.9',
+      RECORDATORIO_MAX_INTENTOS: '3',
+      RECORDATORIO_LOTE: '5',
+      RECORDATORIO_INTERVALO_SEG: '30',
+      RECORDATORIO_UMBRAL_TASA_FALLO: '0.1',
+      RECORDATORIO_UMBRAL_MUESTRA_MIN: '50',
+    });
+    const config = configDe(entorno);
+
+    // Act & Assert
+    expect(leerOpcionesEnvio(config)).toEqual({
+      tz: 'America/Punta_Arenas',
+      silencio: { desde: '21:00', hasta: '08:00' },
+      exigirConsentimiento: true,
+      maxDiarioPorTenant: 10,
+      cuotaDiaria: 50,
+      cuotaMensual: 500,
+      umbralAvisoCuota: 0.9,
+      maxReintentos: 3,
+      antelacionesPredeterminadasMin: [1440, 120],
+    });
+    expect(leerCadenciaEnvio(config)).toEqual({ lote: 5, intervaloSeg: 30 });
+    expect(leerOpcionesTasaFallo(config)).toEqual({
+      umbral: 0.1,
+      muestraMinima: 50,
+    });
+  });
+
+  it('sin entorno validado (e2e parcial) usan los mismos defaults de ADR-13 §18', () => {
+    // Arrange
+    const vacio = configDe({});
+    const validado = configDe(validarEntorno({ JWT_SECRET: 'x' }));
+
+    // Act & Assert
+    expect(leerOpcionesEnvio(vacio)).toEqual(leerOpcionesEnvio(validado));
+    expect(leerCadenciaEnvio(vacio)).toEqual({ lote: 20, intervaloSeg: 60 });
+    expect(leerCadenciaEnvio(vacio)).toEqual(leerCadenciaEnvio(validado));
+    expect(leerOpcionesTasaFallo(vacio)).toEqual({
+      umbral: 0.05,
+      muestraMinima: 20,
+    });
+    expect(leerOpcionesTasaFallo(vacio)).toEqual(
+      leerOpcionesTasaFallo(validado),
+    );
   });
 });

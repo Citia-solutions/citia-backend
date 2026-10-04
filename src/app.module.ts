@@ -58,8 +58,8 @@ import { PlanificacionModule } from './shared/planificacion.module';
     //Solo aqui, para que las e2e parciales no levanten jobs. Con
     //PLANIFICADOR_ACTIVO=false (default en tests) no programa nada.
     PlanificacionModule,
-    //Jobs de recordatorios (reconciliacion de respaldo; el envio llega en el
-    //paso 10). Mismo criterio que PlanificacionModule.
+    //Jobs de recordatorios (envio, reconciliacion de respaldo y tasa de
+    //fallo). Mismo criterio que PlanificacionModule.
     RecordatorioPlanificacionModule,
   ],
 })
