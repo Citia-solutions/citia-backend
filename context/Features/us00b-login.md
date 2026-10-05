@@ -40,7 +40,7 @@ src/modules/auth/
 │   ├── auth.controller.ts                 ← POST /auth/login → 200
 │   └── dto/
 │       ├── login.dto.ts                   ← { tenantSlug, email, password }
-│       └── login-response.dto.ts          ← { accessToken, usuario }
+│       └── login-response.dto.ts          ← { accessToken, usuario (+ tenantSlug, tenantNombre) }
 └── auth.module.ts                         ← exporta JwtModule, PassportModule, JwtAuthGuard, JwtStrategy
 ```
 
@@ -77,7 +77,9 @@ coherente con ADR-02.
     "email": "admin@clinica.com",
     "nombreCompleto": "Dra. Ana López",
     "rol": "ADMINISTRADOR",
-    "tenantId": "<uuid-tenant>"
+    "tenantId": "<uuid-tenant>",
+    "tenantSlug": "clinica-sur",
+    "tenantNombre": "Clínica Sur"
   }
 }
 ```
@@ -86,6 +88,13 @@ El `passwordHash` nunca aparece en la respuesta.
 > **Nota (2026-09-30).** Desde el 2026-09-28 (`7635645`, Fase 1) `usuario` incluye además
 > **`tenantSlug`**, para que el front arme el enlace público. No va dentro del JWT. Contrato en
 > [us02 §d](us02-gestion-citas.md#d-enlace-para-compartir-la-url-pública).
+
+> **Nota (2026-10-05).** `usuario` incluye además **`tenantNombre: string`**: el nombre visible
+> de la organización (`tenants.nombre`, tal cual se registró, con acentos y mayúsculas), para
+> que el front lo muestre en el sidebar. Cambio aditivo: no se quitó ni renombró ningún campo.
+> Sale del mismo tenant que `findBySlug` ya cargó en el paso 1 del flujo (sin consulta extra) y,
+> como `tenantSlug`, **no** va dentro del JWT: no autoriza nada y meterlo en los claims obligaría
+> a re-emitir tokens (y quedaría desactualizado si la organización cambia de nombre).
 
 **Errores:**
 - `400` — validación del DTO
@@ -98,7 +107,8 @@ El `passwordHash` nunca aparece en la respuesta.
 1. `ITenantRepository.findBySlug(tenantSlug)` — resuelve el tenant.
 2. `IUsuarioRepository.findByEmailAndTenant(email, tenant.id)` — busca el usuario dentro del tenant.
 3. `bcrypt.compare(password, usuario.passwordHash)` — valida la contraseña.
-4. Si todo es válido, `ITokenSigner.sign(payload)` firma el JWT.
+4. Si todo es válido, `ITokenSigner.sign(payload)` firma el JWT. `tenantSlug` y `tenantNombre`
+   de la respuesta salen del tenant del paso 1 (no del body ni de otra consulta).
 
 Cualquier paso fallido lanza `CredencialesInvalidasError`, que el controller traduce a 401 genérico.
 

@@ -24,6 +24,7 @@ interface LoginBody {
     email: string;
     tenantId: string;
     tenantSlug?: string;
+    tenantNombre?: string;
     passwordHash?: string;
   };
 }
@@ -105,6 +106,8 @@ describe('Auth login (e2e)', () => {
     expect(body.usuario.tenantId).toBeDefined();
     // Cierre de Fase 1 §d: el front arma el enlace público con el slug.
     expect(body.usuario.tenantSlug).toBe(tenantSlugRegistrado);
+    // Nombre visible de la organización (sidebar): el registrado, con acentos.
+    expect(body.usuario.tenantNombre).toBe(credenciales.nombreTenant);
     // Nunca debe filtrarse el hash de la contraseña.
     expect(body.usuario.passwordHash).toBeUndefined();
   });
