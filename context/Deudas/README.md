@@ -19,7 +19,7 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 
 | ID | Deuda | Severidad | Estado | Origen |
 |----|-------|-----------|--------|--------|
-| [DT-30](DT-30.md) | La asistencia real de las citas pasadas no se registra y no se puede reconstruir | 🔴 alta (v2) ⏳ | 🔵 aplazada hasta la Fase 3 (salida C, 2026-09-30) | decisión de producto · [ADR-04 §2](../Decisions/ADR-04.md) |
+| [DT-30](DT-30.md) | La asistencia real de las citas pasadas no se registra y no se puede reconstruir | 🟡 baja (era 🔴) | 🟢 mitigada (2026-10-05): botones de asistencia en el voucher | decisión de producto · [ADR-04 §2](../Decisions/ADR-04.md) |
 | [DT-01](DT-01.md) | Sin renovación ni revocación de sesión | 🔴 alta | abierta | [ADR-01](../Decisions/ADR-01.md) |
 | [DT-03](DT-03.md) | Sin verificación de correo ni recuperación de contraseña | 🔴 alta | abierta | [us00a](../Features/us00a-registro-inicial.md) |
 | [DT-06](DT-06.md) | Registro público sin ningún freno | 🔴 alta | abierta | [us00a](../Features/us00a-registro-inicial.md) |

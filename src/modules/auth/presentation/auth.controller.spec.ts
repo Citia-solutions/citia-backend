@@ -54,6 +54,7 @@ describe('AuthController', () => {
           rol: RolUsuario.ADMINISTRADOR,
           tenantId: 'tenant-uuid-001',
           tenantSlug: 'clinica-demo',
+          tenantNombre: 'Clínica Demo',
         },
       });
       mockAuthService.login.mockResolvedValue(expectedResponse);
@@ -65,6 +66,8 @@ describe('AuthController', () => {
       expect(mockAuthService.login).toHaveBeenCalledTimes(1);
       expect(mockAuthService.login).toHaveBeenCalledWith(dto);
       expect(result).toBe(expectedResponse);
+      // El controller no recorta el contrato: tenantNombre llega al cliente.
+      expect(result.usuario.tenantNombre).toBe('Clínica Demo');
     });
 
     it('debería mapear CredencialesInvalidasError a UnauthorizedException (401)', async () => {
