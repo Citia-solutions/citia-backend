@@ -13,6 +13,11 @@ Orden cronológico (más antiguo arriba).
 `F3` = [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) · `—` = transversal. Dos códigos = el commit toca las dos; el
 primero es el principal. *(Columna agregada el 2026-09-30.)*
 
+**Ramas.** Git Flow: `develop` es la integración y se despliega en **staging**; `main` se despliega en
+**production**. Desde la fila 75, `main` comparte historia con `develop` y recibe los releases. Los merges
+de un PR a `develop` son filas de tipo `merge`; los que llegan a `main`, de tipo `release`. *(Agregado el
+2026-10-07.)*
+
 | # | Commit | Fecha | Tipo | Documentación | Fase |
 |---|--------|-------|------|---------------|------|
 | 1 | `258542f` First commit (scaffold NestJS) | 2026-06-18 | bootstrap | — (scaffold) | Base |
@@ -88,6 +93,16 @@ primero es el principal. *(Columna agregada el 2026-09-30.)*
 | 71 | `a938f9d` test(recordatorio): Definición de Terminado de US-03 | 2026-10-04 | test | [US-03 § DoD](US/03-recordatorios.md#definición-de-terminado); **nota en [ADR-02](Decisions/ADR-02.md#nota-2026-10-04-el-check-del-4-pasa-a-ser-un-test)** (`src/arquitectura.spec.ts`); [DT-31](Deudas/DT-31.md) | F2 |
 | 72 | `8dd4747` chore(test): excluir los specs del coverage | 2026-10-04 | chore | — (tooling; [us03 § Tests](Features/us03-recordatorios.md#tests)) | F2 |
 | 73 | `f2ccb01` chore(tooling): vista previa del backend | 2026-10-04 | chore | — (tooling: `.claude/launch.json`) | F2 |
+| 74 | `4967ab5` docs(context): Fase 2 implementada (ADR-12/13, feature US-03, deudas y checklist de producción) | 2026-10-04 | docs | **[us03-recordatorios](Features/us03-recordatorios.md)** y **[DT-31](Deudas/DT-31.md)…[DT-39](Deudas/DT-39.md)** (nuevos); notas de implementación en [ADR-12](Decisions/ADR-12.md#notas-de-implementación-2026-10-04) y [ADR-13](Decisions/ADR-13.md#notas-de-implementación-2026-10-04); nota en [ADR-02](Decisions/ADR-02.md#nota-2026-10-04-el-check-del-4-pasa-a-ser-un-test); [checklist de salida a producción](Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción); [US-03 § DoD](US/03-recordatorios.md#definición-de-terminado); Q12–Q15; filas 60–73 de este archivo (ver nota) | F2 |
+| 75 | `f1f711f` merge `develop` → `main` (`--allow-unrelated-histories`) | 2026-10-04 | release | — (**primer release a producción**: Fundaciones, Fase 0, Fase 1 y el diseño de la Fase 2, hasta `510015a`; ver nota) | — |
+| 76 | `060303c` merge PR #1 `feature/fase2-recordatorios` → `develop` | 2026-10-04 | merge | — (lleva 62–74 a `develop`: **implementación de la Fase 2**, se despliega en staging) | F2 |
+| 77 | `893c112` docs(context): el frontend se queda en Netlify | 2026-10-04 | docs/decisión | [stack § Despliegue del frontend](stack-tecnologico.md#despliegue-del-frontend-netlify) (revierte Cloudflare Workers); [ROADMAP](ROADMAP.md#fase-2--us-03-recordatorios-al-paciente), [Fase 2](Fases/fase-2-us03-recordatorios.md) y [US-03](US/03-recordatorios.md) | F2 |
+| 78 | `31d2c9e` merge PR #2 `docs/frontend-netlify` → `develop` | 2026-10-04 | merge | — (integra 77) | F2 |
+| 79 | `173d6b6` feat(auth): incluir `tenantNombre` en la respuesta del login | 2026-10-05 | feature | [us00b § Nota 2026-10-05](Features/us00b-login.md) (el sidebar del frontend muestra el nombre de la organización; no entra al JWT) | F2 · Base |
+| 80 | `9fdb989` chore(tooling): el backend de la vista previa acepta el frontend local | 2026-10-05 | chore | — (tooling: `FRONTEND_URL` fijo en `.claude/launch.json`) | F2 |
+| 81 | `e603ed3` docs(context): asistencia desde el voucher mitiga DT-30 | 2026-10-05 | docs/decisión | [DT-30](Deudas/DT-30.md) mitigada (el usuario revierte la decisión del 2026-09-30); [DT-29](Deudas/DT-29.md) (rutas consumidas); [Deudas/README](Deudas/README.md) | F2 · F3 |
+| 82 | `4fc9a86` merge PR #3 `feature/login-tenant-nombre` → `develop` | 2026-10-05 | merge | — (integra 79–81) | F2 |
+| 83 | `c057ade` merge PR #4 `develop` → `main` | 2026-10-06 | release | — (**release de la Fase 2 a producción**: lleva 74 y 76–82 a `main`; el frontend sale con citia-frontend#6) · cierre en [Fase 2 § Cierre](Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07) | F2 |
 
 > **Nota commit 31.** `core.autocrlf=true` marcaba ~32 archivos como modificados con contenido
 > idéntico, ensuciando `git status` y los diffs de cada PR. `.gitattributes` fija LF para repo y
@@ -129,6 +144,19 @@ primero es el principal. *(Columna agregada el 2026-09-30.)*
 > **Nota filas 62–73.** Al 2026-10-04 viven **solo en la rama `feature/fase2-recordatorios`**
 > ([PR #1](https://github.com/Citia-solutions/citia-backend/pull/1) a `develop`, pendiente de merge). El
 > plan de [US-03](US/03-recordatorios.md) proponía dos PR (outbox y recordatorios); se hizo en uno.
+> *(2026-10-07: en `develop` desde `060303c` —fila 76— y en `main` desde `c057ade` —fila 83—.)*
+
+> **Nota fila 74.** Es el commit que cerró la pasada del 2026-10-04 (registró las filas 60–73): por la
+> convención de abajo, se registra en esta.
+
+> **Nota fila 75.** `main` solo tenía el commit inicial que crea GitHub (`16f0680`, un README), **sin
+> historia común** con `develop`. Se unió con `--allow-unrelated-histories` conservando el README de
+> `develop`. Este merge vive **solo en `main`**: `develop` no lo contiene, y desde aquí los releases
+> (`develop` → `main`) ya tienen historia común. No incluye la implementación de la Fase 2 (PR #1 seguía
+> en revisión); esa llegó a producción con la fila 83.
+
+> **Nota fila 83.** No trae cambios propios (el árbol es idéntico al de `4fc9a86`). La Fase 2 se dio por
+> **cerrada** el 2026-10-07, tras la prueba de punta a punta en producción.
 
 > **Nota fila 53.** Los tests del cierre de la Fase 1 no se listaron en la tabla de
 > [us02 §Tests](Features/us02-gestion-citas.md#tests), que quedó en el estado del 2026-09-24. La
@@ -147,7 +175,12 @@ primero es el principal. *(Columna agregada el 2026-09-30.)*
 >
 > *Pasada del 2026-10-04:* registra hasta `f2ccb01` inclusive (filas 60–73). El commit de documentación
 > que cierre esta pasada (implementación de la Fase 2 en `context/`) **no tiene fila**: se registra en la
-> siguiente.
+> siguiente. *(Es `4967ab5`, fila 74.)*
+>
+> *Pasada del 2026-10-07:* registra hasta `c057ade` inclusive (filas 74–83), tomadas de
+> `git log --date=short` sobre `origin/main` y `origin/develop`. El commit de documentación que cierre
+> esta pasada (cierre de la Fase 2 en `context/`, rama `docs/cierre-fase2`) **no tiene fila**: se registra
+> en la siguiente.
 
 ## Cobertura por decisión (ADR ↔ commits)
 
@@ -165,8 +198,8 @@ primero es el principal. *(Columna agregada el 2026-09-30.)*
 | **ADR-09** | Gestión de citas: solicitud aparte, RUT como identidad, reagendar con bitácora | `f2a7dff` (§3–§7), `e1253c3` (§1,§2,§8–§11), `439a5fe` (docs), `e06862a` (bandeja), `4c543a5`, `31ea490` (decisión 2 reafirmada, límite de tasa), `ab30bb7` (matiz §3) |
 | ADR-10 | Enlace por cita del paciente (US-02.07) | `2877b13` (propuesto), `4c543a5` (aplazado) |
 | ADR-11 | Solapamiento: avisar y permitir | `4c543a5` (doc), `538657e`, `9140bc3` (implementación), `06858f2` (tests) |
-| ADR-12 | Outbox transaccional + planificador en Postgres | `ab30bb7` (diseño), `daf0617`, `a6c237f`, `d45de20` (latidos, entorno), `f95b637`, `db46e37` (implementación en rama) |
-| ADR-13 | Recordatorios por correo (Resend) | `ab30bb7` (diseño), `d45de20`, `a37f175`, `f2d80aa`, `a13d80a`, `f719c66`, `a938f9d` (implementación en rama) |
+| ADR-12 | Outbox transaccional + planificador en Postgres | `ab30bb7` (diseño), `daf0617`, `a6c237f`, `d45de20` (latidos, entorno), `f95b637`, `db46e37` (implementación) · `060303c` (a `develop`), `c057ade` (a producción) |
+| ADR-13 | Recordatorios por correo (Resend) | `ab30bb7` (diseño), `d45de20`, `a37f175`, `f2d80aa`, `a13d80a`, `f719c66`, `a938f9d` (implementación) · `060303c` (a `develop`), `c057ade` (a producción) |
 
 > **ADRs en negrita** = creados en la pasada de alineación (2026-07-12) para cerrar decisiones que
 > estaban implementadas en el código pero no documentadas.
@@ -180,6 +213,6 @@ primero es el principal. *(Columna agregada el 2026-09-30.)*
 | [Fundaciones](Fases/fase-base-fundaciones.md) | 1–19, 26–34 | `258542f` → `bfeada0` |
 | [Fase 0 — US-06](Fases/fase-0-us06-dashboard.md) | 20–25, 28 (+ 30, 32 en docs; 48, 57 para el cierre) | `9ab2bec` → `08dad63`, `f200557` |
 | [Fase 1 — US-02](Fases/fase-1-us02-gestion-citas.md) | 35–39, 41–58 | `f2a7dff` → `c9ac69f` |
-| [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | 59, 61–73 | `ab30bb7` (diseño) · `daf0617` → `f2ccb01` (implementación, en rama) |
+| [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | 59, 61–74, 76–83 | `ab30bb7` (diseño) · `daf0617` → `f2ccb01` (implementación) · `060303c` (a `develop`) · `893c112` → `4fc9a86` (Netlify, `tenantNombre`, DT-30) · `c057ade` (release a producción, 2026-10-06) |
 | [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | ninguna propia (ADR-10 y FD-06 entraron en 38, 41 y 54) | — |
-| transversal | 40 (ROADMAP), 60 (navegación por fases) | `cea0bd1`, `2f33394` |
+| transversal | 40 (ROADMAP), 60 (navegación por fases), 75 (primer release a `main`) | `cea0bd1`, `2f33394`, `f1f711f` |

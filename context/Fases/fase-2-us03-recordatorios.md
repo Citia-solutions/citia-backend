@@ -9,15 +9,114 @@
 |---|---|
 | **Objetivo** | Que el paciente reciba un recordatorio automático por correo antes de su hora, sin que el profesional le escriba; y que el equipo se entere de un fallo antes que el cliente. |
 | **Entregable** | El profesional configura sus recordatorios; el sistema los programa, los envía por correo, registra su entrega y refleja reagendar y cancelar; si algo falla, llega una alerta (ROADMAP). |
-| **Estado** | ✅ **implementada en la rama `feature/fase2-recordatorios`** (2026-10-04) · ⏳ **pendiente de merge** ([PR #1](https://github.com/Citia-solutions/citia-backend/pull/1) y, en el mismo release, [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2) del frontend) **y de los prerrequisitos operativos** ([checklist](#checklist-de-salida-a-producción)) · **en el MVP** (Q1 → A). |
-| **Fechas** | diseño y decisiones: 2026-09-30 · merge del diseño a `develop`: 2026-10-01 · implementación: 2026-10-01 → 2026-10-04. |
+| **Estado** | ✅ **cerrada en producción (2026-10-07)** · **en el MVP** (Q1 → A). Release a `main` el 2026-10-06: backend [PR #4](https://github.com/Citia-solutions/citia-backend/pull/4) (`c057ade`) y frontend [PR #6](https://github.com/Citia-solutions/citia-frontend/pull/6); prueba de punta a punta con un correo real el 2026-10-07 ([cierre](#cierre-de-la-fase-2026-10-07)). Quedan [pendientes posteriores](#pendientes-posteriores), ninguno bloqueante. |
+| **Fechas** | diseño y decisiones: 2026-09-30 · merge del diseño a `develop`: 2026-10-01 · implementación: 2026-10-01 → 2026-10-04 · merge a `develop`: 2026-10-04 · release a producción: 2026-10-06 · cierre: 2026-10-07. |
 | **Historia** | US-03 — plan en [US/03-recordatorios.md](../US/03-recordatorios.md). |
-| **Commits** | filas 59 y 61–73 de [TRAZABILIDAD](../TRAZABILIDAD.md) (la 60 es transversal, pero entró en la misma rama del diseño): el diseño (`ab30bb7`, `2f33394`) está en `develop` desde el merge `510015a` (2026-10-01); la implementación (`daf0617` → `f2ccb01`) está **solo en la rama `feature/fase2-recordatorios`**. [Cronología](#cronología-commit--documento). |
+| **Commits** | filas 59, 61–74 y 76–83 de [TRAZABILIDAD](../TRAZABILIDAD.md) (la 60 y la 75 son transversales): el diseño (`ab30bb7`, `2f33394`) está en `develop` desde el merge `510015a` (2026-10-01); la implementación (`daf0617` → `f2ccb01`), desde el merge del PR #1 (`060303c`, 2026-10-04); todo está en `main` —producción— desde el release `c057ade` (2026-10-06). [Cronología](#cronología-commit--documento). |
 | **Feature** | [Features/us03-recordatorios.md](../Features/us03-recordatorios.md) |
 
 ---
 
+## Cierre de la fase (2026-10-07)
+
+La Fase 2 está **en producción** desde el release del 2026-10-06 y se dio por **cerrada** el 2026-10-07,
+tras la prueba de punta a punta con un correo real. Con ella, **el MVP completo** (Fases 0, 1 y 2) está en
+producción. Siguiente: la [Fase 3](fase-3-us04-respuesta-paciente.md) (US-04, respuesta del paciente).
+
+### Qué se entregó
+
+- **Backend** (PR #1, más PR #3 en el mismo release): outbox transaccional con despachador y planificador
+  en Postgres (cierra [DT-27](../Deudas/DT-27.md)); módulo `recordatorio` completo —configuración por
+  profesional, planificación pura, reconciliación por hechos y respaldo cada hora, envío por Resend con
+  revalidación, políticas, cuota y fusible por tenant, webhook firmado, estado por cita—; correo del
+  paciente obligatorio y `PATCH /api/pacientes/:id`; logs JSON con pino, `GET /api/health`, latidos y
+  alertas por log; **validación estricta del entorno en producción** (sin defaults para la base y
+  `FRONTEND_URL`, `JWT_SECRET` de 32 caracteres o más, `MENSAJERIA_ADAPTADOR` obligatoria); CORS por
+  lista. En el mismo release, el login devuelve **`tenantNombre`** (`173d6b6`).
+- **Frontend** (PR #2 a #5): correo obligatorio en el modal, pantalla `/recordatorios`, estado de los
+  recordatorios y vista *Contacto* en el voucher, despliegue en Netlify con `public/_redirects`; la
+  limpieza previa al release —**sin mock** (el dashboard muestra cuatro tarjetas con datos reales),
+  sesión persistente, **Confirmar / Asistió / No asistió** en el voucher, que mitiga
+  [DT-30](../Deudas/DT-30.md)—; y detalles menores —página 404, fechas pasadas, **zona horaria fija de
+  Chile** (cierra DTF-07 del frontend), calendario público, Git Flow en las instrucciones—.
+- **Infraestructura:** Railway con un entorno por rama (staging ← `develop`, production ← `main`), cada uno
+  con su Postgres; Netlify con un sitio por entorno; DNS en Cloudflare; subdominio de envío verificado en
+  Resend; monitor y heartbeats en Better Stack. Mapa completo en
+  [stack § Mapa de entornos](../stack-tecnologico.md#mapa-de-entornos).
+
+### Cómo se verificó
+
+| Nivel | Qué | Resultado |
+|---|---|---|
+| Automático (2026-10-04, antes del merge) | 1274 unitarios, 212 e2e y 80 de integración; `eslint` | ✅ en verde; Definición de Terminado automática completa |
+| Arranque en producción | la validación estricta del entorno acepta las variables de production; el `entrypoint.sh` aplica las migraciones sobre la base nueva | ✅ la app arranca (con una variable obligatoria mal puesta, no lo haría) |
+| Observabilidad en producción | monitor de `/api/health`; heartbeats `citia-prod-recordatorios` y `citia-prod-eventos` | ✅ en **Up**, alertas por correo |
+| **Punta a punta en producción** (2026-10-07) | tres citas a las 16:00 con el correo del usuario como paciente y el recordatorio configurado a **30 min** antes | ✅ ver abajo |
+| No verificado | prueba de alerta forzada; cabeceras SPF, DKIM y DMARC; seguimiento de aperturas y clics apagado | ⬜ [DT-19](../Deudas/DT-19.md), [DT-41](../Deudas/DT-41.md) |
+
+**La prueba de punta a punta.** A las 15:30 llegaron **tres correos**, uno por cita y **sin duplicados**, a
+la **bandeja de entrada** (no a spam), desde `Citia <recordatorios@notificaciones.citiahealth.cl>`, con la
+fecha y la hora **en hora de Chile** y **sin datos de salud**. En el voucher, los tres recordatorios
+pasaron a **Entregado**. Eso confirma, en producción y de una vez:
+
+- la planificación desde la configuración del profesional (30 min es la antelación mínima permitida) y el
+  job de envío del planificador;
+- un correo por recordatorio, sin duplicados (la idempotencia bajo concurrencia —clave única,
+  `SKIP LOCKED`, `Idempotency-Key`— ya estaba probada en los e2e);
+- la plantilla: zona de la clínica ([ADR-07](../Decisions/ADR-07.md)) y privacidad
+  ([ADR-13 §12](../Decisions/ADR-13.md));
+- el subdominio de envío verificado: el correo llegó a la bandeja de entrada y no a spam;
+- el **webhook firmado** (Svix): solo él puede llevar un recordatorio a `entregado`.
+
+### Incidentes de la puesta en producción
+
+| # | Incidente | Efecto | Causa | Resolución |
+|---|---|---|---|---|
+| 1 | Railway desplegaba el **repo personal** | el backend publicado era un código congelado en agosto (`bfeada0`, 2026-08-16), no el de la organización | el servicio se había creado conectado a `BasthianAlejandr0/citia-backend` | se reconectó a `Citia-solutions/citia-backend`: **staging** ← `develop` y **production** ← `main`, cada uno con su Postgres y las `DB_*` como referencias (`${{Postgres.PGHOST}}`, …) |
+| 2 | **`main` sin historia común** con `develop` | no se podía hacer un release `develop` → `main` | `main` solo tenía el commit inicial que crea GitHub (README) | merge con `--allow-unrelated-histories` (`f1f711f`, 2026-10-04); production arrancó con una **base nueva**. Desde ahí los releases son PR normales (PR #4) |
+| 3 | **Variables copiadas de staging** | production corrió con `MENSAJERIA_ADAPTADOR=registro`: varios recordatorios quedaron **"Enviado" sin enviarse** | se importaron en bloque las variables de staging; `registro` es un valor válido y la validación lo aceptó | `MENSAJERIA_ADAPTADOR=resend`, `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET` y `CORREO_DOMINIO` propios de production; el comportamiento de `registro` queda como [DT-40](../Deudas/DT-40.md) |
+| 4 | **Netlify cruzado** | el sitio de staging compilaba contra el backend de **producción** y el de producción desplegaba **`develop`** | la configuración de los dos sitios quedó intercambiada (rama de producción y `VITE_API_URL`) | cada sitio con su rama y su `VITE_API_URL`; corregido y verificado el 2026-10-07 |
+
+### Lecciones aprendidas
+
+1. **Mirar qué repo y qué rama despliega cada servicio**, en el panel y no de memoria, antes del primer
+   release: se daba por bueno un despliegue que llevaba semanas congelado.
+2. **No copiar variables entre entornos en bloque.** Las que cambian el comportamiento
+   (`MENSAJERIA_ADAPTADOR`, `FRONTEND_URL`, `CORREO_DOMINIO`, las URL de latido, `VITE_API_URL`) se revisan
+   una por una. Mejor todavía: que el código rechace las combinaciones peligrosas ([DT-40](../Deudas/DT-40.md)).
+3. **"Enviado" no es "llegó".** Solo *Entregado* (por el webhook) prueba la entrega; una prueba de punta a
+   punta mira la bandeja del destinatario y el voucher hasta *Entregado*.
+4. **Un aviso en el log no es una alerta.** El `warn` de `registro` en producción existía y nadie lo vio:
+   sin la fuente de logs en Better Stack, tampoco llegan las alertas de tasa de fallo y de cuota
+   ([DT-19](../Deudas/DT-19.md)).
+5. **`VITE_API_URL` se incrusta al compilar:** un sitio mal configurado llama al backend equivocado sin
+   ningún error visible. Tras cada cambio de configuración, comprobar en la pestaña de red a qué API llama
+   cada sitio.
+6. **Inicializar `main` desde `develop` el primer día** evita el merge de historias no relacionadas.
+7. **Los planes gratis condicionan la operación:** con ~15 deploys al mes en Netlify, las *deploy
+   previews* y los *branch deploys* quedaron apagados.
+
+### Pendientes posteriores
+
+Ninguno bloquea el cierre. También en el [ROADMAP](../ROADMAP.md#pendientes-posteriores-al-cierre).
+
+| Pendiente | Por qué | Dónde |
+|---|---|---|
+| Que `registro` no marque "Enviado" en producción, o que la app no arranque con él sin confirmarlo | el incidente 3 se repite con solo copiar variables | [DT-40](../Deudas/DT-40.md) |
+| Registro **DMARC** (TXT `_dmarc.notificaciones` = `v=DMARC1; p=none;`), revisar las cabeceras y confirmar el seguimiento apagado en Resend | autenticación del correo completa | [DT-41](../Deudas/DT-41.md) |
+| **Fuente de logs** en Better Stack, alertas por log y prueba de alerta forzada | sin ella, las alertas de tasa de fallo y cuota no llegan | [DT-19](../Deudas/DT-19.md) |
+| **Resend en staging** | staging corre con `registro`: no prueba el envío real ni el webhook. Opciones: otra clave con el mismo dominio (comparte la cuota, [DT-36](../Deudas/DT-36.md)) o el remitente de pruebas de Resend, que solo entrega al correo de la cuenta | Railway (staging) |
+| Redirigir `citiahealth.cl` y `www` a `app.citiahealth.cl` | hoy muestran la página estacionada de Hostinger | Cloudflare |
+| Confirmar **"App Sleeping" apagado** | requisito de [ADR-12 §7](../Decisions/ADR-12.md); hoy solo se infiere de los heartbeats en Up | Railway (production) |
+| Confirmar el **`FRONTEND_URL` del backend de staging** | el plan preveía `staging.citiahealth.cl`; el sitio quedó en `citia-staging.netlify.app` | Railway (staging) |
+| Contar los pacientes sin correo en production | los creados entre el 2026-10-04 y el 2026-10-06, si los hay, quedan `omitido` | [checklist](#checklist-de-salida-a-producción) |
+| Decisiones Q12–Q15 | [abajo](#decisiones-pendientes-del-usuario-2026-10-04) | PREGUNTAS |
+
+---
+
 ## Estado al 2026-10-04
+
+> *Histórico: el estado antes del merge. El vigente es el [cierre](#cierre-de-la-fase-2026-10-07).*
 
 - **Construido y en verde** en la rama `feature/fase2-recordatorios`: outbox con despachador y
   planificador (cierra [DT-27](../Deudas/DT-27.md)), logs con pino, `GET /api/health`, latidos,
@@ -36,6 +135,10 @@
 ---
 
 ## Guía de lectura de la implementación (2026-10-04)
+
+> *(2026-10-07.)* Para lo que pasó después del merge —release, infraestructura, incidentes y la prueba con
+> un correo real— lee primero el [cierre](#cierre-de-la-fase-2026-10-07) y
+> [us03 § En producción](../Features/us03-recordatorios.md#en-producción-2026-10-07).
 
 1. **[Features/us03-recordatorios.md](../Features/us03-recordatorios.md)** — lo que existe: arquitectura,
    flujo outbox → suscriptor → reconciliación → envío → webhook, endpoints con contrato exacto, tablas,
@@ -59,41 +162,53 @@
 
 ## Checklist de salida a producción
 
-Lo que falta, fuera del código, para que el primer recordatorio llegue a un paciente real. El orden
-importa: los tres primeros dependen de DNS y del proveedor.
+Lo que faltaba, fuera del código, para que el primer recordatorio llegara a un paciente real.
+*(Estado real al 2026-10-07: ✅ hecho · 🔶 hecho sin confirmar del todo · ⬜ pendiente opcional, en
+[Pendientes posteriores](#pendientes-posteriores).)*
 
-- [x] **Dominio** `citiahealth.cl` comprado y su DNS **delegado a Cloudflare**.
-- [ ] **Subdominio de envío verificado en Resend** (p. ej. `notificaciones.citiahealth.cl`): registros SPF,
-      DKIM, MX de retorno y DMARC (`p=none` al inicio) en Cloudflare, **solo DNS, sin proxy**; seguimiento
-      de aperturas y clics **desactivado**; clave de API creada.
-- [ ] **Webhook creado** en Resend hacia `https://<backend>/api/webhooks/resend` con los eventos `email.*`;
-      su secreto `whsec_…` va a `RESEND_WEBHOOK_SECRET`. Sin él, nada pasa a `entregado` y la tasa de fallo
-      no ve los rebotes ([DT-37](../Deudas/DT-37.md)).
-- [ ] **Better Stack:** monitor de uptime sobre `GET /api/health`; heartbeats `recordatorios` (cada minuto,
-      5 de gracia) y `salida`; fuente de logs; destino de las alertas. Comprobar si el plan gratis tiene
-      alertas por consulta de logs.
-- [ ] **Variables en Railway** (el arranque falla si falta alguna obligatoria):
-      `NODE_ENV=production`; `JWT_SECRET` de **32 caracteres o más** (no de ejemplo); `FRONTEND_URL` =
-      el origen del frontend publicado, **sin ruta**; `MENSAJERIA_ADAPTADOR=resend`; `RESEND_API_KEY`;
-      `RESEND_WEBHOOK_SECRET`; `CORREO_DOMINIO` (el subdominio verificado); `CORS_ORIGENES_EXTRA` (vistas
-      previas: el comodín solo admite `*.<proyecto>.pages.dev`; las de Netlify van como orígenes exactos);
-      `BETTERSTACK_SOURCE_TOKEN`, `BETTERSTACK_INGESTING_HOST`, `BETTERSTACK_HEARTBEAT_SALIDA_URL` y
-      `BETTERSTACK_HEARTBEAT_RECORDATORIOS_URL`. Además de las `DB_*`. Tabla completa en
-      [us03 § Variables](../Features/us03-recordatorios.md#variables-de-entorno).
-- [ ] **"App Sleeping" apagado** en el servicio del backend en Railway ([ADR-12 §7](../Decisions/ADR-12.md)).
-- [ ] **Frontend publicado en Netlify**: un sitio por entorno (`develop` → `staging.citiahealth.cl`,
-      `main` → `app.citiahealth.cl`), con `public/_redirects`, `VITE_API_URL` apuntando al backend de
-      Railway de ese entorno, y su dominio en el `FRONTEND_URL` del backend correspondiente.
-- [ ] **Migraciones** `1750000008000` a `1750000011000` aplicadas (las corre el `entrypoint.sh` al
-      arrancar; `eventos_salida`, `configuraciones_recordatorio`, `recordatorios`, `supresiones_correo`).
-- [ ] **Contar los pacientes sin correo** antes del despliegue:
-      `SELECT count(*) FROM pacientes WHERE correo IS NULL OR btrim(correo) = '';` — sus recordatorios
-      quedarán `omitido` (`sin_correo`) hasta completarlos con `PATCH /api/pacientes/:id`.
-- [ ] **Merge** de [PR #1](https://github.com/Citia-solutions/citia-backend/pull/1) y
-      [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2) en el **mismo release** (sin el
-      frontend nuevo, el modal recibe 400 por el correo).
-- [ ] Los **dos puntos manuales** de la Definición de Terminado: latido y alerta de prueba en Better
-      Stack (cierra [DT-19](../Deudas/DT-19.md)); un recordatorio real con SPF, DKIM y DMARC en `pass`.
+- [x] ✅ **Dominio** `citiahealth.cl` comprado (Hostinger; registro en NIC Chile; vence el 2027-10-01) y su
+      DNS **delegado a Cloudflare**.
+- [x] ✅ **Subdominio de envío verificado en Resend:** `notificaciones.citiahealth.cl` (región São Paulo);
+      en Cloudflare, **solo DNS**, CNAME `send` y `rsend` y el TXT de DKIM; clave de API creada.
+      ⬜ **Falta DMARC** (TXT `_dmarc.notificaciones` = `v=DMARC1; p=none;`) y confirmar que el seguimiento
+      de aperturas y clics está apagado → [DT-41](../Deudas/DT-41.md).
+- [x] ✅ **Webhook creado** en Resend hacia `/api/webhooks/resend` del backend de production, con los eventos
+      `email.*` y su secreto en `RESEND_WEBHOOK_SECRET`: el voucher llegó a *Entregado* en la prueba
+      ([DT-37](../Deudas/DT-37.md), punto 1).
+- [x] ✅ **Better Stack:** monitor de uptime sobre `GET /api/health`; heartbeats `citia-prod-recordatorios`
+      (job de envío) y `citia-prod-eventos` (despachador `salida`) en **Up**; alertas por correo (las
+      llamadas a teléfonos de Chile no están habilitadas en la cuenta). ⬜ Fuente de logs y alertas por
+      consulta de logs → [DT-19](../Deudas/DT-19.md).
+- [x] ✅ **Variables en Railway** (production): `NODE_ENV=production` (lo fija la imagen); `JWT_SECRET` propio
+      (la validación exige 32 caracteres o más); `FRONTEND_URL=https://app.citiahealth.cl`; `MENSAJERIA_ADAPTADOR=resend`;
+      `RESEND_API_KEY`; `RESEND_WEBHOOK_SECRET`; `CORREO_DOMINIO=notificaciones.citiahealth.cl`; las dos URL
+      de latido; las `DB_*` como referencias al Postgres del entorno. La validación estricta del entorno las
+      acepta. `CORS_ORIGENES_EXTRA` no hace falta: las vistas previas de Netlify están apagadas.
+      ⬜ `BETTERSTACK_SOURCE_TOKEN` y `BETTERSTACK_INGESTING_HOST`. *(Al principio estaban copiadas de
+      staging, con `registro`: [incidente 3](#incidentes-de-la-puesta-en-producción).)* Tabla completa en
+      [us03 § En producción](../Features/us03-recordatorios.md#en-producción-2026-10-07).
+- [ ] 🔶 **"App Sleeping" apagado** en el servicio del backend ([ADR-12 §7](../Decisions/ADR-12.md)): sin
+      confirmar en el panel; los heartbeats cada minuto siguen en Up, lo que indica que el proceso no se
+      duerme.
+- [x] ✅ **Frontend publicado en Netlify**, un sitio por entorno: `app.citiahealth.cl` ← `main` (production)
+      y `citia-staging` ← `develop` (`citia-staging.netlify.app`; el `staging.citiahealth.cl` del plan no se
+      creó), con `public/_redirects` y `VITE_API_URL` apuntando al backend de su entorno. *Deploy
+      previews* y *branch deploys* apagados por créditos.
+- [x] ✅ **Migraciones** `1750000008000` a `1750000011000` aplicadas por el `entrypoint.sh` sobre la base nueva
+      de production (la prueba de punta a punta usa las cuatro tablas).
+- [ ] ⬜ **Contar los pacientes sin correo:** no se hizo. Production arrancó con una base nueva el
+      2026-10-04 y corrió la Fase 1 (sin correo obligatorio) solo hasta el release del 2026-10-06, así que
+      el riesgo es bajo; si en ese lapso se creó algún paciente sin correo, sus recordatorios quedan
+      `omitido` (`sin_correo`) hasta completarlo con `PATCH /api/pacientes/:id`. La consulta:
+      `SELECT count(*) FROM pacientes WHERE correo IS NULL OR btrim(correo) = '';`.
+- [x] ✅ **Merge** de [PR #1](https://github.com/Citia-solutions/citia-backend/pull/1) y
+      [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2) a `develop` (2026-10-04) y **release
+      conjunto** a producción el 2026-10-06: backend [PR #4](https://github.com/Citia-solutions/citia-backend/pull/4)
+      y frontend [PR #6](https://github.com/Citia-solutions/citia-frontend/pull/6).
+- [x] ✅ Los **dos puntos manuales** de la Definición de Terminado, con dos salvedades anotadas: no se hizo la
+      prueba de alerta forzada ([DT-19](../Deudas/DT-19.md)) y no se inspeccionaron las cabeceras SPF, DKIM
+      y DMARC, que además no tiene registro ([DT-41](../Deudas/DT-41.md)). Detalle en
+      [US-03](../US/03-recordatorios.md#definición-de-terminado).
 
 > Desde el despliegue, **todas las citas futuras** reciben recordatorios (activos por defecto a las 24 h
 > y 2 h): la reconciliación de respaldo programa en la primera hora las que ya existían.
@@ -177,12 +292,13 @@ decisión de producto al plan, y de la infraestructura a la feature— y qué mi
 En este orden (de la que más pesa a la más mecánica):
 
 1. **[DT-30](../Deudas/DT-30.md)** — **nueva.** La asistencia real no se registra y no se puede
-   reconstruir. Mira la tabla de salidas A/B/C y lo que implica esperar a la Fase 3.
+   reconstruir. Mira la tabla de salidas A/B/C y lo que implica esperar a la Fase 3. *(2026-10-05:
+   mitigada; el usuario revirtió la salida C y el voucher registra la asistencia.)*
 2. **[DT-11](../Deudas/DT-11.md)** — aplazada con el scoring; mira el matiz de la **fecha de corte**
    para el `ghosting` retroactivo.
 3. **[DT-16](../Deudas/DT-16.md)** — riesgo aceptado; mira los **disparadores de revisión** (Ley
    21.719, prevista para el 2026-12-01).
-4. **[DT-19](../Deudas/DT-19.md)** — resuelta en diseño; la tabla de lo decidido y el criterio de cierre. *(2026-10-04: implementada; falta la prueba manual.)*
+4. **[DT-19](../Deudas/DT-19.md)** — resuelta en diseño; la tabla de lo decidido y el criterio de cierre. *(2026-10-04: implementada; falta la prueba manual. 2026-10-07: verificada en producción; falta la fuente de logs.)*
 5. **[DT-27](../Deudas/DT-27.md)** — resuelta en diseño por ADR-12 (ya leída en el punto 3). *(2026-10-04: cerrada.)*
 6. **[DT-21](../Deudas/DT-21.md)** — `recordatorio/` se rehace; un commit de limpieza aparte. *(2026-10-04: cerrada, sin commit aparte: git no versiona carpetas vacías.)*
 7. **[DT-29](../Deudas/DT-29.md)** — la nota sobre `asistencia` e `inasistencia` sin consumir.
@@ -221,7 +337,7 @@ En este orden (de la que más pesa a la más mecánica):
 verificar el subdominio de envío en Resend; cuentas de Resend y Better Stack; Railway con "App
 Sleeping" desactivado. **Sin el dominio verificado no se puede escribir a pacientes reales.**
 *(2026-10-04: el dominio ya está comprado —`citiahealth.cl`, delegado a Cloudflare—; el resto sigue en el
-[checklist](#checklist-de-salida-a-producción).)*
+[checklist](#checklist-de-salida-a-producción). 2026-10-07: todo hecho, salvo lo anotado en el checklist.)*
 
 ---
 
@@ -244,7 +360,34 @@ Sleeping" desactivado. **Sin el dominio verificado no se puede escribir a pacien
 | 71 | `a938f9d` | 2026-10-04 | Definición de Terminado; `src/arquitectura.spec.ts` | [US-03](../US/03-recordatorios.md#definición-de-terminado) · [ADR-02](../Decisions/ADR-02.md#nota-2026-10-04-el-check-del-4-pasa-a-ser-un-test) · [DT-31](../Deudas/DT-31.md) |
 | 72 | `8dd4747` | 2026-10-04 | coverage sin los specs | — (tooling) |
 | 73 | `f2ccb01` | 2026-10-04 | vista previa del backend en `.claude/launch.json` | — (tooling) |
-| — | *(esta pasada de documentación)* | 2026-10-04 | implementación de la Fase 2 en `context/` | se registra en la próxima pasada ([convención](../TRAZABILIDAD.md)) |
+| 74 | `4967ab5` | 2026-10-04 | implementación de la Fase 2 en `context/` | **nuevos:** [us03-recordatorios](../Features/us03-recordatorios.md), DT-31 a DT-39 · notas de implementación en ADR-12 y ADR-13 · nota en ADR-02 · checklist · Q12–Q15 |
+| 75 | `f1f711f` | 2026-10-04 | merge `develop` → `main` con `--allow-unrelated-histories` (transversal) | — (primer release a producción, **sin** la Fase 2; [incidente 2](#incidentes-de-la-puesta-en-producción)) |
+| 76 | `060303c` | 2026-10-04 | merge PR #1 → `develop` | — (lleva 62–74 a `develop` y a staging) |
+| 77 | `893c112` | 2026-10-04 | el frontend se queda en Netlify | [stack](../stack-tecnologico.md#despliegue-del-frontend-netlify), ROADMAP, esta guía, US-03 |
+| 78 | `31d2c9e` | 2026-10-04 | merge PR #2 (docs Netlify) → `develop` | — |
+| 79 | `173d6b6` | 2026-10-05 | `tenantNombre` en la respuesta del login | [us00b](../Features/us00b-login.md) |
+| 80 | `9fdb989` | 2026-10-05 | la vista previa del backend acepta el frontend local | — (tooling) |
+| 81 | `e603ed3` | 2026-10-05 | la asistencia desde el voucher mitiga DT-30 | [DT-30](../Deudas/DT-30.md), [DT-29](../Deudas/DT-29.md), Deudas/README |
+| 82 | `4fc9a86` | 2026-10-05 | merge PR #3 → `develop` | — (integra 79–81) |
+| 83 | `c057ade` | 2026-10-06 | merge PR #4 `develop` → `main`: **release de la Fase 2** | — (lleva 74 y 76–82 a producción) |
+| — | *(esta pasada de documentación)* | 2026-10-07 | cierre de la Fase 2 en `context/` | se registra en la próxima pasada ([convención](../TRAZABILIDAD.md)) |
+
+### PR y releases de los dos repos
+
+| Fecha y hora | Repo | PR | Rama → destino | Qué | Merge |
+|---|---|---|---|---|---|
+| 2026-10-01 | backend | — | `docs/fase2-recordatorios` → `develop` | diseño de la fase | `510015a` |
+| 2026-10-04 16:13 | backend | — | `develop` → `main` | primer release (Fase 1, sin la Fase 2); une las historias | `f1f711f` |
+| 2026-10-04 16:15 | backend | [#1](https://github.com/Citia-solutions/citia-backend/pull/1) | `feature/fase2-recordatorios` → `develop` | **Fase 2 completa** | `060303c` |
+| 2026-10-04 16:30 | frontend | [#2](https://github.com/Citia-solutions/citia-frontend/pull/2) | `feature/fase2-recordatorios` → `develop` | correo obligatorio, `/recordatorios`, estado en el voucher | `8fc0158` |
+| 2026-10-04 16:40 | frontend | [#3](https://github.com/Citia-solutions/citia-frontend/pull/3) | `chore/netlify-spa` → `develop` | *fallback* de SPA para Netlify | `098afac` |
+| 2026-10-04 16:40 | backend | [#2](https://github.com/Citia-solutions/citia-backend/pull/2) | `docs/frontend-netlify` → `develop` | el frontend se queda en Netlify (docs) | `31d2c9e` |
+| 2026-10-05 21:04 | frontend | [#4](https://github.com/Citia-solutions/citia-frontend/pull/4) | `feature/frontend-prerelease` → `develop` | limpieza previa: sin mock, sesión persistente, asistencia en el voucher | `e40e9df` |
+| 2026-10-05 21:04 | backend | [#3](https://github.com/Citia-solutions/citia-backend/pull/3) | `feature/login-tenant-nombre` → `develop` | `tenantNombre` en el login, vista previa, DT-30 mitigada | `4fc9a86` |
+| 2026-10-06 17:55 | frontend | [#5](https://github.com/Citia-solutions/citia-frontend/pull/5) | `chore/frontend-detalles-menores` → `develop` | 404, fechas pasadas, zona horaria fija de Chile, calendario público, Git Flow | `b8fa400` |
+| 2026-10-06 21:59 | backend | [#4](https://github.com/Citia-solutions/citia-backend/pull/4) | `develop` → `main` | **release de la Fase 2** | `c057ade` |
+| 2026-10-06 21:59 | frontend | [#6](https://github.com/Citia-solutions/citia-frontend/pull/6) | `develop` → `main` | **release de la Fase 2** | `f6ba0f9` |
+| 2026-10-07 | — | — | — | configuración de production, prueba de punta a punta, **cierre** | — |
 
 ---
 
@@ -252,13 +395,15 @@ Sleeping" desactivado. **Sin el dominio verificado no se puede escribir a pacien
 
 | ADR | En una línea | Estado |
 |---|---|---|
-| [ADR-12](../Decisions/ADR-12.md) | Outbox transaccional y planificador en proceso sobre Postgres; cierre de citas aplazado | Aceptado · **implementado** en la rama (PR #1, pendiente de merge) · [notas](../Decisions/ADR-12.md#notas-de-implementación-2026-10-04) |
-| [ADR-13](../Decisions/ADR-13.md) | Recordatorios por correo: entidad con estado, planificación pura, Resend detrás de un puerto | Aceptado · **implementado** en la rama (PR #1, pendiente de merge) · decisiones confirmadas (2026-09-30) · [notas](../Decisions/ADR-13.md#notas-de-implementación-2026-10-04) |
+| [ADR-12](../Decisions/ADR-12.md) | Outbox transaccional y planificador en proceso sobre Postgres; cierre de citas aplazado | Aceptado · **implementado y en producción** (2026-10-06) · [notas](../Decisions/ADR-12.md#notas-de-implementación-2026-10-04) |
+| [ADR-13](../Decisions/ADR-13.md) | Recordatorios por correo: entidad con estado, planificación pura, Resend detrás de un puerto | Aceptado · **implementado y en producción** (2026-10-06; verificado con un correo real el 2026-10-07) · decisiones confirmadas (2026-09-30) · [notas](../Decisions/ADR-13.md#notas-de-implementación-2026-10-04) |
 | [ADR-02](../Decisions/ADR-02.md) | Convenciones: español + hexagonal | Aceptado · **nota del 2026-10-04**: el check del §4 pasa a ser `src/arquitectura.spec.ts` |
 
 Resuelve además tres de las *Decisiones previas* del ROADMAP: canal (correo), proveedor (Resend) y
 planificador (Postgres, sin Redis). **Decisiones del frontend:** ninguna FD nueva; las cuatro preguntas que
-dejó el frontend están en [Decisiones pendientes](#decisiones-pendientes-del-usuario-2026-10-04).
+dejó el frontend están en [Decisiones pendientes](#decisiones-pendientes-del-usuario-2026-10-04). **Decisiones
+del usuario durante el release:** el frontend se queda en Netlify (2026-10-04, `893c112`) y el voucher
+registra la asistencia (2026-10-05, revierte la salida C de [DT-30](../Deudas/DT-30.md)).
 
 ---
 
@@ -277,11 +422,13 @@ dejó el frontend están en [Decisiones pendientes](#decisiones-pendientes-del-u
 | Tipo | Deudas |
 |---|---|
 | **Creada** | [DT-30](../Deudas/DT-30.md) asistencia real no registrada · aplazada hasta la Fase 3 |
-| **Cerradas** (2026-10-03, en rama) | [DT-27](../Deudas/DT-27.md) (`f95b637`) · [DT-21](../Deudas/DT-21.md) (`f2d80aa`, `a37f175`) |
-| **Implementada, abierta hasta la prueba manual** | [DT-19](../Deudas/DT-19.md) (latido y alerta en Better Stack) |
+| **Cerradas** (2026-10-03) | [DT-27](../Deudas/DT-27.md) (`f95b637`) · [DT-21](../Deudas/DT-21.md) (`f2d80aa`, `a37f175`) |
+| **Mitigada** (2026-10-05) | [DT-30](../Deudas/DT-30.md): Confirmar, Asistió y No asistió en el voucher |
+| **Verificada en producción, abierta** (2026-10-07) | [DT-19](../Deudas/DT-19.md): heartbeats y monitor en Up; falta la fuente de logs y la prueba de alerta forzada |
+| **Detectadas en producción** (2026-10-07) | [DT-40](../Deudas/DT-40.md) `registro` marca "Enviado" sin enviar · [DT-41](../Deudas/DT-41.md) sin DMARC, cabeceras sin inspeccionar |
 | **Contraídas al implementar** (eran las previstas) | [DT-32](../Deudas/DT-32.md), [DT-33](../Deudas/DT-33.md), [DT-34](../Deudas/DT-34.md) (ADR-12) · [DT-35](../Deudas/DT-35.md), [DT-36](../Deudas/DT-36.md), [DT-37](../Deudas/DT-37.md), [DT-38](../Deudas/DT-38.md), [DT-39](../Deudas/DT-39.md) (ADR-13) |
 | **Detectada** | [DT-31](../Deudas/DT-31.md) imports que cruzan capas en otros módulos |
-| **Afectadas** | [DT-11](../Deudas/DT-11.md) aplazada · [DT-16](../Deudas/DT-16.md) riesgo aceptado, política implementada y apagada · [DT-20](../Deudas/DT-20.md) avance (concurrencia automatizada) · [DT-17](../Deudas/DT-17.md) horas sin envío globales · [DT-23](../Deudas/DT-23.md) completar un correo vacío por RUT · [DT-26](../Deudas/DT-26.md) se amplía a recordatorios y supresiones · [DT-29](../Deudas/DT-29.md) `POST /pacientes` sin consumidor; las rutas nuevas nacieron consumidas |
+| **Afectadas** | [DT-37](../Deudas/DT-37.md) webhook activo en producción · [DT-11](../Deudas/DT-11.md) aplazada · [DT-16](../Deudas/DT-16.md) riesgo aceptado, política implementada y apagada · [DT-20](../Deudas/DT-20.md) avance (concurrencia automatizada) · [DT-17](../Deudas/DT-17.md) horas sin envío globales · [DT-23](../Deudas/DT-23.md) completar un correo vacío por RUT · [DT-26](../Deudas/DT-26.md) se amplía a recordatorios y supresiones · [DT-29](../Deudas/DT-29.md) `POST /pacientes` sin consumidor; las rutas nuevas nacieron consumidas |
 
 ---
 
@@ -302,16 +449,18 @@ dejó el frontend están en [Decisiones pendientes](#decisiones-pendientes-del-u
 
 ## Planes de US
 
-- [US/03-recordatorios.md](../US/03-recordatorios.md) — ✅ implementada (en rama) · Definición de Terminado ✅
-  salvo los dos puntos manuales ❌.
+- [US/03-recordatorios.md](../US/03-recordatorios.md) — ✅ **cerrada en producción** (2026-10-07) · Definición
+  de Terminado ✅ completa, con dos salvedades anotadas en los puntos manuales (alerta forzada y cabeceras).
 
 ---
 
 ## Contraparte en el frontend
 
-*(2026-10-04.)* Implementada en la rama `feature/fase2-recordatorios` de `citia-frontend`
-([PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2)), que sale en el **mismo release** que
-el backend. Verificada solo con respuestas simuladas; falta la prueba contra el backend real.
+*(2026-10-04; actualizado el 2026-10-07.)* Mergeada en `develop` con
+[citia-frontend#2](https://github.com/Citia-solutions/citia-frontend/pull/2) (2026-10-04) y en producción con
+el release [citia-frontend#6](https://github.com/Citia-solutions/citia-frontend/pull/6) (2026-10-06), el mismo
+día que el backend. **Probada contra el backend real en producción** el 2026-10-07. Desde
+`app.citiahealth.cl` (production) y `citia-staging.netlify.app` (staging).
 
 | Pieza | Documento del frontend | Commit |
 |---|---|---|
@@ -320,9 +469,11 @@ el backend. Verificada solo con respuestas simuladas; falta la prueba contra el 
 | Estado de los recordatorios en el voucher y vista **Contacto** (`PATCH /api/pacientes/:id`) | [gestionar-cita](../../../citia-frontend/context/Features/gestionar-cita.md), [recordatorios](../../../citia-frontend/context/Features/recordatorios.md) | `2413eaf` |
 | ~~Despliegue en Cloudflare Workers Static Assets (`wrangler.jsonc`)~~ → reemplazado por **Netlify** (`public/_redirects`) el 2026-10-04 | `citia-frontend/context/stack-tecnologico.md` | `f98f760` → [citia-frontend#3](https://github.com/Citia-solutions/citia-frontend/pull/3) |
 | Documentación | `citia-frontend/context/` | `8dc2e9b` |
+| Limpieza previa al release ([PR #4](https://github.com/Citia-solutions/citia-frontend/pull/4)): sesión persistente y cerrar sesión, dashboard **sin mock** (cuatro tarjetas reales), Confirmar / Asistió / No asistió en el voucher (asistencia bloqueada antes de la hora) | [dashboard-citas-del-dia](../../../citia-frontend/context/Features/dashboard-citas-del-dia.md), [login-sesion](../../../citia-frontend/context/Features/login-sesion.md), [gestionar-cita](../../../citia-frontend/context/Features/gestionar-cita.md) | `a39dbdc`, `559f7c5`, `0165a4b` |
+| Detalles menores ([PR #5](https://github.com/Citia-solutions/citia-frontend/pull/5)): 404, fechas pasadas, modal, **zona horaria fija de Chile**, calendario público; Git Flow en las instrucciones | `citia-frontend/context/Deudas/` (DTF-07 cerrada) | `264a544`, `1d8e5f8` |
 
 Deudas del lado del frontend: DTF-06 (límites, horas sin envío y margen copiados del backend) y DTF-07
-(las horas se muestran en la zona del navegador). Sus preguntas abiertas están en
+(las horas se muestran en la zona del navegador; **cerrada el 2026-10-06**: zona fija de Chile). Sus preguntas abiertas están en
 [Decisiones pendientes](#decisiones-pendientes-del-usuario-2026-10-04).
 
 ---
@@ -330,8 +481,7 @@ Deudas del lado del frontend: DTF-06 (límites, horas sin envío y margen copiad
 ## Depende de / desbloquea
 
 - **Depende de:** la [Fase 1](fase-1-us02-gestion-citas.md) (los hechos que publican cita y bandeja) y
-  del dominio verificado en Resend (*2026-10-04: dominio comprado y delegado; falta verificar el subdominio
-  de envío*).
+  del dominio verificado en Resend (*2026-10-07: ✅ `notificaciones.citiahealth.cl` verificado*).
 - **Desbloquea:** la [Fase 3](fase-3-us04-respuesta-paciente.md) (el recordatorio lleva el enlace, bloque
   `accion` de la plantilla) · la [Fase 4](fase-4-us05-alertas.md) (las alertas son otro suscriptor del
   outbox) · la [Fase 5](fase-5-us07-scoring.md) (el job de cierre corre en este planificador).

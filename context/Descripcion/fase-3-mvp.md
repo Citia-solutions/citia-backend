@@ -6,7 +6,7 @@
 > del roadmap**; la "Fase 3" del roadmap es la [respuesta del paciente](../Fases/fase-3-us04-respuesta-paciente.md), fuera del MVP.
 
 **Objetivo:** decidir la **versión más pequeña** que entrega valor real y permite aprender.
-**Estado:** ✅ alcance decidido (2026-09-30: Q1 → A) · la tercera pieza, **implementada en rama** (2026-10-04) y pendiente de merge y de los prerrequisitos operativos
+**Estado:** ✅ alcance decidido (2026-09-30: Q1 → A) · ✅ **el MVP completo está en producción**: la tercera pieza salió con el release del 2026-10-06 y se cerró el 2026-10-07 ([Fase 2](../Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07))
 
 ---
 
@@ -24,7 +24,7 @@
 |---|-------|-----------|--------|
 | 1 | **Dashboard de citas del día** — paciente, hora y fecha | RF-03 · US-06 | ✅ implementado |
 | 2 | **Gestión de cita** — agendar, editar, reagendar, cancelar, agenda semanal, bandeja de solicitudes, aviso de solapamiento | US-02 | ✅ cerrada (`develop`, 2026-09-28) |
-| 3 | **Recordatorios al paciente** por correo | RF-06 · US-03 | ✅ implementada en la rama `feature/fase2-recordatorios` (2026-10-04, [us03](../Features/us03-recordatorios.md)) · ⏳ pendiente de merge y de los prerrequisitos operativos |
+| 3 | **Recordatorios al paciente** por correo | RF-06 · US-03 | ✅ **en producción** (release 2026-10-06, [us03](../Features/us03-recordatorios.md)) · cerrada el 2026-10-07 con un correo real |
 
 > **Cambio de alcance (2026-09-30).** La tercera pieza era la **calificación de asistencia** (RF-08,
 > "US-07"). El usuario respondió [Q1](../PREGUNTAS-ABIERTAS.md) con **A**: los recordatorios entran en
@@ -109,11 +109,13 @@ diarias). Pasar a pago cuesta US$20 al mes y se decide cuando el aviso del 80 % 
 ## Estado real del MVP hoy
 
 ```
-Pieza 1 · Dashboard              ██████████ implementado
-Pieza 2 · Gestión de cita        ██████████ cerrada (bandeja, agenda y solapamiento incluidos)
-Pieza 3 · Recordatorios          ████████░░ construida en rama · falta merge, verificar el subdominio y operar
+Pieza 1 · Dashboard              ██████████ en producción (sin mock desde el 2026-10-05)
+Pieza 2 · Gestión de cita        ██████████ en producción (bandeja, agenda, solapamiento y asistencia)
+Pieza 3 · Recordatorios          ██████████ en producción (correo real verificado el 2026-10-07)
 ```
 
+*(Actualizado el 2026-10-07: el MVP salió a producción con el release del 2026-10-06. Antes, el 2026-10-04,
+la pieza 3 estaba construida en rama, a falta del merge, del subdominio verificado y de operarla.)*
 *(Actualizado el 2026-10-04. Antes: la pieza 2 estaba "a falta de la bandeja", que se cerró el
 2026-09-28, y la pieza 3 era la calificación, bloqueada por el proceso de cierre; el 2026-09-30 la pieza 3
 pasó a ser los recordatorios, con el diseño cerrado.)*
@@ -127,8 +129,9 @@ pasó a ser los recordatorios, con el diseño cerrado.)*
    falta crear la cuenta de Better Stack.
 4. ~~Frontend: correo obligatorio, configuración y estado de los recordatorios~~ ✅ en rama; falta
    publicarlo y probarlo contra el backend real.
-5. **Mergear y salir a producción** con el
-   [checklist de la Fase 2](../Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción).
+5. ~~**Mergear y salir a producción** con el
+   [checklist de la Fase 2](../Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción).~~ ✅
+   release del 2026-10-06; verificado con un correo real el 2026-10-07 (pasos 1, 3 y 4 también hechos).
 6. Revisar el consentimiento antes del 2026-12-01 (Ley 21.719, [DT-16](../Deudas/DT-16.md)).
 
 ---
