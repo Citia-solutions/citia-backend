@@ -86,7 +86,7 @@ intesteable sin levantar el ORM.
 
 **Positivas:**
 - Se elimina de raíz el Tenant huérfano: registro verdaderamente atómico (todo o nada).
-- `application` permanece pura: el `tx` opaco no filtra TypeORM (ADR-02 intacto; grep sigue en 0).
+- `application` permanece pura: el `tx` opaco no filtra TypeORM (ADR-02 intacto; grep sigue en 0). *(2026-10-04: ese `grep` no detectaba nada; lo reemplaza `src/arquitectura.spec.ts`, en verde — [nota en ADR-02](ADR-02.md#nota-2026-10-04-el-check-del-4-pasa-a-ser-un-test).)*
 - Patrón **reutilizable**: cualquier caso de uso multi-repositorio puede envolverse en
   `TransactionRunner.run()` sin tocar el dominio.
 - Backward compatible: los repos siguen usables sin `tx`.

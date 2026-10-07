@@ -6,7 +6,7 @@
 > del roadmap**; la "Fase 3" del roadmap es la [respuesta del paciente](../Fases/fase-3-us04-respuesta-paciente.md), fuera del MVP.
 
 **Objetivo:** decidir la **versión más pequeña** que entrega valor real y permite aprender.
-**Estado:** ✅ alcance decidido (2026-09-30: Q1 → A) · la tercera pieza, diseñada y sin construir
+**Estado:** ✅ alcance decidido (2026-09-30: Q1 → A) · la tercera pieza, **implementada en rama** (2026-10-04) y pendiente de merge y de los prerrequisitos operativos
 
 ---
 
@@ -24,7 +24,7 @@
 |---|-------|-----------|--------|
 | 1 | **Dashboard de citas del día** — paciente, hora y fecha | RF-03 · US-06 | ✅ implementado |
 | 2 | **Gestión de cita** — agendar, editar, reagendar, cancelar, agenda semanal, bandeja de solicitudes, aviso de solapamiento | US-02 | ✅ cerrada (`develop`, 2026-09-28) |
-| 3 | **Recordatorios al paciente** por correo | RF-06 · US-03 | 🔶 diseño cerrado ([ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md)) · sin construir |
+| 3 | **Recordatorios al paciente** por correo | RF-06 · US-03 | ✅ implementada en la rama `feature/fase2-recordatorios` (2026-10-04, [us03](../Features/us03-recordatorios.md)) · ⏳ pendiente de merge y de los prerrequisitos operativos |
 
 > **Cambio de alcance (2026-09-30).** La tercera pieza era la **calificación de asistencia** (RF-08,
 > "US-07"). El usuario respondió [Q1](../PREGUNTAS-ABIERTAS.md) con **A**: los recordatorios entran en
@@ -111,21 +111,25 @@ diarias). Pasar a pago cuesta US$20 al mes y se decide cuando el aviso del 80 % 
 ```
 Pieza 1 · Dashboard              ██████████ implementado
 Pieza 2 · Gestión de cita        ██████████ cerrada (bandeja, agenda y solapamiento incluidos)
-Pieza 3 · Recordatorios          ██░░░░░░░░ diseño cerrado · falta construir y comprar el dominio
+Pieza 3 · Recordatorios          ████████░░ construida en rama · falta merge, verificar el subdominio y operar
 ```
 
-*(Actualizado el 2026-09-30. Antes: la pieza 2 estaba "a falta de la bandeja", que se cerró el
-2026-09-28, y la pieza 3 era la calificación, bloqueada por el proceso de cierre.)*
+*(Actualizado el 2026-10-04. Antes: la pieza 2 estaba "a falta de la bandeja", que se cerró el
+2026-09-28, y la pieza 3 era la calificación, bloqueada por el proceso de cierre; el 2026-09-30 la pieza 3
+pasó a ser los recordatorios, con el diseño cerrado.)*
 
 **El camino más corto al MVP completo:**
 
-1. **Comprar el dominio y verificarlo en Resend** — es lo único con plazos fuera del control del
-   equipo (DNS), así que conviene empezarlo ya y en paralelo.
-2. Outbox de los hechos ([ADR-12](../Decisions/ADR-12.md)) — antes que cualquier suscriptor.
-3. Recordatorios ([ADR-13](../Decisions/ADR-13.md), plan en [US-03](../US/03-recordatorios.md)) y
-   observabilidad mínima (Better Stack).
-4. Frontend: correo obligatorio en el alta, configuración y estado de los recordatorios.
-5. Revisar el consentimiento antes del 2026-12-01 (Ley 21.719, [DT-16](../Deudas/DT-16.md)).
+1. ~~Comprar el dominio~~ (✅ `citiahealth.cl`, delegado a Cloudflare) y **verificar el subdominio de
+   envío en Resend** — es lo único con plazos fuera del control del equipo (DNS).
+2. ~~Outbox de los hechos ([ADR-12](../Decisions/ADR-12.md))~~ ✅ construido en rama.
+3. ~~Recordatorios ([ADR-13](../Decisions/ADR-13.md)) y observabilidad mínima~~ ✅ construidos en rama;
+   falta crear la cuenta de Better Stack.
+4. ~~Frontend: correo obligatorio, configuración y estado de los recordatorios~~ ✅ en rama; falta
+   publicarlo y probarlo contra el backend real.
+5. **Mergear y salir a producción** con el
+   [checklist de la Fase 2](../Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción).
+6. Revisar el consentimiento antes del 2026-12-01 (Ley 21.719, [DT-16](../Deudas/DT-16.md)).
 
 ---
 

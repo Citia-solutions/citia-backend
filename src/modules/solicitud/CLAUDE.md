@@ -43,6 +43,10 @@ src/modules/solicitud/
   `TransactionRunner`. Todo lo autenticado va en `BandejaSolicitudesService`.
 - **Aceptar/rechazar**: una transacción + `buscarPorIdParaActualizar` (FOR UPDATE);
   `asegurarResolvible` **antes** de crear paciente/cita. Aceptar dos veces → 409.
+- **Paciente al aceptar** (vía `PacientesService.resolverOCrear`): si el RUT ya
+  existe se vincula sin tocar su ficha, **salvo** el correo vacío, que se completa
+  con el de la solicitud en la misma transacción (ADR-13 §14). Un correo ya
+  guardado, igual o distinto, nunca se reemplaza.
 - **La bandeja es de la organización**: filtra por `tenantId` del token, no por
   profesional. Quien resuelve queda como `usuarioId`.
 - **Datos sensibles**: `rut` canónico en BD, formateado en la respuesta, nunca en

@@ -176,7 +176,7 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
     citaRepo.citas.clear();
     cambioRepo.cambios.length = 0;
     pacienteRepo.pacientes.clear();
-    eventos.eventos.length = 0;
+    eventos.limpiar();
     tx.abiertas = 0;
 
     solicitudRepo.sembrar(solicitud(SOL_A, TENANT_A));
@@ -572,6 +572,12 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
       expect(solicitudRepo.cargasConBloqueo).toHaveLength(1);
       // Bitácora de la cita: "creada" por el profesional
       expect(cambioRepo.cambios.map((c) => c.tipo)).toEqual(['creada']);
+      // CitaCreada y SolicitudCitaAceptada, ambos con el tx de ESA
+      // transacción (ADR-12 §2)
+      expect(eventos.contextos).toHaveLength(2);
+      for (const contexto of eventos.contextos) {
+        expect(contexto).toBe(tx.ultimoContexto);
+      }
     });
 
     it('debería vincular al paciente existente por RUT sin crear otro ni tocar su ficha', async () => {
@@ -582,6 +588,30 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
       const body = res.body as AceptadaBody;
       expect(body.cita.pacienteId).toBe(PACIENTE_CONOCIDO);
       expect(body.cita.paciente.nombre).toBe('Ana Pérez (ficha)');
+      expect(pacienteRepo.pacientes.size).toBe(1);
+      // Ya tenía un correo distinto: nunca se reemplaza (ADR-13 §14).
+      expect(body.cita.paciente.correo).toBe('ana@mail.com');
+      expect(pacienteRepo.pacientes.get(PACIENTE_CONOCIDO)?.correo).toBe(
+        'ana@mail.com',
+      );
+    });
+
+    it('debería completar el correo vacío del paciente existente con el de la solicitud (ADR-13 §14)', async () => {
+      // Arrange — ficha vieja, anterior al correo obligatorio
+      const ficha = pacienteRepo.pacientes.get(PACIENTE_CONOCIDO)!;
+      pacienteRepo.pacientes.set(PACIENTE_CONOCIDO, { ...ficha, correo: null });
+
+      // Act
+      const res = await aceptar(SOL_A_RUT_CONOCIDO, tokenA).expect(201);
+
+      // Assert — se completa SOLO el correo; el resto de la ficha no cambia
+      const body = res.body as AceptadaBody;
+      expect(body.cita.pacienteId).toBe(PACIENTE_CONOCIDO);
+      expect(body.cita.paciente.correo).toBe('publico@mail.com');
+      expect(pacienteRepo.pacientes.get(PACIENTE_CONOCIDO)).toEqual({
+        ...ficha,
+        correo: 'publico@mail.com',
+      });
       expect(pacienteRepo.pacientes.size).toBe(1);
     });
 
@@ -765,6 +795,9 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
       expect(persistida?.usuarioId).toBe(USUARIO_A);
       expect(tx.abiertas).toBe(1);
       expect(solicitudRepo.cargasConBloqueo).toHaveLength(1);
+      // SolicitudCitaRechazada, con el tx de ESA transacción (ADR-12 §2)
+      expect(eventos.contextos).toHaveLength(1);
+      expect(eventos.contextos[0]).toBe(tx.ultimoContexto);
     });
 
     it('debería descartar un cuerpo si llega (no se guarda motivo)', async () => {

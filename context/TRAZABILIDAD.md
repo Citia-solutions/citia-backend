@@ -74,6 +74,20 @@ primero es el principal. *(Columna agregada el 2026-09-30.)*
 | 57 | `31ea490` docs(context): descartar FD-01 y aceptar DT-18 sin límite | 2026-09-29 | docs/decisión | [FD-01](Frontend-Decisions/FD-01.md) descartada; [ADR-09](Decisions/ADR-09.md) decisiones 2 y 8; [DT-18](Deudas/DT-18.md) aceptada; [ROADMAP](ROADMAP.md): Fases 0 y 1 cerradas | F1 · F0 |
 | 58 | `c9ac69f` merge `docs/decisiones-fd01-dt18` → `develop` | 2026-09-29 | merge | — (integra 57) | F1 |
 | 59 | `ab30bb7` docs(arch): ADR-12 outbox y planificador, ADR-13 recordatorios, DT-30 | 2026-09-30 | docs/decisión | **[ADR-12](Decisions/ADR-12.md)**, **[ADR-13](Decisions/ADR-13.md)**, **[US-03](US/03-recordatorios.md)** y **[DT-30](Deudas/DT-30.md)** (nuevos); DT-11, DT-16, DT-19, DT-21, DT-27 y DT-29 actualizadas; notas en ADR-04 y ADR-09 §3; Q1 y Q6; [stack](stack-tecnologico.md); [etapa 3 del producto](Descripcion/fase-3-mvp.md); índices, README y ROADMAP | F2 |
+| 60 | `2f33394` docs(context): navegación por fases y enlaces cruzados | 2026-09-30 | docs | **[`Fases/`](Fases/README.md)** (nueva: una guía por fase); columna Fase de este archivo; bloque de navegación en cada ADR, deuda, feature, US y FD; secciones *Por fase* en los índices | — |
+| 61 | `510015a` merge `docs/fase2-recordatorios` → `develop` | 2026-10-01 | merge | — (lleva 59 y 60 a `develop`) | F2 |
+| 62 | `daf0617` feat(database): tabla `eventos_salida` y repositorio del outbox | 2026-10-01 | feature | [ADR-12](Decisions/ADR-12.md) §1, §3 y [notas](Decisions/ADR-12.md#notas-de-implementación-2026-10-04); [us03 § Esquema](Features/us03-recordatorios.md#esquema-de-bd) | F2 |
+| 63 | `a6c237f` refactor(shared): `publicar(evento, tx)` exige la transacción | 2026-10-01 | refactor | [ADR-12](Decisions/ADR-12.md) §2; [us02 § Publicación de hechos](Features/us02-gestion-citas.md#publicación-de-hechos) | F2 · F1 |
+| 64 | `d45de20` feat(backend): pino, health check, latidos, validación de entorno y CORS por lista | 2026-10-03 | feature/infra | [ADR-13](Decisions/ADR-13.md) §16, §18; [DT-19](Deudas/DT-19.md); [infra § Fase 2](Features/infra-contenedores.md#fase-2-observabilidad-planificador-y-variables-nuevas); [us03 § Observabilidad](Features/us03-recordatorios.md#observabilidad) | F2 |
+| 65 | `f95b637` feat(backend): outbox real con despachador y planificador (cierra DT-27) | 2026-10-03 | feature | [ADR-12](Decisions/ADR-12.md) §2–§5; **cierra [DT-27](Deudas/DT-27.md)**; [us03 § Jobs](Features/us03-recordatorios.md#jobs-del-planificador) | F2 |
+| 66 | `db46e37` test(outbox): integración con Postgres, e2e en serie y planificador con AppModule | 2026-10-03 | test | [ADR-12 § Verificación](Decisions/ADR-12.md#verificación); [DT-20](Deudas/DT-20.md) avance; [US-03 § DoD](US/03-recordatorios.md#definición-de-terminado) | F2 |
+| 67 | `a37f175` feat(paciente): correo obligatorio y `PATCH /api/pacientes/:id` | 2026-10-03 | feature | [ADR-13](Decisions/ADR-13.md) §14; [us02 § Correo del paciente](Features/us02-gestion-citas.md#correo-del-paciente-obligatorio-fase-2); [DT-21](Deudas/DT-21.md) (`paciente/`); nota en `solicitud/CLAUDE.md` | F2 · F1 |
+| 68 | `f2d80aa` feat(database): persistencia de recordatorios (cierra DT-21) | 2026-10-03 | feature | [ADR-13](Decisions/ADR-13.md) §1–§2 y [notas](Decisions/ADR-13.md#notas-de-implementación-2026-10-04); **cierra [DT-21](Deudas/DT-21.md)**; [us03 § Esquema](Features/us03-recordatorios.md#esquema-de-bd) | F2 |
+| 69 | `a13d80a` feat(recordatorio): dominio, planificación pura y reconciliación | 2026-10-03 | feature | [ADR-13](Decisions/ADR-13.md) §3–§8; [us03 § Flujo](Features/us03-recordatorios.md#flujo-de-punta-a-punta) (ver nota) | F2 |
+| 70 | `f719c66` feat(recordatorio): envío por Resend, webhook firmado y rutas | 2026-10-03 | feature | [ADR-13](Decisions/ADR-13.md) §7–§13, §16–§17; [us03 § Endpoints](Features/us03-recordatorios.md#endpoints); `src/modules/recordatorio/CLAUDE.md` (nuevo) | F2 |
+| 71 | `a938f9d` test(recordatorio): Definición de Terminado de US-03 | 2026-10-04 | test | [US-03 § DoD](US/03-recordatorios.md#definición-de-terminado); **nota en [ADR-02](Decisions/ADR-02.md#nota-2026-10-04-el-check-del-4-pasa-a-ser-un-test)** (`src/arquitectura.spec.ts`); [DT-31](Deudas/DT-31.md) | F2 |
+| 72 | `8dd4747` chore(test): excluir los specs del coverage | 2026-10-04 | chore | — (tooling; [us03 § Tests](Features/us03-recordatorios.md#tests)) | F2 |
+| 73 | `f2ccb01` chore(tooling): vista previa del backend | 2026-10-04 | chore | — (tooling: `.claude/launch.json`) | F2 |
 
 > **Nota commit 31.** `core.autocrlf=true` marcaba ~32 archivos como modificados con contenido
 > idéntico, ensuciando `git status` y los diffs de cada PR. `.gitattributes` fija LF para repo y
@@ -105,6 +119,17 @@ primero es el principal. *(Columna agregada el 2026-09-30.)*
 > **Nota fila 43.** Pese al asunto, solo toca una línea del ROADMAP y quita el salto de línea final de
 > `src/database/data-source.ts`. Sin cambio funcional.
 
+> **Nota fila 60.** Es el commit que la convención de abajo dejó "sin fila" el 2026-09-30. Su columna
+> Fase es `—`: la navegación por fases es transversal, aunque entró en la rama del diseño de la Fase 2.
+
+> **Nota fila 69.** El cuerpo del commit avisa que se verificaron build, lint y 1022 unitarios, y que
+> los e2e y la integración contra Postgres quedaron pendientes (Docker caído). Corrieron después, en
+> verde, con las filas 70 y 71.
+
+> **Nota filas 62–73.** Al 2026-10-04 viven **solo en la rama `feature/fase2-recordatorios`**
+> ([PR #1](https://github.com/Citia-solutions/citia-backend/pull/1) a `develop`, pendiente de merge). El
+> plan de [US-03](US/03-recordatorios.md) proponía dos PR (outbox y recordatorios); se hizo en uno.
+
 > **Nota fila 53.** Los tests del cierre de la Fase 1 no se listaron en la tabla de
 > [us02 §Tests](Features/us02-gestion-citas.md#tests), que quedó en el estado del 2026-09-24. La
 > verificación del cierre está en el ROADMAP.
@@ -117,7 +142,12 @@ primero es el principal. *(Columna agregada el 2026-09-30.)*
 > *Pasada del 2026-09-30:* registra hasta `ab30bb7` inclusive. El commit que agregue la navegación
 > por fases (`Fases/`, esta columna y los bloques de navegación) **no tiene fila**: se registra en la
 > pasada siguiente, como indica esta convención. `ab30bb7` y ese commit viven en la rama
-> `docs/fase2-recordatorios`; al 2026-09-30 no están en `develop`.
+> `docs/fase2-recordatorios`; al 2026-09-30 no están en `develop`. *(Ya lo están: merge `510015a`,
+> 2026-10-01, fila 61. El de la navegación es `2f33394`, fila 60.)*
+>
+> *Pasada del 2026-10-04:* registra hasta `f2ccb01` inclusive (filas 60–73). El commit de documentación
+> que cierre esta pasada (implementación de la Fase 2 en `context/`) **no tiene fila**: se registra en la
+> siguiente.
 
 ## Cobertura por decisión (ADR ↔ commits)
 
@@ -125,18 +155,18 @@ primero es el principal. *(Columna agregada el 2026-09-30.)*
 |-----|------|---------|
 | ADR-00 | TypeORM definitivo, migraciones versionadas | `389eb81`, `b8cac2a` |
 | ADR-01 | Auth Passport + JWT | `45198c3`, `346a034` |
-| ADR-02 | Español + hexagonal | `718fe1f`, `ce7d99e` (regla transversal) |
+| ADR-02 | Español + hexagonal | `718fe1f`, `ce7d99e` (regla transversal), `a938f9d` (el check del §4 pasa a ser `src/arquitectura.spec.ts`) |
 | ADR-03 | Login multi-tenant por `tenantSlug` | `195431b`, `cfa35f3`, `45198c3` |
 | ADR-04 | Máquina de estados de Cita + ghosting | `e592d74`, `77523c9`, `ab30bb7` (nota: BullMQ → ADR-12) |
 | **ADR-05** | Contenedorización Docker + migraciones en arranque | `b8cac2a`, `df53128`, `0e54f0b`, `77a97c9`, `b623b6a` |
-| **ADR-06** | Atomicidad transaccional (TransactionRunner opaco) | `d4fa476`, `f573485` |
+| **ADR-06** | Atomicidad transaccional (TransactionRunner opaco) | `d4fa476`, `f573485`, `a6c237f` (el `tx` llega a `publicar`) |
 | **ADR-07** | Día/hora en zona de la clínica (DST-safe) | `08dad63`, `717800e` (rangos y corrección del inicio del día en DST) |
 | ADR-08 | Tenant en la URL | `bfeada0` (propuesto) · fase 1 adoptada en la ruta pública por `e1253c3` |
 | **ADR-09** | Gestión de citas: solicitud aparte, RUT como identidad, reagendar con bitácora | `f2a7dff` (§3–§7), `e1253c3` (§1,§2,§8–§11), `439a5fe` (docs), `e06862a` (bandeja), `4c543a5`, `31ea490` (decisión 2 reafirmada, límite de tasa), `ab30bb7` (matiz §3) |
 | ADR-10 | Enlace por cita del paciente (US-02.07) | `2877b13` (propuesto), `4c543a5` (aplazado) |
 | ADR-11 | Solapamiento: avisar y permitir | `4c543a5` (doc), `538657e`, `9140bc3` (implementación), `06858f2` (tests) |
-| ADR-12 | Outbox transaccional + planificador en Postgres | `ab30bb7` (diseño; sin implementar) |
-| ADR-13 | Recordatorios por correo (Resend) | `ab30bb7` (diseño; sin implementar) |
+| ADR-12 | Outbox transaccional + planificador en Postgres | `ab30bb7` (diseño), `daf0617`, `a6c237f`, `d45de20` (latidos, entorno), `f95b637`, `db46e37` (implementación en rama) |
+| ADR-13 | Recordatorios por correo (Resend) | `ab30bb7` (diseño), `d45de20`, `a37f175`, `f2d80aa`, `a13d80a`, `f719c66`, `a938f9d` (implementación en rama) |
 
 > **ADRs en negrita** = creados en la pasada de alineación (2026-07-12) para cerrar decisiones que
 > estaban implementadas en el código pero no documentadas.
@@ -150,6 +180,6 @@ primero es el principal. *(Columna agregada el 2026-09-30.)*
 | [Fundaciones](Fases/fase-base-fundaciones.md) | 1–19, 26–34 | `258542f` → `bfeada0` |
 | [Fase 0 — US-06](Fases/fase-0-us06-dashboard.md) | 20–25, 28 (+ 30, 32 en docs; 48, 57 para el cierre) | `9ab2bec` → `08dad63`, `f200557` |
 | [Fase 1 — US-02](Fases/fase-1-us02-gestion-citas.md) | 35–39, 41–58 | `f2a7dff` → `c9ac69f` |
-| [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | 59 | `ab30bb7` |
+| [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | 59, 61–73 | `ab30bb7` (diseño) · `daf0617` → `f2ccb01` (implementación, en rama) |
 | [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | ninguna propia (ADR-10 y FD-06 entraron en 38, 41 y 54) | — |
-| transversal | 40 (ROADMAP) | `cea0bd1` |
+| transversal | 40 (ROADMAP), 60 (navegación por fases) | `cea0bd1`, `2f33394` |

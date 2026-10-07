@@ -18,7 +18,7 @@ import { PacientesService } from '../../paciente/application/pacientes.service';
 import { CitasService, MAX_DIAS_RANGO } from './citas.service';
 import { CitaNoEncontradaError } from './cita-no-encontrada.error';
 import { DatosPacienteRequeridosError } from './datos-paciente-requeridos.error';
-import { PacienteNoEncontradoError } from './paciente-no-encontrado.error';
+import { PacienteNoEncontradoError } from '../../paciente/application/paciente-no-encontrado.error';
 import { RangoFechasInvalidoError } from './rango-fechas-invalido.error';
 
 describe('CitasService', () => {
@@ -33,12 +33,17 @@ describe('CitasService', () => {
     registrar: jest.Mock;
     historialDeCita: jest.Mock;
   };
-  let mockEventos: { publicar: jest.Mock };
+  // Tipado con la firma del puerto (ADR-12 §2): `publicar(evento, tx)`.
+  let mockEventos: {
+    publicar: jest.Mock<Promise<void>, [EventoDominio, unknown]>;
+  };
   let mockPacienteRepository: {
     guardar: jest.Mock;
     buscarPorId: jest.Mock;
     buscarPorRut: jest.Mock;
     buscarPorIds: jest.Mock;
+    actualizarContacto: jest.Mock;
+    completarCorreoSiVacio: jest.Mock;
   };
   let mockPacientesService: { resolverOCrear: jest.Mock };
   // TransactionRunner de mentira: ejecuta el trabajo con un contexto ficticio,
@@ -63,12 +68,18 @@ describe('CitasService', () => {
       registrar: jest.fn().mockResolvedValue(undefined),
       historialDeCita: jest.fn().mockResolvedValue([]),
     };
-    mockEventos = { publicar: jest.fn().mockResolvedValue(undefined) };
+    mockEventos = {
+      publicar: jest
+        .fn<Promise<void>, [EventoDominio, unknown]>()
+        .mockResolvedValue(undefined),
+    };
     mockPacienteRepository = {
       guardar: jest.fn(),
       buscarPorId: jest.fn(),
       buscarPorRut: jest.fn(),
       buscarPorIds: jest.fn().mockResolvedValue([]),
+      actualizarContacto: jest.fn(),
+      completarCorreoSiVacio: jest.fn(),
     };
     mockPacientesService = { resolverOCrear: jest.fn() };
     mockTx = {
@@ -96,6 +107,10 @@ describe('CitasService', () => {
   // mock.calls). El adaptador real recibe una entidad de dominio Cita.
   const primeraCitaGuardada = (): Cita =>
     (mockCitaRepository.guardar.mock.calls as unknown as Cita[][])[0][0];
+
+  // Llamadas a `publicar`, tipadas: [hecho, tx con el que se publicó].
+  const llamadasPublicar = (): [EventoDominio, unknown][] =>
+    mockEventos.publicar.mock.calls;
 
   describe('crearCita', () => {
     const dto: CrearCitaDto = {
@@ -288,6 +303,7 @@ describe('CitasService', () => {
           paciente: {
             nombre: 'Sin RUT',
             telefono: '+56 9 0000 0000',
+            correo: 'sin.rut@mail.com',
             consentimiento: false,
           },
         },
@@ -457,6 +473,7 @@ describe('CitasService', () => {
       );
       expect(mockEventos.publicar).toHaveBeenCalledWith(
         expect.objectContaining({ nombre: 'CitaConfirmada' }),
+        'tx',
       );
     });
   });
@@ -539,9 +556,8 @@ describe('CitasService', () => {
       );
 
       // Assert - US-03 y US-05 se enchufaran a este hecho sin tocar el caso de uso
-      const evento = (
-        mockEventos.publicar.mock.calls as unknown as EventoDominio[][]
-      )[0][0];
+      const [evento, txPublicado] = llamadasPublicar()[0];
+      expect(txPublicado).toBe('tx');
       expect(evento.nombre).toBe('CitaReagendada');
       expect(evento.tenantId).toBe('tenant-1');
       expect(evento.payload.citaId).toBe(CITA_ID);
@@ -1617,9 +1633,10 @@ describe('CitasService', () => {
           txExterna,
         );
         expect(llamadaRango()[5]).toBe(txExterna);
-        expect(mockEventos.publicar).toHaveBeenCalledWith(
-          expect.objectContaining({ nombre: 'CitaCreada' }),
-        );
+        expect(mockEventos.publicar).toHaveBeenCalledTimes(1);
+        const [evento, txPublicado] = llamadasPublicar()[0];
+        expect(evento.nombre).toBe('CitaCreada');
+        expect(txPublicado).toBe(txExterna);
         expect(result.avisos).toEqual({ solapamientos: [] });
         expect(result.paciente?.id).toBe('paciente-1');
       });
@@ -1641,6 +1658,157 @@ describe('CitasService', () => {
         expect(result.id).toBe(CITA_ID);
         expect(result.paciente?.rut).toBe('11.111.111-1');
       });
+    });
+  });
+
+  // ADR-12 §2: el hecho se escribe en la MISMA transacción que el cambio. Se
+  // verifica que cada caso de uso que publica lo hace dentro del callback de
+  // `TransactionRunner.run`, con el contexto que ese callback recibe y después
+  // de guardar la cita y su bitácora.
+  describe('publicación de hechos dentro de la transacción (ADR-12 §2)', () => {
+    const CITA_ID = 'cita-1';
+    const txOperacion = { soy: 'tx-de-la-operacion' };
+
+    // ¿Estaba el callback de `run` en curso cuando se llamó a `publicar`?
+    let enTransaccion: boolean;
+    let publicadoEnTransaccion: boolean[];
+
+    const dtoAlta: CrearCitaDto = {
+      inicio: '2026-09-22T13:00:00Z',
+      duracionMin: 50,
+      tipoConsulta: 'Control',
+      pacienteId: 'paciente-1',
+    };
+
+    beforeEach(() => {
+      enTransaccion = false;
+      publicadoEnTransaccion = [];
+      mockTx.run.mockImplementation(
+        async (work: (tx: unknown) => Promise<unknown>) => {
+          enTransaccion = true;
+          try {
+            return await work(txOperacion);
+          } finally {
+            enTransaccion = false;
+          }
+        },
+      );
+      mockEventos.publicar.mockImplementation(() => {
+        publicadoEnTransaccion.push(enTransaccion);
+        return Promise.resolve();
+      });
+      mockPacienteRepository.buscarPorId.mockResolvedValue({
+        id: 'paciente-1',
+        rut: '111111111',
+        nombre: 'Ana',
+        telefono: '+56 9 1111 1111',
+        correo: 'ana@mail.com',
+        consentimiento: true,
+        tenantId: 'tenant-1',
+      });
+      mockCitaRepository.guardar.mockImplementation((c: Cita) => {
+        if (!c.id) c.id = CITA_ID;
+        return Promise.resolve(c);
+      });
+    });
+
+    const prepararExistente = (estado: EstadoCita) =>
+      mockCitaRepository.buscarPorId.mockResolvedValue(
+        Cita.reconstituir({
+          id: CITA_ID,
+          inicio: new Date('2026-09-22T13:00:00Z'),
+          duracionMin: 50,
+          tipoConsulta: 'Control',
+          estado,
+          tenantId: 'tenant-1',
+          pacienteId: 'paciente-1',
+          usuarioId: 'usuario-1',
+          creadoEn: new Date(),
+          actualizadoEn: new Date(),
+        }),
+      );
+
+    it.each<[string, EstadoCita | null, (s: CitasService) => Promise<unknown>]>(
+      [
+        ['CitaCreada', null, (s) => s.crearCita(dtoAlta, usuarioAutenticado)],
+        [
+          'CitaConfirmada',
+          EstadoCita.PENDIENTE,
+          (s) => s.confirmar(CITA_ID, usuarioAutenticado),
+        ],
+        [
+          'CitaCancelada',
+          EstadoCita.PENDIENTE,
+          (s) => s.cancelar(CITA_ID, usuarioAutenticado, 'Aviso'),
+        ],
+        [
+          'CitaAsistida',
+          EstadoCita.CONFIRMADA,
+          (s) => s.marcarAsistencia(CITA_ID, usuarioAutenticado),
+        ],
+        [
+          'CitaNoAsistida',
+          EstadoCita.CONFIRMADA,
+          (s) => s.marcarInasistencia(CITA_ID, usuarioAutenticado),
+        ],
+        [
+          'CitaReagendada',
+          EstadoCita.CONFIRMADA,
+          (s) =>
+            s.reagendar(
+              CITA_ID,
+              { inicio: '2026-09-23T13:00:00Z' },
+              usuarioAutenticado,
+            ),
+        ],
+        [
+          'CitaEditada',
+          EstadoCita.PENDIENTE,
+          (s) => s.editar(CITA_ID, { duracionMin: 30 }, usuarioAutenticado),
+        ],
+      ],
+    )(
+      '%s: se publica una vez, dentro del callback, con SU tx y después de guardar',
+      async (nombre, estadoInicial, operar) => {
+        // Arrange
+        if (estadoInicial) prepararExistente(estadoInicial);
+
+        // Act
+        await operar(service);
+
+        // Assert — una transacción y un hecho, publicado mientras estaba abierta
+        expect(mockTx.run).toHaveBeenCalledTimes(1);
+        expect(mockEventos.publicar).toHaveBeenCalledTimes(1);
+        expect(publicadoEnTransaccion).toEqual([true]);
+        const [evento, txPublicado] = llamadasPublicar()[0];
+        expect(evento.nombre).toBe(nombre);
+        expect(txPublicado).toBe(txOperacion);
+        // Después de la cita y de su bitácora, en ese mismo tx
+        const ordenPublicar = mockEventos.publicar.mock.invocationCallOrder[0];
+        expect(
+          mockCitaRepository.guardar.mock.invocationCallOrder[0],
+        ).toBeLessThan(ordenPublicar);
+        expect(
+          mockCambioCitaRepository.registrar.mock.invocationCallOrder[0],
+        ).toBeLessThan(ordenPublicar);
+      },
+    );
+
+    it('si algo falla DESPUÉS de publicar, el error sale del callback: el hecho se revierte con la cita', async () => {
+      // Arrange — `calcularAvisos`, último paso de `agendar`, falla
+      const fallo = new Error('fallo al calcular avisos');
+      mockCitaRepository.buscarPorProfesionalEnRango.mockRejectedValue(fallo);
+
+      // Act & Assert
+      await expect(service.crearCita(dtoAlta, usuarioAutenticado)).rejects.toBe(
+        fallo,
+      );
+      expect(publicadoEnTransaccion).toEqual([true]);
+      // `run` recibe el rechazo de su callback: el adaptador real hace ROLLBACK
+      // de la cita, la bitácora y la fila de `eventos_salida` a la vez.
+      await expect(
+        mockTx.run.mock.results[0].value as Promise<unknown>,
+      ).rejects.toBe(fallo);
     });
   });
 });

@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
-import { EventoDominio } from '../../src/shared/application/publicador-eventos';
+import {
+  EventoDominio,
+  PublicadorEventos,
+} from '../../src/shared/application/publicador-eventos';
 import {
   TransactionContext,
   TransactionRunner,
@@ -10,7 +13,10 @@ import { CambioCita } from '../../src/modules/cita/domain/cambio-cita.entity';
 import { CambioCitaRepository } from '../../src/modules/cita/domain/cambio-cita.repository';
 import { Cita, EstadoCita } from '../../src/modules/cita/domain/cita.entity';
 import { CitaRepository } from '../../src/modules/cita/domain/cita.repository';
-import { Paciente } from '../../src/modules/paciente/domain/paciente.entity';
+import {
+  CambioContactoPaciente,
+  Paciente,
+} from '../../src/modules/paciente/domain/paciente.entity';
 import { PacienteRepository } from '../../src/modules/paciente/domain/paciente.repository';
 import {
   EstadoSolicitud,
@@ -172,6 +178,31 @@ export class InMemoryPacienteRepository extends PacienteRepository {
         .map((x) => ({ ...x })),
     );
   }
+
+  actualizarContacto(
+    id: string,
+    tenantId: string,
+    cambio: CambioContactoPaciente,
+  ): Promise<boolean> {
+    const p = this.pacientes.get(id);
+    if (!p || p.tenantId !== tenantId) return Promise.resolve(false);
+    this.pacientes.set(id, { ...p, ...cambio });
+    return Promise.resolve(true);
+  }
+
+  // Misma condición que el UPDATE real: solo si el correo es NULL o blanco.
+  completarCorreoSiVacio(
+    id: string,
+    tenantId: string,
+    correo: string,
+  ): Promise<boolean> {
+    const p = this.pacientes.get(id);
+    if (!p || p.tenantId !== tenantId || (p.correo ?? '').trim() !== '') {
+      return Promise.resolve(false);
+    }
+    this.pacientes.set(id, { ...p, correo });
+    return Promise.resolve(true);
+  }
 }
 
 export class InMemorySolicitudCitaRepository extends SolicitudCitaRepository {
@@ -253,19 +284,45 @@ export class InMemorySolicitudCitaRepository extends SolicitudCitaRepository {
 /** TransactionRunner de paso: cuenta las transacciones abiertas. */
 export class ContadorTransacciones extends TransactionRunner {
   abiertas = 0;
+  // Contexto que recibió el último `work`: permite comprobar por identidad que
+  // un puerto (p. ej. el publicador) recibió ESE tx y no otro.
+  ultimoContexto: TransactionContext = undefined;
 
   run<T>(work: (tx: TransactionContext) => Promise<T>): Promise<T> {
     this.abiertas += 1;
-    return work({ tx: this.abiertas });
+    this.ultimoContexto = { tx: this.abiertas };
+    return work(this.ultimoContexto);
   }
 }
 
-/** Publicador que acumula los hechos para inspeccionarlos. */
-export class PublicadorEnMemoria {
+/**
+ * Publicador que acumula los hechos para inspeccionarlos (ADR-12 §2).
+ *
+ * `contextos[i]` es el `tx` con el que se publicó `eventos[i]`: permite
+ * comprobar que el hecho viaja en la transacción del caso de uso. Como el
+ * adaptador real del outbox, rechaza la publicación sin `tx`.
+ *
+ * Lo que NO reproduce: la atomicidad. `ContadorTransacciones` no revierte, así
+ * que un hecho publicado antes de un fallo queda aquí igual (la reversión se
+ * prueba contra Postgres).
+ */
+export class PublicadorEnMemoria extends PublicadorEventos {
   readonly eventos: EventoDominio[] = [];
+  readonly contextos: TransactionContext[] = [];
 
-  publicar(evento: EventoDominio): Promise<void> {
+  publicar(evento: EventoDominio, tx: TransactionContext): Promise<void> {
+    if (tx === undefined || tx === null) {
+      return Promise.reject(
+        new Error('publicar requiere la transacción del caso de uso'),
+      );
+    }
     this.eventos.push(evento);
+    this.contextos.push(tx);
     return Promise.resolve();
+  }
+
+  limpiar(): void {
+    this.eventos.length = 0;
+    this.contextos.length = 0;
   }
 }

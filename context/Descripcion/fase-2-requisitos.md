@@ -40,14 +40,17 @@ administrador** (US-00) y la **gestión de citas** (US-02, parcialmente entregad
 
 > **Nota (2026-09-30).** Esta tabla quedó atrás. Estado vigente, según el
 > [ROADMAP](../ROADMAP.md#resumen) y la [etapa 3](fase-3-mvp.md):
-> **RF-06 entra en el MVP** (Q1 → A): diseño cerrado en [ADR-13](../Decisions/ADR-13.md), sin
-> implementar ([Fase 2](../Fases/fase-2-us03-recordatorios.md)). **RF-07** es la
+> **RF-06 entra en el MVP** (Q1 → A): diseño cerrado en [ADR-13](../Decisions/ADR-13.md) e
+> **implementado en rama** el 2026-10-04, pendiente de merge ([Fase 2](../Fases/fase-2-us03-recordatorios.md),
+> [us03](../Features/us03-recordatorios.md)). **RF-07** es la
 > [Fase 3](../Fases/fase-3-us04-respuesta-paciente.md), fuera del MVP. **RF-08** pasa a la v2; su
 > historial ya no depende solo de DT-11 (aplazada) sino sobre todo de [DT-30](../Deudas/DT-30.md).
 > **RF-05** sigue igual: los hechos se publican y falta el consumidor
 > ([Fase 4](../Fases/fase-4-us05-alertas.md)). La **gestión de citas** (US-02) está **cerrada** desde
 > el 2026-09-28 ([Fase 1](../Fases/fase-1-us02-gestion-citas.md)). En la tabla de RNF de abajo, DT-27
-> y DT-19 están **resueltas en diseño** (ADR-12 y ADR-13) y DT-16 es un riesgo aceptado.
+> y DT-19 están **resueltas en diseño** (ADR-12 y ADR-13) y DT-16 es un riesgo aceptado. *(2026-10-04: con
+> la Fase 2 implementada en rama, DT-27 está **cerrada**, DT-19 implementada a falta de la prueba manual en
+> Better Stack, y la política de consentimiento de DT-16 existe y está apagada.)*
 
 ## Requisitos no funcionales
 

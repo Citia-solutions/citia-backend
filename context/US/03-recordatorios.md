@@ -1,11 +1,18 @@
 # Plan US-03 — Recordatorios al paciente (RF-06)
 
-> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) · **Feature:** ninguna todavía (diseñada, sin implementar) · **Plan:** este documento · **Relacionado:** [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-27](../Deudas/DT-27.md), [DT-19](../Deudas/DT-19.md), [DT-21](../Deudas/DT-21.md), [DT-16](../Deudas/DT-16.md), [DT-30](../Deudas/DT-30.md), [stack](../stack-tecnologico.md)
+> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) · **Feature:** [us03-recordatorios](../Features/us03-recordatorios.md) · **Plan:** este documento · **Relacionado:** [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-27](../Deudas/DT-27.md), [DT-19](../Deudas/DT-19.md), [DT-21](../Deudas/DT-21.md), [DT-16](../Deudas/DT-16.md), [DT-30](../Deudas/DT-30.md), [stack](../stack-tecnologico.md)
 
-> **Estado (2026-09-30):** ✅ diseño cerrado en [ADR-12](../Decisions/ADR-12.md) (outbox +
-> planificador) y [ADR-13](../Decisions/ADR-13.md) (recordatorios), con **todas sus decisiones
-> confirmadas por el usuario** el mismo día. ⬜ Sin implementar. Entra en el MVP por decisión del
-> usuario (Q1 → A). Fase 2 del [roadmap](../ROADMAP.md).
+> **Estado (2026-10-04):** ✅ **implementada** en la rama `feature/fase2-recordatorios`
+> ([PR #1](https://github.com/Citia-solutions/citia-backend/pull/1) a `develop`, pendiente de merge; el
+> frontend sale en el mismo release, [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2)).
+> La [Definición de Terminado](#definición-de-terminado) está cumplida salvo **los dos puntos manuales**,
+> que dependen de los prerrequisitos operativos. Lo construido está en
+> [Features/us03-recordatorios.md](../Features/us03-recordatorios.md); los desvíos, en las notas de
+> implementación de [ADR-12](../Decisions/ADR-12.md#notas-de-implementación-2026-10-04) y
+> [ADR-13](../Decisions/ADR-13.md#notas-de-implementación-2026-10-04).
+>
+> *Antes (2026-09-30):* diseño cerrado en ADR-12 y ADR-13, con todas sus decisiones confirmadas por el
+> usuario. Entra en el MVP (Q1 → A). Fase 2 del [roadmap](../ROADMAP.md).
 
 > Solo decisiones y orden. Sin código. Brief para los agentes. El porqué de cada pieza está en los ADR;
 > aquí va el qué, en qué orden y cuándo está terminado.
@@ -75,7 +82,11 @@
 
 ## Prerrequisitos operativos (usuario, en paralelo desde el día 1)
 
-1. **Comprar el dominio `.cl`** (NIC Chile) y delegar su DNS a Cloudflare.
+> **Estado (2026-10-04):** el punto 1 está hecho —el dominio es **`citiahealth.cl`**, delegado a
+> Cloudflare—. Los puntos 2 a 4 siguen pendientes; checklist completo de salida a producción en la
+> [Fase 2](../Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción).
+
+1. ~~**Comprar el dominio `.cl`** (NIC Chile) y delegar su DNS a Cloudflare.~~ ✅ `citiahealth.cl`.
 2. **Cuenta de Resend:** agregar el **subdominio de envío** (p. ej. `notificaciones.<dominio>`), crear en Cloudflare
    SPF, DKIM, MX de retorno y DMARC (`p=none` al inicio), esperar la verificación, **desactivar el
    seguimiento de aperturas y clics**, crear la clave de API y el webhook (eventos `email.*`) con su
@@ -94,6 +105,13 @@
 Dos PR sobre `develop` (Git Flow): **PR 1** = outbox + planificador + observabilidad (cierra DT-27 por
 sí solo, sin recordatorios); **PR 2** = recordatorios. Ramas sugeridas:
 `feature/fase2-outbox-planificador` y `feature/fase2-recordatorios`.
+
+> **Cómo se construyó (2026-10-04):** en **una sola rama**, `feature/fase2-recordatorios`, y un solo PR
+> ([#1](https://github.com/Citia-solutions/citia-backend/pull/1)). El orden de los commits respeta el de
+> abajo: PR 1 = `daf0617` (paso 1), `a6c237f` (5), `d45de20` (3 y 4), `f95b637` (2), `db46e37` (6);
+> PR 2 = `a37f175` (13, adelantado), `f2d80aa` (7 y la limpieza de DT-21), `a13d80a` (8 y 9),
+> `f719c66` (10, 11 y 12), `a938f9d` (14), más `8dd4747` (coverage). Cronología en la
+> [Fase 2](../Fases/fase-2-us03-recordatorios.md#cronología-commit--documento).
 
 ### PR 1 — outbox, planificador y observabilidad
 
@@ -124,7 +142,7 @@ adelantado, ~10–11 días de calendario para una persona.
 
 **Frontend (`citia-frontend`, fuera de estos agentes, ~2–3 días):** correo obligatorio en el modal
 (**mismo release que el paso 13**, o el modal recibirá 400) · pantalla de configuración · estado de
-los recordatorios en el voucher · despliegue en Cloudflare con *fallback* de SPA.
+los recordatorios en el voucher · despliegue en Netlify con *fallback* de SPA (revertido desde Cloudflare el 2026-10-04).
 
 ### Dependencias nuevas
 
@@ -137,55 +155,96 @@ los recordatorios en el voucher · despliegue en Cloudflare con *fallback* de SP
 | `resend` | SDK oficial del proveedor | api-agent |
 | `svix` | verificación de la firma de los webhooks | api-agent |
 
+> **Instaladas (2026-10-04):** `@nestjs/schedule` 6.1.3, **`cron` 4.4.0** (fijado, sin `^`: es la que
+> usa `@nestjs/schedule` y los jobs la importan directamente), `nestjs-pino` 5.2.1, `pino` 10.3.1,
+> `pino-http` 11.0.0, `@logtail/pino` 0.5.11, `pino-pretty` 13.1.3 (dev), `resend` 6.32.0 y **`svix`
+> 1.99.1** (fijado en 1.x: la 2.x es solo ESM y Jest no la carga). Lista completa en
+> [stack-tecnologico.md](../stack-tecnologico.md#dependencias-instaladas-2026-10-04).
+
 **No** se instalan Redis, BullMQ ni OpenTelemetry en esta fase.
 
 ---
 
 ## Definición de Terminado
 
+> **Estado (2026-10-04):** ✅ todo lo automático, en la rama `feature/fase2-recordatorios`
+> (1274 unitarios, 212 e2e y 80 de integración en verde; `eslint` sin errores). ❌ los **dos puntos
+> manuales**, que esperan los prerrequisitos operativos. La evidencia es el archivo de test que cubre
+> cada punto (rutas relativas a `src/` salvo las de `test/`).
+
 **Outbox y planificador**
-- [ ] Una transacción revertida no deja fila en `eventos_salida` (integración con Postgres).
-- [ ] Dos despachadores concurrentes entregan cada hecho una sola vez (integración).
-- [ ] Un suscriptor que falla reintenta con espera creciente y termina en `fallido` con log de alerta.
-- [ ] Con `PLANIFICADOR_ACTIVO=false` ningún job corre (lo usan los e2e).
+- [x] ✅ Una transacción revertida no deja fila en `eventos_salida` (integración con Postgres) —
+      `modules/cita/integration/citas-outbox.integration.spec.ts` (al crear y al cancelar).
+- [x] ✅ Dos despachadores concurrentes entregan cada hecho una sola vez (integración) —
+      `shared/infrastructure/salida/integration/despachador-eventos-salida.integration.spec.ts` § concurrencia.
+- [x] ✅ Un suscriptor que falla reintenta con espera creciente y termina en `fallido` con log de alerta —
+      mismo archivo, § reintentos y carta muerta; espera en `shared/application/politica-reintento-salida.spec.ts`.
+- [x] ✅ Con `PLANIFICADOR_ACTIVO=false` ningún job corre (lo usan los e2e) — `test/planificador.e2e-spec.ts`
+      (`AppModule` completo), `planificador-salida.spec.ts`, `planificador-recordatorios.spec.ts`.
 
 **Planificación (unitarios, sin base ni reloj)**
-- [ ] 24 h y 2 h para una cita normal; ajuste por horas sin envío; fusión de dos recordatorios
-      cercanos; tardío único o `omitido` según el margen; cita en el pasado → nada.
-- [ ] Fines de semana de cambio de horario en `America/Santiago` (inicio y fin del horario de verano).
-- [ ] Reconciliar dos veces la misma cita no cambia nada (idempotencia).
+- [x] ✅ 24 h y 2 h para una cita normal; ajuste por horas sin envío; fusión de dos recordatorios
+      cercanos; tardío único o `omitido` según el margen; cita en el pasado → nada —
+      `modules/recordatorio/domain/planificacion.spec.ts`, `horas-sin-envio.spec.ts`.
+- [x] ✅ Fines de semana de cambio de horario en `America/Santiago` (inicio y fin del horario de verano) —
+      `planificacion.spec.ts` § *cambios de horario en America/Santiago*, `horas-sin-envio.spec.ts`.
+- [x] ✅ Reconciliar dos veces la misma cita no cambia nada (idempotencia) —
+      `modules/recordatorio/domain/reconciliacion.spec.ts`, `application/suscriptor-recordatorios.spec.ts`.
 
 **Flujo (e2e con el adaptador `registro`, invocando los jobs a mano)**
-- [ ] `POST /citas` y aceptar una solicitud → recordatorios `programado` con las horas correctas.
-- [ ] Reagendar → los anteriores `cancelado` (`reprogramado`) y los nuevos `programado`.
-- [ ] Cancelar, asistencia e inasistencia → `cancelado` (`cita_terminal`).
-- [ ] Repetir un mismo hecho N veces → sin duplicados.
-- [ ] Cita cancelada entre la programación y el envío → `cancelado` al revalidar, sin llamar al proveedor.
-- [ ] Paciente sin correo → `omitido` (`sin_correo`); dirección suprimida → `omitido`; tope del
-      tenant → `omitido` (`limite_tenant`).
-- [ ] Cambiar la configuración reprograma las citas futuras del profesional; apagarla las anula.
-- [ ] `GET /citas/:id/recordatorios` de otro tenant → 404; la respuesta no trae destinatario.
+- [x] ✅ `POST /citas` y aceptar una solicitud → recordatorios `programado` con las horas correctas —
+      `test/recordatorios-flujo.e2e-spec.ts` (crear) y `test/recordatorios-politicas.e2e-spec.ts` (aceptar).
+- [x] ✅ Reagendar → los anteriores `cancelado` (`reprogramado`) y los nuevos `programado` —
+      `test/recordatorios-flujo.e2e-spec.ts`.
+- [x] ✅ Cancelar, asistencia e inasistencia → `cancelado` (`cita_terminal`) — `recordatorios-flujo`
+      (cancelar) y `recordatorios-politicas` (asistencia e inasistencia).
+- [x] ✅ Repetir un mismo hecho N veces → sin duplicados — `recordatorios-politicas` § *sin duplicados*
+      (6 veces en serie, 5 a la vez, `CitaReagendada` 4 veces).
+- [x] ✅ Cita cancelada entre la programación y el envío → `cancelado` al revalidar, sin llamar al
+      proveedor — `recordatorios-politicas` § *revalidación justo antes de enviar*.
+- [x] ✅ Paciente sin correo → `omitido` (`sin_correo`); dirección suprimida → `omitido`; tope del
+      tenant → `omitido` (`limite_tenant`) — `recordatorios-politicas` § *políticas de omisión*.
+- [x] ✅ Cambiar la configuración reprograma las citas futuras del profesional; apagarla las anula —
+      `recordatorios-flujo` § configuración y `recordatorios-politicas` § configuración (outbox real).
+- [x] ✅ `GET /citas/:id/recordatorios` de otro tenant → 404; la respuesta no trae destinatario —
+      `test/recordatorios-http.e2e-spec.ts`, `recordatorios-flujo`, `recordatorios-politicas`.
 
 **Proveedor, cuota y webhooks**
-- [ ] Clasificación del adaptador de Resend con respuestas grabadas: 200, 422, 429 por ritmo, 429 por
-      cuota diaria, 401/403, 5xx, tiempo agotado, 409 de idempotencia.
-- [ ] Con la cuota local agotada no se llama al proveedor; lo que no alcanza queda `fallido`
-      (`cuota_agotada`); el aviso del 80 % se emite una vez por período.
-- [ ] Webhook con firma válida → 200 y estado actualizado; firma inválida o vieja → 400 sin cambios;
-      evento repetido → sin cambios; id desconocido → 200; rebote y queja → supresión.
+- [x] ✅ Clasificación del adaptador de Resend con respuestas grabadas: 200, 422, 429 por ritmo, 429 por
+      cuota diaria, 401/403, 5xx, tiempo agotado, 409 de idempotencia —
+      `modules/recordatorio/infrastructure/mensajeria/resend-canal-mensajeria.spec.ts` (además 400 sobre
+      `to` y `from`, 429 mensual, 502 sin JSON y error de red; `validation_error` resultó ser 400).
+- [x] ✅ Con la cuota local agotada no se llama al proveedor; lo que no alcanza queda `fallido`
+      (`cuota_agotada`); el aviso del 80 % se emite una vez por período — `recordatorios-politicas`
+      § *cuota local del proveedor*, `application/enviar-recordatorios.service.spec.ts`.
+- [x] ✅ Webhook con firma válida → 200 y estado actualizado; firma inválida o vieja → 400 sin cambios;
+      evento repetido → sin cambios; id desconocido → 200; rebote y queja → supresión —
+      `test/recordatorios-http.e2e-spec.ts`, `presentation/webhooks-resend.controller.spec.ts`,
+      `application/procesar-webhook-entrega.service.spec.ts`, `recordatorios-politicas` (rebote → supresión),
+      `integration/recordatorios-persistencia.integration.spec.ts` (monótono contra Postgres).
 
 **Correo del paciente**
-- [ ] `POST /pacientes` y `POST /citas` con paciente en línea sin correo → 400.
-- [ ] Paciente existente por RUT con correo vacío → se completa; con otro correo → no se toca.
+- [x] ✅ `POST /pacientes` y `POST /citas` con paciente en línea sin correo → 400 —
+      `test/pacientes.e2e-spec.ts`.
+- [x] ✅ Paciente existente por RUT con correo vacío → se completa; con otro correo → no se toca —
+      `modules/paciente/application/pacientes.service.spec.ts`, `typeorm-paciente.repository.spec.ts`,
+      `test/solicitudes-bandeja.e2e-spec.ts` (al aceptar).
 
 **Privacidad y operación**
-- [ ] Los logs no contienen correo, RUT, teléfono ni el cuerpo del mensaje (test de redacción).
-- [ ] El check de ADR-02 (`grep` de `typeorm` / `@nestjs` en `domain` y `application`) sigue en 0.
-- [ ] `npm run lint`, `npm test`, `npm run test:e2e` y `npm run test:integration` en verde.
-- [ ] *(Manual, en Railway)* el latido y una alerta de prueba llegan a Better Stack; detener el job
-      dispara el aviso.
-- [ ] *(Manual, con el dominio verificado)* un recordatorio real llega a una casilla de prueba con SPF,
-      DKIM y DMARC en `pass`, sin enlaces reescritos.
+- [x] ✅ Los logs no contienen correo, RUT, teléfono ni el cuerpo del mensaje (test de redacción) —
+      `test/logs-redaccion.e2e-spec.ts` (rutas reales contra Postgres), `opciones-logger.spec.ts`.
+- [x] ✅ El check de ADR-02 sigue en 0 — **reemplazado** por `src/arquitectura.spec.ts`: el `grep` de este
+      punto (`typeorm` / `@nestjs` en `domain` y `application`) no detectaba nada
+      ([nota en ADR-02](../Decisions/ADR-02.md#nota-2026-10-04-el-check-del-4-pasa-a-ser-un-test)). Lo que
+      el test no ve quedó en [DT-31](../Deudas/DT-31.md).
+- [x] ✅ `npm run lint`, `npm test`, `npm run test:e2e` y `npm run test:integration` en verde — 1274 /
+      212 / 80 (las e2e con `maxWorkers: 1`; la integración con `--runInBand`).
+- [ ] ❌ *(Manual, en Railway)* el latido y una alerta de prueba llegan a Better Stack; detener el job
+      dispara el aviso. **Manual pendiente:** requiere la cuenta de Better Stack y las variables en Railway
+      (cierra [DT-19](../Deudas/DT-19.md)).
+- [ ] ❌ *(Manual, con el dominio verificado)* un recordatorio real llega a una casilla de prueba con SPF,
+      DKIM y DMARC en `pass`, sin enlaces reescritos. **Manual pendiente:** requiere el subdominio de
+      envío de `citiahealth.cl` verificado en Resend y el webhook creado.
 
 ---
 
@@ -218,7 +277,8 @@ subdominio de envío · tope de 40 por tenant al día · alerta sobre 5 % con n 
 
 ## Deudas que toca
 
-**Cierra:** [DT-27](../Deudas/DT-27.md) (PR 1) · [DT-21](../Deudas/DT-21.md) (PR 2) ·
-[DT-19](../Deudas/DT-19.md) (en lo que respecta a recordatorios).
-**Acepta como riesgo:** [DT-16](../Deudas/DT-16.md).
-**Deja anotadas:** las previstas de [ADR-12](../Decisions/ADR-12.md) y [ADR-13](../Decisions/ADR-13.md).
+**Cierra:** [DT-27](../Deudas/DT-27.md) ✅ (`f95b637`) · [DT-21](../Deudas/DT-21.md) ✅ (`f2d80aa`, `a37f175`) ·
+[DT-19](../Deudas/DT-19.md) (implementada; se cierra con el primer punto manual de la Definición de Terminado).
+**Acepta como riesgo:** [DT-16](../Deudas/DT-16.md) (política implementada y apagada).
+**Contrae** (las previstas de [ADR-12](../Decisions/ADR-12.md) y [ADR-13](../Decisions/ADR-13.md), ya con
+número): [DT-32](../Deudas/DT-32.md) a [DT-39](../Deudas/DT-39.md). **Detecta:** [DT-31](../Deudas/DT-31.md).

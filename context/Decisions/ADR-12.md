@@ -1,11 +1,15 @@
 # ADR-12: Outbox transaccional para los hechos de dominio y planificador en proceso sobre Postgres
 
-> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) (origen), [Fase 4 — US-05](../Fases/fase-4-us05-alertas.md), [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) · **Feature:** ninguna todavía (diseñada, sin implementar) · **Plan:** [US-03](../US/03-recordatorios.md) · **Relacionado:** [ADR-13](../Decisions/ADR-13.md), [ADR-04](../Decisions/ADR-04.md), [ADR-06](../Decisions/ADR-06.md), [ADR-09](../Decisions/ADR-09.md), [DT-27](../Deudas/DT-27.md), [DT-11](../Deudas/DT-11.md), [DT-19](../Deudas/DT-19.md), [Q6](../PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1)
+> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) (origen), [Fase 4 — US-05](../Fases/fase-4-us05-alertas.md), [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) · **Feature:** [us03-recordatorios](../Features/us03-recordatorios.md) · **Plan:** [US-03](../US/03-recordatorios.md) · **Relacionado:** [ADR-13](../Decisions/ADR-13.md), [ADR-04](../Decisions/ADR-04.md), [ADR-06](../Decisions/ADR-06.md), [ADR-09](../Decisions/ADR-09.md), [DT-27](../Deudas/DT-27.md), [DT-11](../Deudas/DT-11.md), [DT-19](../Deudas/DT-19.md), [Q6](../PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1)
 
 **Fecha:** 2026-09-30
-**Estado:** Aceptado · sin implementar
-**Commits:** — (pendiente)
-**Relación:** **cierra en diseño** [DT-27](../Deudas/DT-27.md) · **responde** [Q6](../PREGUNTAS-ABIERTAS.md)
+**Estado:** Aceptado · **implementado** (rama `feature/fase2-recordatorios`,
+[PR #1](https://github.com/Citia-solutions/citia-backend/pull/1), pendiente de merge a `develop`) · los
+desvíos están en [Notas de implementación](#notas-de-implementación-2026-10-04)
+**Commits:** `ab30bb7` (diseño) · `daf0617` (tabla y repositorio) · `a6c237f` (`publicar(evento, tx)`) ·
+`d45de20` (latidos y validación de entorno) · `f95b637` (outbox real, despachador y planificador) ·
+`db46e37` (tests con Postgres)
+**Relación:** **cierra** [DT-27](../Deudas/DT-27.md) (en diseño el 2026-09-30; en el código con `f95b637`) · **responde** [Q6](../PREGUNTAS-ABIERTAS.md)
 en cuanto al mecanismo · **reemplaza** la mención a BullMQ de [ADR-04 §4](ADR-04.md) (la decisión de
 materializar el estado con un proceso programado sigue vigente) · **implementa** la "fase 2" del
 adaptador que [ADR-09 §7](ADR-09.md) dejó prevista · **reutiliza** `TransactionRunner` de
@@ -321,6 +325,59 @@ la Fase 3 (2026-09-30), la fecha de corte será el despliegue de esa fase.
 
 ---
 
+## Notas de implementación (2026-10-04)
+
+> Las decisiones de arriba **no cambian**. Esta sección registra cómo quedó el código en la rama
+> `feature/fase2-recordatorios` ([PR #1](https://github.com/Citia-solutions/citia-backend/pull/1)) y
+> dónde se precisó o se apartó del diseño. Feature: [us03-recordatorios](../Features/us03-recordatorios.md).
+
+### Qué se construyó y dónde
+
+| Pieza | Archivo | Commit |
+|---|---|---|
+| Tabla `eventos_salida` (migración `1750000008000`, CHECK de `estado`, índice parcial) | `src/database/migrations/1750000008000-CreateEventosSalida.ts` | `daf0617` |
+| Puerto `EventosSalidaRepository` (tx obligatorio) y adaptador con reclamo `FOR UPDATE SKIP LOCKED` | `shared/application/eventos-salida.repository.ts` · `shared/infrastructure/salida/typeorm-eventos-salida.repository.ts` | `daf0617` |
+| Política de reintento pura | `shared/application/politica-reintento-salida.ts` | `daf0617` |
+| `publicar(evento, tx)` en `CitasService` y `BandejaSolicitudesService` | `shared/application/publicador-eventos.ts` | `a6c237f` |
+| `PublicadorEventosEnSalida`, `RegistroSuscriptores`, `DespachadorEventosSalida`, `PurgaEventosSalida`; se borra `PublicadorEventosEnProceso` | `shared/infrastructure/salida/` | `f95b637` |
+| `PlanificadorSalida` + `TrabajoSinSolapamiento` y `PlanificacionModule` | `shared/infrastructure/planificacion/` · `shared/planificacion.module.ts` | `f95b637` |
+| Puerto `Latidos` y adaptador de Better Stack | `shared/application/latidos.ts` · `shared/infrastructure/observabilidad/latidos-better-stack.ts` | `d45de20` |
+| Variables validadas al arrancar (`PLANIFICADOR_ACTIVO`, `EVENTOS_SALIDA_*`) | `shared/infrastructure/config/entorno.ts` | `d45de20` |
+| Integración con Postgres y e2e del planificador | `shared/infrastructure/salida/integration/` · `cita/integration/citas-outbox.integration.spec.ts` · `test/planificador.e2e-spec.ts` | `db46e37` |
+
+### Desvíos y precisiones
+
+| # | Diseño | Cómo quedó | Por qué |
+|---|---|---|---|
+| 1 | §2: el adaptador "genera el `id`" | Lo genera el **adaptador de persistencia** (`randomUUID()` en `TypeOrmEventosSalidaRepository.insertar`), no un `DEFAULT` de la base, aunque la columna lo tiene | el id es parte del hecho que recibe el suscriptor; generarlo antes del `INSERT` evita releer la fila |
+| 2 | §2: "publicar fuera de una transacción pasa a ser un error de compilación" | Solo a medias: `TransactionContext` es `unknown`, así que `publicar(evento, undefined)` compila. `PublicadorEventosEnSalida` **lanza en tiempo de ejecución** si no recibe `tx` | el contexto es opaco a propósito ([ADR-06](ADR-06.md)); la guarda cubre el hueco del tipo |
+| 3 | §3: el reloj | Llega **por parámetro**: el despachador recibe un `reloj: () => Date` (por defecto `new Date()`) y lo pasa al repositorio; los tests lo fijan | pruebas deterministas de esperas y de la purga |
+| 4 | §3: espera `min(10 s × 2^intentos, 1 h)` con variación aleatoria | **10 s → 20 s → 40 s … hasta 1 h**, con variación **solo hacia abajo** (hasta 20 %, nunca alarga ni pasa del tope). Función pura `calcularEsperaReintentoMs` | que varios hechos que fallan juntos no reintenten en el mismo instante, sin que ninguna espera quede más larga que la nominal |
+| 5 | §3: `fallido` al llegar a `EVENTOS_SALIDA_MAX_INTENTOS` | Igual: `fallido` **cuando los fallos acumulados llegan a** `maxIntentos` (10), con log `alerta = "eventos_salida.fallido"`. El código guardado en `ultimo_error` es `<Suscriptor>:<error.name>`, truncado, nunca el mensaje | el mensaje de un error puede traer datos personales |
+| 6 | §3: el despachador procesa `EVENTOS_SALIDA_LOTE` y lee la configuración | **El despachador no lee configuración.** `PlanificadorSalida` le pasa lote, política de reintento (con `EVENTOS_SALIDA_MAX_INTENTOS`) y retención de la purga en cada tick. `EVENTOS_SALIDA_LOTE` vale 50 por defecto (el ADR no fijaba número) | el despachador queda como clase sin Nest ni entorno, probada con parámetros |
+| 7 | §5: `ScheduleModule.forRoot()` en `AppModule` | Va en **`PlanificacionModule`** (`shared/planificacion.module.ts`), que solo importa `AppModule`. Los jobs de recordatorios viven en el módulo hermano `RecordatorioPlanificacionModule` | las e2e que arman módulos parciales no levantan jobs ni necesitan `ScheduleModule` |
+| 8 | §5: los jobs con `@Interval`/`@Cron` y bandera `enCurso` | Se registran **a mano** en `SchedulerRegistry` (la cadencia viene del entorno) y la bandera es `TrabajoSinSolapamiento`. Con `PLANIFICADOR_ACTIVO=false` **no se registra nada** (por defecto en `NODE_ENV=test`) | los decoradores necesitan constantes y `ScheduleModule` los registraría sin mirar la bandera |
+| 9 | §5: "al terminar un tick sin errores, el job avisa a un heartbeat" | **Los latidos los da el planificador**, no el despachador: `PlanificadorSalida` llama a `Latidos.latir('salida')` tras cada tick sano y a `informarFallo('salida')` si falla la infraestructura. El adaptador nunca lanza y envía **como mucho uno cada 50 s** por job | el despachador corre cada 5 s; Better Stack espera un aviso por minuto |
+| 10 | §5, tabla: purga diaria a las 04:00 "hora de la clínica" | Cron `0 0 4 * * *` **en `APP_TZ`**, con candado consultivo (`pg_try_advisory_xact_lock`): si otro proceso lo tiene, no borra nada | — |
+| 11 | §5: dependencia `@nestjs/schedule` | `@nestjs/schedule` 6.1.3 y **`cron` fijado en 4.4.0** (sin `^`), la versión que usa `@nestjs/schedule` 6.1.3 | los jobs usan `CronJob.from` directamente; una versión distinta de `cron` duplicaría el paquete con tipos incompatibles |
+| 12 | §5: apagado ordenado | `app.enableShutdownHooks()` en `main.ts`; `beforeApplicationShutdown` desprograma, deja de reclamar entre hechos y **espera** al tick en curso antes de que se cierre la conexión | — |
+
+### Lo que no cambió
+
+El esquema de la tabla es el del §1, el puerto el del §2 y las cuatro reglas del §4 se cumplen: el
+primer suscriptor (`SuscriptorRecordatorios`, [ADR-13](ADR-13.md)) reconcilia, escribe solo con el `tx`
+recibido y no tiene efectos externos. El contrato HTTP no cambió por este ADR.
+
+### Verificación
+
+`citas-outbox.integration.spec.ts` (transacción revertida → sin fila de salida, también tras
+cancelar), `despachador-eventos-salida.integration.spec.ts` (dos despachadores concurrentes entregan
+cada hecho una vez; reintentos, carta muerta con alerta; reversión de lo que escribieron los
+suscriptores; purga con candado) y `test/planificador.e2e-spec.ts` (con `PLANIFICADOR_ACTIVO=false` no
+se registra ningún job). Estado de la Definición de Terminado en [US-03](../US/03-recordatorios.md#definición-de-terminado).
+
+---
+
 ## Referencias
 
 - [ADR-06](ADR-06.md) — `TransactionRunner` y el contexto opaco que viaja hasta el adaptador.
@@ -328,23 +385,27 @@ la Fase 3 (2026-09-30), la fecha de corte será el despliegue de esa fase.
 - [ADR-04 §4](ADR-04.md) — la materialización del estado vía proceso programado.
 - [ADR-05](ADR-05.md) — contenedor, `tini`, migraciones en el arranque.
 - [ADR-13](ADR-13.md) — primer suscriptor y primeros jobs.
-- `src/shared/application/publicador-eventos.ts`, `src/shared/infrastructure/publicador-eventos-en-proceso.ts`,
-  `src/modules/cita/application/citas.service.ts` (`publicar`, `mutar`, `agendar`),
+- `src/shared/application/publicador-eventos.ts`, `src/shared/infrastructure/publicador-eventos-en-proceso.ts`
+  (borrado en `f95b637`), `src/modules/cita/application/citas.service.ts` (`publicar`, `mutar`, `agendar`),
   `src/modules/solicitud/application/bandeja-solicitudes.service.ts`.
+- Implementación (2026-10-04): `src/shared/infrastructure/salida/`, `src/shared/infrastructure/planificacion/`,
+  `src/shared/planificacion.module.ts`, `src/shared/application/politica-reintento-salida.ts`.
 
 ---
 
 ## Deudas técnicas asociadas
 
-**Cierra (en diseño):** [DT-27](../Deudas/DT-27.md).
+**Cierra:** [DT-27](../Deudas/DT-27.md) — en diseño el 2026-09-30; **cerrada** en el código con
+`f95b637` (2026-10-03), con el test de integración que su criterio pedía.
 
 **Avanza:** [DT-19](../Deudas/DT-19.md) (latido del planificador) · [DT-11](../Deudas/DT-11.md) (el
 mecanismo del proceso de cierre queda decidido; el job, aplazado).
 
-**Previstas (a fichar al implementar; sin número todavía):**
+**Previstas, ya contraídas** (se ficharon al implementar, 2026-10-04):
 
-1. **Sin orden entre hechos de un mismo agregado**: depende de que cada suscriptor reconcilie (regla 2).
-2. **Latencia de segundos** incompatible con RF-05 sin `LISTEN/NOTIFY`.
-3. **Carta muerta sin herramienta**: los `fallido` se revisan con SQL a mano.
+1. **Sin orden entre hechos de un mismo agregado**: depende de que cada suscriptor reconcilie (regla 2)
+   → [DT-32](../Deudas/DT-32.md).
+2. **Latencia de segundos** incompatible con RF-05 sin `LISTEN/NOTIFY` → [DT-33](../Deudas/DT-33.md).
+3. **Carta muerta sin herramienta**: los `fallido` se revisan con SQL a mano → [DT-34](../Deudas/DT-34.md).
 
 Índice completo: [`../Deudas/README.md`](../Deudas/README.md).

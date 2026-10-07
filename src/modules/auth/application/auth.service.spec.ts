@@ -164,6 +164,7 @@ describe('AuthService', () => {
         rol: usuario.rol,
         tenantId: usuario.tenantId,
         tenantSlug: 'clinica-demo',
+        tenantNombre: 'Clínica Demo',
       });
 
       // Assert — el passwordHash nunca se expone
@@ -192,7 +193,26 @@ describe('AuthService', () => {
       expect(result.usuario.tenantSlug).toBe('consulta-dra-perez');
     });
 
-    it('NO debería incluir tenantSlug en los claims del JWT', async () => {
+    it('debería devolver tenantNombre desde el tenant cargado, sin consultas extra', async () => {
+      // Arrange — el nombre de la respuesta es el persistido en el tenant
+      mockTenantRepository.findBySlug.mockResolvedValue({
+        ...tenant,
+        nombre: 'Consulta Dra. Pérez',
+      });
+      mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(usuario);
+      bcryptCompareMock.mockResolvedValue(true);
+      mockTokenSigner.sign.mockReturnValue('signed.jwt.token');
+
+      // Act
+      const result = await service.login(dto);
+
+      // Assert — sale del mismo findBySlug; no se consulta el tenant por id
+      expect(result.usuario.tenantNombre).toBe('Consulta Dra. Pérez');
+      expect(mockTenantRepository.findBySlug).toHaveBeenCalledTimes(1);
+      expect(mockTenantRepository.findById).not.toHaveBeenCalled();
+    });
+
+    it('NO debería incluir tenantSlug ni tenantNombre en los claims del JWT', async () => {
       // Arrange
       mockTenantRepository.findBySlug.mockResolvedValue(tenant);
       mockUsuarioRepository.findByEmailAndTenant.mockResolvedValue(usuario);
@@ -207,6 +227,7 @@ describe('AuthService', () => {
         Record<string, unknown>,
       ];
       expect(payload).not.toHaveProperty('tenantSlug');
+      expect(payload).not.toHaveProperty('tenantNombre');
       expect(Object.keys(payload).sort()).toEqual([
         'email',
         'rol',
