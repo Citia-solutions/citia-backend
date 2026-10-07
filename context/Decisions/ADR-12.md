@@ -4,8 +4,9 @@
 
 **Fecha:** 2026-09-30
 **Estado:** Aceptado · **implementado** (rama `feature/fase2-recordatorios`,
-[PR #1](https://github.com/Citia-solutions/citia-backend/pull/1), pendiente de merge a `develop`) · los
-desvíos están en [Notas de implementación](#notas-de-implementación-2026-10-04)
+[PR #1](https://github.com/Citia-solutions/citia-backend/pull/1), mergeado a `develop` el 2026-10-04) ·
+**en producción** desde el release del 2026-10-06 (`c057ade`) · los desvíos están en
+[Notas de implementación](#notas-de-implementación-2026-10-04)
 **Commits:** `ab30bb7` (diseño) · `daf0617` (tabla y repositorio) · `a6c237f` (`publicar(evento, tx)`) ·
 `d45de20` (latidos y validación de entorno) · `f95b637` (outbox real, despachador y planificador) ·
 `db46e37` (tests con Postgres)

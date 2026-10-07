@@ -1,12 +1,19 @@
 # Plan US-03 — Recordatorios al paciente (RF-06)
 
-> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) · **Feature:** [us03-recordatorios](../Features/us03-recordatorios.md) · **Plan:** este documento · **Relacionado:** [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-27](../Deudas/DT-27.md), [DT-19](../Deudas/DT-19.md), [DT-21](../Deudas/DT-21.md), [DT-16](../Deudas/DT-16.md), [DT-30](../Deudas/DT-30.md), [stack](../stack-tecnologico.md)
+> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) · **Feature:** [us03-recordatorios](../Features/us03-recordatorios.md) · **Plan:** este documento · **Relacionado:** [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-27](../Deudas/DT-27.md), [DT-19](../Deudas/DT-19.md), [DT-21](../Deudas/DT-21.md), [DT-16](../Deudas/DT-16.md), [DT-30](../Deudas/DT-30.md), [DT-40](../Deudas/DT-40.md), [DT-41](../Deudas/DT-41.md), [stack](../stack-tecnologico.md)
 
-> **Estado (2026-10-04):** ✅ **implementada** en la rama `feature/fase2-recordatorios`
-> ([PR #1](https://github.com/Citia-solutions/citia-backend/pull/1) a `develop`, pendiente de merge; el
-> frontend sale en el mismo release, [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2)).
-> La [Definición de Terminado](#definición-de-terminado) está cumplida salvo **los dos puntos manuales**,
-> que dependen de los prerrequisitos operativos. Lo construido está en
+> **Estado (2026-10-07):** ✅ **cerrada en producción.** Mergeada en `develop` el 2026-10-04
+> ([PR #1](https://github.com/Citia-solutions/citia-backend/pull/1); frontend
+> [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2)) y en producción desde el release del
+> 2026-10-06 ([PR #4](https://github.com/Citia-solutions/citia-backend/pull/4), `c057ade`; frontend
+> [PR #6](https://github.com/Citia-solutions/citia-frontend/pull/6)). La
+> [Definición de Terminado](#definición-de-terminado) está **completa**: los dos puntos manuales se
+> cumplieron en producción el 2026-10-07, con dos salvedades anotadas (no se forzó una alerta y no se
+> inspeccionaron las cabeceras SPF/DKIM/DMARC). Cierre, incidentes y lecciones en la
+> [Fase 2](../Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07).
+>
+> *Antes (2026-10-04):* implementada en la rama `feature/fase2-recordatorios`, con la Definición de
+> Terminado cumplida salvo los dos puntos manuales, que dependían de los prerrequisitos operativos. Lo construido está en
 > [Features/us03-recordatorios.md](../Features/us03-recordatorios.md); los desvíos, en las notas de
 > implementación de [ADR-12](../Decisions/ADR-12.md#notas-de-implementación-2026-10-04) y
 > [ADR-13](../Decisions/ADR-13.md#notas-de-implementación-2026-10-04).
@@ -82,9 +89,10 @@
 
 ## Prerrequisitos operativos (usuario, en paralelo desde el día 1)
 
-> **Estado (2026-10-04):** el punto 1 está hecho —el dominio es **`citiahealth.cl`**, delegado a
-> Cloudflare—. Los puntos 2 a 4 siguen pendientes; checklist completo de salida a producción en la
-> [Fase 2](../Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción).
+> **Estado (2026-10-07):** ✅ los cuatro puntos están hechos en production, con lo que queda anotado en
+> el [checklist de salida a producción](../Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción):
+> falta el registro DMARC ([DT-41](../Deudas/DT-41.md)), la fuente de logs de Better Stack
+> ([DT-19](../Deudas/DT-19.md)) y confirmar "App Sleeping" en el panel de Railway.
 
 1. ~~**Comprar el dominio `.cl`** (NIC Chile) y delegar su DNS a Cloudflare.~~ ✅ `citiahealth.cl`.
 2. **Cuenta de Resend:** agregar el **subdominio de envío** (p. ej. `notificaciones.<dominio>`), crear en Cloudflare
@@ -167,10 +175,10 @@ los recordatorios en el voucher · despliegue en Netlify con *fallback* de SPA (
 
 ## Definición de Terminado
 
-> **Estado (2026-10-04):** ✅ todo lo automático, en la rama `feature/fase2-recordatorios`
-> (1274 unitarios, 212 e2e y 80 de integración en verde; `eslint` sin errores). ❌ los **dos puntos
-> manuales**, que esperan los prerrequisitos operativos. La evidencia es el archivo de test que cubre
-> cada punto (rutas relativas a `src/` salvo las de `test/`).
+> **Estado (2026-10-07):** ✅ **completa.** Todo lo automático desde el 2026-10-04 (1274 unitarios, 212
+> e2e y 80 de integración en verde; `eslint` sin errores) y los **dos puntos manuales** en producción el
+> 2026-10-07, cada uno con su salvedad anotada. La evidencia es el archivo de test que cubre cada punto
+> (rutas relativas a `src/` salvo las de `test/`) y, en los manuales, lo observado en producción.
 
 **Outbox y planificador**
 - [x] ✅ Una transacción revertida no deja fila en `eventos_salida` (integración con Postgres) —
@@ -239,12 +247,19 @@ los recordatorios en el voucher · despliegue en Netlify con *fallback* de SPA (
       el test no ve quedó en [DT-31](../Deudas/DT-31.md).
 - [x] ✅ `npm run lint`, `npm test`, `npm run test:e2e` y `npm run test:integration` en verde — 1274 /
       212 / 80 (las e2e con `maxWorkers: 1`; la integración con `--runInBand`).
-- [ ] ❌ *(Manual, en Railway)* el latido y una alerta de prueba llegan a Better Stack; detener el job
-      dispara el aviso. **Manual pendiente:** requiere la cuenta de Better Stack y las variables en Railway
-      (cierra [DT-19](../Deudas/DT-19.md)).
-- [ ] ❌ *(Manual, con el dominio verificado)* un recordatorio real llega a una casilla de prueba con SPF,
-      DKIM y DMARC en `pass`, sin enlaces reescritos. **Manual pendiente:** requiere el subdominio de
-      envío de `citiahealth.cl` verificado en Resend y el webhook creado.
+- [x] ✅ *(Manual, en Railway)* el latido y una alerta de prueba llegan a Better Stack; detener el job
+      dispara el aviso. **Hecho el 2026-10-07 en production:** los heartbeats `citia-prod-recordatorios` y
+      `citia-prod-eventos` están en **Up** y el monitor de `GET /api/health` está activo, con alertas por
+      correo. **Salvedad:** no se hizo la **prueba de alerta forzada** (detener un job y ver llegar el
+      aviso), y la fuente de logs de Better Stack sigue pendiente, así que las alertas por log no llegan a
+      nadie. Por eso [DT-19](../Deudas/DT-19.md) sigue abierta, con alcance reducido.
+- [x] ✅ *(Manual, con el dominio verificado)* un recordatorio real llega a una casilla de prueba con SPF,
+      DKIM y DMARC en `pass`, sin enlaces reescritos. **Hecho el 2026-10-07 en production:** tres
+      recordatorios reales llegaron a la **bandeja de entrada** (no a spam), uno por cita, desde
+      `Citia <recordatorios@notificaciones.citiahealth.cl>`, el subdominio verificado en Resend, con la hora
+      de Chile y sin datos de salud; el voucher los mostró *Entregado* (webhook firmado). **Salvedad:** no
+      se inspeccionaron las cabeceras SPF/DKIM/DMARC y **falta el registro DMARC** del subdominio →
+      [DT-41](../Deudas/DT-41.md).
 
 ---
 
@@ -255,7 +270,9 @@ los recordatorios en el voucher · despliegue en Netlify con *fallback* de SPA (
   [ADR-10](../Decisions/ADR-10.md). La plantilla deja el hueco (`accion`).
 - Revisar el consentimiento antes de enviar ([DT-16](../Deudas/DT-16.md)).
 - Botones de asistencia en el voucher: se espera a la Fase 3 (decisión del 2026-09-30,
-  [DT-30](../Deudas/DT-30.md)). Tampoco el proceso de cierre ([DT-11](../Deudas/DT-11.md)).
+  [DT-30](../Deudas/DT-30.md)). Tampoco el proceso de cierre ([DT-11](../Deudas/DT-11.md)). *(2026-10-05:
+  el usuario lo revirtió y el frontend los agregó en el mismo release, sin cambios de backend; DT-30 queda
+  mitigada.)*
 - Horas sin envío por profesional y zona horaria por organización ([DT-17](../Deudas/DT-17.md)).
 - Recibir y mostrar las respuestas del paciente dentro de Citia.
 
@@ -278,7 +295,10 @@ subdominio de envío · tope de 40 por tenant al día · alerta sobre 5 % con n 
 ## Deudas que toca
 
 **Cierra:** [DT-27](../Deudas/DT-27.md) ✅ (`f95b637`) · [DT-21](../Deudas/DT-21.md) ✅ (`f2d80aa`, `a37f175`) ·
-[DT-19](../Deudas/DT-19.md) (implementada; se cierra con el primer punto manual de la Definición de Terminado).
+[DT-19](../Deudas/DT-19.md) (verificada en producción el 2026-10-07; sigue abierta solo por la fuente de logs
+y la prueba de alerta forzada).
 **Acepta como riesgo:** [DT-16](../Deudas/DT-16.md) (política implementada y apagada).
 **Contrae** (las previstas de [ADR-12](../Decisions/ADR-12.md) y [ADR-13](../Decisions/ADR-13.md), ya con
-número): [DT-32](../Deudas/DT-32.md) a [DT-39](../Deudas/DT-39.md). **Detecta:** [DT-31](../Deudas/DT-31.md).
+número): [DT-32](../Deudas/DT-32.md) a [DT-39](../Deudas/DT-39.md). **Detecta:** [DT-31](../Deudas/DT-31.md) al
+implementar · [DT-40](../Deudas/DT-40.md) (`registro` marca "Enviado" sin enviar) y
+[DT-41](../Deudas/DT-41.md) (sin DMARC) al poner en producción.

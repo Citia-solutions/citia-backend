@@ -4,7 +4,7 @@
 
 **Estado:** ✅ Release 1 (2026-08-23) · ✅ Vía pública del paciente (2026-09-10) · 📐 cierre de Fase 1 diseñado (2026-09-25): agenda por rango, solapamiento, bandeja — [contrato](#cierre-de-fase-1--contrato-2026-09-25), sin implementar
 **Commits:** `f2a7dff` (release 1 + RUT + conexión con el frontend), `e1253c3` (vía pública) · Fase 2
-(rama `feature/fase2-recordatorios`, pendiente de merge): `a6c237f` (`publicar(evento, tx)`), `a37f175`
+(en producción desde el 2026-10-06): `a6c237f` (`publicar(evento, tx)`), `a37f175`
 (correo obligatorio y `PATCH /api/pacientes/:id`), `f95b637` (outbox real)
 **ADRs:** **[09](../Decisions/ADR-09.md)** · **[11](../Decisions/ADR-11.md)** (solapamiento) · extiende [04](../Decisions/ADR-04.md) · adopta la fase 1 de [08](../Decisions/ADR-08.md) en la ruta pública · replica [06](../Decisions/ADR-06.md)
 
@@ -17,7 +17,8 @@
 > están listados en § Tests.
 
 > **Nota (2026-10-04, Fase 2).** La Fase 2 cambió tres cosas de esta feature, en la rama
-> `feature/fase2-recordatorios` (PR #1, pendiente de merge a `develop`): el **correo del paciente es
+> `feature/fase2-recordatorios` (PR #1, mergeado a `develop` el 2026-10-04; en producción desde el
+> 2026-10-06): el **correo del paciente es
 > obligatorio** al crearlo, existe **`PATCH /api/pacientes/:id`** y, al vincular por RUT, un correo
 > vacío **se completa** ([§ Correo del paciente](#correo-del-paciente-obligatorio-fase-2)). Además los
 > hechos ya no se pierden: van a un **outbox** en la misma transacción y tienen su primer suscriptor, los
