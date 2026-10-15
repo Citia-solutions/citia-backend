@@ -14,6 +14,7 @@ import {
   Entorno,
   validarEntorno,
 } from './shared/infrastructure/config/entorno';
+import { LimiteTasaModule } from './shared/limite-tasa.module';
 import { ObservabilidadModule } from './shared/observabilidad.module';
 import { PlanificacionModule } from './shared/planificacion.module';
 
@@ -29,6 +30,10 @@ import { PlanificacionModule } from './shared/planificacion.module';
     //Logs JSON (pino) con id por peticion y redaccion, GET /api/health y
     //latidos de los jobs (ADR-13 §16). Global: se importa solo aqui.
     ObservabilidadModule,
+    //Limite de tasa (Fase 3 §6): ThrottlerGuard GLOBAL, en memoria. Solo
+    //limita las rutas marcadas con @LimitarTasa(...). Con
+    //LIMITE_TASA_ACTIVO=false (default en tests) no limita nada.
+    LimiteTasaModule,
     //Configura la confi con postgresql de manera asincrona
     //forRootAsync pq depende de ConfigService
     TypeOrmModule.forRootAsync({

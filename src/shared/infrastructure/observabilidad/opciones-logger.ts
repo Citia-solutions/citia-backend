@@ -13,6 +13,7 @@ import {
 } from 'pino';
 import type { Options } from 'pino-http';
 
+import { CABECERA_ENLACE_CITA } from '../../presentation/cabecera-enlace-cita';
 import type { Entorno, FormatoLog, NivelLog } from '../config/entorno';
 
 /**
@@ -46,13 +47,17 @@ export const CENSURA = '[REDACTADO]';
 /** Ruta del health check: no genera log por petición (la consulta cada minuto el monitor). */
 export const RUTA_SALUD = '/api/health';
 
-/** Cabeceras que nunca se registran (ADR-13 §16, DT-19). */
+/**
+ * Cabeceras que nunca se registran (ADR-13 §16, DT-19). `x-enlace-cita` lleva
+ * el token del enlace del paciente (Fase 3): es una credencial como
+ * `authorization`.
+ */
 export const CABECERAS_SENSIBLES = [
   'authorization',
   'proxy-authorization',
   'cookie',
   'set-cookie',
-  'x-enlace-cita',
+  CABECERA_ENLACE_CITA,
   'svix-id',
   'svix-timestamp',
   'svix-signature',
@@ -84,6 +89,9 @@ export const CAMPOS_SENSIBLES = [
   'passwordHash',
   'contrasena',
   'token',
+  // Hash del token del enlace del paciente (Fase 3): tampoco se registra.
+  'tokenHash',
+  'token_hash',
   'accessToken',
   'refreshToken',
   'authorization',

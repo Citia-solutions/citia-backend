@@ -1,5 +1,7 @@
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 
+import { CABECERA_ENLACE_CITA } from '../../presentation/cabecera-enlace-cita';
+
 /**
  * Orígenes que el navegador puede usar contra la API con credenciales
  * (US-03, PR 1, paso 4; stack-tecnologico.md §7.3).
@@ -150,6 +152,23 @@ export function esOrigenPermitido(
 }
 
 /**
+ * Cabeceras que el navegador puede enviar desde un origen permitido, además
+ * de las "simples" de CORS (`Accept`, `Accept-Language`…). Lista EXPLÍCITA:
+ * sin ella, `cors` reflejaría cualquier `Access-Control-Request-Headers`. Una
+ * cabecera nueva del frontend hay que sumarla aquí.
+ *
+ *  - `content-type` (JSON) y `authorization` (JWT del panel).
+ *  - `x-request-id`: el backend reutiliza el id entrante en sus logs.
+ *  - `x-enlace-cita`: token del enlace del paciente (Fase 3, S3).
+ */
+export const CABECERAS_PERMITIDAS_CORS: readonly string[] = [
+  'content-type',
+  'authorization',
+  'x-request-id',
+  CABECERA_ENLACE_CITA,
+];
+
+/**
  * Opciones para `app.enableCors`. Se mantiene `credentials: true`. Se expone
  * `X-Request-Id` para que el frontend pueda citar el id de una petición
  * fallida al reportarla (es el mismo id que va en los logs).
@@ -159,6 +178,7 @@ export function crearOpcionesCors(politica: PoliticaCors): CorsOptions {
     origin: (origen, responder) =>
       responder(null, esOrigenPermitido(origen, politica)),
     credentials: true,
+    allowedHeaders: [...CABECERAS_PERMITIDAS_CORS],
     exposedHeaders: ['X-Request-Id'],
   };
 }

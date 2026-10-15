@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
+import { LimitarTasa } from '../../../shared/presentation/limitar-tasa.decorator';
 import { AuthService } from '../application/auth.service';
 import { CredencialesInvalidasError } from '../domain/exceptions/credenciales-invalidas.error';
 import { LoginResponseDto } from './dto/login-response.dto';
@@ -16,8 +17,10 @@ import { LoginDto } from './dto/login.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /** 5 intentos por minuto por IP (Fase 3 §6), también los fallidos. */
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @LimitarTasa('login')
   async login(@Body() dto: LoginDto): Promise<LoginResponseDto> {
     try {
       return await this.authService.login(dto);
