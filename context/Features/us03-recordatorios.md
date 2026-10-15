@@ -1,16 +1,17 @@
 # Feature: US-03 — Recordatorios al paciente por correo (+ outbox, planificador y observabilidad)
 
-> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) · **Feature:** este documento · **Plan:** [US-03](../US/03-recordatorios.md) · **Relacionado:** [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [ADR-02](../Decisions/ADR-02.md), [DT-16](../Deudas/DT-16.md), [DT-19](../Deudas/DT-19.md), [DT-21](../Deudas/DT-21.md), [DT-27](../Deudas/DT-27.md), [DT-31](../Deudas/DT-31.md)…[DT-39](../Deudas/DT-39.md), [recordatorios (front)](../../../citia-frontend/context/Features/recordatorios.md)
+> **Fase:** [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) · **Feature:** este documento · **Plan:** [US-03](../US/03-recordatorios.md) · **Relacionado:** [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [ADR-02](../Decisions/ADR-02.md), [DT-16](../Deudas/DT-16.md), [DT-19](../Deudas/DT-19.md), [DT-21](../Deudas/DT-21.md), [DT-27](../Deudas/DT-27.md), [DT-31](../Deudas/DT-31.md)…[DT-41](../Deudas/DT-41.md), [recordatorios (front)](../../../citia-frontend/context/Features/recordatorios.md)
 
 **Historia:** US-03 (RF-06; RNF-02, RNF-03, RNF-08)
-**Estado:** ✅ **implementada** en la rama `feature/fase2-recordatorios` (2026-10-04) · ⏳ pendiente de
-merge a `develop` ([PR #1](https://github.com/Citia-solutions/citia-backend/pull/1), con el frontend en
-[PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2)) · ⏳ pendiente de los prerrequisitos
-operativos ([checklist](../Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción)) ·
-1274 unitarios, 212 e2e y 80 de integración en verde
+**Estado:** ✅ **en producción** desde el release del 2026-10-06 y **verificada de punta a punta** con un
+correo real el 2026-10-07 ([§ En producción](#en-producción-2026-10-07)) · implementada el 2026-10-04 y
+mergeada a `develop` ese día ([PR #1](https://github.com/Citia-solutions/citia-backend/pull/1), con el
+frontend en [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2)) · 1274 unitarios, 212 e2e y
+80 de integración en verde
 **Commits:** `daf0617`, `a6c237f`, `d45de20`, `f95b637`, `db46e37` (outbox, planificador y
 observabilidad) · `a37f175` (correo del paciente) · `f2d80aa`, `a13d80a`, `f719c66` (recordatorios) ·
-`a938f9d` (Definición de Terminado) · `8dd4747` (coverage)
+`a938f9d` (Definición de Terminado) · `8dd4747` (coverage) · merge a `develop` `060303c` · release a
+`main` `c057ade`
 **ADRs:** **[12](../Decisions/ADR-12.md)** (outbox + planificador) · **[13](../Decisions/ADR-13.md)**
 (recordatorios) · nota en [02](../Decisions/ADR-02.md) · se apoya en [04](../Decisions/ADR-04.md),
 [06](../Decisions/ADR-06.md), [07](../Decisions/ADR-07.md), [09 §3–§4](../Decisions/ADR-09.md)
@@ -504,7 +505,7 @@ producción todo tiene default salvo `JWT_SECRET`. Un valor vacío cuenta como n
 | `BETTERSTACK_HEARTBEAT_SALIDA_URL` · `BETTERSTACK_HEARTBEAT_RECORDATORIOS_URL` | — | latidos (https; secretos) |
 | `PLANIFICADOR_ACTIVO` | `true` (`false` en test) | apaga todos los jobs |
 | `EVENTOS_SALIDA_INTERVALO_SEG` · `_LOTE` · `_MAX_INTENTOS` · `_RETENCION_DIAS` | 5 · 50 · 10 · 14 | outbox |
-| `MENSAJERIA_ADAPTADOR` | `registro` fuera de producción; **obligatoria** en producción | `registro` (no envía) o `resend` |
+| `MENSAJERIA_ADAPTADOR` | `registro` fuera de producción; **obligatoria** en producción | `registro` (no envía, pero marca *Enviado*: [DT-40](../Deudas/DT-40.md)) o `resend` |
 | `RESEND_API_KEY` · `RESEND_WEBHOOK_SECRET` | — | obligatorias con `resend`; el secreto empieza con `whsec_` |
 | `CORREO_DOMINIO` | — | subdominio de envío verificado |
 | `CORREO_REMITENTE` | `Citia <recordatorios@${CORREO_DOMINIO}>`, o `Citia <onboarding@resend.dev>` sin dominio | remitente visible |
@@ -619,16 +620,91 @@ npm run start:dev          # MENSAJERIA_ADAPTADOR=registro: no envía, deja cons
 
 ---
 
+## En producción (2026-10-07)
+
+En `main` desde el release `c057ade` (2026-10-06) y verificada de punta a punta el 2026-10-07
+([cierre de la Fase 2](../Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07)). Esta sección
+dice **cómo está configurada**; los valores secretos no se escriben aquí ni en ningún documento. Mapa
+general de la infraestructura en [stack § Mapa de entornos](../stack-tecnologico.md#mapa-de-entornos).
+
+### Entornos
+
+| | staging | production |
+|---|---|---|
+| Rama de Git | `develop` | `main` |
+| Backend | Railway, entorno `staging`, repo `Citia-solutions/citia-backend` | Railway, entorno `production`, mismo repo |
+| Base de datos | Postgres propio del entorno | Postgres propio del entorno (base nueva desde el 2026-10-04) |
+| Frontend que lo consume | Netlify `citia-staging` → `https://citia-staging.netlify.app` | Netlify `app.citiahealth.cl` → `https://app.citiahealth.cl` |
+| Envío de correo | `registro`: **no envía**; los recordatorios quedan *Enviado* ([DT-40](../Deudas/DT-40.md)) | `resend`, desde `Citia <recordatorios@notificaciones.citiahealth.cl>` |
+| Webhook de Resend | — | `POST /api/webhooks/resend` del backend de production, eventos `email.*` |
+| Observabilidad | logs de Railway | logs de Railway · Better Stack: monitor de `GET /api/health`, heartbeats `citia-prod-recordatorios` y `citia-prod-eventos` |
+
+### Variables por entorno (sin valores secretos)
+
+| Variable | staging | production | Nota |
+|---|---|---|---|
+| `NODE_ENV` | `production` | `production` | lo fija la imagen Docker: **staging también pasa por las reglas de producción** de la validación del entorno |
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME` | referencias al Postgres del entorno (`${{Postgres.PGHOST}}`, …) | ídem | nunca valores copiados de otro entorno |
+| `JWT_SECRET` | propio | propio, de 32 caracteres o más | secreto; distinto en cada entorno |
+| `FRONTEND_URL` | el origen del sitio de staging *(a confirmar: ver nota)* | `https://app.citiahealth.cl` | origen exacto, sin ruta |
+| `CORS_ORIGENES_EXTRA` | — | — | no hace falta: las vistas previas de Netlify están apagadas |
+| `MENSAJERIA_ADAPTADOR` | `registro` | `resend` | obligatoria con `NODE_ENV=production` |
+| `RESEND_API_KEY` · `RESEND_WEBHOOK_SECRET` | — | definidas | secretos |
+| `CORREO_DOMINIO` | — | `notificaciones.citiahealth.cl` | el remitente sale de aquí |
+| `BETTERSTACK_HEARTBEAT_RECORDATORIOS_URL` | — | URL del heartbeat `citia-prod-recordatorios` | secreto (lleva el token) |
+| `BETTERSTACK_HEARTBEAT_SALIDA_URL` | — | URL del heartbeat `citia-prod-eventos` | ídem; el job se llama `salida` en el código |
+| `BETTERSTACK_SOURCE_TOKEN` · `BETTERSTACK_INGESTING_HOST` | — | **pendientes** | sin ellos, las alertas por log no salen de Railway ([DT-19](../Deudas/DT-19.md)) |
+| El resto (cuotas, antelaciones, horas sin envío, planificador…) | defaults | defaults | tabla de [§ Variables de entorno](#variables-de-entorno) |
+
+> **Nota sobre staging.** El plan preveía `staging.citiahealth.cl`, pero en Cloudflare no hay registro
+> `staging` y el sitio quedó en `citia-staging.netlify.app`. El `FRONTEND_URL` del backend de staging debe
+> ser ese origen (o estar en `CORS_ORIGENES_EXTRA`); confirmarlo en Railway.
+
+### Proveedores
+
+| Proveedor | Para qué | Configuración |
+|---|---|---|
+| Railway | backend + Postgres | entornos `staging` y `production`, uno por rama; imagen Docker con migraciones al arrancar ([ADR-05](../Decisions/ADR-05.md)); "App Sleeping" sin confirmar en el panel |
+| Resend | correo | dominio `notificaciones.citiahealth.cl` **verificado**, región São Paulo, plan Free (3.000 al mes, 100 al día); webhook firmado hacia production |
+| Better Stack | uptime, latidos, alertas | monitor y dos heartbeats en Up; alertas por correo (las llamadas a Chile no están habilitadas); fuente de logs pendiente |
+| Cloudflare | DNS | registros de Resend y de Netlify; falta DMARC ([DT-41](../Deudas/DT-41.md)) |
+| Netlify | el frontend | un sitio por entorno |
+
+### Verificación (2026-10-07)
+
+Tres citas a las 16:00 con el correo del usuario como paciente y el recordatorio configurado a 30 min:
+a las 15:30 llegaron **tres correos**, uno por cita, sin duplicados, a la **bandeja de entrada**, con la
+hora de Chile y sin datos de salud; el voucher los mostró *Entregado*, así que el webhook firmado funciona.
+No se inspeccionaron las cabeceras SPF/DKIM/DMARC ([DT-41](../Deudas/DT-41.md)) ni se forzó una alerta
+([DT-19](../Deudas/DT-19.md)).
+
+### Hallazgo: `registro` en producción marca "Enviado"
+
+Production arrancó con las variables importadas de staging, incluida `MENSAJERIA_ADAPTADOR=registro`. Es
+un valor válido y explícito, así que la validación del entorno lo aceptó y la app solo dejó un `warn` al
+arrancar. Varios recordatorios quedaron **"Enviado" sin haberse enviado**: el adaptador `registro`
+responde `aceptado` con un id ficticio, y el estado no distingue un envío simulado de uno real (ni la API
+expone el proveedor). Al pasar la variable a `resend`, los siguientes llegaron de verdad. Es el
+comportamiento por diseño de `registro`, pero en producción engaña al profesional y además consume la
+cuota local y el fusible del tenant: queda como [DT-40](../Deudas/DT-40.md), con opciones y
+recomendación. Para reconocer esas filas: `proveedor = 'registro'` en la tabla `recordatorios`.
+
+---
+
 ## Pendientes
 
 | Qué | Nota |
 |-----|------|
-| **Merge** de PR #1 y PR #2 a `develop` | mismo release: sin el frontend nuevo, el modal recibe 400 por el correo |
-| **Prerrequisitos operativos** | subdominio verificado en Resend, webhook, Better Stack, variables en Railway, migraciones: [checklist](../Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción) |
-| Dos ítems manuales de la Definición de Terminado | latido y alerta en Better Stack; un correo real con SPF, DKIM y DMARC en `pass` |
-| Prueba manual del frontend contra este backend | hasta ahora solo con respuestas simuladas |
+| ~~**Merge** de PR #1 y PR #2 a `develop`~~ | ✅ 2026-10-04; en producción desde el 2026-10-06 (PR #4 y frontend PR #6) |
+| ~~**Prerrequisitos operativos**~~ | ✅ 2026-10-07, salvo lo anotado: [checklist](../Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción) |
+| ~~Dos ítems manuales de la Definición de Terminado~~ | ✅ 2026-10-07, con dos salvedades: alerta forzada ([DT-19](../Deudas/DT-19.md)) y cabeceras ([DT-41](../Deudas/DT-41.md)) |
+| ~~Prueba manual del frontend contra este backend~~ | ✅ en producción, 2026-10-07 |
+| `registro` no debe pasar por "Enviado" en producción | [DT-40](../Deudas/DT-40.md) |
+| Registro DMARC y revisión de cabeceras | [DT-41](../Deudas/DT-41.md) |
+| Fuente de logs de Better Stack y alertas por log | [DT-19](../Deudas/DT-19.md) |
+| Resend en staging | staging corre con `registro` y no prueba el envío real ni el webhook |
 | Decisiones del usuario | [Q12–Q15](../PREGUNTAS-ABIERTAS.md#fase-2--decisiones-pendientes-tras-implementar-2026-10-04): `/recordatorios` para `recepcion`, textos y colores, vista Contacto, cuota mensual de Resend |
-| CORS de las vistas previas del frontend | el comodín admite `*.<proyecto>.pages.dev`, pero el frontend se publica con **Workers** Static Assets; sus vistas previas (`*.workers.dev`) hay que agregarlas como orígenes exactos o ampliar el comodín |
+| ~~CORS de las vistas previas del frontend~~ | ya no aplica: el frontend se quedó en Netlify y sus vistas previas están apagadas; si se encienden, van como orígenes exactos en `CORS_ORIGENES_EXTRA` |
 
 ---
 
@@ -636,7 +712,8 @@ npm run start:dev          # MENSAJERIA_ADAPTADOR=registro: no envía, deja cons
 
 **Cerró:** [DT-27](../Deudas/DT-27.md) (outbox) · [DT-21](../Deudas/DT-21.md) (carpetas).
 
-**Avanzó:** [DT-19](../Deudas/DT-19.md) (implementada; falta la prueba manual) · [DT-16](../Deudas/DT-16.md)
+**Avanzó:** [DT-19](../Deudas/DT-19.md) (verificada en producción; falta la fuente de logs) · [DT-37](../Deudas/DT-37.md)
+(webhook activo en producción) · [DT-16](../Deudas/DT-16.md)
 (política apagada) · [DT-20](../Deudas/DT-20.md) (concurrencia automatizada) · [DT-29](../Deudas/DT-29.md)
 (las rutas nuevas nacieron consumidas).
 
@@ -644,7 +721,9 @@ npm run start:dev          # MENSAJERIA_ADAPTADOR=registro: no envía, deja cons
 (outbox) · [DT-35](../Deudas/DT-35.md) · [DT-36](../Deudas/DT-36.md) · [DT-37](../Deudas/DT-37.md) ·
 [DT-38](../Deudas/DT-38.md) · [DT-39](../Deudas/DT-39.md) (recordatorios).
 
-**Detectó:** [DT-31](../Deudas/DT-31.md) (imports que cruzan capas en otros módulos).
+**Detectó:** [DT-31](../Deudas/DT-31.md) (imports que cruzan capas en otros módulos) · al poner en producción
+(2026-10-07): [DT-40](../Deudas/DT-40.md) (`registro` marca "Enviado" sin enviar) y
+[DT-41](../Deudas/DT-41.md) (sin DMARC).
 
 **Toca:** [DT-17](../Deudas/DT-17.md) (silencio y zona globales) · [DT-23](../Deudas/DT-23.md) (completar
 un correo por RUT) · [DT-26](../Deudas/DT-26.md) (retención de las tablas nuevas) ·

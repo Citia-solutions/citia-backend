@@ -4,8 +4,9 @@
 
 **Tipo:** Infraestructura / cross-cutting (no es una US de negocio)
 **Estado:** ✅ Implementado (2026-06-22) · ✅ Tooling de entorno local y seed demo (2026-08-16) · ✅ Fase 2:
-logs con pino, health check, latidos, validación de entorno, CORS por lista y planificador (2026-10-03, rama
-`feature/fase2-recordatorios`, PR #1 pendiente de merge) — [§ Fase 2](#fase-2-observabilidad-planificador-y-variables-nuevas)
+logs con pino, health check, latidos, validación de entorno, CORS por lista y planificador (2026-10-03; en
+producción desde el 2026-10-06) — [§ Fase 2](#fase-2-observabilidad-planificador-y-variables-nuevas) ·
+entornos de despliegue en [stack § Mapa de entornos](../stack-tecnologico.md#mapa-de-entornos)
 **Commits:** `b8cac2a` (Docker + compose + entrypoint), `df53128` (fix build), `0e54f0b` (scripts migración prod), `77a97c9` (puerto pgAdmin), `b623b6a` (carga de `.env` en CLI/e2e), `f200557` (seed demo) · Fase 2: `d45de20` (pino, health, latidos, entorno, CORS), `f95b637` (planificador y apagado ordenado), `db46e37` (e2e en serie), `f719c66` (`rawBody`, compose con mensajería), `8dd4747` (coverage sin specs)
 **ADR:** [ADR-05](../Decisions/ADR-05.md)
 
@@ -152,7 +153,8 @@ Los tests e2e usan además `TEST_DB_*`, cargadas por `test/setup-env.ts`.
 
 ## Fase 2: observabilidad, planificador y variables nuevas
 
-*(2026-10-03, rama `feature/fase2-recordatorios`, PR #1 pendiente de merge a `develop`.)* Piezas
+*(2026-10-03, rama `feature/fase2-recordatorios`; en `develop` desde el 2026-10-04 y en producción desde el
+2026-10-06.)* Piezas
 transversales que trajo la Fase 2; el detalle funcional está en [us03-recordatorios](us03-recordatorios.md).
 
 | Pieza | Qué hace | Dónde |
@@ -213,8 +215,9 @@ con compose toman su default. En Railway no aplica (las variables se cargan en e
 ## Deudas técnicas asociadas
 
 - [DT-18](../Deudas/DT-18.md) — no existe límite de tasa en ninguna superficie.
-- [DT-19](../Deudas/DT-19.md) — sin observabilidad: **implementada** en la Fase 2 (en rama); falta la
-  prueba manual en Better Stack.
+- [DT-19](../Deudas/DT-19.md) — sin observabilidad: **implementada** en la Fase 2 y **verificada en
+  producción** (2026-10-07: heartbeats y monitor en Up); falta la fuente de logs y la prueba de alerta
+  forzada.
 - [DT-20](../Deudas/DT-20.md) — e2e sin pipeline (las suites con base ya corren en verde).
 - [DT-21](../Deudas/DT-21.md) — carpetas vacías con nombres mal escritos: **cerrada** (2026-10-03).
 

@@ -4,8 +4,12 @@
 
 **Fecha:** 2026-09-30
 **Estado:** Aceptado · **implementado** (rama `feature/fase2-recordatorios`,
-[PR #1](https://github.com/Citia-solutions/citia-backend/pull/1), pendiente de merge a `develop`; el
-frontend sale en el mismo release, [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2)) ·
+[PR #1](https://github.com/Citia-solutions/citia-backend/pull/1), mergeado a `develop` el 2026-10-04; el
+frontend, [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2)) · **en producción** desde el
+release del 2026-10-06 (`c057ade`) y verificado con un correo real el 2026-10-07
+([cierre de la Fase 2](../Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07); el adaptador
+`registro` en producción dejó [DT-40](../Deudas/DT-40.md), y el remitente sin DMARC,
+[DT-41](../Deudas/DT-41.md)) ·
 **todas las decisiones confirmadas por el usuario el 2026-09-30** (ver
 [Decisiones confirmadas](#decisiones-confirmadas-2026-09-30)) · desvíos y datos de proveedores
 verificados en [Notas de implementación](#notas-de-implementación-2026-10-04)

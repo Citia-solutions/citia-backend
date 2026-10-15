@@ -8,7 +8,7 @@
 |---|---|
 | **Objetivo** | Que el paciente confirme o cancele —y pida otra hora (US-02.07)— desde el enlace que le llega en el recordatorio, sin cuenta; y que la agenda y las alertas se actualicen. |
 | **Entregable** | El paciente confirma o cancela desde el correo; agenda y alertas se actualizan (ROADMAP). |
-| **Estado** | ⬜ nada construido · **fuera del MVP** (2026-09-30). Hay diseño parcial: ADR-10 (propuesto) y FD-06 (propuesta). |
+| **Estado** | ⬜ nada construido · **fuera del MVP** (2026-09-30) · **siguiente fase** (2026-10-07: el MVP ya está en producción y el canal existe). Hay diseño parcial: ADR-10 (propuesto) y FD-06 (propuesta); para empezar hay que aceptar ADR-10. |
 | **Fechas** | FD-06 2026-09-10 · ADR-10 propuesto 2026-09-23 y aplazado 2026-09-25 (Q11 → C) · reabrible desde el 2026-09-30 (el canal existirá con la Fase 2). |
 | **Historias** | US-04 (sin plan propio) + la subtarea US-02.07, cuyo plan es [US/02.07-paciente-reagenda-cancela.md](../US/02.07-paciente-reagenda-cancela.md). |
 | **Commits** | ninguno propio. ADR-10 y US-02.07 entraron con `2877b13` (fila 41, Fase 1); FD-06 con `16b50e1` (fila 38). |
@@ -88,7 +88,7 @@ Ninguna.
 
 | Deuda | Por qué pesa en esta fase |
 |---|---|
-| [DT-30](../Deudas/DT-30.md) | **se reabre al empezar la fase**: la confirmación del paciente lleva las citas a `confirmada` y recién ahí funcionan los botones de asistencia |
+| [DT-30](../Deudas/DT-30.md) | ~~**se reabre al empezar la fase**: la confirmación del paciente lleva las citas a `confirmada` y recién ahí funcionan los botones de asistencia~~ **mitigada el 2026-10-05**: el voucher ya tiene Confirmar, Asistió y No asistió; la confirmación del paciente desde el enlace se suma y reduce las citas que llegan `pendiente` a su hora |
 | [DT-11](../Deudas/DT-11.md) | la fecha de corte del `ghosting` retroactivo será el despliegue de esta fase |
 | [DT-16](../Deudas/DT-16.md) | con la salida B escribe Citia; ADR-10 §6 la daba por bloqueante y el usuario aceptó el riesgo (2026-09-30) |
 | [DT-18](../Deudas/DT-18.md) | ADR-10 exige límite de tasa antes del primer enlace real |

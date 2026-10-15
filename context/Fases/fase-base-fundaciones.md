@@ -115,8 +115,8 @@
 | [DT-08](../Deudas/DT-08.md) colisión de slug bajo concurrencia | abierta |
 | [DT-09](../Deudas/DT-09.md) comprobación de correo duplicado inalcanzable | abierta |
 | [DT-18](../Deudas/DT-18.md) sin límite de tasa (transversal) | aceptada sin límite por ahora (2026-09-29, Fase 1) |
-| [DT-19](../Deudas/DT-19.md) sin observabilidad | 🟢 resuelta en diseño (2026-09-30, Fase 2) · implementada en rama (2026-10-03), abierta hasta la prueba manual en Better Stack |
-| [DT-21](../Deudas/DT-21.md) carpetas vacías mal escritas | ✅ cerrada en la Fase 2 (2026-10-03, en rama) |
+| [DT-19](../Deudas/DT-19.md) sin observabilidad | 🟢 resuelta en diseño (2026-09-30, Fase 2) · implementada (2026-10-03) y verificada en producción (2026-10-07), abierta solo por la fuente de logs |
+| [DT-21](../Deudas/DT-21.md) carpetas vacías mal escritas | ✅ cerrada en la Fase 2 (2026-10-03) |
 
 **Cerradas:** ninguna. **Afectadas:** ninguna.
 
