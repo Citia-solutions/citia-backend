@@ -10,7 +10,12 @@ import { JwtAuthGuard } from '../src/modules/auth/jwt-auth.guard';
 import { JwtPayload } from '../src/modules/auth/jwt-payload.interface';
 import { JwtStrategy } from '../src/modules/auth/jwt.strategy';
 import { CitasService } from '../src/modules/cita/application/citas.service';
-import { CambioCita } from '../src/modules/cita/domain/cambio-cita.entity';
+import { EnlacesCitaService } from '../src/modules/cita/application/enlaces-cita.service';
+import {
+  ActorCambio,
+  CambioCita,
+  TipoCambio,
+} from '../src/modules/cita/domain/cambio-cita.entity';
 import { CambioCitaRepository } from '../src/modules/cita/domain/cambio-cita.repository';
 import { Cita, EstadoCita } from '../src/modules/cita/domain/cita.entity';
 import { CitaRepository } from '../src/modules/cita/domain/cita.repository';
@@ -20,6 +25,8 @@ import { Paciente } from '../src/modules/paciente/domain/paciente.entity';
 import { PacienteRepository } from '../src/modules/paciente/domain/paciente.repository';
 import { RolUsuario } from '../src/modules/usuario/domain/usuario.entity';
 import { rangoDelDiaEnZona } from '../src/shared/domain/timezone';
+import { DerivadorTokenEnlaceDePrueba } from './support/derivador-token-enlace-de-prueba';
+import { InMemoryEnlaceCitaRepository } from './support/in-memory-repositories';
 
 /**
  * E2E de GET /api/citas/:id (US-02.08) SIN base de datos.
@@ -66,6 +73,21 @@ class InMemoryCitaRepository extends CitaRepository {
   buscarPorId(id: string, tenantId: string): Promise<Cita | null> {
     const cita = this.citas.get(id);
     return Promise.resolve(cita && cita.tenantId === tenantId ? cita : null);
+  }
+
+  buscarPorIdParaActualizar(
+    id: string,
+    tenantId: string,
+  ): Promise<Cita | null> {
+    return this.buscarPorId(id, tenantId);
+  }
+
+  buscarPorIds(ids: readonly string[], tenantId: string): Promise<Cita[]> {
+    return Promise.resolve(
+      [...this.citas.values()].filter(
+        (c) => ids.includes(c.id) && c.tenantId === tenantId,
+      ),
+    );
   }
 
   buscarDelDiaPorProfesional(
@@ -129,6 +151,24 @@ class InMemoryCambioCitaRepository extends CambioCitaRepository {
       ),
     );
   }
+
+  ultimoActorPorTipo(
+    citaId: string,
+    tenantId: string,
+    tipos: readonly TipoCambio[],
+  ): Promise<Partial<Record<TipoCambio, ActorCambio>>> {
+    const resultado: Partial<Record<TipoCambio, ActorCambio>> = {};
+    for (const c of this.cambios) {
+      if (
+        c.citaId === citaId &&
+        c.tenantId === tenantId &&
+        tipos.includes(c.tipo)
+      ) {
+        resultado[c.tipo] = c.actorTipo;
+      }
+    }
+    return Promise.resolve(resultado);
+  }
 }
 
 class InMemoryPacienteRepository extends PacienteRepository {
@@ -181,6 +221,8 @@ interface DetalleBody {
   tipoConsulta: string;
   paciente: Record<string, unknown>;
   accionesPermitidas: string[];
+  confirmadaPor: string | null;
+  canceladaPor: string | null;
 }
 
 interface DashboardItem {
@@ -195,6 +237,11 @@ describe('GET /api/citas/:id — voucher (e2e sin BD, US-02.08)', () => {
   const citaRepo = new InMemoryCitaRepository();
   const cambioRepo = new InMemoryCambioCitaRepository();
   const pacienteRepo = new InMemoryPacienteRepository();
+  // Enlace del paciente (Fase 3): solo para la ruta de invalidar.
+  const enlaceRepo = new InMemoryEnlaceCitaRepository();
+  const derivador = new DerivadorTokenEnlaceDePrueba();
+  // El doble de enlaces exige un contexto de transacción (como el real).
+  const txEnlaces = { e2e: 'tx' };
 
   let tokenA: string;
   let tokenB: string;
@@ -235,6 +282,7 @@ describe('GET /api/citas/:id — voucher (e2e sin BD, US-02.08)', () => {
     citaRepo.citas.clear();
     cambioRepo.cambios.length = 0;
     pacienteRepo.pacientes.clear();
+    enlaceRepo.enlaces.clear();
 
     pacienteRepo.pacientes.set(PACIENTE_A, {
       id: PACIENTE_A,
@@ -309,6 +357,13 @@ describe('GET /api/citas/:id — voucher (e2e sin BD, US-02.08)', () => {
               { publicar: () => Promise.resolve() },
               TZ,
             ),
+        },
+        {
+          provide: EnlacesCitaService,
+          useFactory: () =>
+            new EnlacesCitaService(enlaceRepo, citaRepo, derivador, {
+              run: (work) => work(txEnlaces),
+            }),
         },
       ],
     }).compile();
@@ -515,6 +570,147 @@ describe('GET /api/citas/:id — voucher (e2e sin BD, US-02.08)', () => {
       const body = res.body as DetalleBody;
       expect(body.estado).toBe('cancelada');
       expect(body.accionesPermitidas).toEqual([]);
+    });
+  });
+
+  describe('Fase 3: quién confirmó / canceló (G3)', () => {
+    it('debería traer confirmadaPor y canceladaPor (aditivo) y null cuando no hay cambio en la bitácora', async () => {
+      // Act — la semilla no tiene bitácora
+      const res = await request(server())
+        .get(`/api/citas/${CITA_A}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(200);
+
+      // Assert
+      const body = res.body as DetalleBody;
+      expect(body).toHaveProperty('confirmadaPor', null);
+      expect(body).toHaveProperty('canceladaPor', null);
+    });
+
+    it('debería decir "profesional" tras cancelar desde el voucher', async () => {
+      // Arrange
+      await request(server())
+        .patch(`/api/citas/${CITA_A}/cancelar`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({})
+        .expect(200);
+
+      // Act
+      const res = await request(server())
+        .get(`/api/citas/${CITA_A}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(200);
+
+      // Assert
+      const body = res.body as DetalleBody;
+      expect(body.canceladaPor).toBe('profesional');
+      expect(body.confirmadaPor).toBeNull();
+    });
+
+    it('tras reagendar, una confirmación anterior deja de contar (vuelve a pendiente)', async () => {
+      // Arrange — confirmada por el profesional y luego movida
+      citaRepo.citas.set(
+        CITA_A,
+        cita(
+          CITA_A,
+          TENANT_A,
+          PACIENTE_A,
+          USUARIO_A,
+          EstadoCita.PENDIENTE,
+          new Date('2026-09-29T13:00:00Z'),
+        ),
+      );
+      await request(server())
+        .patch(`/api/citas/${CITA_A}/confirmar`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(200);
+      const confirmada = await request(server())
+        .get(`/api/citas/${CITA_A}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(200);
+      expect((confirmada.body as DetalleBody).confirmadaPor).toBe(
+        'profesional',
+      );
+
+      // Act
+      await request(server())
+        .patch(`/api/citas/${CITA_A}/reagendar`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ inicio: '2026-09-30T10:00:00-03:00' })
+        .expect(200);
+      const res = await request(server())
+        .get(`/api/citas/${CITA_A}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(200);
+
+      // Assert
+      expect((res.body as DetalleBody).estado).toBe('pendiente');
+      expect((res.body as DetalleBody).confirmadaPor).toBeNull();
+    });
+  });
+
+  describe('POST /api/citas/:id/enlace/invalidar (Fase 3, S1)', () => {
+    const invalidar = (id: string, token?: string) => {
+      const peticion = request(server()).post(
+        `/api/citas/${id}/enlace/invalidar`,
+      );
+      return token
+        ? peticion.set('Authorization', `Bearer ${token}`)
+        : peticion;
+    };
+
+    const emitirEnlace = (citaId: string, tenantId: string) =>
+      new EnlacesCitaService(enlaceRepo, citaRepo, derivador, {
+        run: (work) => work(txEnlaces),
+      }).asegurarActivo(citaId, tenantId, txEnlaces);
+
+    it('401 sin token', async () => {
+      await invalidar(CITA_A).expect(401);
+    });
+
+    it('400 si el id no es UUID', async () => {
+      await invalidar('no-es-uuid', tokenA).expect(400);
+    });
+
+    it('204 sin cuerpo y el enlace activo queda revocado por el usuario del token', async () => {
+      // Arrange
+      await emitirEnlace(CITA_A, TENANT_A);
+
+      // Act
+      const res = await invalidar(CITA_A, tokenA).expect(204);
+
+      // Assert
+      expect(res.text).toBe('');
+      const [enlace] = [...enlaceRepo.enlaces.values()];
+      expect(enlace.estaActivo()).toBe(false);
+      expect(enlace.revocadoPor).toBe(USUARIO_A);
+    });
+
+    it('204 también si la cita no tenía enlace activo (idempotente)', async () => {
+      await invalidar(CITA_A, tokenA).expect(204);
+      await invalidar(CITA_A, tokenA).expect(204);
+      expect(enlaceRepo.enlaces.size).toBe(0);
+    });
+
+    it('404 idéntico para una cita de otro tenant y una inexistente; el enlace ajeno sigue activo', async () => {
+      // Arrange — B tiene un enlace activo
+      await emitirEnlace(CITA_B, TENANT_B);
+
+      // Act
+      const otroTenant = await invalidar(CITA_B, tokenA).expect(404);
+      const inexistente = await invalidar(
+        '33333333-3333-4333-8333-333333333333',
+        tokenA,
+      ).expect(404);
+
+      // Assert
+      expect(
+        [...enlaceRepo.enlaces.values()].every((e) => e.estaActivo()),
+      ).toBe(true);
+      expect(otroTenant.text).not.toContain(TENANT_B);
+      expect((otroTenant.body as { statusCode: number }).statusCode).toBe(
+        (inexistente.body as { statusCode: number }).statusCode,
+      );
     });
   });
 });

@@ -16,6 +16,7 @@ import { BandejaSolicitudesService } from '../src/modules/solicitud/application/
 import {
   EstadoSolicitud,
   SolicitudCita,
+  TipoSolicitud,
 } from '../src/modules/solicitud/domain/solicitud-cita.entity';
 import { SolicitudesController } from '../src/modules/solicitud/presentation/solicitudes.controller';
 import { RolUsuario } from '../src/modules/usuario/domain/usuario.entity';
@@ -90,6 +91,9 @@ interface SolicitudBody {
   recibidaEn: string;
   resueltaEn: string | null;
   citaId: string | null;
+  tipo: string;
+  citaOrigenId: string | null;
+  citaOrigen: { inicio: string; duracionMin: number; estado: string } | null;
 }
 
 interface CitaBody {
@@ -352,15 +356,39 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
       // Act
       const res = await aceptar(SOL_A, tokenA, {}).expect(400);
 
-      // Assert
+      // Assert — desde la Fase 3 el DTO solo exige `inicio`
       const body = res.body as ErrorBody;
       expect(body.error).toBe('Bad Request');
       expect(Array.isArray(body.message)).toBe(true);
       const mensajes = (body.message as string[]).join(' | ');
       expect(mensajes).toMatch(/inicio/);
-      expect(mensajes).toMatch(/duracionMin/);
-      expect(mensajes).toMatch(/tipoConsulta/);
+      expect(tx.abiertas).toBe(0);
     });
+
+    it.each([
+      ['sin duracionMin', { duracionMin: undefined }],
+      ['sin tipoConsulta', { tipoConsulta: undefined }],
+    ])(
+      'debería responder 400 al aceptar una solicitud NUEVA %s (lo valida el servicio, Fase 3)',
+      async (_caso, faltante) => {
+        // Act
+        const res = await aceptar(SOL_A, tokenA, {
+          ...CUERPO_ACEPTAR,
+          ...faltante,
+        }).expect(400);
+
+        // Assert
+        expect(res.body).toEqual({
+          statusCode: 400,
+          message:
+            'Para aceptar una solicitud nueva, duracionMin y tipoConsulta son obligatorios',
+          error: 'Bad Request',
+        });
+        expect(estadoPersistido(SOL_A)).toBe(EstadoSolicitud.RECIBIDA);
+        expect(citaRepo.citas.size).toBe(0);
+        expect(eventos.eventos).toEqual([]);
+      },
+    );
 
     it('debería responder 400 cuando inicio no trae zona horaria explícita', async () => {
       // Act
@@ -449,8 +477,11 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
         recibidaEn: RECIBIDA_EN,
         resueltaEn: null,
         citaId: null,
+        tipo: 'nueva',
+        citaOrigenId: null,
+        citaOrigen: null,
       });
-      expect(res.text).not.toMatch(/tenantId|usuarioId/);
+      expect(res.text).not.toMatch(/tenantId|usuarioId|enlaceId/);
       expect(res.text).not.toContain('"111111111"');
     });
 
@@ -516,6 +547,9 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
       expect(Object.keys(sol).sort()).toEqual(
         [
           'citaId',
+          'citaOrigen',
+          'citaOrigenId',
+          'tipo',
           'consentimiento',
           'correo',
           'estado',
@@ -542,6 +576,9 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
         recibidaEn: RECIBIDA_EN,
         resueltaEn: UN_INSTANTE_ISO,
         citaId: cita.id,
+        tipo: 'nueva',
+        citaOrigenId: null,
+        citaOrigen: null,
       });
     });
 
@@ -787,6 +824,9 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
         recibidaEn: RECIBIDA_EN,
         resueltaEn: UN_INSTANTE_ISO,
         citaId: null,
+        tipo: 'nueva',
+        citaOrigenId: null,
+        citaOrigen: null,
       });
       expect(citaRepo.citas.size).toBe(0);
       expect(pacienteRepo.pacientes.size).toBe(1);
@@ -860,6 +900,213 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
 
       // Assert
       expect(estadoPersistido(SOL_B)).toBe(EstadoSolicitud.RECIBIDA);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // Fase 3 (R2-R5): una petición de otra hora en la bandeja.
+  describe('peticiones de otra hora (reagendamiento, Fase 3)', () => {
+    const CITA_ORIGEN = '0c1a0000-0000-4000-8000-0000000000c1';
+    const SOL_REAGENDA = '5f0c0000-0000-4000-8000-0000000000c2';
+    const ENLACE = 'e1000000-0000-4000-8000-0000000000c3';
+    const PACIENTE_ORIGEN = 'aaaaaaaa-aaaa-4aaa-8aaa-0000000000c4';
+    const INICIO_ORIGINAL = '2026-09-21T13:00:00.000Z';
+
+    const sembrarPeticion = (estadoCita = EstadoCita.CONFIRMADA): void => {
+      pacienteRepo.pacientes.set(PACIENTE_ORIGEN, {
+        id: PACIENTE_ORIGEN,
+        rut: null,
+        nombre: 'Paciente Reagenda',
+        telefono: '+56 9 4444 4444',
+        correo: null,
+        consentimiento: true,
+        tenantId: TENANT_A,
+      });
+      citaRepo.sembrar(
+        Cita.reconstituir({
+          id: CITA_ORIGEN,
+          inicio: new Date(INICIO_ORIGINAL),
+          duracionMin: 45,
+          tipoConsulta: 'Control',
+          estado: estadoCita,
+          tenantId: TENANT_A,
+          pacienteId: PACIENTE_ORIGEN,
+          usuarioId: USUARIO_A,
+          creadoEn: new Date('2026-09-01T00:00:00Z'),
+          actualizadoEn: new Date('2026-09-01T00:00:00Z'),
+        }),
+      );
+      solicitudRepo.sembrar(
+        SolicitudCita.reconstituir({
+          id: SOL_REAGENDA,
+          tenantId: TENANT_A,
+          usuarioId: USUARIO_A,
+          rut: null,
+          nombrePaciente: 'Paciente Reagenda',
+          telefono: '+56 9 4444 4444',
+          correo: null,
+          motivo: '',
+          preferenciaHoraria: 'martes en la tarde',
+          consentimiento: true,
+          estado: EstadoSolicitud.RECIBIDA,
+          citaId: null,
+          recibidaEn: new Date('2026-09-18T12:00:00.000Z'),
+          resueltaEn: null,
+          tipo: TipoSolicitud.REAGENDAMIENTO,
+          citaOrigenId: CITA_ORIGEN,
+          enlaceId: ENLACE,
+        }),
+      );
+    };
+
+    const listarDeCita = (token: string, citaOrigenId = CITA_ORIGEN) =>
+      request(server())
+        .get(`/api/solicitudes?citaOrigenId=${citaOrigenId}&estado=recibida`)
+        .set('Authorization', `Bearer ${token}`);
+
+    beforeEach(() => {
+      sembrarPeticion();
+    });
+
+    it('GET ?citaOrigenId=&estado=recibida → solo la petición de esa cita, con tipo y citaOrigen', async () => {
+      // Act
+      const res = await listarDeCita(tokenA).expect(200);
+
+      // Assert
+      expect(res.body).toEqual([
+        {
+          id: SOL_REAGENDA,
+          estado: 'recibida',
+          rut: null,
+          nombrePaciente: 'Paciente Reagenda',
+          telefono: '+56 9 4444 4444',
+          correo: null,
+          motivo: '',
+          preferenciaHoraria: 'martes en la tarde',
+          consentimiento: true,
+          recibidaEn: '2026-09-18T12:00:00.000Z',
+          resueltaEn: null,
+          citaId: null,
+          tipo: 'reagendamiento',
+          citaOrigenId: CITA_ORIGEN,
+          citaOrigen: {
+            inicio: INICIO_ORIGINAL,
+            duracionMin: 45,
+            estado: 'confirmada',
+          },
+        },
+      ]);
+      expect(res.text).not.toContain(ENLACE);
+    });
+
+    it('GET ?citaOrigenId= con el token de OTRO tenant → lista vacía', async () => {
+      // Act
+      const res = await listarDeCita(tokenB).expect(200);
+
+      // Assert
+      expect(res.body).toEqual([]);
+    });
+
+    it('GET ?citaOrigenId=no-uuid → 400', async () => {
+      await listarDeCita(tokenA, 'no-uuid').expect(400);
+    });
+
+    it('aceptar con SOLO fecha y hora MUEVE la misma cita (mismo id, pendiente), sin crear cita ni paciente', async () => {
+      // Arrange
+      const pacientesAntes = pacienteRepo.pacientes.size;
+
+      // Act
+      const res = await aceptar(SOL_REAGENDA, tokenColegaA, {
+        inicio: '2026-09-22T16:00:00-03:00',
+      }).expect(201);
+
+      // Assert — la respuesta
+      const body = res.body as AceptadaBody;
+      expect(body.cita).toMatchObject({
+        id: CITA_ORIGEN,
+        inicio: '2026-09-22T19:00:00.000Z',
+        estado: 'pendiente',
+        duracionMin: 45,
+        tipoConsulta: 'Control',
+        avisos: { solapamientos: [] },
+      });
+      expect(body.solicitud).toMatchObject({
+        id: SOL_REAGENDA,
+        estado: 'aceptada',
+        tipo: 'reagendamiento',
+        citaId: CITA_ORIGEN,
+        citaOrigenId: CITA_ORIGEN,
+        citaOrigen: {
+          inicio: '2026-09-22T19:00:00.000Z',
+          duracionMin: 45,
+          estado: 'pendiente',
+        },
+      });
+      // Persistido: la MISMA cita movida; nada nuevo
+      expect(citaRepo.citas.size).toBe(1);
+      const movida = citaRepo.citas.get(CITA_ORIGEN)!;
+      expect(movida.inicio.toISOString()).toBe('2026-09-22T19:00:00.000Z');
+      expect(movida.estado).toBe(EstadoCita.PENDIENTE);
+      expect(movida.usuarioId).toBe(USUARIO_A);
+      expect(pacienteRepo.pacientes.size).toBe(pacientesAntes);
+      const sol = solicitudRepo.solicitudes.get(SOL_REAGENDA)!;
+      expect(sol.estado).toBe(EstadoSolicitud.ACEPTADA);
+      expect(sol.citaId).toBe(CITA_ORIGEN);
+      expect(sol.usuarioId).toBe(COLEGA_A);
+      // Bitácora y hechos, en UNA transacción
+      expect(cambioRepo.cambios.map((c) => c.tipo)).toEqual(['reagendada']);
+      expect(eventos.eventos.map((e) => e.nombre)).toEqual([
+        'CitaReagendada',
+        'SolicitudCitaAceptada',
+      ]);
+      expect(eventos.eventos[0].payload).toMatchObject({
+        citaId: CITA_ORIGEN,
+        usuarioId: USUARIO_A,
+        actor: { tipo: 'profesional', id: COLEGA_A },
+      });
+      expect(tx.abiertas).toBe(1);
+    });
+
+    it('aceptar con la cita de origen ya terminal → 409, sin resolver la solicitud', async () => {
+      // Arrange
+      citaRepo.citas.clear();
+      sembrarPeticion(EstadoCita.CANCELADA);
+
+      // Act
+      const res = await aceptar(SOL_REAGENDA, tokenA, {
+        inicio: '2026-09-22T16:00:00-03:00',
+      }).expect(409);
+
+      // Assert
+      expect((res.body as ErrorBody).statusCode).toBe(409);
+      expect(estadoPersistido(SOL_REAGENDA)).toBe(EstadoSolicitud.RECIBIDA);
+      expect(citaRepo.citas.get(CITA_ORIGEN)?.inicio.toISOString()).toBe(
+        INICIO_ORIGINAL,
+      );
+    });
+
+    it('rechazar NO toca la cita de origen (R3)', async () => {
+      // Act
+      const res = await rechazar(SOL_REAGENDA, tokenA).expect(200);
+
+      // Assert
+      expect(res.body).toMatchObject({
+        estado: 'rechazada',
+        tipo: 'reagendamiento',
+        citaId: null,
+        citaOrigen: { inicio: INICIO_ORIGINAL, estado: 'confirmada' },
+      });
+      const cita = citaRepo.citas.get(CITA_ORIGEN)!;
+      expect(cita.inicio.toISOString()).toBe(INICIO_ORIGINAL);
+      expect(cita.estado).toBe(EstadoCita.CONFIRMADA);
+      expect(cambioRepo.cambios).toEqual([]);
+    });
+
+    it('GET ?estado=descartada → 200 (estado válido desde la Fase 3)', async () => {
+      await request(server())
+        .get('/api/solicitudes?estado=descartada')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(200);
     });
   });
 });

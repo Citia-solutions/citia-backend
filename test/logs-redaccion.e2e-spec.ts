@@ -2,7 +2,7 @@
 // base de test en DB_*), antes de que se arme el ConfigModule.
 import './support/entorno-app-e2e';
 
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { Writable } from 'node:stream';
 
 import {
@@ -18,10 +18,13 @@ import { Logger, LoggerModule } from 'nestjs-pino';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { Webhook } from 'svix';
+import { DataSource } from 'typeorm';
 
 import { AuthModule } from '../src/modules/auth/auth.module';
+import { EnlacesCitaService } from '../src/modules/cita/application/enlaces-cita.service';
 import { CitaModule } from '../src/modules/cita/cita.module';
 import { PacienteModule } from '../src/modules/paciente/paciente.module';
+import { PortalPacienteModule } from '../src/modules/portal-paciente/portal-paciente.module';
 import { PlanificadorRecordatorios } from '../src/modules/recordatorio/infrastructure/planificacion/planificador-recordatorios';
 import { RecordatorioPlanificacionModule } from '../src/modules/recordatorio/recordatorio-planificacion.module';
 import { RecordatorioModule } from '../src/modules/recordatorio/recordatorio.module';
@@ -29,6 +32,7 @@ import { SolicitudModule } from '../src/modules/solicitud/solicitud.module';
 import { TenantModule } from '../src/modules/tenant/tenant.module';
 import { UsuariosModule } from '../src/modules/usuario/usuarios.module';
 import { Latidos } from '../src/shared/application/latidos';
+import { TransactionRunner } from '../src/shared/application/transaction-runner';
 import { validarEntorno } from '../src/shared/infrastructure/config/entorno';
 import { LatidosBetterStack } from '../src/shared/infrastructure/observabilidad/latidos-better-stack';
 import { crearParamsLogger } from '../src/shared/infrastructure/observabilidad/opciones-logger';
@@ -42,12 +46,17 @@ import { PlanificacionModule } from '../src/shared/planificacion.module';
  * `app.useLogger` como en `main.ts`, escribiendo a un stream en memoria.
  *
  * Recorre lo que toca datos personales: registro y login (también fallido),
- * solicitud pública, `POST /citas` con paciente en línea (y uno inválido),
+ * solicitud pública (con un `X-Enlace-Cita` como el del portal del paciente,
+ * Fase 3), `POST /citas` con paciente en línea (y uno inválido),
  * `PATCH /pacientes/:id`, `PUT` de configuración con contacto, el outbox, el
- * job de envío (que arma el mensaje con destinatario y cuerpo) y webhooks
- * firmados (válido, queja y firma inválida). Después busca en TODO lo
- * escrito: correo, RUT, teléfono, nombre del paciente, tipo de consulta,
- * contacto del profesional, credenciales, cuerpo del mensaje y firma.
+ * job de envío (que arma el mensaje con destinatario y cuerpo y EMITE el
+ * enlace del paciente), webhooks firmados (válido, queja y firma inválida) y
+ * las rutas REALES del portal del paciente (`/api/publico/cita*`) con el
+ * token verdadero de ese enlace: ver, pedir otra hora, confirmar (409),
+ * cancelar y un enlace inválido. Después busca en TODO lo escrito: correo,
+ * RUT, teléfono, nombre del paciente, tipo de consulta, contacto del
+ * profesional, credenciales, cuerpo del mensaje, firma, y el token del enlace
+ * y su hash (también en el payload del outbox).
  *
  * ⚠️ REQUIERE PostgreSQL real (vars TEST_DB_*), con synchronize + dropSchema.
  */
@@ -91,6 +100,8 @@ const PACIENTE = {
   consentimiento: true,
 };
 const TIPO_CONSULTA = 'Control psiquiátrico';
+// Token del enlace del paciente (Fase 3): 43 caracteres base64url.
+const ENLACE_CITA = 'EnlaceCitaSecreto_0123456789-abcdefghijklmn';
 const PATCH_PACIENTE = { telefono: '+56 9 1234 0000' };
 const CONTACTO = {
   telefonoContacto: '+56 2 2999 8888',
@@ -105,6 +116,12 @@ const SOLICITANTE = {
   preferenciaHoraria: 'jueves en la tarde',
   consentimiento: true,
 };
+// Lo que el paciente escribe en el portal (Fase 3): tampoco va a los logs.
+const PETICION_OTRA_HORA = {
+  preferencia: 'Preferencia secreta: viernes temprano',
+  motivo: 'Motivo secreto de reagendar',
+};
+const MOTIVO_CANCELACION = 'Motivo secreto de cancelar';
 
 // --- Salida de pino en memoria -----------------------------------------------
 const trozos: string[] = [];
@@ -152,6 +169,9 @@ describe('Logs: redacción de datos personales en peticiones reales (e2e con Pos
   let app: INestApplication;
   let token: string;
   let tenantSlug: string;
+  // Token REAL del enlace del paciente (el del correo) y su hash.
+  let enlacePaciente: string;
+  let hashEnlacePaciente: string;
   const firmas: string[] = [];
 
   const server = (): App => app.getHttpServer() as App;
@@ -199,6 +219,7 @@ describe('Logs: redacción de datos personales en peticiones reales (e2e con Pos
         CitaModule,
         SolicitudModule,
         RecordatorioModule,
+        PortalPacienteModule,
         PlanificacionModule,
         RecordatorioPlanificacionModule,
       ],
@@ -219,6 +240,7 @@ describe('Logs: redacción de datos personales en peticiones reales (e2e con Pos
       .send(PROFESIONAL)
       .expect(201);
     tenantSlug = (registro.body as { tenantSlug: string }).tenantSlug;
+    const tenantId = (registro.body as { tenantId: string }).tenantId;
 
     await request(server())
       .post('/api/auth/login')
@@ -240,6 +262,7 @@ describe('Logs: redacción de datos personales en peticiones reales (e2e con Pos
 
     await request(server())
       .post(`/api/publico/${tenantSlug}/solicitudes`)
+      .set('X-Enlace-Cita', ENLACE_CITA)
       .send(SOLICITANTE)
       .expect(202);
 
@@ -308,6 +331,42 @@ describe('Logs: redacción de datos personales en peticiones reales (e2e con Pos
     await webhook(evento('email.complained')).expect(200);
     await webhook(evento('email.delivered'), false).expect(400);
 
+    // --- Portal del paciente (Fase 3) con el token REAL del correo ----------
+    // El envío ya emitió el enlace: `asegurarActivo` devuelve el MISMO token
+    // que llevó el correo (no emite otro).
+    enlacePaciente = await app
+      .get(TransactionRunner)
+      .run((tx) =>
+        app.get(EnlacesCitaService).asegurarActivo(citaId, tenantId, tx),
+      );
+    hashEnlacePaciente = createHash('sha256')
+      .update(enlacePaciente)
+      .digest('hex');
+    const portal = (metodo: 'get' | 'post', ruta: string, enlace?: string) => {
+      const peticion = request(server())[metodo](`/api/publico/cita${ruta}`);
+      return enlace === undefined
+        ? peticion
+        : peticion.set('X-Enlace-Cita', enlace);
+    };
+    await portal('get', '', enlacePaciente).expect(200);
+    await portal('post', '/otra-hora', enlacePaciente)
+      .send(PETICION_OTRA_HORA)
+      .expect(201);
+    await portal('post', '/confirmar', enlacePaciente).expect(409);
+    // Un cuerpo inválido (400) con el token real en la cabecera
+    await portal('post', '/otra-hora', enlacePaciente)
+      .send({ preferencia: '' })
+      .expect(400);
+    await portal('post', '/cancelar', enlacePaciente)
+      .send({ motivo: MOTIVO_CANCELACION })
+      .expect(200);
+    // Ya cancelada: el mismo token da 404; uno inexistente, también
+    await portal('get', '', enlacePaciente).expect(404);
+    await portal('post', '/confirmar', 'Z'.repeat(43)).expect(404);
+    // Los hechos del portal (ReagendamientoSolicitado, CitaCancelada) a los
+    // suscriptores (recordatorios, solicitudes)
+    await app.get(PlanificadorSalida).ejecutarDespacho();
+
     // pino-http escribe la línea de la respuesta al terminar de enviarla.
     await new Promise((resolver) => setTimeout(resolver, 100));
   }, 60_000);
@@ -333,6 +392,14 @@ describe('Logs: redacción de datos personales en peticiones reales (e2e con Pos
       'POST /api/citas 201',
       'POST /api/webhooks/resend 200',
       'POST /api/webhooks/resend 400',
+      // Fase 3: el portal del paciente
+      'GET /api/publico/cita 200',
+      'POST /api/publico/cita/otra-hora 201',
+      'POST /api/publico/cita/confirmar 409',
+      'POST /api/publico/cita/otra-hora 400',
+      'POST /api/publico/cita/cancelar 200',
+      'GET /api/publico/cita 404',
+      'POST /api/publico/cita/confirmar 404',
     ]) {
       expect(mensajes).toContain(esperado);
     }
@@ -358,6 +425,7 @@ describe('Logs: redacción de datos personales en peticiones reales (e2e con Pos
     for (const prohibida of [
       'authorization',
       'cookie',
+      'x-enlace-cita',
       'svix-id',
       'svix-timestamp',
       'svix-signature',
@@ -392,8 +460,57 @@ describe('Logs: redacción de datos personales en peticiones reales (e2e con Pos
     ['cuerpo del correo (texto)', 'aviso automático'],
     ['cuerpo del correo (HTML)', '<p style'],
     ['secreto del webhook', SECRETO_WEBHOOK],
+    ['token del enlace del paciente (X-Enlace-Cita)', ENLACE_CITA],
+    ['enlace inexistente probado en el portal', 'Z'.repeat(43)],
+    ['preferencia de otra hora', PETICION_OTRA_HORA.preferencia],
+    ['motivo de otra hora', PETICION_OTRA_HORA.motivo],
+    ['motivo de cancelación del paciente', MOTIVO_CANCELACION],
+    ['URL del enlace en el correo', '/cita#'],
   ])('no debería aparecer: %s', (_que, secreto) => {
     expect(textoLogs().toLowerCase()).not.toContain(secreto.toLowerCase());
+  });
+
+  it('el token REAL del enlace del paciente (el del correo) y su hash no aparecen en ninguna línea', () => {
+    // Arrange — es el que emitió el envío: un solo enlace, versión 1
+    expect(enlacePaciente).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    const texto = textoLogs();
+
+    // Assert — ni en claro, ni hasheado (tampoco en minúsculas: es
+    // case-sensitive, pero se busca así por si algo lo normaliza)
+    for (const linea of texto.split('\n')) {
+      expect(linea).not.toContain(enlacePaciente);
+      expect(linea.toLowerCase()).not.toContain(enlacePaciente.toLowerCase());
+      expect(linea).not.toContain(hashEnlacePaciente);
+    }
+  });
+
+  it('el enlace que usó el portal es el que emitió el envío (no otro) y ni el token ni su hash viajan en el outbox', async () => {
+    // Arrange
+    const datos = app.get(DataSource);
+
+    // Act
+    const enlaces = await datos.query<{ version: number; tokenHash: string }[]>(
+      `SELECT version, token_hash AS "tokenHash" FROM enlaces_cita
+        ORDER BY version`,
+    );
+    const hechos = await datos.query<{ nombre: string; payload: string }[]>(
+      'SELECT nombre, payload::text AS payload FROM eventos_salida',
+    );
+
+    // Assert — un solo enlace (versión 1) y es el del token usado
+    expect(enlaces).toEqual([{ version: 1, tokenHash: hashEnlacePaciente }]);
+    // Los hechos del portal están…
+    const nombres = hechos.map((h) => h.nombre);
+    expect(nombres).toEqual(
+      expect.arrayContaining(['ReagendamientoSolicitado', 'CitaCancelada']),
+    );
+    // …pero ningún payload lleva el token, su hash ni lo que escribió el paciente
+    for (const { payload } of hechos) {
+      expect(payload).not.toContain(enlacePaciente);
+      expect(payload).not.toContain(hashEnlacePaciente);
+      expect(payload).not.toContain(PETICION_OTRA_HORA.preferencia);
+      expect(payload).not.toContain(MOTIVO_CANCELACION);
+    }
   });
 
   it('no debería aparecer el token JWT ni ninguna firma Svix', () => {
