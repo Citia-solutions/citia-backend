@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
+import { ConfigService } from '@nestjs/config';
 import { DataSource, DataSourceOptions, EntityManager } from 'typeorm';
 
 import {
@@ -9,7 +10,12 @@ import {
 import { typeOrmTestConfig } from '../../../../test/typeorm-test.config';
 import { TransactionContext } from '../../../shared/application/transaction-runner';
 import { TypeOrmTransactionRunner } from '../../../shared/infrastructure/typeorm-transaction-runner';
+import { EnlacesCitaService } from '../../cita/application/enlaces-cita.service';
 import { CitaOrmEntity } from '../../cita/infrastructure/persistence/cita.orm-entity';
+import { EnlaceCitaOrmEntity } from '../../cita/infrastructure/persistence/enlace-cita.orm-entity';
+import { TypeOrmCitaRepository } from '../../cita/infrastructure/persistence/typeorm-cita.repository';
+import { TypeOrmEnlaceCitaRepository } from '../../cita/infrastructure/persistence/typeorm-enlace-cita.repository';
+import { HmacDerivadorTokenEnlace } from '../../cita/infrastructure/seguridad/hmac-derivador-token-enlace';
 import { EstadoCita } from '../../cita/domain/cita.entity';
 import { PacienteOrmEntity } from '../../paciente/infrastructure/persistence/paciente.orm-entity';
 import { TenantOrmEntity } from '../../tenant/infrastructure/persistence/tenant.orm-entity';
@@ -76,6 +82,8 @@ const ENTIDADES = [
   UsuarioOrmEntity,
   PacienteOrmEntity,
   CitaOrmEntity,
+  // Fase 3: el envío emite el enlace del paciente (FK a `citas`).
+  EnlaceCitaOrmEntity,
   RecordatorioOrmEntity,
   ConfiguracionRecordatorioOrmEntity,
   SupresionCorreoOrmEntity,
@@ -333,7 +341,7 @@ describe('Recordatorios contra PostgreSQL (integration)', () => {
 
   beforeEach(async () => {
     await baseA.query(
-      'TRUNCATE recordatorios, supresiones_correo, configuraciones_recordatorio, citas, pacientes',
+      'TRUNCATE recordatorios, supresiones_correo, configuraciones_recordatorio, enlaces_cita, citas, pacientes',
     );
   });
 
@@ -829,6 +837,7 @@ describe('Recordatorios contra PostgreSQL (integration)', () => {
       const concurrencia = { actual: 0, maxima: 0 };
       const opciones: OpcionesEnvio = {
         tz: TZ,
+        urlFrontend: 'http://localhost:5173',
         silencio: HORAS_SIN_ENVIO_POR_DEFECTO,
         exigirConsentimiento: false,
         maxDiarioPorTenant: 1_000,
@@ -849,6 +858,19 @@ describe('Recordatorios contra PostgreSQL (integration)', () => {
             lector,
             canal: new CanalLento(envios, concurrencia, 25),
             bitacora: new BitacoraEnMemoria(),
+            // Fase 3: enlace del paciente con los adaptadores reales.
+            enlaces: new EnlacesCitaService(
+              new TypeOrmEnlaceCitaRepository(),
+              new TypeOrmCitaRepository(
+                base.getRepository(CitaOrmEntity),
+                new ConfigService(),
+              ),
+              new HmacDerivadorTokenEnlace(
+                'clave-del-enlace-de-integracion-32-caracteres',
+              ),
+              new TypeOrmTransactionRunner(base),
+              () => AHORA,
+            ),
           },
           opciones,
           () => AHORA,
@@ -878,6 +900,11 @@ describe('Recordatorios contra PostgreSQL (integration)', () => {
           proveedorMensajeId: `msg_recordatorio/${id}`,
         });
       }
+      // Fase 3: un enlace activo por cita, emitido en la transacción del envío
+      const [{ n: enlacesEmitidos }] = await baseA.query<{ n: number }[]>(
+        'SELECT count(*)::int AS n FROM enlaces_cita WHERE revocado_en IS NULL',
+      );
+      expect(enlacesEmitidos).toBe(N);
       // Un tercer tick no encuentra nada
       expect(await proceso(baseA).enviarLote({ lote: N })).toMatchObject({
         procesados: 0,

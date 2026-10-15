@@ -125,6 +125,22 @@ describe('Salud y CORS (e2e)', () => {
       expect(res.headers['access-control-allow-credentials']).toBe('true');
     });
 
+    it('preflight del portal del paciente: permite X-Enlace-Cita (Fase 3)', async () => {
+      const res = await request(server())
+        .options('/api/publico/cita/confirmar')
+        .set('Origin', 'https://app.citia.cl')
+        .set('Access-Control-Request-Method', 'POST')
+        .set('Access-Control-Request-Headers', 'content-type,x-enlace-cita')
+        .expect(204);
+
+      expect(res.headers['access-control-allow-origin']).toBe(
+        'https://app.citia.cl',
+      );
+      expect(
+        res.headers['access-control-allow-headers']?.toLowerCase().split(','),
+      ).toEqual(expect.arrayContaining(['content-type', 'x-enlace-cita']));
+    });
+
     it('origen exacto de CORS_ORIGENES_EXTRA: aceptado', async () => {
       const res = await request(server())
         .get('/api/health')

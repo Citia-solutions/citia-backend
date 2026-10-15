@@ -124,16 +124,12 @@
 
 ## Preguntas abiertas relacionadas
 
-- [Q5](../PREGUNTAS-ABIERTAS.md#q5--registro-abierto-por-invitación-o-lista-de-espera) y
-  [H2](../PREGUNTAS-ABIERTAS.md#h2--superficie-de-abuso-del-registro-la-otra-mitad-de-q5) — registro
-  abierto o por invitación (DT-06).
-- [Q7](../PREGUNTAS-ABIERTAS.md#q7--renovación-de-sesión-bloqueado-hasta-que-el-hacker-defina-el-requisito)
-  y [H1](../PREGUNTAS-ABIERTAS.md#h1--requisito-de-revocación-de-sesión-desbloquea-q7) — renovación y
-  revocación de sesión (DT-01).
-- [Q8](../PREGUNTAS-ABIERTAS.md#q8--adr-08-el-tenant-en-la-url-dev-b--prioridad-2) y
-  [H4](../PREGUNTAS-ABIERTAS.md#h4--revisión-de-adr-08-antes-del-merge) — implementar ADR-08 en el login.
-- [H6](../PREGUNTAS-ABIERTAS.md#h6--hallazgos-ya-fichados-para-confirmar-o-descartar) — confirmar
-  DT-02, DT-04, DT-05 y DT-18.
+- [Q5](../PREGUNTAS-ABIERTAS.md#q5--registro-abierto-por-invitación-o-lista-de-espera) — registro abierto o por
+  invitación y sus defensas contra el abuso (DT-06).
+- [Q7](../PREGUNTAS-ABIERTAS.md#q7--renovación-y-revocación-de-sesión-bloqueado-hasta-que-el-arquitecto-defina-el-requisito) —
+  renovación y revocación de sesión (DT-01).
+- [Q8](../PREGUNTAS-ABIERTAS.md#q8--adr-08-el-tenant-en-la-url-dev-b--prioridad-2) — implementar ADR-08
+  en el login.
 - [Q3](../PREGUNTAS-ABIERTAS.md#q3--la-agenda-es-del-profesional-o-de-la-organización) — si la agenda
   es del profesional o de la organización; toca DT-07.
 

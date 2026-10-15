@@ -210,6 +210,20 @@ describe('origenes-cors', () => {
       expect(opciones.exposedHeaders).toEqual(['X-Request-Id']);
     });
 
+    it('permite una lista explícita de cabeceras, con la del enlace del paciente', () => {
+      // Assert — lista, no reflejo de lo que pida el navegador
+      expect(Array.isArray(opciones.allowedHeaders)).toBe(true);
+      expect(opciones.allowedHeaders).toEqual(
+        expect.arrayContaining([
+          'content-type',
+          'authorization',
+          'x-request-id',
+          'x-enlace-cita',
+        ]),
+      );
+      expect(opciones.allowedHeaders).toHaveLength(4);
+    });
+
     it('responde true para un origen permitido y false para uno ajeno', () => {
       expect(resolver('https://app.citia.cl')).toBe(true);
       expect(resolver('https://evil.com')).toBe(false);

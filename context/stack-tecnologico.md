@@ -126,6 +126,7 @@ el valor vive solo en el panel del proveedor.
 | Variables `DB_*` | referencias al Postgres del entorno (`${{Postgres.PGHOST}}`, …) | ídem |
 | `NODE_ENV` | `production` (lo fija la imagen) | `production` |
 | `JWT_SECRET` | propio (secreto) | propio, 32 caracteres o más (secreto) |
+| `ENLACE_CITA_CLAVE` *(Fase 3, falta cargarla)* | propia, 32 caracteres o más, distinta de `JWT_SECRET` (secreto) | ídem, distinta de la de staging. Obligatoria con `NODE_ENV=production` (los dos entornos): **sin ella el servicio no arranca** |
 | Frontend — Netlify | sitio `citia-staging` | sitio `app.citiahealth.cl` (el `citia` original) |
 | URL del frontend | `https://citia-staging.netlify.app` | `https://app.citiahealth.cl` |
 | `VITE_API_URL` (Netlify) | backend de staging | backend de production |

@@ -13,6 +13,8 @@ describe('SolicitudesService', () => {
     buscarAbiertaPorRut: jest.Mock;
     buscarPorId: jest.Mock;
     buscarPorIdParaActualizar: jest.Mock;
+    buscarReagendamientoAbierto: jest.Mock;
+    buscarReagendamientoAbiertoParaActualizar: jest.Mock;
     listarPorEstado: jest.Mock;
   };
   let mockTenantRepository: {
@@ -41,6 +43,10 @@ describe('SolicitudesService', () => {
       buscarAbiertaPorRut: jest.fn().mockResolvedValue(null),
       buscarPorId: jest.fn().mockResolvedValue(null),
       buscarPorIdParaActualizar: jest.fn().mockResolvedValue(null),
+      buscarReagendamientoAbierto: jest.fn().mockResolvedValue(null),
+      buscarReagendamientoAbiertoParaActualizar: jest
+        .fn()
+        .mockResolvedValue(null),
       listarPorEstado: jest.fn().mockResolvedValue([]),
     };
     mockTenantRepository = {

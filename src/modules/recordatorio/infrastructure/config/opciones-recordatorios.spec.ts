@@ -83,12 +83,15 @@ describe('leerOpcionesEnvio / leerCadenciaEnvio / leerOpcionesTasaFallo', () => 
       RECORDATORIO_INTERVALO_SEG: '30',
       RECORDATORIO_UMBRAL_TASA_FALLO: '0.1',
       RECORDATORIO_UMBRAL_MUESTRA_MIN: '50',
+      FRONTEND_URL: 'https://app.citia.cl/',
     });
     const config = configDe(entorno);
 
     // Act & Assert
     expect(leerOpcionesEnvio(config)).toEqual({
       tz: 'America/Punta_Arenas',
+      // Normalizada por validarEntorno (sin barra final): base del enlace.
+      urlFrontend: 'https://app.citia.cl',
       silencio: { desde: '21:00', hasta: '08:00' },
       exigirConsentimiento: true,
       maxDiarioPorTenant: 10,
@@ -112,6 +115,7 @@ describe('leerOpcionesEnvio / leerCadenciaEnvio / leerOpcionesTasaFallo', () => 
 
     // Act & Assert
     expect(leerOpcionesEnvio(vacio)).toEqual(leerOpcionesEnvio(validado));
+    expect(leerOpcionesEnvio(vacio).urlFrontend).toBe('http://localhost:5173');
     expect(leerCadenciaEnvio(vacio)).toEqual({ lote: 20, intervaloSeg: 60 });
     expect(leerCadenciaEnvio(vacio)).toEqual(leerCadenciaEnvio(validado));
     expect(leerOpcionesTasaFallo(vacio)).toEqual({

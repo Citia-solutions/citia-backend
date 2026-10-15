@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 
 import { RutInvalidoError } from '../../../shared/domain/rut-invalido.error';
+import { LimitarTasa } from '../../../shared/presentation/limitar-tasa.decorator';
 import { SolicitudesService } from '../application/solicitudes.service';
 import { CrearSolicitudDto } from './dto/crear-solicitud.dto';
 import { SolicitudRecibidaDto } from './dto/solicitud-recibida.dto';
@@ -25,9 +26,8 @@ import { SolicitudRecibidaDto } from './dto/solicitud-recibida.dto';
  * esta superficie es nueva, así que puede usarlo sin alterar el contrato del
  * login, que ya está en uso.
  *
- * ⚠️ FALTA el límite de tasa (DT-18). Es la única defensa que ADR-09 §8 regla 4
- * exige y que todavía no existe en el proyecto: necesita una dependencia nueva.
- * NO publicar este enlace hasta tenerlo.
+ * Límite de tasa (DT-18, ADR-09 §8 regla 4; Fase 3 §6): 5 por hora por IP,
+ * un solo contador para todas las organizaciones (`@LimitarTasa`).
  */
 @Controller('publico/:tenantSlug/solicitudes')
 export class SolicitudesPublicasController {
@@ -40,6 +40,7 @@ export class SolicitudesPublicasController {
    */
   @Post()
   @HttpCode(HttpStatus.ACCEPTED)
+  @LimitarTasa('solicitudPublica')
   async recibir(
     @Param('tenantSlug') tenantSlug: string,
     @Body() dto: CrearSolicitudDto,

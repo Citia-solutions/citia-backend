@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'; //Integra el orm para conexion 
 import { AuthModule } from './modules/auth/auth.module';
 import { CitaModule } from './modules/cita/cita.module';
 import { PacienteModule } from './modules/paciente/paciente.module';
+import { PortalPacienteModule } from './modules/portal-paciente/portal-paciente.module';
 import { RecordatorioPlanificacionModule } from './modules/recordatorio/recordatorio-planificacion.module';
 import { RecordatorioModule } from './modules/recordatorio/recordatorio.module';
 import { SolicitudModule } from './modules/solicitud/solicitud.module';
@@ -14,6 +15,7 @@ import {
   Entorno,
   validarEntorno,
 } from './shared/infrastructure/config/entorno';
+import { LimiteTasaModule } from './shared/limite-tasa.module';
 import { ObservabilidadModule } from './shared/observabilidad.module';
 import { PlanificacionModule } from './shared/planificacion.module';
 
@@ -29,6 +31,10 @@ import { PlanificacionModule } from './shared/planificacion.module';
     //Logs JSON (pino) con id por peticion y redaccion, GET /api/health y
     //latidos de los jobs (ADR-13 §16). Global: se importa solo aqui.
     ObservabilidadModule,
+    //Limite de tasa (Fase 3 §6): ThrottlerGuard GLOBAL, en memoria. Solo
+    //limita las rutas marcadas con @LimitarTasa(...). Con
+    //LIMITE_TASA_ACTIVO=false (default en tests) no limita nada.
+    LimiteTasaModule,
     //Configura la confi con postgresql de manera asincrona
     //forRootAsync pq depende de ConfigService
     TypeOrmModule.forRootAsync({
@@ -51,6 +57,9 @@ import { PlanificacionModule } from './shared/planificacion.module';
     PacienteModule, //Modulo de pacientes
     CitaModule, //Modulo de citas (dashboard US-06)
     SolicitudModule, //Solicitudes de hora del paciente (via publica, US-02)
+    //Portal del paciente (Fase 3, US-04): /api/publico/cita, sin JWT, por el
+    //token del enlace. Composicion de cita + solicitud; nadie lo importa.
+    PortalPacienteModule,
     //Recordatorios (ADR-13): persistencia y suscriptor del outbox que
     //reconcilia cada cita. Ningun otro modulo lo importa (ADR-13 §1).
     RecordatorioModule,

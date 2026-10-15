@@ -1,7 +1,11 @@
 import { EventoDominio } from '../../../shared/application/publicador-eventos';
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
-import { CitasService } from '../../cita/application/citas.service';
+import {
+  CitasService,
+  ResumenCita,
+} from '../../cita/application/citas.service';
 import { EstadoCita } from '../../cita/domain/cita.entity';
+import { TransicionEstadoInvalidaError } from '../../cita/domain/exceptions/transicion-estado-invalida.error';
 import { AvisosCitaDto } from '../../cita/presentation/dto/avisos-cita.dto';
 import { CitaResponseDto } from '../../cita/presentation/dto/cita-response.dto';
 import { CrearCitaDto } from '../../cita/presentation/dto/crear-cita.dto';
@@ -10,6 +14,7 @@ import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import {
   EstadoSolicitud,
   SolicitudCita,
+  TipoSolicitud,
 } from '../domain/solicitud-cita.entity';
 import { TransicionSolicitudInvalidaError } from '../domain/transicion-solicitud-invalida.error';
 import { AceptarSolicitudDto } from '../presentation/dto/aceptar-solicitud.dto';
@@ -19,6 +24,7 @@ import {
   BandejaSolicitudesService,
   LIMITE_BANDEJA,
 } from './bandeja-solicitudes.service';
+import { DatosAceptacionIncompletosError } from './datos-aceptacion-incompletos.error';
 import { SolicitudNoEncontradaError } from './solicitud-no-encontrada.error';
 
 describe('BandejaSolicitudesService', () => {
@@ -28,9 +34,15 @@ describe('BandejaSolicitudesService', () => {
     buscarAbiertaPorRut: jest.Mock;
     buscarPorId: jest.Mock;
     buscarPorIdParaActualizar: jest.Mock;
+    buscarReagendamientoAbierto: jest.Mock;
+    buscarReagendamientoAbiertoParaActualizar: jest.Mock;
     listarPorEstado: jest.Mock;
   };
-  let mockCitasService: { agendar: jest.Mock };
+  let mockCitasService: {
+    agendar: jest.Mock;
+    reagendarEnTx: jest.Mock;
+    resumenesPorIds: jest.Mock;
+  };
   let mockTx: { run: jest.Mock };
   let mockEventos: { publicar: jest.Mock };
 
@@ -95,6 +107,55 @@ describe('BandejaSolicitudesService', () => {
     avisos: new AvisosCitaDto({ solapamientos: [] }),
   });
 
+  // --- Fase 3: reagendamiento -------------------------------------------
+  const CITA_ORIGEN = '0c1a0000-0000-4000-8000-000000000003';
+  const ENLACE = 'e1000000-0000-4000-8000-000000000004';
+
+  // Petición de otra hora tal como la trae el repositorio: paciente sin RUT
+  // ni correo en su ficha, motivo vacío, dueño = el de la cita.
+  const reagendamientoEn = (estado: EstadoSolicitud): SolicitudCita =>
+    SolicitudCita.reconstituir({
+      id: SOLICITUD_ID,
+      tenantId: 'tenant-1',
+      usuarioId: 'duenio-cita',
+      rut: null,
+      nombrePaciente: 'Paciente Reagenda',
+      telefono: '+56 9 4444 4444',
+      correo: null,
+      motivo: '',
+      preferenciaHoraria: 'martes en la tarde',
+      consentimiento: true,
+      estado,
+      citaId: null,
+      recibidaEn: RECIBIDA_EN,
+      resueltaEn: null,
+      tipo: TipoSolicitud.REAGENDAMIENTO,
+      citaOrigenId: CITA_ORIGEN,
+      enlaceId: ENLACE,
+    });
+
+  // Lo que devuelve `reagendarEnTx`: la MISMA cita, movida y `pendiente`,
+  // con avisos y sin paciente (forma de PATCH /citas/:id/reagendar).
+  const citaMovida = new CitaResponseDto({
+    id: CITA_ORIGEN,
+    inicio: new Date('2026-09-22T19:00:00.000Z'),
+    duracionMin: 45,
+    tipoConsulta: 'Control',
+    estado: EstadoCita.PENDIENTE,
+    pacienteId: 'paciente-7',
+    avisos: new AvisosCitaDto({ solapamientos: [] }),
+  });
+
+  const resumen = (
+    id: string,
+    estado: EstadoCita = EstadoCita.CONFIRMADA,
+  ): ResumenCita => ({
+    id,
+    inicio: new Date('2026-09-21T13:00:00.000Z'),
+    duracionMin: 45,
+    estado,
+  });
+
   beforeEach(() => {
     mockSolicitudRepository = {
       // Igual que el adaptador real: devuelve una solicitud (aqui, la misma).
@@ -102,9 +163,17 @@ describe('BandejaSolicitudesService', () => {
       buscarAbiertaPorRut: jest.fn().mockResolvedValue(null),
       buscarPorId: jest.fn().mockResolvedValue(null),
       buscarPorIdParaActualizar: jest.fn().mockResolvedValue(null),
+      buscarReagendamientoAbierto: jest.fn().mockResolvedValue(null),
+      buscarReagendamientoAbiertoParaActualizar: jest
+        .fn()
+        .mockResolvedValue(null),
       listarPorEstado: jest.fn().mockResolvedValue([]),
     };
-    mockCitasService = { agendar: jest.fn().mockResolvedValue(citaCreada) };
+    mockCitasService = {
+      agendar: jest.fn().mockResolvedValue(citaCreada),
+      reagendarEnTx: jest.fn().mockResolvedValue(citaMovida),
+      resumenesPorIds: jest.fn().mockResolvedValue(new Map()),
+    };
     mockTx = {
       run: jest.fn((work: (tx: unknown) => Promise<unknown>) => work('tx')),
     };
@@ -112,7 +181,8 @@ describe('BandejaSolicitudesService', () => {
 
     service = new BandejaSolicitudesService(
       mockSolicitudRepository,
-      // CitasService es una clase concreta: solo se usa `agendar`.
+      // CitasService es una clase concreta: solo se usan `agendar`,
+      // `reagendarEnTx` y `resumenesPorIds`.
       mockCitasService as unknown as CitasService,
       mockTx,
       mockEventos,
@@ -160,6 +230,7 @@ describe('BandejaSolicitudesService', () => {
         'tenant-1',
         EstadoSolicitud.RECIBIDA,
         100,
+        {},
       );
     });
 
@@ -172,6 +243,7 @@ describe('BandejaSolicitudesService', () => {
         'tenant-1',
         EstadoSolicitud.RECHAZADA,
         LIMITE_BANDEJA,
+        {},
       );
     });
 
@@ -201,6 +273,9 @@ describe('BandejaSolicitudesService', () => {
         recibidaEn: RECIBIDA_EN,
         resueltaEn: null,
         citaId: null,
+        tipo: TipoSolicitud.NUEVA,
+        citaOrigenId: null,
+        citaOrigen: null,
       });
     });
 
@@ -229,6 +304,114 @@ describe('BandejaSolicitudesService', () => {
       // Assert
       expect(mockTx.run).not.toHaveBeenCalled();
       expect(mockEventos.publicar).not.toHaveBeenCalled();
+    });
+
+    // --- Fase 3 ---------------------------------------------------------
+    it('debería pasar el filtro citaOrigenId al repositorio (voucher, R4)', async () => {
+      // Act
+      await service.listar(EstadoSolicitud.RECIBIDA, usuario, {
+        citaOrigenId: CITA_ORIGEN,
+      });
+
+      // Assert
+      expect(mockSolicitudRepository.listarPorEstado).toHaveBeenCalledWith(
+        'tenant-1',
+        EstadoSolicitud.RECIBIDA,
+        LIMITE_BANDEJA,
+        { citaOrigenId: CITA_ORIGEN },
+      );
+    });
+
+    it('no debería leer citas cuando no hay ninguna de reagendamiento', async () => {
+      // Arrange
+      mockSolicitudRepository.listarPorEstado.mockResolvedValue([
+        solicitudEn(EstadoSolicitud.RECIBIDA),
+      ]);
+
+      // Act
+      await service.listar(EstadoSolicitud.RECIBIDA, usuario);
+
+      // Assert
+      expect(mockCitasService.resumenesPorIds).not.toHaveBeenCalled();
+    });
+
+    it('debería resolver citaOrigen SIN N+1: una lectura por lote con los ids de origen, del tenant del token', async () => {
+      // Arrange — dos peticiones de otra hora y una nueva
+      const r1 = reagendamientoEn(EstadoSolicitud.RECIBIDA);
+      const r2 = reagendamientoEn(EstadoSolicitud.RECIBIDA);
+      r2.id = 'otra-reagenda';
+      r2.citaOrigenId = 'otra-cita';
+      const nueva = solicitudEn(EstadoSolicitud.RECIBIDA);
+      nueva.id = 'una-nueva';
+      mockSolicitudRepository.listarPorEstado.mockResolvedValue([
+        r1,
+        nueva,
+        r2,
+      ]);
+      mockCitasService.resumenesPorIds.mockResolvedValue(
+        new Map([[CITA_ORIGEN, resumen(CITA_ORIGEN)]]),
+      );
+
+      // Act
+      const result = await service.listar(EstadoSolicitud.RECIBIDA, usuario);
+
+      // Assert
+      expect(mockCitasService.resumenesPorIds).toHaveBeenCalledTimes(1);
+      expect(mockCitasService.resumenesPorIds).toHaveBeenCalledWith(
+        [CITA_ORIGEN, 'otra-cita'],
+        'tenant-1',
+        undefined,
+      );
+      expect(result.map((s) => s.id)).toEqual([
+        SOLICITUD_ID,
+        'una-nueva',
+        'otra-reagenda',
+      ]);
+      expect(result[0]).toMatchObject({
+        tipo: TipoSolicitud.REAGENDAMIENTO,
+        citaOrigenId: CITA_ORIGEN,
+        citaOrigen: {
+          inicio: new Date('2026-09-21T13:00:00.000Z'),
+          duracionMin: 45,
+          estado: EstadoCita.CONFIRMADA,
+        },
+        rut: null,
+        correo: null,
+        motivo: '',
+      });
+      expect(result[1]).toMatchObject({
+        tipo: TipoSolicitud.NUEVA,
+        citaOrigenId: null,
+        citaOrigen: null,
+      });
+      // Su cita no volvió (otro tenant o inexistente): sin citaOrigen
+      expect(result[2]).toMatchObject({
+        citaOrigenId: 'otra-cita',
+        citaOrigen: null,
+      });
+    });
+
+    it('no debería exponer enlaceId, tipoConsulta ni ids de tenant/usuario', async () => {
+      // Arrange
+      mockSolicitudRepository.listarPorEstado.mockResolvedValue([
+        reagendamientoEn(EstadoSolicitud.RECIBIDA),
+      ]);
+      mockCitasService.resumenesPorIds.mockResolvedValue(
+        new Map([[CITA_ORIGEN, resumen(CITA_ORIGEN)]]),
+      );
+
+      // Act
+      const [item] = await service.listar(EstadoSolicitud.RECIBIDA, usuario);
+
+      // Assert
+      expect(Object.keys(item.citaOrigen ?? {}).sort()).toEqual([
+        'duracionMin',
+        'estado',
+        'inicio',
+      ]);
+      const json = JSON.stringify(item);
+      expect(json).not.toContain(ENLACE);
+      expect(json).not.toMatch(/enlaceId|usuarioId|tenantId|tipoConsulta/);
     });
   });
 
@@ -452,6 +635,210 @@ describe('BandejaSolicitudesService', () => {
       );
       expect(mockSolicitudRepository.guardar).not.toHaveBeenCalled();
       expect(mockEventos.publicar).not.toHaveBeenCalled();
+    });
+
+    it.each<[string, Partial<AceptarSolicitudDto>]>([
+      ['sin duracionMin', { duracionMin: undefined }],
+      ['sin tipoConsulta', { tipoConsulta: undefined }],
+      ['sin ninguno', { duracionMin: undefined, tipoConsulta: undefined }],
+    ])(
+      'debería lanzar 400 (DatosAceptacionIncompletosError) para una nueva %s, sin agendar ni resolver',
+      async (_caso, faltante) => {
+        // Act
+        const promesa = service.aceptar(
+          SOLICITUD_ID,
+          { ...dto, ...faltante },
+          usuario,
+        );
+
+        // Assert
+        await expect(promesa).rejects.toBeInstanceOf(
+          DatosAceptacionIncompletosError,
+        );
+        expect(mockCitasService.agendar).not.toHaveBeenCalled();
+        expect(mockCitasService.reagendarEnTx).not.toHaveBeenCalled();
+        expect(mockSolicitudRepository.guardar).not.toHaveBeenCalled();
+        expect(mockEventos.publicar).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------
+  describe('aceptar una petición de otra hora (Fase 3, R2)', () => {
+    const soloInicio: AceptarSolicitudDto = {
+      inicio: '2026-09-22T16:00:00-03:00',
+    };
+
+    beforeEach(() => {
+      mockSolicitudRepository.buscarPorIdParaActualizar.mockResolvedValue(
+        reagendamientoEn(EstadoSolicitud.RECIBIDA),
+      );
+    });
+
+    it('debería MOVER la cita de origen con reagendarEnTx en el mismo tx, sin crear cita ni paciente', async () => {
+      // Act — solo fecha y hora: duración y tipo no hacen falta
+      await service.aceptar(SOLICITUD_ID, soloInicio, usuario);
+
+      // Assert
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockCitasService.reagendarEnTx).toHaveBeenCalledTimes(1);
+      expect(mockCitasService.reagendarEnTx).toHaveBeenCalledWith(
+        CITA_ORIGEN,
+        soloInicio.inicio,
+        usuario,
+        'tx',
+      );
+      expect(mockCitasService.agendar).not.toHaveBeenCalled();
+    });
+
+    it('debería ignorar duracionMin y tipoConsulta si llegan', async () => {
+      // Act
+      await service.aceptar(SOLICITUD_ID, dto, usuario);
+
+      // Assert
+      expect(mockCitasService.reagendarEnTx).toHaveBeenCalledWith(
+        CITA_ORIGEN,
+        dto.inicio,
+        usuario,
+        'tx',
+      );
+      expect(mockCitasService.agendar).not.toHaveBeenCalled();
+    });
+
+    it('debería bloquear la solicitud ANTES que la cita (orden de bloqueo de la bandeja)', async () => {
+      // Act
+      await service.aceptar(SOLICITUD_ID, soloInicio, usuario);
+
+      // Assert
+      expect(
+        mockSolicitudRepository.buscarPorIdParaActualizar.mock
+          .invocationCallOrder[0],
+      ).toBeLessThan(
+        mockCitasService.reagendarEnTx.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('debería dejar la solicitud aceptada con citaId = citaOrigenId y el profesional del token', async () => {
+      // Act
+      await service.aceptar(SOLICITUD_ID, soloInicio, usuario);
+
+      // Assert
+      expect(mockSolicitudRepository.guardar).toHaveBeenCalledWith(
+        expect.any(SolicitudCita),
+        'tx',
+      );
+      const guardada = primeraGuardada();
+      expect(guardada.estado).toBe(EstadoSolicitud.ACEPTADA);
+      expect(guardada.citaId).toBe(CITA_ORIGEN);
+      expect(guardada.citaOrigenId).toBe(CITA_ORIGEN);
+      expect(guardada.usuarioId).toBe('usuario-1');
+      expect(guardada.resueltaEn).toBeInstanceOf(Date);
+    });
+
+    it('debería responder { solicitud, cita } con la cita YA movida y citaOrigen = la cita movida', async () => {
+      // Act
+      const result = await service.aceptar(SOLICITUD_ID, soloInicio, usuario);
+
+      // Assert
+      expect(result).toBeInstanceOf(SolicitudAceptadaDto);
+      expect(result.cita).toBe(citaMovida);
+      expect(result.solicitud).toMatchObject({
+        id: SOLICITUD_ID,
+        estado: EstadoSolicitud.ACEPTADA,
+        tipo: TipoSolicitud.REAGENDAMIENTO,
+        citaId: CITA_ORIGEN,
+        citaOrigenId: CITA_ORIGEN,
+        citaOrigen: {
+          inicio: citaMovida.inicio,
+          duracionMin: 45,
+          estado: EstadoCita.PENDIENTE,
+        },
+        rut: null,
+      });
+      // Sin otra lectura: la cita movida ya trae lo necesario
+      expect(mockCitasService.resumenesPorIds).not.toHaveBeenCalled();
+    });
+
+    it('debería publicar SolicitudCitaAceptada con la cita de origen, solo ids, en el tx', async () => {
+      // Act
+      await service.aceptar(SOLICITUD_ID, soloInicio, usuario);
+
+      // Assert
+      expect(mockEventos.publicar).toHaveBeenCalledTimes(1);
+      expect(txDelPrimerEvento()).toBe('tx');
+      expect(primerEvento().nombre).toBe('SolicitudCitaAceptada');
+      expect(primerEvento().payload).toEqual({
+        solicitudId: SOLICITUD_ID,
+        citaId: CITA_ORIGEN,
+        usuarioId: 'usuario-1',
+      });
+      expect(JSON.stringify(primerEvento())).not.toContain('Paciente Reagenda');
+    });
+
+    it('debería propagar el 409 de una cita de origen terminal sin resolver la solicitud ni publicar', async () => {
+      // Arrange
+      const error = new TransicionEstadoInvalidaError(
+        EstadoCita.CANCELADA,
+        'reagendar',
+      );
+      mockCitasService.reagendarEnTx.mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(
+        service.aceptar(SOLICITUD_ID, soloInicio, usuario),
+      ).rejects.toBe(error);
+      expect(mockSolicitudRepository.guardar).not.toHaveBeenCalled();
+      expect(mockEventos.publicar).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      EstadoSolicitud.ACEPTADA,
+      EstadoSolicitud.RECHAZADA,
+      EstadoSolicitud.DESCARTADA,
+    ])(
+      'debería lanzar 409 si ya está %s, sin mover la cita',
+      async (estado) => {
+        // Arrange
+        mockSolicitudRepository.buscarPorIdParaActualizar.mockResolvedValue(
+          reagendamientoEn(estado),
+        );
+
+        // Act & Assert
+        await expect(
+          service.aceptar(SOLICITUD_ID, soloInicio, usuario),
+        ).rejects.toBeInstanceOf(TransicionSolicitudInvalidaError);
+        expect(mockCitasService.reagendarEnTx).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  describe('rechazar una petición de otra hora (Fase 3, R3)', () => {
+    it('no debería tocar la cita de origen y debería devolver citaOrigen leída en el tx', async () => {
+      // Arrange
+      mockSolicitudRepository.buscarPorIdParaActualizar.mockResolvedValue(
+        reagendamientoEn(EstadoSolicitud.RECIBIDA),
+      );
+      mockCitasService.resumenesPorIds.mockResolvedValue(
+        new Map([[CITA_ORIGEN, resumen(CITA_ORIGEN)]]),
+      );
+
+      // Act
+      const result = await service.rechazar(SOLICITUD_ID, usuario);
+
+      // Assert
+      expect(mockCitasService.reagendarEnTx).not.toHaveBeenCalled();
+      expect(mockCitasService.agendar).not.toHaveBeenCalled();
+      expect(mockCitasService.resumenesPorIds).toHaveBeenCalledWith(
+        [CITA_ORIGEN],
+        'tenant-1',
+        'tx',
+      );
+      expect(result).toMatchObject({
+        estado: EstadoSolicitud.RECHAZADA,
+        tipo: TipoSolicitud.REAGENDAMIENTO,
+        citaId: null,
+        citaOrigen: { estado: EstadoCita.CONFIRMADA },
+      });
     });
   });
 

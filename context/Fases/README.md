@@ -24,6 +24,13 @@ frontend PR #6) y la Fase 2 cerrada el 2026-10-07 tras la prueba de punta a punt
 ([cierre](fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07)) · **siguiente: Fase 3** (US-04) · el
 resto sin empezar.
 
+**2026-10-15:** la **[Fase 3](fase-3-us04-respuesta-paciente.md) está implementada y verificada en local ·
+pendiente de release** (rama `feature/fase3-respuesta-paciente` en los dos repos, sin commits todavía).
+Feature nueva: [us04-respuesta-paciente](../Features/us04-respuesta-paciente.md); lo que falta para
+producción, en su [checklist de salida](fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción).
+*(2026-10-14: en construcción; el arquitecto aprobó el diseño —[ADR-10](../Decisions/ADR-10.md) aceptado con
+Q11 = B, plan en [US-04](../US/04-respuesta-paciente.md), que absorbe US-02.07—.)*
+
 ---
 
 ## Índice
@@ -37,7 +44,7 @@ deudas que la fase cambió de estado sin crearlas ni cerrarlas.
 | [Fase 0](fase-0-us06-dashboard.md) | US-06 dashboard | ✅ cerrada (2026-09-28) | backend 2026-06-30 · zona horaria 2026-07-06 · conexión real 2026-09-28 | [us06](../Features/us06-dashboard-citas.md) | 04, 07 | **creadas:** DT-10…17, DT-20, DT-22 · **cerradas:** — (DT-10 y DT-22 se cierran en la Fase 1) | — | [US-06](../US/06-epic.md) | filas 20–25 y 28 (`9ab2bec` → `08dad63`, `f200557`) | Fundaciones · Fase 1 (lista real, voucher) |
 | [Fase 1](fase-1-us02-gestion-citas.md) | US-02 gestión de citas (+ US-02.07 ⏸, 02.08, 02.09) | ✅ cerrada (2026-09-28) | release 1 2026-08-24 · vía pública 2026-09-10 · cierre 2026-09-28 · decisiones 2026-09-29 | [us02](../Features/us02-gestion-citas.md) | 09, 11 · 10 (propuesto, aplazado) · 08 (su fase 1, en la ruta pública) | **creadas:** DT-23…29 · **cerradas:** DT-10, DT-22 · **mitigada:** DT-28 · **afectadas:** DT-12, DT-14, DT-15, DT-18, DT-20 | FD-01 (descartada), FD-02…05 | [US-02.07](../US/02.07-paciente-reagenda-cancela.md), [US-02.08](../US/02.08-voucher-cita.md) | filas 35–39 y 41–58 (`f2a7dff` → `c9ac69f`) | Fundaciones (el ROADMAP no le pone dependencias; reutiliza `Cita` y `Paciente` de la Fase 0) |
 | [Fase 2](fase-2-us03-recordatorios.md) | US-03 recordatorios | ✅ **cerrada en producción (2026-10-07)** · **en el MVP** | diseño 2026-09-30 · implementación 2026-10-01 → 2026-10-04 · merge a `develop` 2026-10-04 · release 2026-10-06 · cierre 2026-10-07 | [us03](../Features/us03-recordatorios.md) (nueva) · [us02](../Features/us02-gestion-citas.md), [infra](../Features/infra-contenedores.md) (actualizadas) | 12, 13 · nota en 02 | **creadas:** DT-30, DT-31…DT-39 · DT-40, DT-41 (detectadas en producción) · **cerradas:** DT-21, DT-27 · **mitigada:** DT-30 (2026-10-05) · **verificada, abierta:** DT-19 (falta la fuente de logs) · **afectadas:** DT-11, DT-16, DT-17, DT-20, DT-23, DT-26, DT-29, DT-37 | — | [US-03](../US/03-recordatorios.md) | filas 59, 61–74 y 76–83 (`ab30bb7` → `c057ade`; la 60 y la 75 son transversales) | Fase 1 · subdominio verificado en Resend ✅ |
-| [Fase 3](fase-3-us04-respuesta-paciente.md) | US-04 respuesta del paciente (+ US-02.07) | ⬜ **siguiente** · fuera del MVP | — | — | 10 (propuesto) · 13 (bloque `accion`) | **afectadas:** DT-11, DT-16, DT-18, DT-23, DT-30 (ya mitigada) | FD-06 (propuesta) | [US-02.07](../US/02.07-paciente-reagenda-cancela.md) | — | Fase 2 ✅ · ADR-10 aceptado (H7, Q11) |
+| [Fase 3](fase-3-us04-respuesta-paciente.md) | US-04 respuesta del paciente (+ US-02.07, absorbida) | ✅ **implementada y verificada en local (2026-10-15)** · pendiente de release · fuera del MVP | diseño aprobado 2026-10-14 · implementación 2026-10-14 → 2026-10-15 · verificada en local 2026-10-15 | [us04](../Features/us04-respuesta-paciente.md) (nueva) | **10 (aceptado 2026-10-14; notas de implementación 2026-10-15)** · 13 (bloque `accion`, nota en §1) · notas en 04 §4 y 12 §8 (regla G1) | **creadas (previstas):** DT-42…DT-45 (DT-44 con su parte 2 resuelta; DT-45 con su corrección implementada) · **detectada:** DT-46 · **implementada, se cierra al desplegar:** DT-18 · **afectadas:** DT-04, DT-06, DT-11 (regla G1), DT-16, DT-23, DT-26, DT-33, DT-30 (ya mitigada) | FD-06 (resuelta en parte: "cambiar la hora" es una petición manual) | [US-04](../US/04-respuesta-paciente.md) · [US-02.07](../US/02.07-paciente-reagenda-cancela.md) (absorbida) | — (sin commits todavía) | Fase 2 ✅ · ADR-10 aceptado ✅ |
 | [Fase 4](fase-4-us05-alertas.md) | US-05 alertas | ⬜ nada propio (el outbox ya existe, desde la Fase 2) | — | — | 12 §4 (suscriptores) · 09 §7 | **afectada:** DT-28 | — | — | — | Fases 1, 2 y 3 |
 | [Fase 5](fase-5-us07-scoring.md) | US-07 scoring | ⏸ v2 (fuera del MVP) | — | — | 04 §4 · 12 §8 | **afectadas:** DT-11, DT-13, DT-23, DT-30 | — | — | — | Fases 1 y 3 · proceso de cierre (ADR-12) · DT-30 |
 | [Fase 6](fases-6-7-us09-sin-diseno.md#fase-6--us-08-monitoreo-y-seguimiento-del-paciente) | US-08 monitoreo | 🔶 solo `POST /pacientes` (+ `PATCH /pacientes/:id` en la Fase 2) | — | — | — | — | — | — | — | Fases 1 y 5 |
@@ -64,7 +71,7 @@ flowchart LR
     F2["Fase 2 · US-03<br/>recordatorios<br/>(en producción)"]:::hecho
   end
 
-  F3["Fase 3 · US-04 + US-02.07<br/>respuesta del paciente"]:::pendiente
+  F3["Fase 3 · US-04 + US-02.07<br/>respuesta del paciente<br/>(implementada en local,<br/>pendiente de release)"]:::disenada
   F4["Fase 4 · US-05<br/>alertas"]:::pendiente
   F5["Fase 5 · US-07<br/>scoring · v2"]:::aplazada
   F6["Fase 6 · US-08<br/>monitoreo"]:::pendiente
@@ -72,7 +79,7 @@ flowchart LR
   U9["US-09<br/>sin definir"]:::pendiente
 
   DOM[["subdominio de envío<br/>verificado en Resend ✅"]]:::hecho
-  A10[["ADR-10 aceptado<br/>(H7, Q11)"]]
+  A10[["ADR-10 aceptado ✅<br/>(Q11 = B y seguridad del enlace)"]]:::hecho
   D30[["asistencia registrada<br/>(DT-30, mitigada)"]]:::hecho
 
   B --> F1
@@ -97,8 +104,9 @@ flowchart LR
 ```
 
 **Cómo leer el diagrama.** Verde = cerrada; desde el 2026-10-07 las tres fases del MVP (0, 1 y 2) están
-además **en producción**, el subdominio de envío, el prerrequisito de la Fase 2, quedó verificado, y desde el 2026-10-05 la asistencia se registra en el voucher (DT-30 mitigada). Gris =
-pendiente (la Fase 3 es la siguiente); lila = aplazada a la v2. La Fase 0 depende de la Fase 1 aunque se construyó primero: su backend
+además **en producción**, el subdominio de envío, el prerrequisito de la Fase 2, quedó verificado, y desde el 2026-10-05 la asistencia se registra en el voucher (DT-30 mitigada). Amarillo =
+en curso, todavía sin release (la Fase 3: en construcción desde el 2026-10-14, con ADR-10 ya aceptado, e
+implementada y verificada en local desde el 2026-10-15); gris = pendiente; lila = aplazada a la v2. La Fase 0 depende de la Fase 1 aunque se construyó primero: su backend
 (junio) creó `Cita`, `Paciente` y `POST /citas`, pero el dashboard solo quedó cerrado cuando la
 Fase 1 entregó la lista real, el voucher (US-02.08) y el refresco tras cada cambio (US-02.09). La
 Fase 7 y US-09 no dependen de nada según el ROADMAP. La Fase 6 depende de US-07 (la Fase 5), no de

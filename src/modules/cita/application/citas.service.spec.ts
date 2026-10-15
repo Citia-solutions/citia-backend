@@ -1,13 +1,18 @@
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import { EventoDominio } from '../../../shared/application/publicador-eventos';
-import { CambioCita, TipoCambio } from '../domain/cambio-cita.entity';
+import {
+  ActorCambio,
+  CambioCita,
+  TipoCambio,
+} from '../domain/cambio-cita.entity';
 import {
   Cita,
   DURACION_MAXIMA_MIN,
   ESTADOS_VIGENTES,
   EstadoCita,
 } from '../domain/cita.entity';
+import { EnlaceCita } from '../domain/enlace-cita.entity';
 import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-estado-invalida.error';
 import { AvisosCitaDto } from '../presentation/dto/avisos-cita.dto';
 import { CitaDashboardDto } from '../presentation/dto/cita-dashboard.dto';
@@ -18,6 +23,7 @@ import { PacientesService } from '../../paciente/application/pacientes.service';
 import { CitasService, MAX_DIAS_RANGO } from './citas.service';
 import { CitaNoEncontradaError } from './cita-no-encontrada.error';
 import { DatosPacienteRequeridosError } from './datos-paciente-requeridos.error';
+import { EnlaceCitaNoValidoError } from './enlace-cita-no-valido.error';
 import { PacienteNoEncontradoError } from '../../paciente/application/paciente-no-encontrado.error';
 import { RangoFechasInvalidoError } from './rango-fechas-invalido.error';
 
@@ -26,12 +32,15 @@ describe('CitasService', () => {
   let mockCitaRepository: {
     guardar: jest.Mock;
     buscarPorId: jest.Mock;
+    buscarPorIdParaActualizar: jest.Mock;
+    buscarPorIds: jest.Mock;
     buscarDelDiaPorProfesional: jest.Mock;
     buscarPorProfesionalEnRango: jest.Mock;
   };
   let mockCambioCitaRepository: {
     registrar: jest.Mock;
     historialDeCita: jest.Mock;
+    ultimoActorPorTipo: jest.Mock;
   };
   // Tipado con la firma del puerto (ADR-12 §2): `publicar(evento, tx)`.
   let mockEventos: {
@@ -61,12 +70,15 @@ describe('CitasService', () => {
     mockCitaRepository = {
       guardar: jest.fn(),
       buscarPorId: jest.fn(),
+      buscarPorIdParaActualizar: jest.fn(),
+      buscarPorIds: jest.fn().mockResolvedValue([]),
       buscarDelDiaPorProfesional: jest.fn(),
       buscarPorProfesionalEnRango: jest.fn().mockResolvedValue([]),
     };
     mockCambioCitaRepository = {
       registrar: jest.fn().mockResolvedValue(undefined),
       historialDeCita: jest.fn().mockResolvedValue([]),
+      ultimoActorPorTipo: jest.fn().mockResolvedValue({}),
     };
     mockEventos = {
       publicar: jest
@@ -363,9 +375,10 @@ describe('CitasService', () => {
         actualizadoEn: new Date(),
       });
 
+    // Las mutaciones cargan la cita BLOQUEANDO su fila (FOR NO KEY UPDATE).
     const prepararCita = (estado: EstadoCita, inicio?: Date) => {
       const cita = citaEn(estado, inicio);
-      mockCitaRepository.buscarPorId.mockResolvedValue(cita);
+      mockCitaRepository.buscarPorIdParaActualizar.mockResolvedValue(cita);
       mockCitaRepository.guardar.mockImplementation((c: Cita) =>
         Promise.resolve(c),
       );
@@ -425,15 +438,15 @@ describe('CitasService', () => {
 
     it('deberia lanzar CitaNoEncontradaError si la cita es de otro tenant', async () => {
       // Arrange - el repositorio filtra por tenant y no la encuentra
-      mockCitaRepository.buscarPorId.mockResolvedValue(null);
+      mockCitaRepository.buscarPorIdParaActualizar.mockResolvedValue(null);
 
       // Act & Assert
       await expect(
         service.confirmar(CITA_ID, usuarioAutenticado),
       ).rejects.toBeInstanceOf(CitaNoEncontradaError);
 
-      // Assert - se busco acotado al tenant del token
-      expect(mockCitaRepository.buscarPorId).toHaveBeenCalledWith(
+      // Assert - se busco acotado al tenant del token (y con bloqueo, en el tx)
+      expect(mockCitaRepository.buscarPorIdParaActualizar).toHaveBeenCalledWith(
         CITA_ID,
         usuarioAutenticado.tenantId,
         'tx',
@@ -496,7 +509,7 @@ describe('CitasService', () => {
         creadoEn: new Date(),
         actualizadoEn: new Date(),
       });
-      mockCitaRepository.buscarPorId.mockResolvedValue(cita);
+      mockCitaRepository.buscarPorIdParaActualizar.mockResolvedValue(cita);
       mockCitaRepository.guardar.mockImplementation((c: Cita) =>
         Promise.resolve(c),
       );
@@ -804,6 +817,9 @@ describe('CitasService', () => {
           'inasistencia',
           'editar',
         ],
+        // Fase 3 (G3), aditivo: la bitácora del doble está vacía.
+        confirmadaPor: null,
+        canceladaPor: null,
       });
     });
 
@@ -1018,6 +1034,85 @@ describe('CitasService', () => {
           })),
       ),
     );
+
+  describe('resumenesPorIds (bandeja de solicitudes, Fase 3)', () => {
+    const citaResumen = (id: string, estado: EstadoCita): Cita =>
+      Cita.reconstituir({
+        id,
+        inicio: new Date('2026-10-20T13:00:00.000Z'),
+        duracionMin: 45,
+        tipoConsulta: 'Control (no debe salir)',
+        estado,
+        tenantId: 'tenant-1',
+        pacienteId: 'paciente-1',
+        usuarioId: 'usuario-1',
+        creadoEn: new Date('2026-10-01T00:00:00Z'),
+        actualizadoEn: new Date('2026-10-01T00:00:00Z'),
+      });
+
+    it('debería leer en UNA consulta los ids deduplicados, del tenant pedido y con el tx recibido', async () => {
+      // Arrange
+      mockCitaRepository.buscarPorIds.mockResolvedValue([
+        citaResumen('cita-1', EstadoCita.PENDIENTE),
+        citaResumen('cita-2', EstadoCita.CANCELADA),
+      ]);
+
+      // Act
+      const resumenes = await service.resumenesPorIds(
+        ['cita-1', 'cita-2', 'cita-1'],
+        'tenant-1',
+        'tx-lectura',
+      );
+
+      // Assert
+      expect(mockCitaRepository.buscarPorIds).toHaveBeenCalledTimes(1);
+      expect(mockCitaRepository.buscarPorIds).toHaveBeenCalledWith(
+        ['cita-1', 'cita-2'],
+        'tenant-1',
+        'tx-lectura',
+      );
+      expect([...resumenes.keys()]).toEqual(['cita-1', 'cita-2']);
+      expect(resumenes.get('cita-2')).toEqual({
+        id: 'cita-2',
+        inicio: new Date('2026-10-20T13:00:00.000Z'),
+        duracionMin: 45,
+        estado: EstadoCita.CANCELADA,
+      });
+    });
+
+    it('no debería exponer paciente ni tipo de consulta', async () => {
+      // Arrange
+      mockCitaRepository.buscarPorIds.mockResolvedValue([
+        citaResumen('cita-1', EstadoCita.PENDIENTE),
+      ]);
+
+      // Act
+      const resumenes = await service.resumenesPorIds(['cita-1'], 'tenant-1');
+
+      // Assert
+      const json = JSON.stringify([...resumenes.values()]);
+      expect(json).not.toContain('paciente');
+      expect(json).not.toContain('tipoConsulta');
+      expect(json).not.toContain('no debe salir');
+    });
+
+    it('debería omitir del mapa los ids que no vuelven (otro tenant o inexistente)', async () => {
+      // Act
+      const resumenes = await service.resumenesPorIds(['de-otro'], 'tenant-1');
+
+      // Assert
+      expect(resumenes.size).toBe(0);
+    });
+
+    it('no debería consultar con la lista vacía', async () => {
+      // Act
+      const resumenes = await service.resumenesPorIds([], 'tenant-1');
+
+      // Assert
+      expect(resumenes.size).toBe(0);
+      expect(mockCitaRepository.buscarPorIds).not.toHaveBeenCalled();
+    });
+  });
 
   describe('listarEnRango (GET /citas?desde&hasta)', () => {
     it('debería aceptar un rango de 1 día (desde = hasta) y consultar [00:00, 00:00 del día siguiente) en APP_TZ', async () => {
@@ -1245,7 +1340,7 @@ describe('CitasService', () => {
         estado,
         usuarioId,
       });
-      mockCitaRepository.buscarPorId.mockResolvedValue(cita);
+      mockCitaRepository.buscarPorIdParaActualizar.mockResolvedValue(cita);
       mockCitaRepository.guardar.mockImplementation((c: Cita) =>
         Promise.resolve(c),
       );
@@ -1713,7 +1808,7 @@ describe('CitasService', () => {
     });
 
     const prepararExistente = (estado: EstadoCita) =>
-      mockCitaRepository.buscarPorId.mockResolvedValue(
+      mockCitaRepository.buscarPorIdParaActualizar.mockResolvedValue(
         Cita.reconstituir({
           id: CITA_ID,
           inicio: new Date('2026-09-22T13:00:00Z'),
@@ -1809,6 +1904,535 @@ describe('CitasService', () => {
       await expect(
         mockTx.run.mock.results[0].value as Promise<unknown>,
       ).rejects.toBe(fallo);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Fase 3 (ADR-10 §3): actor, FOR NO KEY UPDATE, acciones del paciente, bandeja
+  // -------------------------------------------------------------------------
+
+  describe('Fase 3: refactor del actor y acciones del paciente', () => {
+    const CITA_ID = 'cita-1';
+    const DUENO = 'dueno-de-la-cita';
+    const ENLACE_ID = 'enlace-1';
+    // Reloj del servicio: una hora antes del inicio de la cita.
+    const INICIO = new Date('2026-10-20T13:00:00Z');
+    const ANTES = new Date('2026-10-20T12:00:00Z');
+    const HASH = 'a'.repeat(64);
+
+    let reloj: Date;
+    let conReloj: CitasService;
+
+    const citaDe = (estado: EstadoCita, usuarioId = DUENO): Cita =>
+      Cita.reconstituir({
+        id: CITA_ID,
+        inicio: INICIO,
+        duracionMin: 50,
+        tipoConsulta: 'Control',
+        estado,
+        tenantId: 'tenant-1',
+        pacienteId: 'paciente-1',
+        usuarioId,
+        creadoEn: new Date('2026-10-01T00:00:00Z'),
+        actualizadoEn: new Date('2026-10-01T00:00:00Z'),
+      });
+
+    const enlaceDe = (
+      props: Partial<{
+        citaId: string;
+        tenantId: string;
+        revocadoEn: Date | null;
+      }> = {},
+    ): EnlaceCita =>
+      EnlaceCita.reconstituir({
+        id: ENLACE_ID,
+        citaId: props.citaId ?? CITA_ID,
+        tenantId: props.tenantId ?? 'tenant-1',
+        version: 1,
+        tokenHash: HASH,
+        emitidoEn: new Date('2026-10-19T12:00:00Z'),
+        revocadoEn: props.revocadoEn ?? null,
+        motivoRevocacion: null,
+        revocadoPor: null,
+      });
+
+    const primerCambio = (): CambioCita =>
+      (
+        mockCambioCitaRepository.registrar.mock
+          .calls as unknown as CambioCita[][]
+      )[0][0];
+
+    beforeEach(() => {
+      reloj = ANTES;
+      conReloj = new CitasService(
+        mockCitaRepository,
+        mockCambioCitaRepository,
+        mockPacienteRepository,
+        mockPacientesService as unknown as PacientesService,
+        mockTx,
+        mockEventos,
+        'America/Santiago',
+        () => reloj,
+      );
+      mockCitaRepository.guardar.mockImplementation((c: Cita) =>
+        Promise.resolve(c),
+      );
+    });
+
+    describe('mutaciones del profesional', () => {
+      it('debería cargar la cita con FOR NO KEY UPDATE, en el tx y con el tenant del token (nunca sin bloqueo)', async () => {
+        // Arrange
+        mockCitaRepository.buscarPorIdParaActualizar.mockResolvedValue(
+          citaDe(EstadoCita.PENDIENTE),
+        );
+
+        // Act
+        await conReloj.confirmar(CITA_ID, usuarioAutenticado);
+
+        // Assert
+        expect(
+          mockCitaRepository.buscarPorIdParaActualizar,
+        ).toHaveBeenCalledWith(CITA_ID, 'tenant-1', 'tx');
+        expect(mockCitaRepository.buscarPorId).not.toHaveBeenCalled();
+      });
+
+      it('debería registrar actor profesional (usuario del token) y publicar el hecho con el DUEÑO como usuarioId', async () => {
+        // Arrange — un colega del tenant confirma una cita ajena
+        mockCitaRepository.buscarPorIdParaActualizar.mockResolvedValue(
+          citaDe(EstadoCita.PENDIENTE),
+        );
+
+        // Act
+        await conReloj.confirmar(CITA_ID, usuarioAutenticado);
+
+        // Assert — bitácora: quién lo hizo
+        expect(primerCambio().actorTipo).toBe(ActorCambio.PROFESIONAL);
+        expect(primerCambio().actorId).toBe(usuarioAutenticado.userId);
+        // Assert — hecho: de quién es la cita y quién lo hizo
+        const [evento] = llamadasPublicar()[0];
+        expect(evento.payload.usuarioId).toBe(DUENO);
+        expect(evento.payload.actor).toEqual({
+          tipo: 'profesional',
+          id: usuarioAutenticado.userId,
+        });
+      });
+
+      it('al crear, el hecho lleva actor profesional y usuarioId = dueño (= usuario del token)', async () => {
+        // Arrange
+        mockPacienteRepository.buscarPorId.mockResolvedValue({
+          id: 'paciente-1',
+          rut: null,
+          nombre: 'Ana',
+          telefono: '+56 9 1111 1111',
+          correo: 'ana@mail.com',
+          consentimiento: true,
+          tenantId: 'tenant-1',
+        });
+        mockCitaRepository.guardar.mockImplementation((c: Cita) => {
+          c.id = CITA_ID;
+          return Promise.resolve(c);
+        });
+
+        // Act
+        await conReloj.crearCita(
+          {
+            inicio: '2026-10-20T13:00:00Z',
+            duracionMin: 50,
+            tipoConsulta: 'Control',
+            pacienteId: 'paciente-1',
+          },
+          usuarioAutenticado,
+        );
+
+        // Assert
+        const [evento] = llamadasPublicar()[0];
+        expect(evento.payload).toMatchObject({
+          usuarioId: usuarioAutenticado.userId,
+          actor: { tipo: 'profesional', id: usuarioAutenticado.userId },
+        });
+        expect(primerCambio().actorTipo).toBe(ActorCambio.PROFESIONAL);
+      });
+    });
+
+    describe('confirmarComoPaciente', () => {
+      it('debería confirmar la cita YA bloqueada, sin recargarla ni abrir otra transacción', async () => {
+        // Arrange
+        const cita = citaDe(EstadoCita.PENDIENTE);
+        const txPortal = { soy: 'tx-del-portal' };
+
+        // Act
+        const resultado = await conReloj.confirmarComoPaciente(
+          cita,
+          enlaceDe(),
+          txPortal,
+        );
+
+        // Assert
+        expect(resultado.estado).toBe(EstadoCita.CONFIRMADA);
+        expect(mockTx.run).not.toHaveBeenCalled();
+        expect(mockCitaRepository.buscarPorId).not.toHaveBeenCalled();
+        expect(
+          mockCitaRepository.buscarPorIdParaActualizar,
+        ).not.toHaveBeenCalled();
+        expect(mockCitaRepository.guardar).toHaveBeenCalledWith(cita, txPortal);
+        expect(mockCambioCitaRepository.registrar).toHaveBeenCalledWith(
+          expect.any(CambioCita),
+          txPortal,
+        );
+        expect(llamadasPublicar()[0][1]).toBe(txPortal);
+      });
+
+      it('debería dejar en la bitácora actor paciente con actor_id = id del enlace', async () => {
+        // Act
+        await conReloj.confirmarComoPaciente(
+          citaDe(EstadoCita.PENDIENTE),
+          enlaceDe(),
+          'tx',
+        );
+
+        // Assert
+        const cambio = primerCambio();
+        expect(cambio.tipo).toBe(TipoCambio.CONFIRMADA);
+        expect(cambio.actorTipo).toBe(ActorCambio.PACIENTE);
+        expect(cambio.actorId).toBe(ENLACE_ID);
+        expect(cambio.estadoAnterior).toBe(EstadoCita.PENDIENTE);
+        expect(cambio.estadoNuevo).toBe(EstadoCita.CONFIRMADA);
+      });
+
+      it('debería publicar CitaConfirmada con actor paciente, usuarioId = dueño y sin el hash del enlace', async () => {
+        // Act
+        await conReloj.confirmarComoPaciente(
+          citaDe(EstadoCita.PENDIENTE),
+          enlaceDe(),
+          'tx',
+        );
+
+        // Assert
+        const [evento] = llamadasPublicar()[0];
+        expect(evento.nombre).toBe('CitaConfirmada');
+        expect(evento.tenantId).toBe('tenant-1');
+        expect(evento.payload).toMatchObject({
+          citaId: CITA_ID,
+          usuarioId: DUENO,
+          estado: EstadoCita.CONFIRMADA,
+          actor: { tipo: 'paciente', id: ENLACE_ID },
+        });
+        expect(JSON.stringify(evento)).not.toContain(HASH);
+      });
+
+      it('debería lanzar TransicionEstadoInvalidaError (409) si la cita ya estaba confirmada, sin escribir nada', async () => {
+        // Act & Assert
+        await expect(
+          conReloj.confirmarComoPaciente(
+            citaDe(EstadoCita.CONFIRMADA),
+            enlaceDe(),
+            'tx',
+          ),
+        ).rejects.toBeInstanceOf(TransicionEstadoInvalidaError);
+        expect(mockCitaRepository.guardar).not.toHaveBeenCalled();
+        expect(mockCambioCitaRepository.registrar).not.toHaveBeenCalled();
+        expect(mockEventos.publicar).not.toHaveBeenCalled();
+      });
+
+      it.each<[string, () => { cita: Cita; enlace: EnlaceCita }]>([
+        [
+          'el inicio ya llegó',
+          () => {
+            reloj = INICIO;
+            return { cita: citaDe(EstadoCita.PENDIENTE), enlace: enlaceDe() };
+          },
+        ],
+        [
+          'el enlace está revocado',
+          () => ({
+            cita: citaDe(EstadoCita.PENDIENTE),
+            enlace: enlaceDe({ revocadoEn: new Date('2026-10-19T00:00:00Z') }),
+          }),
+        ],
+        [
+          'el enlace es de otra cita',
+          () => ({
+            cita: citaDe(EstadoCita.PENDIENTE),
+            enlace: enlaceDe({ citaId: 'otra-cita' }),
+          }),
+        ],
+        [
+          'el enlace es de otro tenant',
+          () => ({
+            cita: citaDe(EstadoCita.PENDIENTE),
+            enlace: enlaceDe({ tenantId: 'tenant-2' }),
+          }),
+        ],
+      ])(
+        'debería lanzar EnlaceCitaNoValidoError (mismo 404) si %s, sin escribir nada',
+        async (_caso, preparar) => {
+          // Arrange
+          const { cita, enlace } = preparar();
+
+          // Act & Assert
+          await expect(
+            conReloj.confirmarComoPaciente(cita, enlace, 'tx'),
+          ).rejects.toBeInstanceOf(EnlaceCitaNoValidoError);
+          expect(cita.estado).toBe(EstadoCita.PENDIENTE);
+          expect(mockCitaRepository.guardar).not.toHaveBeenCalled();
+          expect(mockCambioCitaRepository.registrar).not.toHaveBeenCalled();
+          expect(mockEventos.publicar).not.toHaveBeenCalled();
+        },
+      );
+
+      it('debería usar el inicio VIGENTE: una cita reagendada más tarde sigue aceptando el enlace', async () => {
+        // Arrange — el reloj ya pasó el inicio original, no el nuevo
+        reloj = new Date(INICIO.getTime() + 3_600_000);
+        const cita = citaDe(EstadoCita.PENDIENTE);
+        cita.reagendar(new Date(INICIO.getTime() + 2 * 86_400_000));
+
+        // Act
+        const resultado = await conReloj.confirmarComoPaciente(
+          cita,
+          enlaceDe(),
+          'tx',
+        );
+
+        // Assert
+        expect(resultado.estado).toBe(EstadoCita.CONFIRMADA);
+      });
+    });
+
+    describe('cancelarComoPaciente', () => {
+      it('debería cancelar con motivo, actor paciente y hecho CitaCancelada', async () => {
+        // Act
+        const resultado = await conReloj.cancelarComoPaciente(
+          citaDe(EstadoCita.CONFIRMADA),
+          enlaceDe(),
+          'No alcanzo a llegar',
+          'tx',
+        );
+
+        // Assert
+        expect(resultado.estado).toBe(EstadoCita.CANCELADA);
+        const cambio = primerCambio();
+        expect(cambio.tipo).toBe(TipoCambio.CANCELADA);
+        expect(cambio.motivo).toBe('No alcanzo a llegar');
+        expect(cambio.actorTipo).toBe(ActorCambio.PACIENTE);
+        expect(cambio.actorId).toBe(ENLACE_ID);
+        const [evento] = llamadasPublicar()[0];
+        expect(evento.nombre).toBe('CitaCancelada');
+        expect(evento.payload.actor).toEqual({
+          tipo: 'paciente',
+          id: ENLACE_ID,
+        });
+        // El motivo es texto libre: no viaja en el hecho.
+        expect(JSON.stringify(evento)).not.toContain('No alcanzo');
+      });
+
+      it('sin motivo deja motivo nulo en la bitácora', async () => {
+        await conReloj.cancelarComoPaciente(
+          citaDe(EstadoCita.PENDIENTE),
+          enlaceDe(),
+          undefined,
+          'tx',
+        );
+        expect(primerCambio().motivo).toBeNull();
+      });
+
+      it('nada después de inicio: con el reloj en el inicio no cancela ni escribe', async () => {
+        // Arrange
+        reloj = INICIO;
+        const cita = citaDe(EstadoCita.PENDIENTE);
+
+        // Act & Assert
+        await expect(
+          conReloj.cancelarComoPaciente(cita, enlaceDe(), undefined, 'tx'),
+        ).rejects.toBeInstanceOf(EnlaceCitaNoValidoError);
+        expect(cita.estado).toBe(EstadoCita.PENDIENTE);
+        expect(mockCitaRepository.guardar).not.toHaveBeenCalled();
+        expect(mockEventos.publicar).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('reagendarEnTx (bandeja)', () => {
+      it('debería mover la cita en el tx de quien llama, con FOR NO KEY UPDATE, sin abrir otra transacción', async () => {
+        // Arrange
+        mockCitaRepository.buscarPorIdParaActualizar.mockResolvedValue(
+          citaDe(EstadoCita.CONFIRMADA),
+        );
+        const txBandeja = { soy: 'tx-de-la-bandeja' };
+
+        // Act
+        const result = await conReloj.reagendarEnTx(
+          CITA_ID,
+          '2026-10-22T15:00:00-03:00',
+          usuarioAutenticado,
+          txBandeja,
+        );
+
+        // Assert
+        expect(mockTx.run).not.toHaveBeenCalled();
+        expect(
+          mockCitaRepository.buscarPorIdParaActualizar,
+        ).toHaveBeenCalledWith(CITA_ID, 'tenant-1', txBandeja);
+        expect(result.id).toBe(CITA_ID);
+        expect(result.inicio).toEqual(new Date('2026-10-22T18:00:00Z'));
+        expect(result.estado).toBe(EstadoCita.PENDIENTE);
+        expect(result.avisos).toEqual({ solapamientos: [] });
+        const [evento, txPublicado] = llamadasPublicar()[0];
+        expect(evento.nombre).toBe('CitaReagendada');
+        expect(evento.payload.inicioAnterior).toEqual(INICIO);
+        expect(evento.payload.usuarioId).toBe(DUENO);
+        expect(txPublicado).toBe(txBandeja);
+        const cambio = primerCambio();
+        expect(cambio.actorTipo).toBe(ActorCambio.PROFESIONAL);
+        expect(cambio.actorId).toBe(usuarioAutenticado.userId);
+      });
+
+      it('debería aceptar un Date como nuevo inicio', async () => {
+        // Arrange
+        mockCitaRepository.buscarPorIdParaActualizar.mockResolvedValue(
+          citaDe(EstadoCita.PENDIENTE),
+        );
+        const nuevo = new Date('2026-10-23T13:00:00Z');
+
+        // Act
+        const result = await conReloj.reagendarEnTx(
+          CITA_ID,
+          nuevo,
+          usuarioAutenticado,
+          'tx',
+        );
+
+        // Assert
+        expect(result.inicio).toEqual(nuevo);
+      });
+
+      it('cita terminal → TransicionEstadoInvalidaError (la bandeja responde 409)', async () => {
+        // Arrange
+        mockCitaRepository.buscarPorIdParaActualizar.mockResolvedValue(
+          citaDe(EstadoCita.CANCELADA),
+        );
+
+        // Act & Assert
+        await expect(
+          conReloj.reagendarEnTx(
+            CITA_ID,
+            new Date('2026-10-23T13:00:00Z'),
+            usuarioAutenticado,
+            'tx',
+          ),
+        ).rejects.toBeInstanceOf(TransicionEstadoInvalidaError);
+        expect(mockCitaRepository.guardar).not.toHaveBeenCalled();
+      });
+
+      it('cita de otro tenant → CitaNoEncontradaError', async () => {
+        // Arrange
+        mockCitaRepository.buscarPorIdParaActualizar.mockResolvedValue(null);
+
+        // Act & Assert
+        await expect(
+          conReloj.reagendarEnTx(
+            CITA_ID,
+            new Date('2026-10-23T13:00:00Z'),
+            usuarioAutenticado,
+            'tx',
+          ),
+        ).rejects.toBeInstanceOf(CitaNoEncontradaError);
+      });
+    });
+
+    describe('detalle: confirmadaPor y canceladaPor (G3)', () => {
+      const paciente = {
+        id: 'paciente-1',
+        rut: null,
+        nombre: 'Ana',
+        telefono: '+56 9 1111 1111',
+        correo: null,
+        consentimiento: true,
+        tenantId: 'tenant-1',
+      };
+
+      const detalleCon = async (
+        estado: EstadoCita,
+        ultimos: Partial<Record<TipoCambio, ActorCambio>>,
+      ): Promise<CitaDetalleDto> => {
+        mockCitaRepository.buscarPorId.mockResolvedValue(citaDe(estado));
+        mockPacienteRepository.buscarPorId.mockResolvedValue(paciente);
+        mockCambioCitaRepository.ultimoActorPorTipo.mockResolvedValue(ultimos);
+        return conReloj.detalle(CITA_ID, usuarioAutenticado);
+      };
+
+      it.each([
+        [EstadoCita.CONFIRMADA, ActorCambio.PACIENTE],
+        [EstadoCita.ASISTIO, ActorCambio.PROFESIONAL],
+        [EstadoCita.NO_ASISTIO, ActorCambio.PACIENTE],
+      ])(
+        'con estado %s, confirmadaPor = último actor de "confirmada" (%s)',
+        async (estado, actor) => {
+          // Act
+          const result = await detalleCon(estado, {
+            [TipoCambio.CONFIRMADA]: actor,
+          });
+
+          // Assert
+          expect(result.confirmadaPor).toBe(actor);
+          expect(result.canceladaPor).toBeNull();
+        },
+      );
+
+      it('consulta la bitácora con el id de la cita, el tenant del token y solo los tipos que hacen falta', async () => {
+        // Act
+        await detalleCon(EstadoCita.CONFIRMADA, {});
+
+        // Assert
+        expect(
+          mockCambioCitaRepository.ultimoActorPorTipo,
+        ).toHaveBeenCalledWith(CITA_ID, 'tenant-1', [TipoCambio.CONFIRMADA]);
+      });
+
+      it('pendiente tras reagendar: una confirmación vieja NO cuenta (y no se consulta)', async () => {
+        // Act
+        const result = await detalleCon(EstadoCita.PENDIENTE, {
+          [TipoCambio.CONFIRMADA]: ActorCambio.PACIENTE,
+        });
+
+        // Assert
+        expect(result.confirmadaPor).toBeNull();
+        expect(result.canceladaPor).toBeNull();
+        expect(
+          mockCambioCitaRepository.ultimoActorPorTipo,
+        ).not.toHaveBeenCalled();
+      });
+
+      it('cancelada: canceladaPor = último actor de "cancelada"; una confirmación previa no se muestra', async () => {
+        // Act
+        const result = await detalleCon(EstadoCita.CANCELADA, {
+          [TipoCambio.CONFIRMADA]: ActorCambio.PROFESIONAL,
+          [TipoCambio.CANCELADA]: ActorCambio.PACIENTE,
+        });
+
+        // Assert
+        expect(result.canceladaPor).toBe(ActorCambio.PACIENTE);
+        expect(result.confirmadaPor).toBeNull();
+      });
+
+      it('sin cambio registrado del tipo → null', async () => {
+        // Act
+        const result = await detalleCon(EstadoCita.CANCELADA, {});
+
+        // Assert
+        expect(result.canceladaPor).toBeNull();
+      });
+
+      it('viaja en el JSON como texto ("paciente")', async () => {
+        // Act
+        const json = JSON.stringify(
+          await detalleCon(EstadoCita.CONFIRMADA, {
+            [TipoCambio.CONFIRMADA]: ActorCambio.PACIENTE,
+          }),
+        );
+
+        // Assert
+        expect(json).toContain('"confirmadaPor":"paciente"');
+        expect(json).toContain('"canceladaPor":null');
+      });
     });
   });
 });

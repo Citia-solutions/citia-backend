@@ -26,6 +26,7 @@ import { EstadoCita } from '../domain/cita.entity';
 import { CitaRepository } from '../domain/cita.repository';
 import { CambioCitaOrmEntity } from '../infrastructure/persistence/cambio-cita.orm-entity';
 import { CitaOrmEntity } from '../infrastructure/persistence/cita.orm-entity';
+import { EnlaceCitaOrmEntity } from '../infrastructure/persistence/enlace-cita.orm-entity';
 import { CrearCitaDto } from '../presentation/dto/crear-cita.dto';
 
 /**
@@ -46,6 +47,8 @@ const configuracionTypeOrm: TypeOrmModuleOptions = {
     PacienteOrmEntity,
     CitaOrmEntity,
     CambioCitaOrmEntity,
+    // CitaModule registra `enlaces_cita` (Fase 3).
+    EnlaceCitaOrmEntity,
     EventoSalidaOrmEntity,
   ],
 };
@@ -61,7 +64,10 @@ const PACIENTE = {
 // Dato de salud: tampoco viaja en el hecho (ADR-13 §12).
 const TIPO_CONSULTA = 'Control psiquiátrico';
 
+// `actor` (Fase 3, ADR-10 §7): quién provocó el hecho; `usuarioId` es el
+// DUEÑO de la cita.
 const CLAVES_PAYLOAD_CITA = [
+  'actor',
   'citaId',
   'estado',
   'inicio',
@@ -134,7 +140,7 @@ describe('CitasService + outbox eventos_salida (integration)', () => {
 
   beforeEach(async () => {
     await dataSource.query(
-      'TRUNCATE eventos_salida, cambios_cita, citas, pacientes',
+      'TRUNCATE eventos_salida, cambios_cita, enlaces_cita, citas, pacientes',
     );
   });
 
@@ -181,6 +187,7 @@ describe('CitasService + outbox eventos_salida (integration)', () => {
         usuarioId: actor.userId,
         estado: EstadoCita.PENDIENTE,
         inicioAnterior: null,
+        actor: { tipo: 'profesional', id: actor.userId },
       });
       const crudo = JSON.stringify(fila.payload);
       for (const prohibido of [
@@ -251,6 +258,8 @@ describe('CitasService + outbox eventos_salida (integration)', () => {
       expect(cancelada.payload).toMatchObject({
         citaId: cita.id,
         estado: EstadoCita.CANCELADA,
+        usuarioId: actor.userId,
+        actor: { tipo: 'profesional', id: actor.userId },
       });
       // El motivo es texto libre: no viaja en el hecho.
       expect(JSON.stringify(cancelada.payload)).not.toContain('avisó');

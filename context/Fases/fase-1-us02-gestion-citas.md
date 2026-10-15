@@ -159,9 +159,9 @@ FD-06 es de la [Fase 3](fase-3-us04-respuesta-paciente.md).
 - [Q8](../PREGUNTAS-ABIERTAS.md#q8--adr-08-el-tenant-en-la-url-dev-b--prioridad-2) — ADR-08 en el login.
 - [Q9](../PREGUNTAS-ABIERTAS.md#q9--modelo-de-disponibilidad-no-construir--solo-evaluar) — modelo de
   disponibilidad (la "Fase 2" de ADR-09, no del roadmap).
-- [H3](../PREGUNTAS-ABIERTAS.md#h3--modelo-de-amenazas-de-la-vía-pública-antes-de-construirla) —
+- [Q16](../PREGUNTAS-ABIERTAS.md#q16--modelo-de-amenazas-de-la-vía-pública) —
   modelo de amenazas de la vía pública (DT-23, DT-28).
-- [H5](../PREGUNTAS-ABIERTAS.md#h5--manejo-de-datos-de-salud) — retención de datos de salud (DT-26).
+- [Q17](../PREGUNTAS-ABIERTAS.md#q17--manejo-de-datos-de-salud) — retención de datos de salud (DT-26).
 - [Q10](../PREGUNTAS-ABIERTAS.md#q10--la-validación-empieza-por-aquí) — la lista de tipos de consulta
   (DT-24) sale de las conversaciones con usuarios.
 

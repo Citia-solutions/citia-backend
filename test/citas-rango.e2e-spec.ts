@@ -10,6 +10,7 @@ import { JwtAuthGuard } from '../src/modules/auth/jwt-auth.guard';
 import { JwtPayload } from '../src/modules/auth/jwt-payload.interface';
 import { JwtStrategy } from '../src/modules/auth/jwt.strategy';
 import { CitasService } from '../src/modules/cita/application/citas.service';
+import { EnlacesCitaService } from '../src/modules/cita/application/enlaces-cita.service';
 import { Cita, EstadoCita } from '../src/modules/cita/domain/cita.entity';
 import { CitasController } from '../src/modules/cita/presentation/citas.controller';
 import { PacientesService } from '../src/modules/paciente/application/pacientes.service';
@@ -211,6 +212,9 @@ describe('Agenda por rango y avisos de solapamiento (e2e sin BD)', () => {
               TZ,
             ),
         },
+        // CitasController lo inyecta para invalidar el enlace (Fase 3); esta
+        // suite no ejercita esa ruta.
+        { provide: EnlacesCitaService, useValue: {} },
       ],
     }).compile();
 

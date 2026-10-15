@@ -439,7 +439,7 @@ registra la asistencia (2026-10-05, revierte la salida C de [DT-30](../Deudas/DT
   cuanto al mecanismo; sus preguntas 1 y 2 siguen abiertas para la Fase 5.
 - [Q11](../PREGUNTAS-ABIERTAS.md#q11--cómo-le-llega-al-paciente-el-enlace-de-su-cita) — la nota del
   2026-09-30: con recordatorios, el canal existe y la Fase 3 retoma ADR-10 con la salida B.
-- [H5](../PREGUNTAS-ABIERTAS.md#h5--manejo-de-datos-de-salud) — datos de salud; DT-16 pide revisar
+- [Q17](../PREGUNTAS-ABIERTAS.md#q17--manejo-de-datos-de-salud) — datos de salud; DT-16 pide revisar
   también la transferencia internacional al proveedor de correo.
 - **Q12 a Q15** (2026-10-04) — las [decisiones pendientes del usuario](#decisiones-pendientes-del-usuario-2026-10-04)
   que dejó la implementación. Los datos de proveedores que el diseño daba por supuestos quedaron

@@ -53,10 +53,43 @@ export const PAUSA_ENTRE_ENVIOS_MS = 500;
  */
 export const TIEMPO_MAXIMO_ENVIO_MS = 11_000;
 
+/**
+ * Enlace del paciente a su cita (Fase 3; ADR-10 E3/E5). Lo implementa
+ * `EnlacesCitaService` del módulo `cita` (que `RecordatorioModule` importa
+ * solo para esto, ADR-13 §1 nota de 2026-10-14). Aquí solo se declara lo que
+ * el envío usa: este módulo no escribe `enlaces_cita` con su SQL.
+ */
+export interface EmisorEnlaceCita {
+  /**
+   * Token del enlace activo de la cita (lo emite si no hay), DENTRO de `tx`.
+   * Idempotente y determinista: el mismo token en todos los recordatorios de
+   * la cita y en cada reintento. Lanza si no puede.
+   */
+  asegurarActivo(
+    citaId: string,
+    tenantId: string,
+    tx: TransactionContext,
+  ): Promise<string>;
+}
+
+/** Texto FIJO del botón del correo (E5): nunca depende del estado de la cita. */
+export const TEXTO_ACCION_RECORDATORIO = 'Ver o responder mi hora';
+
+/**
+ * URL del enlace del paciente: `${FRONTEND_URL}/cita#<token>`. El token va en
+ * el FRAGMENTO (S3): el navegador no lo manda al servidor del frontend ni en
+ * el `Referer`. Sin barra final duplicada aunque la base la traiga.
+ */
+export function urlEnlaceCita(urlFrontend: string, token: string): string {
+  return `${urlFrontend.replace(/\/+$/, '')}/cita#${token}`;
+}
+
 /** Parámetros del entorno (ADR-13 §18). */
 export interface OpcionesEnvio {
   /** `APP_TZ`: día del fusible por tenant, horas sin envío y texto. */
   tz: string;
+  /** `FRONTEND_URL`: base del enlace del paciente (Fase 3, E5). */
+  urlFrontend: string;
   silencio: HorasSinEnvio;
   /** `RECORDATORIO_EXIGIR_CONSENTIMIENTO` (false, DT-16). */
   exigirConsentimiento: boolean;
@@ -83,6 +116,8 @@ export interface DependenciasEnvio {
   lector: LectorCitas;
   canal: CanalMensajeria;
   bitacora: BitacoraRecordatorios;
+  /** Enlace del paciente (Fase 3): `EnlacesCitaService` de `cita`. */
+  enlaces: EmisorEnlaceCita;
 }
 
 /** Cómo terminó un recordatorio reclamado. */
@@ -167,8 +202,9 @@ class TiempoAgotadoEnvioError extends Error {
  *     (día y mes UTC).
  *  3. **Evaluar las nueve políticas** en orden y aplicar la primera que no
  *     continúa: anular, omitir, posponer o fallar (sin sumar intento).
- *  4. **Enviar:** plantilla generada ahora + `CanalMensajeria.enviar`, y
- *     aplicar el resultado (tabla de ADR-13 §8).
+ *  4. **Enviar:** enlace del paciente (`EmisorEnlaceCita.asegurarActivo`, en
+ *     la misma transacción; Fase 3), plantilla generada ahora +
+ *     `CanalMensajeria.enviar`, y aplicar el resultado (tabla de ADR-13 §8).
  *
  * **La transacción queda abierta durante la llamada HTTP**, con la fila
  * bloqueada (ADR-13 §7, deliberado): si el proceso muere después de que el
@@ -491,6 +527,16 @@ export class EnviarRecordatoriosService {
     const configuracion = lectura.configuracion as ConfiguracionRecordatorio;
     const destinatario = lectura.politicas.correoPaciente as string;
 
+    // Fase 3 (E3): el enlace nace (o se reutiliza) en ESTA transacción, solo
+    // cuando de verdad se va a enviar. Si falla, lanza: `procesarSiguiente`
+    // lo registra como error interno y se reintenta; nunca sale un correo sin
+    // enlace por ese motivo. El token no se registra en ningún log.
+    const token = await this.d.enlaces.asegurarActivo(
+      fila.citaId,
+      fila.tenantId,
+      tx,
+    );
+
     const contenido = generarPlantillaRecordatorio({
       inicio: datos.cita.inicio,
       tz: this.opciones.tz,
@@ -498,6 +544,12 @@ export class EnviarRecordatoriosService {
       organizacion: datos.organizacion.nombre,
       telefonoContacto: configuracion.telefonoContacto,
       correoRespuesta: configuracion.correoRespuesta,
+      // E5: un solo botón, siempre el mismo. Determinista entre reintentos
+      // (mismo enlace activo → mismo token), como exige la Idempotency-Key.
+      accion: {
+        texto: TEXTO_ACCION_RECORDATORIO,
+        url: urlEnlaceCita(this.opciones.urlFrontend, token),
+      },
     });
     const mensaje: MensajeSaliente = {
       destinatario,

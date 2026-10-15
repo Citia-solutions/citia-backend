@@ -188,6 +188,28 @@ con compose toman su default. En Railway no aplica (las variables se cargan en e
 
 ---
 
+## Fase 3: límite de tasa, `trust proxy` y la clave del enlace
+
+*(2026-10-15, rama `feature/fase3-respuesta-paciente`, implementado y verificado en local, **sin release**.)*
+Piezas transversales de la Fase 3; el detalle está en
+[us04-respuesta-paciente](us04-respuesta-paciente.md#configuración).
+
+| Pieza | Qué hace | Dónde |
+|---|---|---|
+| **Validación del entorno** | suma `ENLACE_CITA_CLAVE`: default solo fuera de producción; **en producción** obligatoria, de 32 caracteres o más, no de ejemplo y **distinta de `JWT_SECRET`** (si no, la app no arranca). Y `LIMITE_TASA_ACTIVO` (`true`; `false` con `NODE_ENV=test`) | `src/shared/infrastructure/config/entorno.ts` |
+| **Límite de tasa** | `@nestjs/throttler` en memoria; guard global **opt-in** que solo limita lo marcado con `@LimitarTasa` | `src/shared/limite-tasa.module.ts`, `src/shared/presentation/limitar-tasa.decorator.ts` |
+| **`trust proxy` = 1** | `req.ip` = la última entrada de `X-Forwarded-For` (la del proxy de Railway); sin esto, todos los clientes tendrían la IP del proxy | `main.ts` |
+| **CORS** | lista **explícita** de cabeceras permitidas (`content-type`, `authorization`, `x-request-id`, `x-enlace-cita`); antes se reflejaba cualquiera | `src/shared/infrastructure/config/origenes-cors.ts` |
+| **Logs** | pino redacta además `x-enlace-cita` y los campos `tokenHash` / `token_hash` | `src/shared/infrastructure/observabilidad/opciones-logger.ts` |
+
+**`docker-compose.yml`** reenvía también `ENLACE_CITA_CLAVE` (con la imagen de producción, si falta en el
+`.env`, la app no arranca). **Migraciones nuevas:** `1750000012000-CreateEnlacesCita`,
+`1750000013000-AddDescartadaAEstadoSolicitudesCita` y `1750000014000-AddReagendamientoASolicitudesCita`.
+Ojo: `entrypoint.sh` corre las migraciones **antes** de arrancar la app, así que un arranque que falla por la
+clave ya las dejó aplicadas.
+
+---
+
 ## Pendientes
 
 1. **Migraciones en despliegue multi-instancia:** moverlas a un job/release phase dedicado antes

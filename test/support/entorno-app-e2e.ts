@@ -11,6 +11,9 @@ process.env.NODE_ENV = 'test';
 // Lo que usan las e2e (ADR-12 §5). Explícito: un `.env` local con `true` no
 // debe cambiar el resultado.
 process.env.PLANIFICADOR_ACTIVO = 'false';
+// Ídem con el límite de tasa (Fase 3 §6): las e2e repiten login, registro y
+// solicitudes; solo `limite-tasa.e2e-spec.ts` lo enciende.
+process.env.LIMITE_TASA_ACTIVO = 'false';
 process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-secret-e2e';
 
 process.env.DB_HOST = process.env.TEST_DB_HOST ?? 'localhost';

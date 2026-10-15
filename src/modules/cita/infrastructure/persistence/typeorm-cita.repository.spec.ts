@@ -147,4 +147,89 @@ describe('TypeOrmCitaRepository', () => {
       expect(result[0].estado).toBe(EstadoCita.CONFIRMADA);
     });
   });
+
+  describe('buscarPorIdParaActualizar', () => {
+    it('debería lanzar si no recibe una transacción', async () => {
+      // Act & Assert
+      await expect(
+        repositorio.buscarPorIdParaActualizar('c1', 'tenant-1', undefined),
+      ).rejects.toThrow(/requiere una transacción/);
+      expect(repoOrm.findOne).not.toHaveBeenCalled();
+    });
+
+    it('debería filtrar por id + tenant con bloqueo for_no_key_update dentro del tx', async () => {
+      // Arrange
+      const repoTx = { findOne: jest.fn().mockResolvedValue(fila('c1')) };
+      const tx = { getRepository: () => repoTx } as unknown as EntityManager;
+
+      // Act
+      const result = await repositorio.buscarPorIdParaActualizar(
+        'c1',
+        'tenant-1',
+        tx,
+      );
+
+      // Assert
+      expect(repoTx.findOne).toHaveBeenCalledWith({
+        where: { id: 'c1', tenantId: 'tenant-1' },
+        lock: { mode: 'for_no_key_update' },
+      });
+      expect(repoOrm.findOne).not.toHaveBeenCalled();
+      expect(result).toBeInstanceOf(Cita);
+      expect(result?.id).toBe('c1');
+    });
+
+    it('debería devolver null cuando no la encuentra (inexistente u otro tenant)', async () => {
+      // Arrange
+      const repoTx = { findOne: jest.fn().mockResolvedValue(null) };
+      const tx = { getRepository: () => repoTx } as unknown as EntityManager;
+
+      // Act & Assert
+      expect(
+        await repositorio.buscarPorIdParaActualizar('c1', 'otro-tenant', tx),
+      ).toBeNull();
+    });
+  });
+
+  describe('buscarPorIds', () => {
+    it('debería filtrar por IN (ids deduplicados) + tenant, sin bloqueo', async () => {
+      // Arrange
+      repoOrm.find.mockResolvedValue([fila('c1'), fila('c2')]);
+
+      // Act
+      const result = await repositorio.buscarPorIds(
+        ['c1', 'c2', 'c1'],
+        'tenant-1',
+      );
+
+      // Assert
+      expect(repoOrm.find).toHaveBeenCalledWith({
+        where: { id: In(['c1', 'c2']), tenantId: 'tenant-1' },
+      });
+      expect(result.map((c) => c.id)).toEqual(['c1', 'c2']);
+      expect(result[0]).toBeInstanceOf(Cita);
+    });
+
+    it('debería devolver [] sin consultar cuando no hay ids (IN () no es SQL)', async () => {
+      // Act
+      const result = await repositorio.buscarPorIds([], 'tenant-1');
+
+      // Assert
+      expect(result).toEqual([]);
+      expect(repoOrm.find).not.toHaveBeenCalled();
+    });
+
+    it('debería usar el repositorio del EntityManager cuando recibe tx', async () => {
+      // Arrange
+      const repoTx = { find: jest.fn().mockResolvedValue([]) };
+      const tx = { getRepository: () => repoTx } as unknown as EntityManager;
+
+      // Act
+      await repositorio.buscarPorIds(['c1'], 'tenant-1', tx);
+
+      // Assert
+      expect(repoTx.find).toHaveBeenCalledTimes(1);
+      expect(repoOrm.find).not.toHaveBeenCalled();
+    });
+  });
 });

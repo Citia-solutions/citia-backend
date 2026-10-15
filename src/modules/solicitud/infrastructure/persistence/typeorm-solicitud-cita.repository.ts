@@ -3,7 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
   EntityManager,
   FindOptionsOrder,
+  FindOptionsWhere,
   MoreThanOrEqual,
+  QueryFailedError,
   Repository,
 } from 'typeorm';
 
@@ -11,9 +13,42 @@ import { TransactionContext } from '../../../../shared/application/transaction-r
 import {
   EstadoSolicitud,
   SolicitudCita,
+  TipoSolicitud,
 } from '../../domain/solicitud-cita.entity';
-import { SolicitudCitaRepository } from '../../domain/solicitud-cita.repository';
+import {
+  FiltrosListadoSolicitudes,
+  SolicitudCitaRepository,
+} from '../../domain/solicitud-cita.repository';
+import { ReagendamientoYaSolicitadoError } from '../../domain/reagendamiento-ya-solicitado.error';
 import { SolicitudCitaOrmEntity } from './solicitud-cita.orm-entity';
+
+/** Índice único parcial de R5 (migración 1750000014000 y la entidad ORM). */
+export const INDICE_REAGENDAMIENTO_RECIBIDA =
+  'uq_solicitud_reagendamiento_recibida';
+
+/** SQLSTATE de Postgres para `unique_violation`. */
+const VIOLACION_UNICA = '23505';
+
+interface DetalleErrorPostgres {
+  code?: unknown;
+  constraint?: unknown;
+}
+
+/**
+ * ¿Es el 23505 del índice de R5? TypeORM copia `code` y `constraint` del
+ * error del driver en el `QueryFailedError`; por si acaso se mira también
+ * `driverError`.
+ */
+function esReagendamientoDuplicado(error: unknown): boolean {
+  if (!(error instanceof QueryFailedError)) return false;
+  const propio = error as unknown as DetalleErrorPostgres;
+  const driver = (error.driverError ?? {}) as DetalleErrorPostgres;
+  const code = propio.code ?? driver.code;
+  const constraint = propio.constraint ?? driver.constraint;
+  return (
+    code === VIOLACION_UNICA && constraint === INDICE_REAGENDAMIENTO_RECIBIDA
+  );
+}
 
 @Injectable()
 export class TypeOrmSolicitudCitaRepository extends SolicitudCitaRepository {
@@ -34,7 +69,19 @@ export class TypeOrmSolicitudCitaRepository extends SolicitudCitaRepository {
     solicitud: SolicitudCita,
     tx?: TransactionContext,
   ): Promise<SolicitudCita> {
-    const orm = await this.repoFor(tx).save(this.toPersistence(solicitud));
+    let orm: SolicitudCitaOrmEntity;
+    try {
+      orm = await this.repoFor(tx).save(this.toPersistence(solicitud));
+    } catch (error) {
+      // R5: una segunda de reagendamiento `recibida` para la misma cita. Se
+      // traduce aquí para que la aplicación no dependa de TypeORM ni de los
+      // códigos de Postgres. Dentro de una transacción, esta queda abortada:
+      // quien llama debe dejar que el error la revierta.
+      if (esReagendamientoDuplicado(error)) {
+        throw new ReagendamientoYaSolicitadoError();
+      }
+      throw error;
+    }
     // En un UPDATE TypeORM no relee @CreateDateColumn: se conserva la del dominio.
     return this.toDomain({
       ...orm,
@@ -52,6 +99,8 @@ export class TypeOrmSolicitudCitaRepository extends SolicitudCitaRepository {
       where: {
         rut,
         tenantId,
+        // R5: pedir otra hora para una cita no cuenta para la regla anti-spam.
+        tipo: TipoSolicitud.NUEVA,
         estado: EstadoSolicitud.RECIBIDA,
         recibidaEn: MoreThanOrEqual(desde),
       },
@@ -91,10 +140,47 @@ export class TypeOrmSolicitudCitaRepository extends SolicitudCitaRepository {
     return this.toDomain(orm);
   }
 
+  async buscarReagendamientoAbierto(
+    citaOrigenId: string,
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<SolicitudCita | null> {
+    const orm = await this.repoFor(tx).findOne({
+      where: TypeOrmSolicitudCitaRepository.reagendamientoAbierto(
+        citaOrigenId,
+        tenantId,
+      ),
+    });
+    if (!orm) return null;
+    return this.toDomain(orm);
+  }
+
+  async buscarReagendamientoAbiertoParaActualizar(
+    citaOrigenId: string,
+    tenantId: string,
+    tx: TransactionContext,
+  ): Promise<SolicitudCita | null> {
+    if (!tx) {
+      throw new Error(
+        'buscarReagendamientoAbiertoParaActualizar requiere una transacción (SELECT ... FOR UPDATE)',
+      );
+    }
+    const orm = await this.repoFor(tx).findOne({
+      where: TypeOrmSolicitudCitaRepository.reagendamientoAbierto(
+        citaOrigenId,
+        tenantId,
+      ),
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (!orm) return null;
+    return this.toDomain(orm);
+  }
+
   async listarPorEstado(
     tenantId: string,
     estado: EstadoSolicitud,
     limite: number,
+    filtros?: FiltrosListadoSolicitudes,
     tx?: TransactionContext,
   ): Promise<SolicitudCita[]> {
     // Desempate por `id` para que el orden sea estable entre llamadas.
@@ -108,12 +194,35 @@ export class TypeOrmSolicitudCitaRepository extends SolicitudCitaRepository {
             id: 'ASC',
           };
 
+    const where: FindOptionsWhere<SolicitudCitaOrmEntity> = {
+      tenantId,
+      estado,
+    };
+    // Usa el índice (tenant_id, cita_origen_id).
+    if (filtros?.citaOrigenId !== undefined) {
+      where.citaOrigenId = filtros.citaOrigenId;
+    }
+
     const filas = await this.repoFor(tx).find({
-      where: { tenantId, estado },
+      where,
       order,
       take: limite,
     });
     return filas.map((orm) => this.toDomain(orm));
+  }
+
+  // Mismo predicado que el índice único parcial `uq_solicitud_reagendamiento_recibida`
+  // (INDICE_REAGENDAMIENTO_RECIBIDA).
+  private static reagendamientoAbierto(
+    citaOrigenId: string,
+    tenantId: string,
+  ): FindOptionsWhere<SolicitudCitaOrmEntity> {
+    return {
+      citaOrigenId,
+      tenantId,
+      tipo: TipoSolicitud.REAGENDAMIENTO,
+      estado: EstadoSolicitud.RECIBIDA,
+    };
   }
 
   private toDomain(orm: SolicitudCitaOrmEntity): SolicitudCita {
@@ -132,6 +241,9 @@ export class TypeOrmSolicitudCitaRepository extends SolicitudCitaRepository {
       citaId: orm.citaId,
       recibidaEn: orm.recibidaEn,
       resueltaEn: orm.resueltaEn,
+      tipo: orm.tipo,
+      citaOrigenId: orm.citaOrigenId,
+      enlaceId: orm.enlaceId,
     });
   }
 
@@ -151,6 +263,9 @@ export class TypeOrmSolicitudCitaRepository extends SolicitudCitaRepository {
       estado: domain.estado,
       citaId: domain.citaId,
       resueltaEn: domain.resueltaEn,
+      tipo: domain.tipo,
+      citaOrigenId: domain.citaOrigenId,
+      enlaceId: domain.enlaceId,
     };
     if (domain.id !== undefined) orm.id = domain.id;
     return orm;

@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
 
 import { AppModule } from './app.module';
@@ -17,10 +18,19 @@ async function bootstrap(): Promise<void> {
   //ValidationPipe), guarda el cuerpo crudo en req.rawBody. Lo necesita la
   //verificacion de la firma Svix de POST /api/webhooks/resend (ADR-13 §10):
   //re-serializar el JSON romperia la firma.
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     rawBody: true,
   });
+
+  //Railway pone un proxy delante: la conexion llega SIEMPRE desde el proxy y
+  //la IP real del cliente viene en X-Forwarded-For. Con 'trust proxy' = 1,
+  //Express confia en UN salto y toma como req.ip la ultima entrada de esa
+  //cabecera (la que agrega el proxy de Railway). Sin esto, el limite de tasa
+  //por IP (LimiteTasaModule) veria a todos los clientes como uno solo. No
+  //confiar en mas saltos: un cliente podria inventar su IP mandando su propio
+  //X-Forwarded-For.
+  app.set('trust proxy', 1);
 
   //Todo `Logger` de Nest (incluidos los `new Logger(...)` de los servicios)
   //sale por pino: JSON, id por peticion y redaccion (ADR-13 §16).
@@ -37,6 +47,7 @@ async function bootstrap(): Promise<void> {
 
   //CORS: FRONTEND_URL (origen canonico) + CORS_ORIGENES_EXTRA (exactos y el
   //comodin de vistas previas https://*.<proyecto>.pages.dev). credentials: true.
+  //Cabeceras permitidas en lista explicita, incluida X-Enlace-Cita (Fase 3).
   app.enableCors(
     crearOpcionesCors(
       crearPoliticaCors(
