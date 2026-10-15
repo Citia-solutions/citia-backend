@@ -25,6 +25,7 @@ import { CitaNoEncontradaError } from '../application/cita-no-encontrada.error';
 import { DatosPacienteRequeridosError } from '../application/datos-paciente-requeridos.error';
 import { RangoFechasInvalidoError } from '../application/rango-fechas-invalido.error';
 import { CitasService } from '../application/citas.service';
+import { EnlacesCitaService } from '../application/enlaces-cita.service';
 import { CambioCita } from '../domain/cambio-cita.entity';
 import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-estado-invalida.error';
 import { CitaDashboardDto } from './dto/cita-dashboard.dto';
@@ -39,7 +40,10 @@ import { ReagendarCitaDto } from './dto/reagendar-cita.dto';
 @Controller('citas')
 @UseGuards(JwtAuthGuard)
 export class CitasController {
-  constructor(private readonly citasService: CitasService) {}
+  constructor(
+    private readonly citasService: CitasService,
+    private readonly enlacesCita: EnlacesCitaService,
+  ) {}
 
   // US-02: POST /api/citas
   @Post()
@@ -147,6 +151,22 @@ export class CitasController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<CitaResponseDto> {
     return this.ejecutar(() => this.citasService.editar(id, dto, user));
+  }
+
+  // -------------------------------------------------------------------
+  // Enlace del paciente (Fase 3, S1): el profesional lo invalida desde el
+  // voucher. 204 tambien si no habia enlace activo (idempotente); 404 si la
+  // cita no es del tenant del token. El siguiente recordatorio lleva la
+  // version siguiente. No hay ruta para ver ni copiar el enlace (E4).
+  // -------------------------------------------------------------------
+
+  @Post(':id/enlace/invalidar')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async invalidarEnlace(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    await this.ejecutar(() => this.enlacesCita.invalidar(id, user));
   }
 
   @Get(':id/historial')
