@@ -1,6 +1,6 @@
 # ADR-04: Modelo de Cita — máquina de estados en el dominio y estado materializado
 
-> **Fase:** [Fase 0 — US-06](../Fases/fase-0-us06-dashboard.md) (origen), [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md), [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) · **Feature:** [us06](../Features/us06-dashboard-citas.md), [us02](../Features/us02-gestion-citas.md) · **Plan:** [US-06](../US/06-epic.md) · **Relacionado:** [ADR-09](../Decisions/ADR-09.md), [ADR-12](../Decisions/ADR-12.md), [DT-10](../Deudas/DT-10.md), [DT-11](../Deudas/DT-11.md), [DT-22](../Deudas/DT-22.md), [DT-30](../Deudas/DT-30.md), [Q6](../PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1)
+> **Fase:** [Fase 0 — US-06](../Fases/fase-0-us06-dashboard.md) (origen), [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md), [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) (regla del `ghosting`), [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) · **Feature:** [us06](../Features/us06-dashboard-citas.md), [us02](../Features/us02-gestion-citas.md) · **Plan:** [US-06](../US/06-epic.md) · **Relacionado:** [ADR-09](../Decisions/ADR-09.md), [ADR-10](../Decisions/ADR-10.md), [ADR-12](../Decisions/ADR-12.md), [DT-10](../Deudas/DT-10.md), [DT-11](../Deudas/DT-11.md), [DT-22](../Deudas/DT-22.md), [DT-30](../Deudas/DT-30.md), [Q6](../PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1)
 
 **Fecha:** 2026-06-30
 **Estado:** Aceptado · ➕ **extendido por [ADR-09](ADR-09.md)** (propuesto) · 🔁 **mecanismo del §4
@@ -91,6 +91,15 @@ fuente de verdad estable.
 > El job es pieza **P1 posterior**: en US-06 se **modela** el estado y el método `marcarGhosting()`;
 > el worker se construye después.
 
+> **Nota (2026-10-14) — regla del `ghosting` (G1).** Con el diseño de la Fase 3 ([ADR-10 §5](ADR-10.md))
+> el arquitecto fijó cuándo una cita es `ghosting`: sigue `pendiente` pasado el **fin del día de la
+> clínica** de su `inicio`, **y** al paciente se le envió al menos un recordatorio con enlace (`enviado` o
+> `entregado`), **y** no tiene una petición de otra hora `recibida`. Si falta alguna condición, la cita
+> queda sin cerrar, neutra para el scoring. La fila *"pendiente → ghosting: llega el día sin confirmar"* de
+> la decisión 2 se lee con esa regla. El job **sigue aplazado** (G4) y la fecha de corte es el despliegue de
+> la Fase 3: detalle en [DT-11](../Deudas/DT-11.md#regla-del-ghosting-g1-2026-10-14). La decisión de fondo
+> —materializar el estado, no calcularlo al vuelo— no cambia.
+
 ---
 
 ## Consecuencias
@@ -122,7 +131,7 @@ fuente de verdad estable.
 ## Deudas técnicas asociadas
 
 - [DT-10](../Deudas/DT-10.md) — la máquina de estados de la decisión 1 no tiene ningún endpoint que la ejerza. 🟢 resuelta en diseño por ADR-09.
-- [DT-11](../Deudas/DT-11.md) — el job de la decisión 4 no existe, así que el historial de RF-08 no se acumula. 🔵 aplazada (2026-09-30): el `ghosting` se puede reconstruir después, con una fecha de corte.
+- [DT-11](../Deudas/DT-11.md) — el job de la decisión 4 no existe, así que el historial de RF-08 no se acumula. 🔵 aplazada (2026-09-30): el `ghosting` se puede reconstruir después, con una fecha de corte. Regla G1 fijada el 2026-10-14; fecha de corte = despliegue de la Fase 3.
 - [DT-30](../Deudas/DT-30.md) — la asistencia real de las citas pasadas no se registra y no se puede reconstruir. **⏳ es la deuda que se encarece sola.** Salida elegida (2026-09-30): esperar a la Fase 3; **el grafo de la decisión 2 no se toca**.
 - [DT-22](../Deudas/DT-22.md) — la regla "de un terminal no se sale" de la decisión 2 dejaba las citas reagendadas sin vínculo entre sí. 🟢 resuelta en diseño por ADR-09.
 

@@ -4,17 +4,25 @@ Once decisiones que bloqueaban el MVP. Aquí están reformuladas **en el lenguaj
 responderlas**, con el entregable que se espera de cada una.
 
 > **Estado (2026-09-30):** respondidas Q1 (A), Q4, Q11 (C) y Q6 en cuanto al mecanismo
-> ([ADR-12](Decisions/ADR-12.md)). Siguen abiertas Q2, Q3, Q5, Q7, Q8, Q9 y Q10, y las H del hacker.
+> ([ADR-12](Decisions/ADR-12.md)). Siguen abiertas Q2, Q3, Q5, Q7, Q8, Q9 y Q10.
 >
 > **2026-10-04:** la implementación de la Fase 2 dejó **cuatro preguntas nuevas, Q12 a Q15**, que no
 > bloquean el MVP ni el merge ([sección propia](#fase-2--decisiones-pendientes-tras-implementar-2026-10-04)).
+>
+> **2026-10-11:** las preguntas de seguridad las responde el **arquitecto**: las de sesión, registro
+> y enlace son la otra mitad de Q7, Q5 y Q11, y las dos restantes son **Q16** (vía pública) y **Q17**
+> (datos de salud). Las pruebas son parte del trabajo de desarrollo.
+>
+> **2026-10-14:** **Q11 respondida B**, con su otra mitad de seguridad (requisitos S1–S3 y límite de
+> tasa): [ADR-10](Decisions/ADR-10.md) aceptado y la [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) en
+> construcción. La regla de `ghosting` G1 responde además la **pregunta 1 de Q6**.
 
-**Equipo:** 1 I+D · 2 desarrolladores · 1 hacker ético.
+**Equipo:** 1 I+D · 2 desarrolladores · el arquitecto decide el diseño y los requisitos de seguridad.
 
 **Principio del reparto:** una pregunta puede tocar a varios roles, pero **la pregunta que se le hace
-a cada uno es distinta**. Al hacker no se le pregunta "¿rotación o lista de revocación?" — eso es una
-decisión de implementación. Se le pregunta qué debe poder hacer el sistema cuando una sesión se
-compromete, y los desarrolladores eligen el mecanismo que cumpla ese requisito.
+a cada uno es distinta**. Una pregunta de seguridad no es "¿rotación o lista de revocación?" — eso es
+una decisión de implementación. El arquitecto fija qué debe poder hacer el sistema cuando una sesión
+se compromete, y los desarrolladores eligen el mecanismo que cumpla ese requisito.
 
 ---
 
@@ -26,31 +34,33 @@ compromete, y los desarrolladores eligen el mecanismo que cumpla ese requisito.
 | 1 | ¿El MVP incluye recordatorios? | **I+D** → decisión conjunta | ✅ **respondida (2026-09-30): A** — entran en el MVP |
 | 2 | ¿El prepago entra alguna vez? | **I+D** → decisión conjunta | modelo de negocio |
 | 3 | ¿La agenda es del profesional o de la organización? | **I+D** | si "clínica" es cliente viable |
-| 5 | ¿Registro abierto, por invitación o lista de espera? | **I+D** + **hacker** | DT-06 |
+| 5 | ¿Registro abierto, por invitación o lista de espera? | **I+D** + **arquitecto** (defensas contra abuso) | DT-06 |
 | 4 | Solapamiento: ¿avisar o rechazar? | **I+D** decide, **dev** ejecuta | nada; es barato |
-| 6 | Planificador del proceso de cierre | **desarrolladores** | ✅ **mecanismo decidido (2026-09-30)** en [ADR-12](Decisions/ADR-12.md); el job de cierre se aplaza con el scoring (DT-11) |
-| 7 | Renovación de sesión | **hacker** define requisito, **dev** elige mecanismo | DT-01 |
-| 8 | ADR-08 — tenant en la URL | **desarrolladores**, revisión del **hacker** | toda la vía pública |
+| 6 | Planificador del proceso de cierre | **desarrolladores** | ✅ **mecanismo decidido (2026-09-30)** en [ADR-12](Decisions/ADR-12.md); el job de cierre se aplaza con el scoring (DT-11) · pregunta 1 ✅ por la regla G1 (2026-10-14) |
+| 7 | Renovación y revocación de sesión | **arquitecto** define requisito, **dev** elige mecanismo | DT-01 |
+| 8 | ADR-08 — tenant en la URL | **desarrolladores** | toda la vía pública |
 | 9 | Modelo de disponibilidad | **desarrolladores** (solo evaluar riesgo) | nada hoy |
-| 11 | ¿Cómo llega al paciente el enlace de su cita, y cómo se sabe que es él? | **I+D** → decisión conjunta, **hacker** (H7) | US-02.07 entera |
+| 11 | ¿Cómo llega al paciente el enlace de su cita, y cómo se sabe que es él? | **I+D** → decisión conjunta; seguridad del enlace: **arquitecto** | ✅ **respondida (2026-10-14): B** — el enlace va en el recordatorio · seguridad: S1–S3 + límite de tasa · ADR-10 aceptado, Fase 3 en construcción |
 | 12 | ¿Se oculta `/recordatorios` al rol `recepcion`? | **I+D** (producto) → **dev** ejecuta | nada; afecta a la primera cuenta con ese rol |
 | 13 | Textos y colores de los estados de recordatorio | **I+D** (UX) | nada; es copy |
 | 14 | ¿Se mantiene la vista *Contacto* del voucher? | **I+D** (producto) | nada |
 | 15 | ¿Cuándo reinicia Resend la cuota mensual del plan gratis? | **desarrolladores** (verificar con el proveedor) | nada hoy; afina el contador ([DT-36](Deudas/DT-36.md)) |
+| 16 | Modelo de amenazas de la vía pública | **arquitecto** | nada hoy (la vía pública ya está construida); afina DT-18, DT-23 y DT-28 · el límite de tasa de la ruta pública ya quedó fijado en la Fase 3 (2026-10-14) |
+| 17 | Manejo de datos de salud y retención | **arquitecto** | DT-26 |
 
 ### Por fase del roadmap
 
-*(2026-09-30; Q12–Q15 el 2026-10-04.)* A qué fase de construcción ([`Fases/`](Fases/README.md)) toca cada pregunta. Las que no
+*(2026-09-30; Q12–Q15 el 2026-10-04; Q16 y Q17 el 2026-10-11; Q11 y Q6 el 2026-10-14.)* A qué fase de construcción ([`Fases/`](Fases/README.md)) toca cada pregunta. Las que no
 tienen fase son de producto o de modelo de negocio.
 
 | Fase | Preguntas |
 |---|---|
-| [Fundaciones](Fases/fase-base-fundaciones.md) | Q5 + H2 (registro) · Q7 + H1 (sesión) · Q8 + H4 (ADR-08 en el login) · H6 (hallazgos fichados) |
+| [Fundaciones](Fases/fase-base-fundaciones.md) | Q5 (registro) · Q7 (sesión) · Q8 (ADR-08 en el login) |
 | [Fase 0 — US-06](Fases/fase-0-us06-dashboard.md) | Q4 (solapamiento, ✅) · Q6 (job de ghosting) |
-| [Fase 1 — US-02](Fases/fase-1-us02-gestion-citas.md) | Q4 ✅ · Q11 ✅ C · Q8 (ruta pública) · Q9 (disponibilidad) · H3 · H5 |
+| [Fase 1 — US-02](Fases/fase-1-us02-gestion-citas.md) | Q4 ✅ · Q11 ✅ C (en la Fase 1; en la Fase 3 pasó a B) · Q8 (ruta pública) · Q9 (disponibilidad) · Q16 · Q17 |
 | [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | Q1 ✅ A · Q6 ✅ (mecanismo) · Q12, Q13, Q14, Q15 (2026-10-04) |
-| [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | Q11 (se reabre con B) · H7 |
-| [Fase 5 — US-07](Fases/fase-5-us07-scoring.md) | Q6 (preguntas 1 y 2 del job de cierre) |
+| [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | Q11 ✅ **B** (2026-10-14), con la seguridad del enlace (S1–S3 y límite de tasa) · Q6 pregunta 1 ✅ (regla G1) |
+| [Fase 5 — US-07](Fases/fase-5-us07-scoring.md) | Q6 (pregunta 2 del job de cierre; la 1 la resolvió G1) |
 | sin fase | Q2 (prepago) · Q3 (agenda de la organización) · Q10 (validación, [etapa 1 del producto](Descripcion/fase-1-validacion.md)) |
 
 ---
@@ -141,11 +151,27 @@ en quien sabe si es error o intención. Rechazar obliga a definir reglas de bord
 invitación no cuesta nada y elimina un problema entero. Si la apuesta es crecimiento orgánico, el
 registro abierto necesita defensas que hoy no existen.
 
-**Coordinar con el hacker ético**, que tiene la otra mitad de esta pregunta.
+**La otra mitad: superficie de abuso** *(arquitecto)*. `POST /api/usuarios` es público, sin
+verificación de correo, sin captcha y sin límite de tasa. Un mismo correo puede fundar organizaciones
+ilimitadas. Y el identificador público que se genera es **permanente** y será el subdominio del
+cliente: el daño no es solo de almacenamiento, es de espacio de nombres. ¿Cuánto se puede ensuciar
+esto y con qué esfuerzo? ¿Cuál es el mínimo de defensas para poder abrir el registro?
+
+**Entregable:** la respuesta de I+D y, si el registro queda abierto, el mínimo de defensas exigible.
+Si los primeros clientes llegan por recomendación, la invitación elimina el problema de raíz y no hay
+que construir nada.
 
 ### Q11 — ¿Cómo le llega al paciente el enlace de su cita?
 
-> ✅ **Respondida (2026-09-25): C — US-02.07 sale de la v1.** [ADR-10](Decisions/ADR-10.md) queda
+> ✅ **Respondida (2026-10-14): B — el sistema pone el enlace dentro del recordatorio.** El arquitecto
+> aprobó el diseño de la [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) y [ADR-10](Decisions/ADR-10.md)
+> pasó a **aceptado**. Cada recordatorio por correo lleva un botón fijo, *Ver o responder mi hora*, que abre
+> `/cita#<token>`; el paciente confirma, cancela o pide otra hora. La otra mitad, la seguridad del enlace,
+> quedó respondida con los requisitos S1–S3 y el límite de tasa ([abajo](#la-otra-mitad-respondida-2026-10-14)).
+> Plan: [US-04](US/04-respuesta-paciente.md). El consentimiento ([DT-16](Deudas/DT-16.md)) **no** pasa a
+> bloqueante: sigue como deuda por decisión del arquitecto.
+>
+> *Antes (2026-09-25):* ✅ **respondida C — US-02.07 sale de la v1.** [ADR-10](Decisions/ADR-10.md) quedó
 > propuesto y aplazado.
 >
 > **Nota (2026-09-30):** con Q1 → A, el canal que faltaba va a existir ([ADR-13](Decisions/ADR-13.md)).
@@ -172,6 +198,36 @@ mismo. La respuesta cambia el alcance, no el diseño. Diseño propuesto en
 [ADR-10](Decisions/ADR-10.md) (§6 detalla qué cambia con A, B o C, y cuándo el consentimiento de
 [DT-16](Deudas/DT-16.md) pasa a bloqueante). **ADR-10 no se acepta sin esta respuesta.**
 
+**La otra mitad: seguridad del enlace** *(arquitecto, antes de construirlo)*. El enlace por cita es la
+**primera superficie sin sesión que modifica una cita**: un secreto que sirve para una sola cita,
+guardado hasheado, que caduca a la hora de inicio y se revoca al cerrarse la cita. Quien tenga el
+enlace puede cancelar o pedir otra hora. El arquitecto fija el requisito, no la solución:
+
+1. **Reenvío y número equivocado:** el enlace es una capacidad transferible. ¿Qué es lo mínimo que
+   debe poder hacer el sistema cuando llega a quien no es? (Hoy: el profesional lo reemite y el
+   anterior deja de servir.)
+2. **Qué se muestra:** fecha, hora, con quién y estado — sin RUT ni contacto. ¿El tipo de consulta
+   es dato de salud que no debe aparecer en un enlace reenviable?
+3. **Dónde viaja el secreto:** la propuesta es que nunca aparezca en la URL de la API (logs,
+   proxies, cabecera `Referer`). ¿Es suficiente?
+4. **Límite de tasa:** con un secreto no adivinable, ¿qué política exige esta superficie además de
+   la de [DT-18](Deudas/DT-18.md)?
+5. **Hash:** ¿basta SHA-256 sin clave o hace falta HMAC?
+
+Lo que se espera está en [ADR-10 § Pendiente para aceptar](Decisions/ADR-10.md#pendiente-para-aceptar).
+**ADR-10 tampoco se acepta sin esta mitad.** Se decide en la ronda de diseño de la
+[Fase 3](Fases/fase-3-us04-respuesta-paciente.md).
+
+#### La otra mitad, respondida (2026-10-14)
+
+| Pregunta | Requisito del arquitecto |
+|---|---|
+| 1. Reenvío y número equivocado | **S1:** el profesional **invalida** el enlace desde el voucher; sube la versión y el anterior deja de servir. El paciente recibe el siguiente con el próximo recordatorio (límites en [DT-42](Deudas/DT-42.md)) |
+| 2. Qué se muestra | **S2:** inicio, zona, duración, estado, nombre del profesional, nombre de la organización, acciones permitidas y la petición de otra hora abierta. **Nunca** nombre del paciente, RUT, contacto, tipo de consulta ni ids internos |
+| 3. Dónde viaja el secreto | **S3:** en el fragmento (`/cita#<token>`) y a la API en la cabecera `X-Enlace-Cita`; respuestas `no-store` y `no-referrer`; sin scripts de terceros; la página limpia el fragmento. Y una exigencia nueva: **abrir la página nunca ejecuta una acción** (los escáneres de enlaces de Gmail y Outlook abren los correos antes que el paciente); toda acción es un `POST` tras un clic |
+| 4. Límite de tasa | 30/min por IP en las rutas del enlace y 5/hora por enlace en sus acciones; además 5/min por IP en el login, 5/hora por IP en el registro y en la solicitud pública. En memoria, una réplica ([ADR-10 §10](Decisions/ADR-10.md#10-límite-de-tasa-l1l3), [DT-18](Deudas/DT-18.md)) |
+| 5. Hash | **HMAC:** el token se deriva con HMAC-SHA256 y una clave del servidor (recalculable, uno por cita); en la base, solo el SHA-256 del token ([DT-45](Deudas/DT-45.md) para la rotación de la clave) |
+
 ---
 
 ## Para los desarrolladores
@@ -179,7 +235,7 @@ mismo. La respuesta cambia el alcance, no el diseño. Diseño propuesto en
 Sugerencia de reparto entre los dos, porque las dos mitades no se bloquean entre sí:
 
 - **Dev A — parar el reloj:** Q6 (planificador) y el proceso de cierre.
-- **Dev B — habilitar la vía pública:** Q8 (ADR-08) y coordinar el límite de tasa con el hacker.
+- **Dev B — habilitar la vía pública:** Q8 (ADR-08) y el límite de tasa.
 
 ### Q6 — Planificador para el proceso de cierre *(Dev A · ~~prioridad 1~~)*
 
@@ -190,7 +246,13 @@ Sugerencia de reparto entre los dos, porque las dos mitades no se bloquean entre
 >
 > **El job de cierre se aplaza:** el scoring salió del MVP, así que deja de ser prioridad 1
 > ([DT-11](Deudas/DT-11.md)). Las preguntas 3, 4 y 5 de abajo quedan resueltas en general por ADR-12
-> §8; **siguen abiertas la 1 y la 2** y la regla de ADR-10 §5, para cuando se retome. Lo que sí se
+> §8; **siguen abiertas la 1 y la 2** y la regla de ADR-10 §5, para cuando se retome.
+>
+> **2026-10-14:** la **pregunta 1** y la regla de ADR-10 §5 quedan resueltas por la regla de `ghosting`
+> **G1** que fijó el arquitecto con la Fase 3: una cita es `ghosting` si sigue `pendiente` pasado el fin
+> del día de la clínica de su `inicio`, al paciente se le envió al menos un recordatorio con enlace y no
+> tiene una petición de otra hora abierta ([DT-11](Deudas/DT-11.md#regla-del-ghosting-g1-2026-10-14)). El
+> job sigue aplazado. **Sigue abierta la pregunta 2** (las `confirmada` que nadie cerró). Lo que sí se
 > pierde cada día es la asistencia real de las citas pasadas ([DT-30](Deudas/DT-30.md)), no el
 > `ghosting`; sus botones esperan a la Fase 3 (decisión del 2026-09-30).
 
@@ -229,11 +291,20 @@ comparte necesita identificar al profesional en la dirección.
 **Entregable:** Fase 1 del plan de ADR-08 (segmento de ruta). El plan de ejecución ya está escrito,
 paso a paso.
 
-**Revisión obligatoria del hacker antes de mergear** — ver su Q8.
+**Condición para mergear:** mover el tenant a la URL tiene un punto fácil de romper. **Si un
+identificador inexistente responde distinto de una contraseña incorrecta, se reintroduce la
+enumeración de organizaciones que el 401 genérico evita.** El propio ADR lo marca como su mayor
+riesgo: el PR debe probar que ambas respuestas son idénticas.
 
-### Q7 — Renovación de sesión *(bloqueado hasta que el hacker defina el requisito)*
+### Q7 — Renovación y revocación de sesión *(bloqueado hasta que el arquitecto defina el requisito)*
 
-**No empiecen por el mecanismo.** El hacker define primero qué debe poder hacer el sistema; con eso,
+**Estado:** la credencial es autosuficiente y **no se puede invalidar** antes de que expire. Cerrar
+sesión es cosmético. La caducidad está en 1 día cuando el objetivo escrito era 15 minutos, porque no
+hay mecanismo de renovación.
+
+**No empiecen por el mecanismo.** El arquitecto define primero el requisito: ¿cuál es la ventana
+máxima aceptable con una credencial robada, y qué debe poder hacer el sistema cuando eso pasa? ¿Basta
+con que expire, o hace falta corte inmediato —usuario dado de baja, dispositivo perdido—? Con eso,
 rotación de credenciales o lista de revocación se elige casi solo.
 
 Lo que sí pueden adelantar: **el orden importa.** Bajar la caducidad antes de que exista la
@@ -250,43 +321,25 @@ construir en los próximos dos meses hace más caro añadirlo después?
 
 ---
 
-## Para el hacker ético
+## Para el arquitecto
 
-El encargo no es auditar lo construido —aunque eso también sirve— sino **definir requisitos de
-seguridad antes de que se construya la parte peligrosa**. La vía pública del paciente será la primera
-superficie donde escribe alguien sin sesión, y todavía no existe: es el mejor momento posible.
+*(2026-10-11.)* El arquitecto **define los requisitos de seguridad antes de que se construya la parte
+peligrosa**, y los desarrolladores eligen el mecanismo. Además de
+estas dos, le tocan las mitades de seguridad de [Q5](#q5--registro-abierto-por-invitación-o-lista-de-espera)
+(abuso del registro), [Q7](#q7--renovación-y-revocación-de-sesión-bloqueado-hasta-que-el-arquitecto-defina-el-requisito)
+(sesión) y [Q11](#q11--cómo-le-llega-al-paciente-el-enlace-de-su-cita) (enlace por cita, ✅ respondida
+el 2026-10-14 con S1–S3 y el límite de tasa), y la condición de merge de
+[Q8](#q8--adr-08-el-tenant-en-la-url-dev-b--prioridad-2). Los hallazgos de
+seguridad ya fichados viven en sus deudas: [DT-02](Deudas/DT-02.md), [DT-04](Deudas/DT-04.md),
+[DT-05](Deudas/DT-05.md) y [DT-18](Deudas/DT-18.md).
 
-### H1 — Requisito de revocación de sesión *(desbloquea Q7)*
-
-**Estado:** la credencial es autosuficiente y **no se puede invalidar** antes de que expire. Cerrar
-sesión es cosmético. La caducidad está en 1 día cuando el objetivo escrito era 15 minutos, porque no
-hay mecanismo de renovación.
-
-**Pregunta:** ¿cuál es la ventana máxima aceptable con una credencial robada, y qué debe poder hacer
-el sistema cuando eso pasa? ¿Basta con que expire, o hace falta corte inmediato —usuario dado de
-baja, dispositivo perdido—?
-
-**Entregable:** el requisito, no la solución. Los desarrolladores eligen el mecanismo que lo cumpla.
-
-### H2 — Superficie de abuso del registro *(la otra mitad de Q5)*
-
-**Estado:** `POST /api/usuarios` es público, sin verificación de correo, sin captcha y sin límite de
-tasa. Un mismo correo puede fundar organizaciones ilimitadas. Y el identificador público que se
-genera es **permanente** y será el subdominio del cliente: el daño no es solo de almacenamiento, es
-de espacio de nombres.
-
-**Pregunta:** ¿cuánto se puede ensuciar esto y con qué esfuerzo? ¿Cuál es el mínimo de defensas para
-poder abrir el registro?
-
-**Entregable:** una prueba concreta que demuestre el alcance del problema, y el mínimo exigible.
-Coordinar con I+D: si los primeros clientes van a llegar por recomendación, la invitación elimina
-esto de raíz y no hay que construir nada.
-
-### H3 — Modelo de amenazas de la vía pública *(antes de construirla)*
+### Q16 — Modelo de amenazas de la vía pública
 
 Un enlace que se publica a propósito en Instagram y WhatsApp, y que escribe en la base de datos sin
-autenticación. El diseño ya contempla: RUT válido obligatorio (módulo 11), una solicitud abierta por
-RUT y profesional, límite de tasa, y respuesta uniforme.
+autenticación. Ya está construido (Fase 1) con RUT válido obligatorio (módulo 11), una solicitud
+abierta por RUT y profesional y respuesta uniforme; el límite de tasa quedó aceptado como deuda
+([DT-18](Deudas/DT-18.md)). *(2026-10-14: la Fase 3 le pone 5 solicitudes por hora por IP, y la regla
+anti-spam por RUT pasa a contar solo las solicitudes `nueva`, no las peticiones de otra hora.)*
 
 **Preguntas:**
 1. El algoritmo del dígito verificador es público. **¿Qué frena realmente el RUT, y qué no?** Está
@@ -296,58 +349,21 @@ RUT y profesional, límite de tasa, y respuesta uniforme.
 3. **Sondeo:** la respuesta uniforme pretende impedir averiguar qué RUT es paciente de qué
    profesional de la salud. ¿Lo consigue? Es una filtración más grave que la enumeración de
    organizaciones.
-4. **[DT-28](Deudas/DT-28.md):** la regla anti-spam bloquea de por vida a un paciente legítimo si el
-   profesional abandona la bandeja. ¿Hay más casos donde una defensa se vuelva contra el usuario?
+4. **[DT-28](Deudas/DT-28.md):** la regla anti-spam bloqueaba a un paciente legítimo si el
+   profesional abandonaba la bandeja (mitigada con una ventana de 72 h). ¿Hay más casos donde una
+   defensa se vuelva contra el usuario?
 
-**Entregable:** modelo de amenazas + el mínimo de defensas exigible antes de publicar el enlace.
+**Entregable:** modelo de amenazas + el mínimo de defensas exigible.
 
-### H4 — Revisión de ADR-08 antes del merge
+### Q17 — Manejo de datos de salud
 
-Mover el tenant a la URL tiene un punto fácil de romper: **si un identificador inexistente responde
-distinto de una contraseña incorrecta, se reintroduce la enumeración de organizaciones que el 401
-genérico evita.** El propio ADR lo marca como su mayor riesgo.
-
-**Entregable:** revisión del PR, específicamente sobre eso.
-
-### H5 — Manejo de datos de salud
-
-El sistema guarda RUT, nombre, contacto y motivo de consulta. Con la vía pública guardará también
+El sistema guarda RUT, nombre, contacto y motivo de consulta. Con la vía pública guarda también
 **datos de personas cuya solicitud fue rechazada — gente que nunca llegó a ser paciente** — y hoy no
 hay política de retención ([DT-26](Deudas/DT-26.md)).
 
 **Pregunta:** ¿qué exige la normativa chilena de datos personales aplicable a salud, y qué plazo de
 retención corresponde? Además: el RUT es un identificador nacional y no debe aparecer en URLs ni en
 logs — verificar que efectivamente no aparece.
-
-### H6 — Hallazgos ya fichados, para confirmar o descartar
-
-No hace falta buscarlos, ya están localizados. Falta confirmar gravedad y prioridad:
-
-- [DT-02](Deudas/DT-02.md) el rol viaja en la credencial y **ningún endpoint lo verifica**
-- [DT-04](Deudas/DT-04.md) login sin límite de intentos
-- [DT-05](Deudas/DT-05.md) la respuesta de login no es uniforme en el tiempo (enumeración por tiempos)
-- [DT-18](Deudas/DT-18.md) no existe límite de tasa en ninguna superficie
-
-### H7 — Modelo de amenazas del enlace por cita *(antes de construirlo · la otra mitad de Q11)*
-
-[US-02.07](US/02.07-paciente-reagenda-cancela.md) propone la **primera superficie sin sesión que modifica
-una cita**: un enlace con un secreto que sirve para una sola cita, guardado hasheado, que caduca a
-la hora de inicio y se revoca al cerrarse la cita. Quien tenga el enlace puede cancelar o pedir otra
-hora. Diseño propuesto en [ADR-10](Decisions/ADR-10.md); su sección *Pendiente para aceptar* lista
-lo que se espera de esta revisión. **ADR-10 no se acepta sin ella.**
-
-**Preguntas:**
-1. **Reenvío y número equivocado:** el enlace es una capacidad transferible. ¿Qué es lo mínimo que
-   debe poder hacer el sistema cuando llega a quien no es? (Hoy: el profesional lo reemite y el
-   anterior deja de servir.)
-2. **Qué se muestra:** fecha, hora, con quién y estado — sin RUT ni contacto. ¿El tipo de consulta
-   es dato de salud que no debe aparecer en un enlace reenviable?
-3. **Dónde viaja el secreto:** la propuesta es que nunca aparezca en la URL de la API (logs,
-   proxies, cabecera `Referer`). ¿Es suficiente?
-4. **Límite de tasa:** con un secreto no adivinable, ¿qué política exige esta superficie además de
-   la de [DT-18](Deudas/DT-18.md)?
-
-**Entregable:** el requisito, no la solución — igual que H1.
 
 ---
 
@@ -412,14 +428,14 @@ Aquí los roles **van a estar en desacuerdo**, y está bien: por eso son decisio
 | Rol | Postura previsible |
 |---|---|
 | I+D | Es la palanca que el mercado ya usa. Sin ella competimos en desventaja. |
-| Hacker | Manejar dinero multiplica la superficie regulatoria y de ataque por un orden de magnitud. |
+| Arquitecto (seguridad) | Manejar dinero multiplica la superficie regulatoria y de ataque por un orden de magnitud. |
 | Desarrollo | Es un subsistema completo, no una feature. |
 
 **Nadie tiene razón solo.** La decisión es si la ventaja comercial paga el coste combinado.
 
 ### 2. Registro abierto (Q5)
 
-I+D quiere la mínima fricción para crecer; el hacker quiere fricción porque es lo único que frena el
+I+D quiere la mínima fricción para crecer; la seguridad pide fricción porque es lo único que frena el
 abuso. **Tensión directa.** La invitación puede ser el punto medio que le sirve a los dos — si los
 primeros clientes llegan por recomendación, no se pierde nada.
 
@@ -430,7 +446,7 @@ primeros clientes llegan por recomendación, no se pierde nada.
 > consentimiento efectivo se aceptó como riesgo con fecha de revisión ([DT-16](Deudas/DT-16.md)).
 
 I+D dirá que los criterios de éxito los exigen. Desarrollo dirá que arrastran cola con reintentos,
-canal de mensajería y observabilidad. El hacker añadirá que arrastran verificación de contacto y
+canal de mensajería y observabilidad. Desde la seguridad, además, arrastran verificación de contacto y
 consentimiento efectivo. **Es alcance contra coste, y hay que ponerle número al coste antes de
 decidir.**
 
@@ -444,12 +460,12 @@ decidir.**
   *(2026-09-30: el planificador se decidió en ADR-12 y se construye con la Fase 2; el cierre se aplaza.
   El reloj que sigue corriendo es [DT-30](Deudas/DT-30.md).)*
 - Dev B implementa ADR-08 (Q8).
-- Hacker entrega H1 (requisito de revocación) y H2 (abuso del registro).
+- El arquitecto fija el requisito de revocación (Q7) y el mínimo de defensas del registro (Q5).
 
 **Semana 2:**
 - Con la evidencia de I+D, decidir en conjunto Q1, Q2 y Q5.
-- Dev B empieza la vía pública, con el modelo de amenazas de H3 ya en la mano.
-- Q7 se implementa con el requisito de H1 definido.
+- Dev B empieza la vía pública, con el modelo de amenazas (Q16) ya en la mano.
+- Q7 se implementa con su requisito definido.
 
 **Q4 y Q9** son de bajo coste y no bloquean nada: se resuelven cuando toque.
 

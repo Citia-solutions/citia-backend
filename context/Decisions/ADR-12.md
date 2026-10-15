@@ -258,12 +258,12 @@ la tabla de la decisión 5). De las preguntas de Q6:
 
 | Pregunta de Q6 | Estado |
 |---|---|
-| 1. ¿Cuándo está vencida una cita? | **abierta** — se decide al retomar el job |
+| 1. ¿Cuándo está vencida una cita? | ~~**abierta** — se decide al retomar el job~~ **resuelta (2026-10-14)** por la regla G1: pasado el fin del día de la clínica de su `inicio`, con un recordatorio con enlace enviado y sin petición de otra hora abierta ([DT-11](../Deudas/DT-11.md#regla-del-ghosting-g1-2026-10-14)) |
 | 2. ¿Qué pasa con las `confirmada` que nadie cerró? | **abierta** — ver [DT-30](../Deudas/DT-30.md) (los botones de asistencia esperan a la Fase 3) |
 | 3. "Ya pasó" según el reloj de la clínica | resuelta en general: `shared/domain/timezone.ts` y `APP_TZ` (ADR-07) |
 | 4. Idempotencia | resuelta en general: transición de estado + `SKIP LOCKED` (una cita cerrada no se vuelve a cerrar) |
 | 5. Barrido sobre todos los tenants | resuelta: decisión 6 |
-| Regla de [ADR-10 §5](ADR-10.md): una petición de reagendamiento sin atender no termina en `ghosting` | **pendiente** — sigue anotada para ese job |
+| Regla de [ADR-10 §5](ADR-10.md): una petición de reagendamiento sin atender no termina en `ghosting` | ~~**pendiente**~~ **incorporada a G1** (condición 3, 2026-10-14); el job sigue aplazado |
 
 **Ojo al reconstruir hacia atrás** (detalle en [DT-11](../Deudas/DT-11.md)): la regla del `ghosting`
 depende de datos guardados, así que se puede aplicar después. Pero hoy nadie puede confirmar una cita

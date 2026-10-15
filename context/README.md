@@ -35,7 +35,7 @@ sin doc.**
 | **Feature** | Una funcionalidad **implementada**: qué hace, endpoints, esquema, tests, pendientes | [`Features/`](Features/README.md) | [us02](Features/us02-gestion-citas.md) |
 | **DT** | Deuda técnica: lo que el sistema no hace y debería, enlazada al párrafo que la originó | [`Deudas/`](Deudas/README.md) | [DT-30](Deudas/DT-30.md) |
 | **FD** | Decisión de producto o diseño tomada del lado del frontend que condiciona al backend | [`Frontend-Decisions/`](Frontend-Decisions/README.md) | [FD-06](Frontend-Decisions/FD-06.md) |
-| **Q / H** | Pregunta abierta: Q para I+D o desarrollo, H para el hacker ético | [`PREGUNTAS-ABIERTAS.md`](PREGUNTAS-ABIERTAS.md) | Q11, H7 |
+| **Q** | Pregunta abierta, para I+D, desarrollo o el arquitecto (las de seguridad) | [`PREGUNTAS-ABIERTAS.md`](PREGUNTAS-ABIERTAS.md) | Q11, Q16 |
 
 > **Tres sentidos de "fase".** (1) **Fase del roadmap** = construcción, lo que significa "fase" en
 > casi todo el repo. (2) **Etapa del producto** = los `fase-*.md` de `Descripcion/`; la etapa 3 (MVP)
@@ -56,7 +56,8 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 | Buscas… | Camino |
 |---|---|
 | ponerte al día con el proyecto | este README → [ROADMAP § Resumen](ROADMAP.md#resumen) → [Fases/](Fases/README.md) → la guía de la fase en curso |
-| entender los recordatorios (lo último construido) | [Fase 2](Fases/fase-2-us03-recordatorios.md) —guía de lectura del diseño y de la implementación, checklist de salida a producción y [cierre](Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07)— y la feature [us03-recordatorios](Features/us03-recordatorios.md) |
+| entender la respuesta del paciente (lo último construido, sin release) | [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) —estado, guía de lectura de la implementación y [checklist de salida a producción](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción)— y la feature [us04-respuesta-paciente](Features/us04-respuesta-paciente.md) |
+| entender los recordatorios (lo último en producción) | [Fase 2](Fases/fase-2-us03-recordatorios.md) —guía de lectura del diseño y de la implementación, checklist de salida a producción y [cierre](Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07)— y la feature [us03-recordatorios](Features/us03-recordatorios.md) |
 | qué está desplegado y dónde (staging y production) | [stack § Mapa de entornos](stack-tecnologico.md#mapa-de-entornos) e [Infraestructura en producción](stack-tecnologico.md#infraestructura-en-producción-2026-10-07) |
 | qué quedó al cerrar la gestión de citas | [Fase 1 § Cierre](Fases/fase-1-us02-gestion-citas.md#cierre-de-la-fase-resumen) |
 | por qué una pieza es como es | la feature → su ADR → las alternativas descartadas del ADR |
@@ -86,10 +87,12 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
   que afectan al backend.
 - **`US/`** — planes de historias de usuario previos a implementar: decisiones y orden de
   construcción, sin código. [US-00](US/00-auth.md) autenticación · [US-06](US/06-epic.md) dashboard ·
-  [US-03](US/03-recordatorios.md) recordatorios al paciente (✅ cerrada en producción, 2026-10-07).
+  [US-03](US/03-recordatorios.md) recordatorios al paciente (✅ cerrada en producción, 2026-10-07) ·
+  [US-04](US/04-respuesta-paciente.md) respuesta del paciente desde el recordatorio (✅ implementada y
+  verificada en local, 2026-10-15, pendiente de release; [ADR-10](Decisions/ADR-10.md) aceptado).
   **Subtareas de US-02** (archivos `02.NN-*`, no son historias propias):
   [US-02.07](US/02.07-paciente-reagenda-cancela.md) el paciente cancela o pide reagendar (⏸ aplazada
-  fuera de la v1; [ADR-10](Decisions/ADR-10.md) propuesto; se retoma en la
+  fuera de la v1; 🔀 **absorbida por US-04** el 2026-10-14, en la
   [Fase 3](Fases/fase-3-us04-respuesta-paciente.md)) · [US-02.08](US/02.08-voucher-cita.md) voucher de la
   cita para el profesional (✅ implementada). US-02.09 (el dashboard refleja los cambios, ✅
   implementada) es solo de frontend y vive en `citia-frontend/context/us/`.
@@ -112,7 +115,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 
 ## Estado, de un vistazo
 
-*(Actualizado el 2026-10-07. Fuente: [ROADMAP § Resumen](ROADMAP.md#resumen).)*
+*(Actualizado el 2026-10-07; la Fase 3, el 2026-10-15. Fuente: [ROADMAP § Resumen](ROADMAP.md#resumen).)*
 
 **El MVP está en producción.** Alcance: dashboard de citas (Fase 0) · gestión de citas (Fase 1) ·
 **recordatorios al paciente** (Fase 2). Release a `main` el 2026-10-06 en los dos repos; la Fase 2 se cerró
@@ -126,7 +129,7 @@ el 2026-10-07, cuando tres recordatorios reales llegaron a la bandeja de entrada
 | [Fase 0](Fases/fase-0-us06-dashboard.md) — US-06 dashboard | ✅ cerrada (2026-09-28) · sin mock desde el 2026-10-05 · en producción |
 | [Fase 1](Fases/fase-1-us02-gestion-citas.md) — US-02 gestión de citas | ✅ cerrada (2026-09-28) · en producción · US-02.07 aplazada |
 | [Fase 2](Fases/fase-2-us03-recordatorios.md) — US-03 recordatorios | ✅ **cerrada en producción (2026-10-07)** · [pendientes posteriores](Fases/fase-2-us03-recordatorios.md#pendientes-posteriores) |
-| [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) — US-04 respuesta del paciente | ⬜ **siguiente** · fuera del MVP |
+| [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) — US-04 respuesta del paciente | ✅ **implementada y verificada en local (2026-10-15)** · pendiente de release · [us04](Features/us04-respuesta-paciente.md) · fuera del MVP |
 | [Fase 4](Fases/fase-4-us05-alertas.md) — US-05 alertas | ⬜ fuera del MVP |
 | [Fase 5](Fases/fase-5-us07-scoring.md) — US-07 scoring | ⏸ v2 |
 | [Fases 6, 7 y US-09](Fases/fases-6-7-us09-sin-diseno.md) | ⬜ sin diseño |
@@ -146,10 +149,14 @@ cita en el voucher y configuración por profesional · correo del paciente oblig
 
 **Lo siguiente:**
 
-1. **Fase 3 — US-04, respuesta del paciente**: el paciente confirma o cancela desde el enlace del
-   recordatorio (el bloque `accion` de la plantilla ya existe). Para arrancar hay que **aceptar
-   [ADR-10](Decisions/ADR-10.md)**, que espera [H7 y Q11](PREGUNTAS-ABIERTAS.md)
-   ([ROADMAP § Fase 3](ROADMAP.md#fase-3--us-04-respuesta-del-paciente)).
+1. **Release de la Fase 3 — US-04, respuesta del paciente** (✅ implementada y verificada en local el
+   2026-10-15, pendiente de release): el paciente confirma, cancela o pide otra hora desde el enlace del
+   recordatorio, y la fase trae además el límite de tasa ([DT-18](Deudas/DT-18.md)). Lo que existe está en
+   [us04-respuesta-paciente](Features/us04-respuesta-paciente.md); para llevarlo a producción faltan los
+   commits y el PR, cargar `ENLACE_CITA_CLAVE` en cada entorno (sin ella el servicio no arranca), comprobar en
+   staging la IP real detrás del proxy y las cabeceras de Netlify, la prueba con un correo real y con los
+   escáneres de enlaces, y fijar la fecha de corte de [DT-11](Deudas/DT-11.md) el día del despliegue
+   ([checklist](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción)).
 2. **Cerrar [DT-40](Deudas/DT-40.md)**: con `MENSAJERIA_ADAPTADOR=registro`, los recordatorios quedan
    "Enviado" sin enviarse. Pasó en producción con variables copiadas de staging y se repite con solo
    volver a copiarlas.
