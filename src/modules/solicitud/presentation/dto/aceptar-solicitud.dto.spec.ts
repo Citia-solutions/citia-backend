@@ -112,11 +112,33 @@ describe('AceptarSolicitudDto', () => {
     it.each([
       ['', 'isNotEmpty'],
       [42, 'isString'],
-      [undefined, 'isNotEmpty'],
     ])('debería rechazar %p (%s)', async (tipoConsulta, constraint) => {
       expect(
         (await errores({ ...valido, tipoConsulta })).tipoConsulta,
       ).toContain(constraint);
+    });
+  });
+
+  // Fase 3: una petición de otra hora se acepta con SOLO fecha y hora. Que
+  // una `nueva` los siga exigiendo lo valida el servicio (400).
+  describe('duracionMin y tipoConsulta opcionales (Fase 3)', () => {
+    it('debería aceptar el cuerpo con solo inicio', async () => {
+      expect(await errores({ inicio: valido.inicio })).toEqual({});
+    });
+
+    it.each(['duracionMin', 'tipoConsulta'])(
+      'debería aceptar que falte %s',
+      async (campo) => {
+        const cuerpo: Record<string, unknown> = { ...valido };
+        delete cuerpo[campo];
+        expect(await errores(cuerpo)).toEqual({});
+      },
+    );
+
+    it('debería seguir validando duracionMin si llega', async () => {
+      expect(
+        (await errores({ inicio: valido.inicio, duracionMin: 0 })).duracionMin,
+      ).toContain('isPositive');
     });
   });
 });

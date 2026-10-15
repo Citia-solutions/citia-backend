@@ -28,4 +28,26 @@ describe('ListarSolicitudesQueryDto', () => {
       expect(await errores({ estado })).toEqual(['isEnum']);
     },
   );
+
+  it('debería admitir "descartada" (Fase 3)', async () => {
+    expect(await errores({ estado: 'descartada' })).toEqual([]);
+  });
+
+  describe('citaOrigenId (Fase 3, R4)', () => {
+    it('debería aceptar un UUID junto con el estado', async () => {
+      expect(
+        await errores({
+          estado: 'recibida',
+          citaOrigenId: '0c1a0000-0000-4000-8000-000000000001',
+        }),
+      ).toEqual([]);
+    });
+
+    it.each(['no-es-uuid', '123', "1' OR '1'='1"])(
+      'debería rechazar "%s"',
+      async (citaOrigenId) => {
+        expect(await errores({ citaOrigenId })).toEqual(['isUuid']);
+      },
+    );
+  });
 });
