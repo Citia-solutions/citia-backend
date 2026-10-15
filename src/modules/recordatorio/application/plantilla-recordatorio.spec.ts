@@ -187,6 +187,32 @@ describe('generarPlantillaRecordatorio (ADR-13 §12)', () => {
       );
     });
 
+    it('es determinista CON el bloque: dos generaciones con la misma entrada dan el mismo asunto, HTML y texto (reintentos con la misma Idempotency-Key)', () => {
+      // Arrange — la forma exacta que usa el envío (E5)
+      const datos = {
+        ...BASE,
+        accion: {
+          texto: 'Ver o responder mi hora',
+          url: 'http://localhost:5173/cita#AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_AbCd',
+        },
+      };
+
+      // Act
+      const primero = generarPlantillaRecordatorio(datos);
+      const segundo = generarPlantillaRecordatorio({ ...datos });
+
+      // Assert
+      expect(segundo).toEqual(primero);
+      expect(primero.html).toContain(
+        '<a href="http://localhost:5173/cita#AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_AbCd" style="color:#1a56db;">Ver o responder mi hora</a>',
+      );
+      expect(primero.texto).toContain(
+        'Ver o responder mi hora: http://localhost:5173/cita#AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_AbCd',
+      );
+      // El asunto sigue neutro: el enlace va solo en el cuerpo.
+      expect(primero.asunto).not.toContain('cita#');
+    });
+
     it('con una URL que no es http(s) no se dibuja', () => {
       // Act
       const { html } = generarPlantillaRecordatorio({

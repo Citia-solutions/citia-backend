@@ -7,6 +7,8 @@ import { TransactionRunner } from '../../shared/application/transaction-runner';
 import type { Entorno } from '../../shared/infrastructure/config/entorno';
 import { RegistroSuscriptores } from '../../shared/infrastructure/salida/registro-suscriptores';
 import { SharedModule } from '../../shared/shared.module';
+import { EnlacesCitaService } from '../cita/application/enlaces-cita.service';
+import { CitaModule } from '../cita/cita.module';
 import { BitacoraRecordatorios } from './application/bitacora-recordatorios';
 import { ConfiguracionRecordatoriosService } from './application/configuracion-recordatorios.service';
 import { ConsultarRecordatoriosService } from './application/consultar-recordatorios.service';
@@ -55,10 +57,13 @@ import { WebhooksResendController } from './presentation/webhooks-resend.control
  *   `ScheduleModule` ni `Latidos`. Necesita `ConfigModule` (global) y la
  *   `DataSource` de TypeORM.
  *
- * Reglas de dependencia (ADR-13 §1): ningún módulo de negocio importa este;
- * solo `AppModule` y su hermano de planificación. Lee `citas`, `pacientes`,
- * `usuarios` y `tenants` por `LectorCitas` (SQL de solo lectura), sin
- * importar sus módulos. Exporta solo lo que usan los jobs.
+ * Reglas de dependencia (ADR-13 §1, con la nota de la Fase 3): ningún módulo
+ * de negocio importa este; solo `AppModule` y su hermano de planificación.
+ * Lee `citas`, `pacientes`, `usuarios` y `tenants` por `LectorCitas` (SQL de
+ * solo lectura). Importa `CitaModule` SOLO para el enlace del paciente:
+ * `EnlacesCitaService.asegurarActivo` dentro de la transacción del envío (la
+ * fila de `enlaces_cita` la escribe el módulo `cita`, no este). `cita` no
+ * importa este módulo: sin ciclo. Exporta solo lo que usan los jobs.
  */
 @Module({
   imports: [
@@ -69,6 +74,9 @@ import { WebhooksResendController } from './presentation/webhooks-resend.control
     ]),
     // TransactionRunner, PublicadorEventos y RegistroSuscriptores (ADR-12).
     SharedModule,
+    // Fase 3 (ADR-10 E3): SOLO `EnlacesCitaService`, para poner el enlace del
+    // paciente en el correo. Las lecturas siguen por `LectorCitas`.
+    CitaModule,
   ],
   controllers: [
     ConfiguracionRecordatoriosController,
@@ -182,6 +190,7 @@ import { WebhooksResendController } from './presentation/webhooks-resend.control
         lector: LectorCitas,
         canal: CanalMensajeria,
         bitacora: BitacoraRecordatorios,
+        enlaces: EnlacesCitaService,
         config: ConfigService<Entorno, true>,
       ) =>
         new EnviarRecordatoriosService(
@@ -193,6 +202,7 @@ import { WebhooksResendController } from './presentation/webhooks-resend.control
             lector,
             canal,
             bitacora,
+            enlaces,
           },
           leerOpcionesEnvio(config),
         ),
@@ -204,6 +214,7 @@ import { WebhooksResendController } from './presentation/webhooks-resend.control
         LectorCitas,
         CanalMensajeria,
         BitacoraRecordatorios,
+        EnlacesCitaService,
         ConfigService,
       ],
     },
