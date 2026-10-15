@@ -31,6 +31,7 @@ import { Cita, EstadoCita } from '../modules/cita/domain/cita.entity';
 import { CitaRepository } from '../modules/cita/domain/cita.repository';
 import { CambioCitaOrmEntity } from '../modules/cita/infrastructure/persistence/cambio-cita.orm-entity';
 import { CitaOrmEntity } from '../modules/cita/infrastructure/persistence/cita.orm-entity';
+import { EnlaceCitaOrmEntity } from '../modules/cita/infrastructure/persistence/enlace-cita.orm-entity';
 import { PacientesService } from '../modules/paciente/application/pacientes.service';
 import { PacienteOrmEntity } from '../modules/paciente/infrastructure/persistence/paciente.orm-entity';
 import { PacienteResponseDto } from '../modules/paciente/presentation/dto/paciente-response.dto';
@@ -174,10 +175,12 @@ async function limpiarDatosDemo(
   await dataSource.transaction(async (m) => {
     // cambios_cita → citas y solicitudes_cita → usuarios/tenants tienen FK.
     // recordatorios → citas y configuraciones_recordatorio → usuarios/tenants
-    // también (ADR-13). `supresiones_correo` es global: no se toca.
+    // también (ADR-13). enlaces_cita → citas (Fase 3). `supresiones_correo`
+    // es global: no se toca.
     await m.delete(RecordatorioOrmEntity, { tenantId });
     await m.delete(ConfiguracionRecordatorioOrmEntity, { tenantId });
     await m.delete(CambioCitaOrmEntity, { tenantId });
+    await m.delete(EnlaceCitaOrmEntity, { tenantId });
     await m.delete(SolicitudCitaOrmEntity, { tenantId });
     await m.delete(CitaOrmEntity, { tenantId });
     await m.delete(PacienteOrmEntity, { tenantId });
