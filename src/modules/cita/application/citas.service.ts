@@ -15,6 +15,14 @@ import {
   rangoDeFechasEnZona,
 } from '../../../shared/domain/timezone';
 import {
+  Actor,
+  actorCambioDe,
+  actorDelHecho,
+  actorPaciente,
+  actorProfesional,
+  idDelActor,
+} from '../domain/actor';
+import {
   ActorCambio,
   CambioCita,
   CrearCambioCitaProps,
@@ -28,6 +36,7 @@ import {
   EstadoCita,
 } from '../domain/cita.entity';
 import { CitaRepository } from '../domain/cita.repository';
+import { EnlaceCita } from '../domain/enlace-cita.entity';
 import { AvisosCitaDto } from '../presentation/dto/avisos-cita.dto';
 import { CitaDashboardDto } from '../presentation/dto/cita-dashboard.dto';
 import {
@@ -40,6 +49,7 @@ import { EditarCitaDto } from '../presentation/dto/editar-cita.dto';
 import { ReagendarCitaDto } from '../presentation/dto/reagendar-cita.dto';
 import { CitaNoEncontradaError } from './cita-no-encontrada.error';
 import { DatosPacienteRequeridosError } from './datos-paciente-requeridos.error';
+import { EnlaceCitaNoValidoError } from './enlace-cita-no-valido.error';
 import { RangoFechasInvalidoError } from './rango-fechas-invalido.error';
 
 /**
@@ -50,17 +60,72 @@ import { RangoFechasInvalidoError } from './rango-fechas-invalido.error';
 export const MAX_DIAS_RANGO = 42;
 
 // Props del cambio que el caso de uso decide; el resto (cita, tenant, actor)
-// lo rellena `mutar`, que es quien conoce el contexto de la peticion.
+// lo rellena el esqueleto (`aplicar`), que es quien conoce el contexto.
 type DetalleCambio = Omit<
   CrearCambioCitaProps,
   'citaId' | 'tenantId' | 'actorTipo' | 'actorId'
 >;
 
-// Opciones de `mutar`. `conAvisos`: la operacion fija o mueve la ventana de la
-// cita y la respuesta debe llevar `avisos` (ADR-11 §3).
+/**
+ * Una operacion de dominio sobre una cita ya cargada: aplica la transicion
+ * (la regla vive en la entidad, ADR-04 §1) y devuelve el detalle del cambio
+ * para la bitacora. La misma operacion sirve al profesional y al paciente.
+ */
+type OperacionCita = (cita: Cita) => DetalleCambio;
+
+const confirmarCita: OperacionCita = (cita) => {
+  cita.confirmar();
+  return { tipo: TipoCambio.CONFIRMADA };
+};
+
+const cancelarCita =
+  (motivo?: string): OperacionCita =>
+  (cita) => {
+    cita.cancelar();
+    return { tipo: TipoCambio.CANCELADA, motivo };
+  };
+
+const reagendarCita =
+  (nuevoInicio: Date, motivo?: string): OperacionCita =>
+  (cita) => {
+    const inicioAnterior = cita.inicio;
+    cita.reagendar(nuevoInicio);
+    return {
+      tipo: TipoCambio.REAGENDADA,
+      inicioAnterior,
+      inicioNuevo: nuevoInicio,
+      motivo,
+    };
+  };
+
+/**
+ * Lo minimo de una cita para un modulo que solo la MUESTRA (la bandeja de
+ * solicitudes: la hora original de una peticion de otra hora). Sin paciente
+ * ni tipo de consulta.
+ */
+export interface ResumenCita {
+  id: string;
+  inicio: Date;
+  duracionMin: number;
+  estado: EstadoCita;
+}
+
+// Opciones de una mutacion del profesional. `conAvisos`: la operacion fija o
+// mueve la ventana de la cita y la respuesta debe llevar `avisos` (ADR-11 §3).
 interface OpcionesMutacion {
   conAvisos?: boolean;
 }
+
+/**
+ * Estados en los que una confirmacion SIGUE contando para `confirmadaPor`
+ * (G3). Tras reagendar, la cita vuelve a `pendiente`: una confirmacion vieja
+ * era para otra hora y no se muestra.
+ */
+const ESTADOS_CON_CONFIRMACION: readonly EstadoCita[] = [
+  EstadoCita.CONFIRMADA,
+  EstadoCita.ASISTIO,
+  EstadoCita.NO_ASISTIO,
+];
 
 export class CitasService {
   constructor(
@@ -73,6 +138,8 @@ export class CitasService {
     // Zona horaria de la clínica (ej. 'America/Santiago'). El "día" y la "hora"
     // se calculan en esta zona, no en la del servidor (contenedor en UTC).
     private readonly tz: string,
+    // Reloj de las acciones del paciente (validez del enlace: `ahora < inicio`).
+    private readonly reloj: () => Date = () => new Date(),
   ) {}
 
   // ---------------------------------------------------------------------
@@ -124,10 +191,11 @@ export class CitasService {
     });
 
     const guardada = await this.citaRepository.guardar(cita, tx);
+    const actor = actorProfesional(usuario.userId);
 
     await this.registrarCambio(
       guardada,
-      usuario,
+      actor,
       {
         tipo: TipoCambio.CREADA,
         estadoNuevo: guardada.estado,
@@ -138,7 +206,7 @@ export class CitasService {
 
     // Dentro del `tx` de quien llama: el hecho se confirma con la cita o no
     // existe (ADR-12 §2).
-    await this.publicar('CitaCreada', guardada, usuario, tx);
+    await this.publicar('CitaCreada', guardada, actor, tx);
 
     const avisos = await this.calcularAvisos(guardada, tx);
 
@@ -154,10 +222,12 @@ export class CitasService {
     citaId: string,
     usuario: AuthenticatedUser,
   ): Promise<CitaResponseDto> {
-    return this.mutar(citaId, usuario, 'CitaConfirmada', (cita) => {
-      cita.confirmar();
-      return { tipo: TipoCambio.CONFIRMADA };
-    });
+    return this.mutarComoProfesional(
+      citaId,
+      usuario,
+      'CitaConfirmada',
+      confirmarCita,
+    );
   }
 
   async cancelar(
@@ -165,30 +235,42 @@ export class CitasService {
     usuario: AuthenticatedUser,
     motivo?: string,
   ): Promise<CitaResponseDto> {
-    return this.mutar(citaId, usuario, 'CitaCancelada', (cita) => {
-      cita.cancelar();
-      return { tipo: TipoCambio.CANCELADA, motivo };
-    });
+    return this.mutarComoProfesional(
+      citaId,
+      usuario,
+      'CitaCancelada',
+      cancelarCita(motivo),
+    );
   }
 
   async marcarAsistencia(
     citaId: string,
     usuario: AuthenticatedUser,
   ): Promise<CitaResponseDto> {
-    return this.mutar(citaId, usuario, 'CitaAsistida', (cita) => {
-      cita.marcarAsistencia();
-      return { tipo: TipoCambio.ASISTIO };
-    });
+    return this.mutarComoProfesional(
+      citaId,
+      usuario,
+      'CitaAsistida',
+      (cita) => {
+        cita.marcarAsistencia();
+        return { tipo: TipoCambio.ASISTIO };
+      },
+    );
   }
 
   async marcarInasistencia(
     citaId: string,
     usuario: AuthenticatedUser,
   ): Promise<CitaResponseDto> {
-    return this.mutar(citaId, usuario, 'CitaNoAsistida', (cita) => {
-      cita.marcarInasistencia();
-      return { tipo: TipoCambio.NO_ASISTIO };
-    });
+    return this.mutarComoProfesional(
+      citaId,
+      usuario,
+      'CitaNoAsistida',
+      (cita) => {
+        cita.marcarInasistencia();
+        return { tipo: TipoCambio.NO_ASISTIO };
+      },
+    );
   }
 
   // ---------------------------------------------------------------------
@@ -205,23 +287,40 @@ export class CitasService {
     dto: ReagendarCitaDto,
     usuario: AuthenticatedUser,
   ): Promise<CitaResponseDto> {
-    const nuevoInicio = new Date(dto.inicio);
-
-    return this.mutar(
+    return this.mutarComoProfesional(
       citaId,
       usuario,
       'CitaReagendada',
-      (cita) => {
-        const inicioAnterior = cita.inicio;
-        cita.reagendar(nuevoInicio);
-        return {
-          tipo: TipoCambio.REAGENDADA,
-          inicioAnterior,
-          inicioNuevo: nuevoInicio,
-          motivo: dto.motivo,
-        };
-      },
+      reagendarCita(new Date(dto.inicio), dto.motivo),
       { conAvisos: true },
+    );
+  }
+
+  /**
+   * `reagendar` DENTRO de una transaccion que abre quien llama: la bandeja de
+   * solicitudes, al aceptar una peticion de otra hora (Fase 3, R2), mueve la
+   * cita de origen en la MISMA transaccion en que resuelve la solicitud.
+   *
+   * Mismo flujo que `PATCH /citas/:id/reagendar` (carga con `FOR NO KEY UPDATE`,
+   * vuelve a `pendiente`, bitacora con el profesional del token, hecho
+   * `CitaReagendada` y avisos). Cita inexistente u otro tenant →
+   * `CitaNoEncontradaError`; cita terminal → `TransicionEstadoInvalidaError`.
+   *
+   * `nuevoInicio` admite el texto ISO del DTO (con zona) o un `Date`.
+   */
+  async reagendarEnTx(
+    citaId: string,
+    nuevoInicio: Date | string,
+    usuario: AuthenticatedUser,
+    tx: TransactionContext,
+  ): Promise<CitaResponseDto> {
+    return this.responderComoProfesional(
+      citaId,
+      usuario,
+      'CitaReagendada',
+      reagendarCita(new Date(nuevoInicio)),
+      { conAvisos: true },
+      tx,
     );
   }
 
@@ -234,7 +333,7 @@ export class CitasService {
     dto: EditarCitaDto,
     usuario: AuthenticatedUser,
   ): Promise<CitaResponseDto> {
-    return this.mutar(
+    return this.mutarComoProfesional(
       citaId,
       usuario,
       'CitaEditada',
@@ -246,6 +345,59 @@ export class CitasService {
         return { tipo: TipoCambio.EDITADA };
       },
       { conAvisos: true },
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Acciones del paciente por su enlace (Fase 3, ADR-10 §3)
+  //
+  // Corren DENTRO del `tx` que abre el portal y reciben la cita YA BLOQUEADA
+  // por `EnlacesCitaService.resolver` (`FOR NO KEY UPDATE`): no la recargan. Mismo
+  // esqueleto que el profesional; cambia el actor (`paciente`, id = enlace).
+  // ---------------------------------------------------------------------
+
+  /**
+   * `pendiente → confirmada` por el paciente. Bitacora con
+   * `actor_tipo = paciente` y `actor_id` = id del enlace; hecho
+   * `CitaConfirmada` con `actor: { tipo: 'paciente', id: enlaceId }`.
+   *
+   * @throws EnlaceCitaNoValidoError si el enlace ya no permite actuar sobre
+   *   la cita (defensa en profundidad; el portal responde el mismo 404).
+   * @throws TransicionEstadoInvalidaError si la cita no esta `pendiente` (409).
+   */
+  async confirmarComoPaciente(
+    cita: Cita,
+    enlace: EnlaceCita,
+    tx: TransactionContext,
+  ): Promise<Cita> {
+    this.exigirEnlaceValido(cita, enlace);
+    return this.aplicar(
+      cita,
+      actorPaciente(enlace.id),
+      'CitaConfirmada',
+      confirmarCita,
+      tx,
+    );
+  }
+
+  /**
+   * `pendiente | confirmada → cancelada` por el paciente, con `motivo`
+   * opcional (≤ 300, lo valida el DTO del portal). Mismos errores que
+   * `confirmarComoPaciente`.
+   */
+  async cancelarComoPaciente(
+    cita: Cita,
+    enlace: EnlaceCita,
+    motivo: string | undefined,
+    tx: TransactionContext,
+  ): Promise<Cita> {
+    this.exigirEnlaceValido(cita, enlace);
+    return this.aplicar(
+      cita,
+      actorPaciente(enlace.id),
+      'CitaCancelada',
+      cancelarCita(motivo),
+      tx,
     );
   }
 
@@ -331,6 +483,11 @@ export class CitasService {
     // Reutiliza el formateo del modulo paciente (RUT para mostrar, correo null).
     const datosPaciente = PacientesService.aResponse(paciente);
 
+    const { confirmadaPor, canceladaPor } = await this.quienConfirmoYCancelo(
+      cita,
+      usuario.tenantId,
+    );
+
     return new CitaDetalleDto({
       id: cita.id,
       estado: cita.estado,
@@ -347,7 +504,41 @@ export class CitasService {
       }),
       // La regla vive en la entidad (ADR-04 §1); el service solo la transporta.
       accionesPermitidas: cita.accionesPermitidas(),
+      confirmadaPor,
+      canceladaPor,
     });
+  }
+
+  /**
+   * Resumen de varias citas del tenant en UNA lectura (sin N+1), indexado por
+   * id. Sin bloqueo. Los ids de otro tenant o inexistentes no aparecen en el
+   * mapa. Con `ids` vacio no consulta.
+   *
+   * Lo usa la bandeja de solicitudes (modulo `solicitud`) para mostrar la
+   * hora original de cada peticion de otra hora (`citaOrigen`, Fase 3 R4).
+   * Solo datos de la cita: ni paciente ni tipo de consulta.
+   */
+  async resumenesPorIds(
+    ids: readonly string[],
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<Map<string, ResumenCita>> {
+    const unicos = [...new Set(ids)];
+    if (unicos.length === 0) return new Map();
+
+    const citas = await this.citaRepository.buscarPorIds(unicos, tenantId, tx);
+
+    return new Map(
+      citas.map((cita) => [
+        cita.id,
+        {
+          id: cita.id,
+          inicio: cita.inicio,
+          duracionMin: cita.duracionMin,
+          estado: cita.estado,
+        },
+      ]),
+    );
   }
 
   /** Historial completo de cambios de una cita, del mas antiguo al mas reciente. */
@@ -365,46 +556,132 @@ export class CitasService {
   // ---------------------------------------------------------------------
 
   /**
-   * Esqueleto compartido por toda mutacion de una cita ya existente:
-   * cargar -> aplicar la regla de dominio -> guardar -> registrar -> publicar
-   * (-> avisos, si la operacion mueve la ventana), todo dentro de una
-   * transaccion.
-   *
-   * La regla de que transiciones son legales NO vive aqui: vive en la entidad
-   * (ADR-04 §1). Este metodo solo orquesta.
+   * Mutacion del profesional por una ruta HTTP: abre la transaccion y delega
+   * en `responderComoProfesional`. Quien ya tiene una transaccion (la bandeja)
+   * usa la variante `...EnTx`.
    */
-  private async mutar(
+  private async mutarComoProfesional(
     citaId: string,
     usuario: AuthenticatedUser,
     nombreEvento: string,
-    operacion: (cita: Cita) => DetalleCambio,
+    operacion: OperacionCita,
     opciones: OpcionesMutacion = {},
   ): Promise<CitaResponseDto> {
-    return this.tx.run(async (tx) => {
-      const cita = await this.cargar(citaId, usuario.tenantId, tx);
-      const estadoAnterior = cita.estado;
-
-      const detalle = operacion(cita);
-
-      const guardada = await this.citaRepository.guardar(cita, tx);
-
-      await this.registrarCambio(
-        guardada,
+    return this.tx.run((tx) =>
+      this.responderComoProfesional(
+        citaId,
         usuario,
-        { ...detalle, estadoAnterior, estadoNuevo: guardada.estado },
+        nombreEvento,
+        operacion,
+        opciones,
         tx,
-      );
-
-      await this.publicar(nombreEvento, guardada, usuario, tx, detalle);
-
-      const avisos = opciones.conAvisos
-        ? await this.calcularAvisos(guardada, tx)
-        : undefined;
-
-      return this.aResponse(guardada, undefined, avisos);
-    });
+      ),
+    );
   }
 
+  /**
+   * Mutacion del profesional dentro de `tx`: `mutar` con el actor del token
+   * y el tenant del token, mas avisos si la operacion mueve la ventana, y la
+   * respuesta HTTP.
+   */
+  private async responderComoProfesional(
+    citaId: string,
+    usuario: AuthenticatedUser,
+    nombreEvento: string,
+    operacion: OperacionCita,
+    opciones: OpcionesMutacion,
+    tx: TransactionContext,
+  ): Promise<CitaResponseDto> {
+    const guardada = await this.mutar(
+      citaId,
+      usuario.tenantId,
+      actorProfesional(usuario.userId),
+      nombreEvento,
+      operacion,
+      tx,
+    );
+
+    const avisos = opciones.conAvisos
+      ? await this.calcularAvisos(guardada, tx)
+      : undefined;
+
+    return this.aResponse(guardada, undefined, avisos);
+  }
+
+  /**
+   * Carga la cita del `tenantId` BLOQUEANDO su fila (`SELECT … FOR NO KEY UPDATE`)
+   * y le aplica la operacion con el esqueleto comun. Serializa las
+   * mutaciones concurrentes de una misma cita (profesional, paciente, bandeja):
+   * la segunda espera y relee el estado ya confirmado.
+   */
+  private async mutar(
+    citaId: string,
+    tenantId: string,
+    actor: Actor,
+    nombreEvento: string,
+    operacion: OperacionCita,
+    tx: TransactionContext,
+  ): Promise<Cita> {
+    const cita = await this.citaRepository.buscarPorIdParaActualizar(
+      citaId,
+      tenantId,
+      tx,
+    );
+    if (!cita) {
+      throw new CitaNoEncontradaError(citaId);
+    }
+    return this.aplicar(cita, actor, nombreEvento, operacion, tx);
+  }
+
+  /**
+   * UNICO esqueleto de toda mutacion de una cita ya existente, sea quien sea
+   * el actor (profesional, paciente o, en el futuro, el sistema):
+   * aplicar la regla de dominio -> guardar -> registrar en la bitacora ->
+   * publicar el hecho, todo en `tx`. La cita debe llegar ya bloqueada.
+   *
+   * La regla de que transiciones son legales NO vive aqui: vive en la entidad
+   * (ADR-04 §1). Si la entidad lanza, no se escribe nada.
+   */
+  private async aplicar(
+    cita: Cita,
+    actor: Actor,
+    nombreEvento: string,
+    operacion: OperacionCita,
+    tx: TransactionContext,
+  ): Promise<Cita> {
+    const estadoAnterior = cita.estado;
+
+    const detalle = operacion(cita);
+
+    const guardada = await this.citaRepository.guardar(cita, tx);
+
+    await this.registrarCambio(
+      guardada,
+      actor,
+      { ...detalle, estadoAnterior, estadoNuevo: guardada.estado },
+      tx,
+    );
+
+    await this.publicar(nombreEvento, guardada, actor, tx, detalle);
+
+    return guardada;
+  }
+
+  /**
+   * El enlace debe seguir permitiendo actuar sobre ESTA cita en este momento
+   * (ADR-10 §1 regla 4). `resolver` ya lo comprobo en el mismo tx; aqui se
+   * repite para no depender de que quien llama lo hizo.
+   */
+  private exigirEnlaceValido(cita: Cita, enlace: EnlaceCita): void {
+    if (
+      enlace.id === undefined ||
+      !enlace.permiteActuarSobre(cita, this.reloj())
+    ) {
+      throw new EnlaceCitaNoValidoError();
+    }
+  }
+
+  // Lectura sin bloqueo (detalle, historial).
   private async cargar(
     citaId: string,
     tenantId: string,
@@ -417,9 +694,13 @@ export class CitasService {
     return cita;
   }
 
+  /**
+   * Bitacora: `actor_tipo` + `actor_id` segun el actor (usuario si
+   * `profesional`, enlace si `paciente`, nulo si `sistema`).
+   */
   private async registrarCambio(
     cita: Cita,
-    usuario: AuthenticatedUser,
+    actor: Actor,
     detalle: DetalleCambio & { estadoAnterior?: EstadoCita | null },
     tx: TransactionContext,
   ): Promise<void> {
@@ -428,9 +709,8 @@ export class CitasService {
         ...detalle,
         citaId: cita.id,
         tenantId: cita.tenantId,
-        // Hoy toda mutacion llega por una ruta autenticada del profesional.
-        actorTipo: ActorCambio.PROFESIONAL,
-        actorId: usuario.userId,
+        actorTipo: actorCambioDe(actor),
+        actorId: idDelActor(actor),
       }),
       tx,
     );
@@ -438,15 +718,18 @@ export class CitasService {
 
   /**
    * Publica el hecho de una cita en la transaccion `tx` de la operacion
-   * (ADR-12 §2). Sus dos llamadores (`agendar` y `mutar`) lo invocan DENTRO del
-   * callback de `TransactionRunner.run`, despues de guardar la cita y la
-   * bitacora: si algo falla despues (p. ej. `calcularAvisos`), el hecho se
-   * revierte junto con el cambio.
+   * (ADR-12 §2). Se invoca DENTRO de la transaccion, despues de guardar la
+   * cita y la bitacora: si algo falla despues (p. ej. `calcularAvisos`), el
+   * hecho se revierte junto con el cambio.
+   *
+   * `usuarioId` es el DUEÑO de la cita (`cita.usuarioId`), no quien hizo la
+   * peticion: eso lo dice `actor` (`{ tipo, id }`, id nulo para `sistema`).
+   * Nunca lleva el token del enlace ni su hash.
    */
   private async publicar(
     nombre: string,
     cita: Cita,
-    usuario: AuthenticatedUser,
+    actor: Actor,
     tx: TransactionContext,
     detalle?: DetalleCambio,
   ): Promise<void> {
@@ -458,14 +741,54 @@ export class CitasService {
         payload: {
           citaId: cita.id,
           pacienteId: cita.pacienteId,
-          usuarioId: usuario.userId,
+          usuarioId: cita.usuarioId,
           estado: cita.estado,
           inicio: cita.inicio,
           inicioAnterior: detalle?.inicioAnterior ?? null,
+          actor: actorDelHecho(actor),
         },
       },
       tx,
     );
+  }
+
+  /**
+   * G3: quien provoco la confirmacion y la cancelacion VIGENTES, segun la
+   * bitacora. `confirmadaPor` solo cuenta si la cita esta confirmada o ya
+   * se cerro desde ahi (asistio / no_asistio); `canceladaPor`, solo si esta
+   * cancelada. Sin consulta si el estado no lo necesita.
+   */
+  private async quienConfirmoYCancelo(
+    cita: Cita,
+    tenantId: string,
+  ): Promise<{
+    confirmadaPor: ActorCambio | null;
+    canceladaPor: ActorCambio | null;
+  }> {
+    const tipos: TipoCambio[] = [];
+    if (ESTADOS_CON_CONFIRMACION.includes(cita.estado)) {
+      tipos.push(TipoCambio.CONFIRMADA);
+    }
+    if (cita.estado === EstadoCita.CANCELADA) {
+      tipos.push(TipoCambio.CANCELADA);
+    }
+    if (tipos.length === 0) {
+      return { confirmadaPor: null, canceladaPor: null };
+    }
+
+    const ultimos = await this.cambioCitaRepository.ultimoActorPorTipo(
+      cita.id,
+      tenantId,
+      tipos,
+    );
+    return {
+      confirmadaPor: tipos.includes(TipoCambio.CONFIRMADA)
+        ? (ultimos[TipoCambio.CONFIRMADA] ?? null)
+        : null,
+      canceladaPor: tipos.includes(TipoCambio.CANCELADA)
+        ? (ultimos[TipoCambio.CANCELADA] ?? null)
+        : null,
+    };
   }
 
   /**

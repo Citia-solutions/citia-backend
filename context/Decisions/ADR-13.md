@@ -4,8 +4,12 @@
 
 **Fecha:** 2026-09-30
 **Estado:** Aceptado · **implementado** (rama `feature/fase2-recordatorios`,
-[PR #1](https://github.com/Citia-solutions/citia-backend/pull/1), pendiente de merge a `develop`; el
-frontend sale en el mismo release, [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2)) ·
+[PR #1](https://github.com/Citia-solutions/citia-backend/pull/1), mergeado a `develop` el 2026-10-04; el
+frontend, [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2)) · **en producción** desde el
+release del 2026-10-06 (`c057ade`) y verificado con un correo real el 2026-10-07
+([cierre de la Fase 2](../Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07); el adaptador
+`registro` en producción dejó [DT-40](../Deudas/DT-40.md), y el remitente sin DMARC,
+[DT-41](../Deudas/DT-41.md)) ·
 **todas las decisiones confirmadas por el usuario el 2026-09-30** (ver
 [Decisiones confirmadas](#decisiones-confirmadas-2026-09-30)) · desvíos y datos de proveedores
 verificados en [Notas de implementación](#notas-de-implementación-2026-10-04)
@@ -164,6 +168,15 @@ src/modules/recordatorio/
   `recordatorio` depende del **esquema** de esas tablas, en lectura.
 - La vista "recordatorios de una cita" la sirve un controller **de este módulo** en
   `citas/:citaId/recordatorios`. Meterla en `CitaDetalleDto` invertiría la dependencia.
+
+> **Nota (2026-10-14) — la Fase 3 matiza estas reglas.** Con [ADR-10](ADR-10.md) aceptado, el envío
+> necesita el enlace por cita: `recordatorio` **importa `CitaModule`** y llama a
+> `EnlacesCitaService.asegurarActivo(citaId, tenantId, tx)` dentro de la transacción del envío. La regla de
+> fondo se mantiene: `recordatorio` **no escribe** en las tablas de `cita` con su SQL; la fila de
+> `enlaces_cita` la crea el módulo `cita` a través de su servicio. `cita` sigue sin importar
+> `recordatorio`, así que no hay ciclo. Las lecturas siguen por `LectorCitas`. Ver
+> [ADR-10 §8](ADR-10.md#8-módulos-y-dependencias-portal-paciente-como-composición) y el plan
+> [US-04](../US/04-respuesta-paciente.md).
 
 ### 2. Tablas
 
@@ -504,6 +517,10 @@ Detalle de costos en [stack-tecnologico.md](../stack-tecnologico.md#modo-prueba)
 - **Preparada para la Fase 3:** la plantilla recibe un bloque opcional `accion?: { texto, url }`. En la
   Fase 2 va vacío y no se dibuja; la Fase 3 lo llena con el enlace de ADR-10
   (`https://<frontend>/cita#<token>`). Agregar el enlace es pasar un campo, no rehacer la plantilla.
+  *(2026-10-14, [ADR-10 §6](ADR-10.md): el bloque lleva **un solo botón fijo**, `Ver o responder mi hora`
+  → `${FRONTEND_URL}/cita#${token}`, que nunca depende del estado de la cita. Como el token es
+  recalculable y uno por cita, el mismo recordatorio reintentado con la misma `Idempotency-Key` sigue
+  generando el mismo contenido.)*
 - **Seguimiento desactivado** en el dominio de Resend (aperturas y clics). Además de privacidad: el
   seguimiento de clics reescribe los enlaces a través de servidores de Resend, y en la Fase 3 haría
   pasar el token del enlace por un tercero.

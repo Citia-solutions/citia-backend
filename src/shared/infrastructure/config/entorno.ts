@@ -16,13 +16,16 @@ import { OrigenCorsInvalidoError, normalizarOrigen } from './origenes-cors';
  *    obligatoria siempre, como ya lo era.
  *  - En producción (`NODE_ENV=production`) no hay defaults para la base de
  *    datos ni para `FRONTEND_URL`, y `JWT_SECRET` debe ser fuerte.
+ *  - `ENLACE_CITA_CLAVE` tiene default solo fuera de producción; en producción
+ *    es obligatoria, fuerte y distinta de `JWT_SECRET`.
  *  - En producción `MENSAJERIA_ADAPTADOR` es obligatoria (sin default), para
  *    que nunca quede en `registro` por omisión.
  *  - Las variables de Resend solo se exigen con `MENSAJERIA_ADAPTADOR=resend`.
  *  - Un valor vacío (`VAR=`) cuenta como no definido.
  *
  * Fuentes: ADR-13 §18 (recordatorios, Resend, Better Stack), ADR-12 §3 y §5
- * (outbox y planificador), US-03 paso 4 (CORS), ADR-07 (`APP_TZ`).
+ * (outbox y planificador), US-03 paso 4 (CORS), ADR-07 (`APP_TZ`), contrato
+ * de la Fase 3 §1 (E2) y §6 (enlace del paciente y límite de tasa).
  */
 
 export const ENTORNOS_EJECUCION = [
@@ -62,6 +65,12 @@ export interface Entorno {
   JWT_SECRET: string;
   JWT_EXPIRES_IN: string;
 
+  /**
+   * Clave del HMAC que deriva el token del enlace del paciente (Fase 3, E2).
+   * Secreto. Cambiarla invalida todos los enlaces ya enviados.
+   */
+  ENLACE_CITA_CLAVE: string;
+
   /** Origen canónico del frontend, normalizado (sin barra final). */
   FRONTEND_URL: string;
   /** Orígenes exactos y comodines de vistas previas, ya normalizados. */
@@ -69,6 +78,9 @@ export interface Entorno {
 
   APP_TZ: string;
   SOLICITUD_VENTANA_HORAS: number;
+
+  /** Límite de tasa (Fase 3 §6). `false` lo apaga entero (default en test). */
+  LIMITE_TASA_ACTIVO: boolean;
 
   // Observabilidad (ADR-13 §16)
   LOG_NIVEL: NivelLog;
@@ -121,14 +133,25 @@ export class EntornoInvalidoError extends Error {
   }
 }
 
+/**
+ * Clave del enlace del paciente fuera de producción: deja arrancar la app y
+ * correr los tests sin configurar nada. Está en `SECRETOS_DE_EJEMPLO`, así que
+ * producción la rechaza. Exportada para las e2e que montan `CitaModule` con un
+ * `ConfigModule` sin `validate` (ver `cita/infrastructure/seguridad`).
+ */
+export const ENLACE_CITA_CLAVE_DESARROLLO =
+  'dev-only-enlace-cita-clave-no-usar-en-produccion';
+
 /** Valores de ejemplo que nunca deben llegar a producción como secreto. */
 const SECRETOS_DE_EJEMPLO = new Set([
   'dev-only-change-me-super-secret',
+  ENLACE_CITA_CLAVE_DESARROLLO,
   'test-secret-e2e',
   'changeme',
   'secret',
 ]);
-const LARGO_MINIMO_JWT_SECRET_PRODUCCION = 32;
+/** Largo mínimo en producción de `JWT_SECRET` y `ENLACE_CITA_CLAVE`. */
+const LARGO_MINIMO_SECRETO_PRODUCCION = 32;
 
 const HORA_HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DOMINIO =
@@ -360,18 +383,34 @@ export function validarEntorno(
   const DB_PASS = db('DB_PASS', 'postgres');
   const DB_NAME = db('DB_NAME', 'citia_dev');
 
+  // Secretos de producción: largo mínimo y nunca un valor de ejemplo.
+  const secretoDebil = (secreto: string): boolean =>
+    secreto.length < LARGO_MINIMO_SECRETO_PRODUCCION ||
+    SECRETOS_DE_EJEMPLO.has(secreto);
+  const mensajeSecretoDebil = `en producción debe tener al menos ${LARGO_MINIMO_SECRETO_PRODUCCION} caracteres y no puede ser un valor de ejemplo (valor oculto).`;
+
   // JWT: obligatoria siempre (como antes). En producción, además, fuerte.
   const JWT_SECRET = l.obligatoria('JWT_SECRET');
-  if (
-    produccion &&
-    JWT_SECRET !== '' &&
-    (JWT_SECRET.length < LARGO_MINIMO_JWT_SECRET_PRODUCCION ||
-      SECRETOS_DE_EJEMPLO.has(JWT_SECRET))
-  ) {
-    l.error(
-      'JWT_SECRET',
-      `en producción debe tener al menos ${LARGO_MINIMO_JWT_SECRET_PRODUCCION} caracteres y no puede ser un valor de ejemplo (valor oculto).`,
-    );
+  if (produccion && JWT_SECRET !== '' && secretoDebil(JWT_SECRET)) {
+    l.error('JWT_SECRET', mensajeSecretoDebil);
+  }
+
+  // Enlace del paciente (Fase 3, E2): clave del HMAC del token. Fuera de
+  // producción, un default para no tocar los tests; en producción,
+  // obligatoria, fuerte y DISTINTA de JWT_SECRET (una filtración de una no
+  // debe comprometer la otra).
+  const ENLACE_CITA_CLAVE = produccion
+    ? l.obligatoria('ENLACE_CITA_CLAVE', enProduccion)
+    : l.texto('ENLACE_CITA_CLAVE', ENLACE_CITA_CLAVE_DESARROLLO);
+  if (produccion && ENLACE_CITA_CLAVE !== '') {
+    if (secretoDebil(ENLACE_CITA_CLAVE)) {
+      l.error('ENLACE_CITA_CLAVE', mensajeSecretoDebil);
+    } else if (ENLACE_CITA_CLAVE === JWT_SECRET) {
+      l.error(
+        'ENLACE_CITA_CLAVE',
+        'debe ser distinta de JWT_SECRET (valor oculto).',
+      );
+    }
   }
   const JWT_EXPIRES_IN = l.texto('JWT_EXPIRES_IN', '1d');
   if (!DURACION_JWT.test(JWT_EXPIRES_IN)) {
@@ -414,6 +453,10 @@ export function validarEntorno(
     defecto: 72,
     min: 1,
   });
+
+  // Límite de tasa (Fase 3 §6). En los tests, apagado por defecto: las e2e
+  // que lo prueban lo encienden explícitamente.
+  const LIMITE_TASA_ACTIVO = l.booleano('LIMITE_TASA_ACTIVO', !test);
 
   // Observabilidad. En los tests, silencio por defecto.
   const LOG_NIVEL = l.enumerado(
@@ -616,10 +659,12 @@ export function validarEntorno(
     DB_NAME,
     JWT_SECRET,
     JWT_EXPIRES_IN,
+    ENLACE_CITA_CLAVE,
     FRONTEND_URL,
     CORS_ORIGENES_EXTRA,
     APP_TZ,
     SOLICITUD_VENTANA_HORAS,
+    LIMITE_TASA_ACTIVO,
     LOG_NIVEL,
     LOG_FORMATO,
     BETTERSTACK_SOURCE_TOKEN,

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
@@ -16,7 +17,10 @@ import {
 import { CurrentUser } from '../../auth/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import type { AuthenticatedUser } from '../../auth/jwt-payload.interface';
+import { CitaNoEncontradaError } from '../../cita/application/cita-no-encontrada.error';
+import { TransicionEstadoInvalidaError } from '../../cita/domain/exceptions/transicion-estado-invalida.error';
 import { BandejaSolicitudesService } from '../application/bandeja-solicitudes.service';
+import { DatosAceptacionIncompletosError } from '../application/datos-aceptacion-incompletos.error';
 import { SolicitudNoEncontradaError } from '../application/solicitud-no-encontrada.error';
 import { EstadoSolicitud } from '../domain/solicitud-cita.entity';
 import { TransicionSolicitudInvalidaError } from '../domain/transicion-solicitud-invalida.error';
@@ -37,18 +41,22 @@ import { SolicitudBandejaDto } from './dto/solicitud-bandeja.dto';
 export class SolicitudesController {
   constructor(private readonly bandeja: BandejaSolicitudesService) {}
 
-  // GET /api/solicitudes?estado=recibida|aceptada|rechazada (defecto: recibida)
+  // GET /api/solicitudes?estado=recibida|aceptada|rechazada|descartada
+  // (defecto: recibida) &citaOrigenId=<uuid> (opcional, Fase 3 R4).
   @Get()
   async listar(
     @Query() query: ListarSolicitudesQueryDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SolicitudBandejaDto[]> {
-    return this.bandeja.listar(query.estado ?? EstadoSolicitud.RECIBIDA, user);
+    return this.bandeja.listar(query.estado ?? EstadoSolicitud.RECIBIDA, user, {
+      citaOrigenId: query.citaOrigenId,
+    });
   }
 
   /**
    * POST /api/solicitudes/:id/aceptar -> 201 `{ solicitud, cita }`.
-   * POST y no PATCH: crea otro recurso (la cita) y no es idempotente.
+   * POST y no PATCH: crea otro recurso (la cita) o mueve la de origen (una
+   * de reagendamiento, Fase 3) y no es idempotente.
    */
   @Post(':id/aceptar')
   @HttpCode(HttpStatus.CREATED)
@@ -82,9 +90,22 @@ export class SolicitudesController {
       if (error instanceof SolicitudNoEncontradaError) {
         throw new NotFoundException(error.message);
       }
-      // Ya aceptada o rechazada -> 409. El cliente recarga la bandeja.
+      // Ya aceptada, rechazada o descartada -> 409. El cliente recarga la bandeja.
       if (error instanceof TransicionSolicitudInvalidaError) {
         throw new ConflictException(error.message);
+      }
+      // Una `nueva` sin duracionMin o tipoConsulta -> 400 (Fase 3: son
+      // opcionales en el DTO porque un reagendamiento no los usa).
+      if (error instanceof DatosAceptacionIncompletosError) {
+        throw new BadRequestException(error.message);
+      }
+      // Reagendamiento: la cita de origen ya terminó -> 409; no existe en el
+      // tenant -> 404.
+      if (error instanceof TransicionEstadoInvalidaError) {
+        throw new ConflictException(error.message);
+      }
+      if (error instanceof CitaNoEncontradaError) {
+        throw new NotFoundException(error.message);
       }
       throw error;
     }

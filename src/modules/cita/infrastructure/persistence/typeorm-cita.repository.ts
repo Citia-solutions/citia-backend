@@ -49,6 +49,44 @@ export class TypeOrmCitaRepository extends CitaRepository {
     return this.toDomain(orm);
   }
 
+  async buscarPorIdParaActualizar(
+    id: string,
+    tenantId: string,
+    tx: TransactionContext,
+  ): Promise<Cita | null> {
+    // `TransactionContext` es `unknown` y admite undefined: sin este chequeo
+    // se caería al repositorio por defecto y el bloqueo no protegería nada.
+    if (!tx) {
+      throw new Error(
+        'buscarPorIdParaActualizar requiere una transacción (SELECT ... FOR NO KEY UPDATE)',
+      );
+    }
+    const orm = await this.repoFor(tx).findOne({
+      where: { id, tenantId },
+      // FOR NO KEY UPDATE y no FOR UPDATE: serializa igual las mutaciones de la
+      // cita, pero no choca con el FOR KEY SHARE que toma el INSERT en
+      // `enlaces_cita` (FK a `citas`) mientras el envío del recordatorio
+      // mantiene su transacción abierta.
+      lock: { mode: 'for_no_key_update' },
+    });
+    if (!orm) return null;
+    return this.toDomain(orm);
+  }
+
+  async buscarPorIds(
+    ids: readonly string[],
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<Cita[]> {
+    // `IN ()` no es SQL válido: sin ids no se consulta.
+    if (ids.length === 0) return [];
+    // Usa la PK; el filtro por tenant es requisito de seguridad.
+    const filas = await this.repoFor(tx).find({
+      where: { id: In([...new Set(ids)]), tenantId },
+    });
+    return filas.map((orm) => this.toDomain(orm));
+  }
+
   async buscarDelDiaPorProfesional(
     tenantId: string,
     usuarioId: string,

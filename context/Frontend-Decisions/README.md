@@ -13,7 +13,7 @@ Cada archivo `FD-XX` describe **una** decisión con su porqué, qué implica y q
 | [FD-03](FD-03.md) | Mismos datos, dos formas de entrar | Tomada | [Fase 1](../Fases/fase-1-us02-gestion-citas.md) |
 | [FD-04](FD-04.md) | La vista pública todavía no guarda nada | Temporal · **superada** (2026-09-10: la vista pública ya envía la solicitud) | [Fase 1](../Fases/fase-1-us02-gestion-citas.md) |
 | [FD-05](FD-05.md) | El flujo público vive junto al del panel (por ahora) | Tomada | [Fase 1](../Fases/fase-1-us02-gestion-citas.md) |
-| [FD-06](FD-06.md) | Confirmar, cancelar o cambiar la hora desde el correo | Propuesta | [Fase 3](../Fases/fase-3-us04-respuesta-paciente.md) |
+| [FD-06](FD-06.md) | Confirmar, cancelar o cambiar la hora desde el correo | Propuesta · **resuelta en parte** por ADR-10 (2026-10-14): "cambiar la hora" es una petición manual en la v1; elegir horarios disponibles, después | [Fase 3](../Fases/fase-3-us04-respuesta-paciente.md) |
 
 ## Cómo se relaciona con los ADR del backend
 

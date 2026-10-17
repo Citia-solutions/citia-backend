@@ -14,6 +14,7 @@ import { Webhook } from 'svix';
 import { DataSource } from 'typeorm';
 
 import { AuthModule } from '../src/modules/auth/auth.module';
+import { EnlacesCitaService } from '../src/modules/cita/application/enlaces-cita.service';
 import { CitaModule } from '../src/modules/cita/cita.module';
 import { PacienteModule } from '../src/modules/paciente/paciente.module';
 import {
@@ -399,6 +400,7 @@ describe('Recordatorios: políticas de envío y flujo (e2e con Postgres)', () =>
           lector: LectorCitas,
           canalInyectado: CanalMensajeria,
           bitacoraInyectada: BitacoraRecordatorios,
+          enlaces: EnlacesCitaService,
           config: ConfigService<Entorno, true>,
         ) =>
           new EnviarRecordatoriosService(
@@ -410,6 +412,8 @@ describe('Recordatorios: políticas de envío y flujo (e2e con Postgres)', () =>
               lector,
               canal: canalInyectado,
               bitacora: bitacoraInyectada,
+              // Fase 3: el enlace del paciente, del módulo `cita`.
+              enlaces,
             },
             // Sin la pausa de 500 ms entre envíos (ritmo del proveedor).
             { ...leerOpcionesEnvio(config), pausaEntreEnviosMs: 0 },
@@ -423,6 +427,7 @@ describe('Recordatorios: políticas de envío y flujo (e2e con Postgres)', () =>
           LectorCitas,
           CanalMensajeria,
           BitacoraRecordatorios,
+          EnlacesCitaService,
           ConfigService,
         ],
       })
@@ -1007,13 +1012,13 @@ describe('Recordatorios: políticas de envío y flujo (e2e con Postgres)', () =>
       expect(
         bitacora
           .alertas(AlertaRecordatorios.CUOTA_80)
-          .filter((e) => e.campos.alcance === 'dia'),
+          .filter((e) => e.campos?.alcance === 'dia'),
       ).toHaveLength(1);
       expect(
         nuevas.filter(
           (e) =>
             e.evento === 'recordatorio.fallido' &&
-            e.campos.motivo === 'cuota_agotada',
+            e.campos?.motivo === 'cuota_agotada',
         ),
       ).toHaveLength(2);
     });

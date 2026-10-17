@@ -10,6 +10,7 @@ import { AuthModule } from '../src/modules/auth/auth.module';
 import { CitaModule } from '../src/modules/cita/cita.module';
 import { CambioCitaOrmEntity } from '../src/modules/cita/infrastructure/persistence/cambio-cita.orm-entity';
 import { CitaOrmEntity } from '../src/modules/cita/infrastructure/persistence/cita.orm-entity';
+import { EnlaceCitaOrmEntity } from '../src/modules/cita/infrastructure/persistence/enlace-cita.orm-entity';
 import { PacienteModule } from '../src/modules/paciente/paciente.module';
 import { PacienteOrmEntity } from '../src/modules/paciente/infrastructure/persistence/paciente.orm-entity';
 import { TenantOrmEntity } from '../src/modules/tenant/infrastructure/persistence/tenant.orm-entity';
@@ -33,6 +34,9 @@ const typeOrmPacientesTestConfig: TypeOrmModuleOptions = {
     PacienteOrmEntity,
     CitaOrmEntity,
     CambioCitaOrmEntity,
+    // CitaModule registra `enlaces_cita` (Fase 3): sin esta entidad su
+    // repositorio no tiene metadatos y el módulo no arranca.
+    EnlaceCitaOrmEntity,
     EventoSalidaOrmEntity,
   ],
   synchronize: true, // SOLO aquí: BD efímera de test, nunca dev/prod

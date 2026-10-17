@@ -12,6 +12,33 @@ export abstract class CitaRepository {
     tx?: TransactionContext,
   ): Promise<Cita | null>;
 
+  /**
+   * Igual que `buscarPorId`, pero bloquea la fila (`SELECT … FOR NO KEY UPDATE`)
+   * hasta que termine la transacción. Serializa las mutaciones concurrentes de
+   * una cita (profesional, paciente por su enlace, bandeja al reagendar): la
+   * segunda espera y relee el estado ya confirmado.
+   *
+   * `tx` es OBLIGATORIO: un bloqueo fuera de transacción no protege nada.
+   */
+  abstract buscarPorIdParaActualizar(
+    id: string,
+    tenantId: string,
+    tx: TransactionContext,
+  ): Promise<Cita | null>;
+
+  /**
+   * Carga en lote las citas del tenant cuyos ids están en `ids` (p. ej. la
+   * cita de origen de cada solicitud de la bandeja, sin N+1). Sin bloqueo.
+   * Los ids de otro tenant o inexistentes simplemente no vuelven: quien llama
+   * no debe asumir ni orden ni que haya una por id. Con `ids` vacío devuelve
+   * [] sin consultar.
+   */
+  abstract buscarPorIds(
+    ids: readonly string[],
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<Cita[]>;
+
   // Devuelve las citas del profesional (usuarioId) en el tenant, cuyo `inicio`
   // cae dentro del día `dia`, en orden cronológico ascendente por `inicio`.
   // El filtrado por tenantId + usuarioId es requisito de seguridad (aislamiento

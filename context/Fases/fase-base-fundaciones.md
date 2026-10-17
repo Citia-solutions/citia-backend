@@ -115,8 +115,8 @@
 | [DT-08](../Deudas/DT-08.md) colisión de slug bajo concurrencia | abierta |
 | [DT-09](../Deudas/DT-09.md) comprobación de correo duplicado inalcanzable | abierta |
 | [DT-18](../Deudas/DT-18.md) sin límite de tasa (transversal) | aceptada sin límite por ahora (2026-09-29, Fase 1) |
-| [DT-19](../Deudas/DT-19.md) sin observabilidad | 🟢 resuelta en diseño (2026-09-30, Fase 2) · implementada en rama (2026-10-03), abierta hasta la prueba manual en Better Stack |
-| [DT-21](../Deudas/DT-21.md) carpetas vacías mal escritas | ✅ cerrada en la Fase 2 (2026-10-03, en rama) |
+| [DT-19](../Deudas/DT-19.md) sin observabilidad | 🟢 resuelta en diseño (2026-09-30, Fase 2) · implementada (2026-10-03) y verificada en producción (2026-10-07), abierta solo por la fuente de logs |
+| [DT-21](../Deudas/DT-21.md) carpetas vacías mal escritas | ✅ cerrada en la Fase 2 (2026-10-03) |
 
 **Cerradas:** ninguna. **Afectadas:** ninguna.
 
@@ -124,16 +124,12 @@
 
 ## Preguntas abiertas relacionadas
 
-- [Q5](../PREGUNTAS-ABIERTAS.md#q5--registro-abierto-por-invitación-o-lista-de-espera) y
-  [H2](../PREGUNTAS-ABIERTAS.md#h2--superficie-de-abuso-del-registro-la-otra-mitad-de-q5) — registro
-  abierto o por invitación (DT-06).
-- [Q7](../PREGUNTAS-ABIERTAS.md#q7--renovación-de-sesión-bloqueado-hasta-que-el-hacker-defina-el-requisito)
-  y [H1](../PREGUNTAS-ABIERTAS.md#h1--requisito-de-revocación-de-sesión-desbloquea-q7) — renovación y
-  revocación de sesión (DT-01).
-- [Q8](../PREGUNTAS-ABIERTAS.md#q8--adr-08-el-tenant-en-la-url-dev-b--prioridad-2) y
-  [H4](../PREGUNTAS-ABIERTAS.md#h4--revisión-de-adr-08-antes-del-merge) — implementar ADR-08 en el login.
-- [H6](../PREGUNTAS-ABIERTAS.md#h6--hallazgos-ya-fichados-para-confirmar-o-descartar) — confirmar
-  DT-02, DT-04, DT-05 y DT-18.
+- [Q5](../PREGUNTAS-ABIERTAS.md#q5--registro-abierto-por-invitación-o-lista-de-espera) — registro abierto o por
+  invitación y sus defensas contra el abuso (DT-06).
+- [Q7](../PREGUNTAS-ABIERTAS.md#q7--renovación-y-revocación-de-sesión-bloqueado-hasta-que-el-arquitecto-defina-el-requisito) —
+  renovación y revocación de sesión (DT-01).
+- [Q8](../PREGUNTAS-ABIERTAS.md#q8--adr-08-el-tenant-en-la-url-dev-b--prioridad-2) — implementar ADR-08
+  en el login.
 - [Q3](../PREGUNTAS-ABIERTAS.md#q3--la-agenda-es-del-profesional-o-de-la-organización) — si la agenda
   es del profesional o de la organización; toca DT-07.
 

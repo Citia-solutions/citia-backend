@@ -20,12 +20,14 @@
    — por qué sale del MVP y qué se pierde mientras tanto.
 2. **[DT-30](../Deudas/DT-30.md)** — **lo más importante de esta fase hoy**: la asistencia real no se
    registra y no se puede reconstruir. Esta fase arrancará sin ese historial.
-3. **[DT-11](../Deudas/DT-11.md)** — el `ghosting` sí se reconstruye, con una fecha de corte.
+3. **[DT-11](../Deudas/DT-11.md)** — el `ghosting` sí se reconstruye, con una fecha de corte. Desde el
+   2026-10-14 tiene su **regla G1** escrita y la fecha de corte es el despliegue de la Fase 3.
 4. **[ADR-04](../Decisions/ADR-04.md)** §2 y §4 — `ghosting` ≠ `no_asistio` y el estado materializado.
 5. **[ADR-12 §8](../Decisions/ADR-12.md)** — el proceso de cierre aplazado con el mecanismo listo y la
    tabla de preguntas de Q6.
 6. **[ADR-10 §5](../Decisions/ADR-10.md)** — la regla que el job de cierre debe respetar: una petición
-   de reagendamiento sin atender no es `ghosting`.
+   de reagendamiento sin atender no es `ghosting`. *(2026-10-14: ADR-10 aceptado; la regla es la
+   condición 3 de G1.)*
 
 ---
 
@@ -37,7 +39,8 @@
 | Historial de reagendamientos | ✅ bitácora `cambios_cita` | ADR-09 §6 · DT-22 cerrada (Fase 1) |
 | Job de cierre (`ghosting`) | mecanismo decidido, job aplazado | ADR-12 §8 · DT-11 |
 | Asistencia real | **no se registra** hasta la Fase 3 | DT-30 |
-| Confirmación del paciente | llega con la Fase 3 | ADR-10 · [Fase 3](fase-3-us04-respuesta-paciente.md) |
+| Confirmación del paciente | llega con la Fase 3 (en construcción desde el 2026-10-14); pesa igual que la del profesional (G2), el peso se decide aquí | ADR-10 · [Fase 3](fase-3-us04-respuesta-paciente.md) |
+| Regla del `ghosting` | ✅ escrita (G1, 2026-10-14); corte = despliegue de la Fase 3 | [DT-11](../Deudas/DT-11.md#regla-del-ghosting-g1-2026-10-14) |
 
 ---
 
@@ -47,7 +50,7 @@
 |---|---|---|
 | [ADR-04](../Decisions/ADR-04.md) | grafo de estados y materialización | Aceptado · §4 reemplazado por ADR-12 |
 | [ADR-12](../Decisions/ADR-12.md) §8 | mecanismo del job de cierre | Aceptado · el job, aplazado |
-| [ADR-10](../Decisions/ADR-10.md) §5 | petición sin atender ≠ `ghosting` | Propuesto |
+| [ADR-10](../Decisions/ADR-10.md) §5 | petición sin atender ≠ `ghosting`; regla G1 completa | ✅ Aceptado (2026-10-14) |
 
 ---
 
@@ -62,7 +65,7 @@ Ninguno.
 | Deuda | Relación |
 |---|---|
 | [DT-30](../Deudas/DT-30.md) | sin asistencia registrada no hay qué calificar; adelantar el scoring obliga a elegir A o B |
-| [DT-11](../Deudas/DT-11.md) | se cierra al retomar RF-08 (preguntas 1 y 2 de Q6, fecha de corte) |
+| [DT-11](../Deudas/DT-11.md) | se cierra al retomar RF-08: implementar la regla G1 (ya escrita, 2026-10-14) con la fecha de corte del despliegue de la Fase 3, y decidir la pregunta 2 de Q6 |
 | [DT-13](../Deudas/DT-13.md) | con el proceso de cierre, una cita creada en el pasado fabricaría un incumplimiento falso |
 | [DT-23](../Deudas/DT-23.md) | un tercero podría ensuciar la reputación de una persona real |
 | [DT-29](../Deudas/DT-29.md) | los estados `recuperada` / `riesgo_alto` del diseño del dashboard dependen de RF-08 |
@@ -73,7 +76,7 @@ Ninguno.
 
 - [Q6](../PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1) —
   preguntas 1 (¿cuándo vence una cita?) y 2 (¿qué pasa con las `confirmada` sin cerrar?), abiertas.
-- [H3](../PREGUNTAS-ABIERTAS.md#h3--modelo-de-amenazas-de-la-vía-pública-antes-de-construirla) —
+- [Q16](../PREGUNTAS-ABIERTAS.md#q16--modelo-de-amenazas-de-la-vía-pública) —
   pregunta 2: suplantación y reputación.
 
 ---

@@ -191,6 +191,48 @@ describe('opciones-logger', () => {
       expect(logApp.reqId).toBe(id);
       expect(logRespuesta.req?.id).toBe(id);
     });
+
+    it('redacta el token del enlace del paciente (X-Enlace-Cita) y su hash, también si la app los registra', async () => {
+      // Arrange
+      const HASH = 'a'.repeat(64);
+      const { stream, lineas, texto } = memoria();
+      const app = servidor(stream, (req, res) => {
+        // Lo que podría escribir por descuido el portal del paciente.
+        req.log.warn(
+          {
+            headers: { 'x-enlace-cita': req.headers['x-enlace-cita'] },
+            enlace: { tokenHash: HASH, token: ENLACE },
+            fila: { token_hash: HASH },
+            enlaceId: 'enlace-1',
+          },
+          'enlace no válido',
+        );
+        res.statusCode = 404;
+        res.end();
+      });
+
+      // Act
+      await request(app)
+        .get('/api/publico/cita')
+        .set('X-Enlace-Cita', ENLACE)
+        .expect(404);
+
+      // Assert — ni el token ni su hash, en ningún lado
+      const salida = texto();
+      expect(salida).not.toContain(ENLACE);
+      expect(salida).not.toContain(HASH);
+      const [logApp, logRespuesta] = lineas();
+      expect(logApp).toMatchObject({
+        headers: { 'x-enlace-cita': CENSURA },
+        enlace: { tokenHash: CENSURA, token: CENSURA },
+        fila: { token_hash: CENSURA },
+        enlaceId: 'enlace-1',
+      });
+      expect(logRespuesta.msg).toBe('GET /api/publico/cita 404');
+      expect(Object.keys(logRespuesta.req?.headers ?? {})).not.toContain(
+        'x-enlace-cita',
+      );
+    });
   });
 
   describe('identificador por petición', () => {

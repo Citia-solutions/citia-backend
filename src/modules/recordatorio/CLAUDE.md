@@ -2,7 +2,9 @@
 
 Recordatorios al paciente por correo (RF-06). Diseño completo en
 `context/Decisions/ADR-13.md` (y el outbox/planificador en `ADR-12.md`); plan y
-Definición de Terminado en `context/US/03-recordatorios.md`.
+Definición de Terminado en `context/US/03-recordatorios.md`. Desde la Fase 3
+cada correo lleva el **enlace del paciente** a su cita (`ADR-10`, plan
+`context/US/04-respuesta-paciente.md`).
 
 ## Estructura
 
@@ -22,8 +24,8 @@ src/modules/recordatorio/
 │   ├── suscriptor-recordatorios.ts           ← SuscriptorEventos del outbox (ADR-12 §4)
 │   ├── reconciliar-recordatorios.service.ts  ← reconcilia UNA cita contra su estado actual
 │   ├── reconciliacion-respaldo.service.ts    ← barrido horario de citas sin recordatorio
-│   ├── enviar-recordatorios.service.ts       ← reclamo + políticas + envío, un tx por recordatorio
-│   ├── plantilla-recordatorio.ts             ← asunto neutro, HTML escapado y texto; bloque accion? (Fase 3)
+│   ├── enviar-recordatorios.service.ts       ← reclamo + políticas + enlace del paciente + envío, un tx por recordatorio
+│   ├── plantilla-recordatorio.ts             ← asunto neutro, HTML escapado y texto; bloque `accion` (Fase 3: el enlace)
 │   ├── procesar-webhook-entrega.service.ts   ← eventos de entrega monótonos + supresión
 │   ├── tasa-fallo-recordatorios.service.ts   ← fallidos ÷ (entregados + fallidos) en 24 h
 │   ├── configuracion-recordatorios.service.ts← GET/PUT configuración; publica el hecho
@@ -75,9 +77,11 @@ src/modules/recordatorio/
    que sobra → inserta lo que falta (`ON CONFLICT DO NOTHING`).
 3. `PlanificadorRecordatorios` corre el **envío** cada
    `RECORDATORIO_INTERVALO_SEG`: reclama (`FOR UPDATE SKIP LOCKED`), relee,
-   evalúa las 9 políticas y, si toca, genera la plantilla y llama a
-   `CanalMensajeria` (tope 10 s, `Idempotency-Key = recordatorio/<id>`). La
-   transacción queda abierta durante la llamada (deliberado, ADR-13 §7).
+   evalúa las 9 políticas y, si toca, **asegura el enlace del paciente**
+   (`EnlacesCitaService.asegurarActivo`, en la MISMA transacción), genera la
+   plantilla y llama a `CanalMensajeria` (tope 10 s,
+   `Idempotency-Key = recordatorio/<id>`). La transacción queda abierta
+   durante la llamada (deliberado, ADR-13 §7).
 4. Resend avisa por webhook (`email.delivered`, `email.bounced`, …); el
    webhook actualiza la fila de forma monótona y suprime la dirección si hay
    rebote permanente, queja o supresión del proveedor.
@@ -100,11 +104,25 @@ no toca la fila, corta el lote, alerta e `informarFallo` · `posible_duplicado`
   contar (cuota, desenlaces), el respaldo y el webhook. Solo los usan los jobs
   y el webhook; NUNCA una ruta autenticada. Tras tomar una fila, todo usa SU
   `tenantId`.
-- **Solo lectura sobre otros módulos:** `LectorCitas` (SQL) lee `citas`,
-  `pacientes`, `usuarios`, `tenants`; nunca escribe ni importa sus módulos.
-  Ningún módulo importa `RecordatorioModule`.
-- **Configuración del DUEÑO de la cita** (`cita.usuarioId`), nunca el
-  `usuarioId` del payload del hecho (es quien hizo la petición).
+- **Solo lectura sobre otros módulos, con UNA excepción (Fase 3):**
+  `LectorCitas` (SQL) lee `citas`, `pacientes`, `usuarios`, `tenants`; este
+  módulo nunca escribe sus tablas con su SQL. **Importa `CitaModule` solo
+  para el enlace del paciente** (`EnlacesCitaService.asegurarActivo`; ADR-13
+  §1, nota de 2026-10-14): la fila de `enlaces_cita` la escribe `cita`. En la
+  capa de aplicación se ve como el puerto `EmisorEnlaceCita` (sin importar
+  `cita`). `cita` no importa este módulo (sin ciclo) y ningún módulo importa
+  `RecordatorioModule`.
+- **Enlace del paciente en el correo (ADR-10 E3/E5):** nace solo cuando de
+  verdad se envía (si una política frena el envío, no se emite). UN botón
+  fijo, `Ver o responder mi hora` → `${FRONTEND_URL}/cita#<token>` (token en
+  el fragmento), sea cual sea el estado. Determinista entre reintentos (mismo
+  enlace activo → mismo token → mismo HTML). Si `asegurarActivo` lanza, el
+  envío es **error interno** (reintento) y no sale correo sin enlace. El token
+  y la URL nunca van a la bitácora.
+- **Configuración del DUEÑO de la cita** (`cita.usuarioId`, releída). Desde
+  la Fase 3 el `usuarioId` de los hechos de cita ya es el dueño (y quién lo
+  hizo va en `actor`), pero se sigue leyendo de la cita: el hecho puede ser
+  viejo.
 - **Privacidad (ADR-13 §12):** logs solo con ids, estados, motivos y códigos
   (`BitacoraRecordatorios`); nunca destinatario, cuerpo, teléfono ni nombres.
   `codigo` de proveedor = nombre del error, nunca su mensaje. Supresiones por
@@ -138,6 +156,8 @@ no toca la fila, corta el lote, alerta e `informarFallo` · `posible_duplicado`
 | `RECORDATORIO_LOTE` / `_INTERVALO_SEG` | 20 / 60 | job de envío |
 | `RECORDATORIO_MAX_DIARIO_POR_TENANT` | 40 | fusible, día de la clínica |
 | `RECORDATORIO_EXIGIR_CONSENTIMIENTO` | `false` | DT-16 |
+| `FRONTEND_URL` | `http://localhost:5173` | base del enlace del paciente; obligatoria en producción |
+| `ENLACE_CITA_CLAVE` | (solo fuera de producción) | la usa `cita` para derivar el token; ver DT-45 antes de rotarla |
 | `RECORDATORIO_UMBRAL_TASA_FALLO` / `_MUESTRA_MIN` | 0.05 / 20 | alerta de tasa de fallo |
 | `BETTERSTACK_HEARTBEAT_RECORDATORIOS_URL` | — | latido del envío |
 
@@ -145,6 +165,11 @@ no toca la fila, corta el lote, alerta e `informarFallo` · `posible_duplicado`
 
 - Unitarios junto a cada archivo; dobles en `test/support/recordatorios-en-memoria.ts`
   (puertos) y `test/support/mensajeria-falsa.ts` (`CanalMensajeriaFalso`, `BitacoraEnMemoria`).
+- El envío se prueba con el `EnlacesCitaService` REAL de `cita` sobre
+  `InMemoryEnlaceCitaRepository` y `DerivadorTokenEnlaceDePrueba` (determinismo
+  entre reintentos, mismo enlace en dos recordatorios, error interno si falla).
+  Quien arme `EnviarRecordatoriosService` a mano (e2e, integración) debe pasar
+  `enlaces` y `urlFrontend`.
 - Adaptador de Resend: respuestas grabadas con `fetch` simulado y el SDK real.
 - e2e: `test/recordatorios-http.e2e-spec.ts` (sin BD, contrato HTTP) y
   `test/recordatorios-flujo.e2e-spec.ts` (Postgres, jobs a mano).

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   HttpStatus,
   NotFoundException,
@@ -8,12 +9,18 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { CitaNoEncontradaError } from '../../cita/application/cita-no-encontrada.error';
 import { EstadoCita } from '../../cita/domain/cita.entity';
+import { TransicionEstadoInvalidaError } from '../../cita/domain/exceptions/transicion-estado-invalida.error';
 import { CitaResponseDto } from '../../cita/presentation/dto/cita-response.dto';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import { BandejaSolicitudesService } from '../application/bandeja-solicitudes.service';
+import { DatosAceptacionIncompletosError } from '../application/datos-aceptacion-incompletos.error';
 import { SolicitudNoEncontradaError } from '../application/solicitud-no-encontrada.error';
-import { EstadoSolicitud } from '../domain/solicitud-cita.entity';
+import {
+  EstadoSolicitud,
+  TipoSolicitud,
+} from '../domain/solicitud-cita.entity';
 import { TransicionSolicitudInvalidaError } from '../domain/transicion-solicitud-invalida.error';
 import { AceptarSolicitudDto } from './dto/aceptar-solicitud.dto';
 import { SolicitudAceptadaDto } from './dto/solicitud-aceptada.dto';
@@ -57,6 +64,9 @@ describe('SolicitudesController', () => {
       recibidaEn: new Date('2026-09-17T14:02:11.000Z'),
       resueltaEn: null,
       citaId: null,
+      tipo: TipoSolicitud.NUEVA,
+      citaOrigenId: null,
+      citaOrigen: null,
     });
 
   beforeEach(async () => {
@@ -100,6 +110,25 @@ describe('SolicitudesController', () => {
       expect(mockBandeja.listar).toHaveBeenCalledWith(
         EstadoSolicitud.RECIBIDA,
         usuario,
+        { citaOrigenId: undefined },
+      );
+    });
+
+    it('debería pasar el filtro citaOrigenId (voucher, Fase 3 R4)', async () => {
+      // Arrange
+      const citaOrigenId = '0c1a0000-0000-4000-8000-000000000001';
+
+      // Act
+      await controller.listar(
+        { estado: EstadoSolicitud.RECIBIDA, citaOrigenId },
+        usuario,
+      );
+
+      // Assert
+      expect(mockBandeja.listar).toHaveBeenCalledWith(
+        EstadoSolicitud.RECIBIDA,
+        usuario,
+        { citaOrigenId },
       );
     });
 
@@ -118,6 +147,7 @@ describe('SolicitudesController', () => {
       expect(mockBandeja.listar).toHaveBeenCalledWith(
         EstadoSolicitud.ACEPTADA,
         usuario,
+        { citaOrigenId: undefined },
       );
       expect(result).toBe(lista);
     });
@@ -190,6 +220,44 @@ describe('SolicitudesController', () => {
       expect(error).toBeInstanceOf(ConflictException);
       expect((error as ConflictException).message).toBe(
         'Transición inválida: no se puede aplicar "aceptar" a una solicitud "aceptada"',
+      );
+    });
+
+    it('debería traducir DatosAceptacionIncompletosError (nueva sin duración o tipo) a 400', async () => {
+      // Arrange
+      mockBandeja.aceptar.mockRejectedValue(
+        new DatosAceptacionIncompletosError(),
+      );
+
+      // Act
+      const error = await capturar(controller.aceptar(ID, dto, usuario));
+
+      // Assert
+      expect(error).toBeInstanceOf(BadRequestException);
+      expect((error as BadRequestException).message).toBe(
+        'Para aceptar una solicitud nueva, duracionMin y tipoConsulta son obligatorios',
+      );
+    });
+
+    it('debería traducir TransicionEstadoInvalidaError (cita de origen terminal) a 409', async () => {
+      // Arrange
+      mockBandeja.aceptar.mockRejectedValue(
+        new TransicionEstadoInvalidaError(EstadoCita.CANCELADA, 'reagendar'),
+      );
+
+      // Act & Assert
+      await expect(controller.aceptar(ID, dto, usuario)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+    });
+
+    it('debería traducir CitaNoEncontradaError (cita de origen) a 404', async () => {
+      // Arrange
+      mockBandeja.aceptar.mockRejectedValue(new CitaNoEncontradaError('x'));
+
+      // Act & Assert
+      await expect(controller.aceptar(ID, dto, usuario)).rejects.toBeInstanceOf(
+        NotFoundException,
       );
     });
 

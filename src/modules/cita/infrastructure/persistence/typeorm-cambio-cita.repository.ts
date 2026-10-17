@@ -3,7 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 
 import { TransactionContext } from '../../../../shared/application/transaction-runner';
-import { CambioCita } from '../../domain/cambio-cita.entity';
+import {
+  ActorCambio,
+  CambioCita,
+  TipoCambio,
+} from '../../domain/cambio-cita.entity';
 import { CambioCitaRepository } from '../../domain/cambio-cita.repository';
 import { CambioCitaOrmEntity } from './cambio-cita.orm-entity';
 
@@ -40,6 +44,33 @@ export class TypeOrmCambioCitaRepository extends CambioCitaRepository {
       order: { ocurridoEn: 'ASC' },
     });
     return filas.map((orm) => this.toDomain(orm));
+  }
+
+  async ultimoActorPorTipo(
+    citaId: string,
+    tenantId: string,
+    tipos: readonly TipoCambio[],
+    tx?: TransactionContext,
+  ): Promise<Partial<Record<TipoCambio, ActorCambio>>> {
+    if (tipos.length === 0) return {};
+    // DISTINCT ON: una fila por tipo, la de `ocurrido_en` más reciente (el
+    // `id` solo desempata de forma estable). La comparación va por texto: el
+    // nombre del tipo enum difiere entre la migración y `synchronize`.
+    const filas = await this.repoFor(tx).query<
+      { tipo: TipoCambio; actorTipo: ActorCambio }[]
+    >(
+      `SELECT DISTINCT ON ("tipo") "tipo", "actor_tipo" AS "actorTipo"
+         FROM "cambios_cita"
+        WHERE "cita_id" = $1
+          AND "tenant_id" = $2
+          AND "tipo"::text = ANY($3::text[])
+        ORDER BY "tipo", "ocurrido_en" DESC, "id" DESC`,
+      [citaId, tenantId, [...tipos]],
+    );
+
+    const resultado: Partial<Record<TipoCambio, ActorCambio>> = {};
+    for (const fila of filas) resultado[fila.tipo] = fila.actorTipo;
+    return resultado;
   }
 
   private toDomain(orm: CambioCitaOrmEntity): CambioCita {

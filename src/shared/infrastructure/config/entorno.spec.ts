@@ -1,6 +1,7 @@
 import { EntornoInvalidoError, validarEntorno } from './entorno';
 
 const SECRETO_FUERTE = 'x'.repeat(40);
+const CLAVE_ENLACE_FUERTE = 'e'.repeat(40);
 
 /** Lo mínimo que exige producción. */
 const PRODUCCION = {
@@ -11,6 +12,7 @@ const PRODUCCION = {
   DB_PASS: 'clave-db',
   DB_NAME: 'citia',
   JWT_SECRET: SECRETO_FUERTE,
+  ENLACE_CITA_CLAVE: CLAVE_ENLACE_FUERTE,
   FRONTEND_URL: 'https://app.citia.cl',
   MENSAJERIA_ADAPTADOR: 'resend',
   RESEND_API_KEY: 're_123',
@@ -47,6 +49,7 @@ describe('validarEntorno', () => {
         CORS_ORIGENES_EXTRA: [],
         APP_TZ: 'America/Santiago',
         SOLICITUD_VENTANA_HORAS: 72,
+        LIMITE_TASA_ACTIVO: true,
         LOG_NIVEL: 'info',
         LOG_FORMATO: 'pretty',
         PLANIFICADOR_ACTIVO: true,
@@ -77,11 +80,41 @@ describe('validarEntorno', () => {
       expect(e.RESEND_API_KEY).toBeUndefined();
     });
 
-    it('en test: logs en silencio, JSON y planificador apagado', () => {
+    it('ENLACE_CITA_CLAVE tiene un default propio, distinto de JWT_SECRET', () => {
+      const e = validarEntorno({ JWT_SECRET: 'dev' });
+      expect(e.ENLACE_CITA_CLAVE.length).toBeGreaterThanOrEqual(32);
+      expect(e.ENLACE_CITA_CLAVE).not.toBe(e.JWT_SECRET);
+      expect(
+        validarEntorno({ JWT_SECRET: 'dev', ENLACE_CITA_CLAVE: 'otra-clave' })
+          .ENLACE_CITA_CLAVE,
+      ).toBe('otra-clave');
+    });
+
+    it('en test: logs en silencio, JSON, planificador y límite de tasa apagados', () => {
       const e = validarEntorno({ NODE_ENV: 'test', JWT_SECRET: 'dev' });
       expect(e.LOG_NIVEL).toBe('silent');
       expect(e.LOG_FORMATO).toBe('json');
       expect(e.PLANIFICADOR_ACTIVO).toBe(false);
+      expect(e.LIMITE_TASA_ACTIVO).toBe(false);
+    });
+
+    it('LIMITE_TASA_ACTIVO se puede encender en test y apagar fuera de él', () => {
+      expect(
+        validarEntorno({
+          NODE_ENV: 'test',
+          JWT_SECRET: 'dev',
+          LIMITE_TASA_ACTIVO: 'true',
+        }).LIMITE_TASA_ACTIVO,
+      ).toBe(true);
+      expect(
+        validarEntorno({ JWT_SECRET: 'dev', LIMITE_TASA_ACTIVO: '0' })
+          .LIMITE_TASA_ACTIVO,
+      ).toBe(false);
+      expect(
+        erroresDe({ JWT_SECRET: 'dev', LIMITE_TASA_ACTIVO: 'quizas' }),
+      ).toEqual([
+        'LIMITE_TASA_ACTIVO: debe ser true o false (recibido "quizas").',
+      ]);
     });
 
     it('convierte números, booleanos y listas', () => {
@@ -322,6 +355,7 @@ describe('validarEntorno', () => {
         'DB_USER: es obligatoria en producción.',
         'DB_PASS: es obligatoria en producción.',
         'DB_NAME: es obligatoria en producción.',
+        'ENLACE_CITA_CLAVE: es obligatoria en producción.',
         'FRONTEND_URL: es obligatoria en producción.',
         'MENSAJERIA_ADAPTADOR: es obligatoria en producción (registro o resend; registro no envía correos).',
       ]);
@@ -368,6 +402,50 @@ describe('validarEntorno', () => {
         /^JWT_SECRET: en producción debe tener al menos 32/,
       );
       expect(errores[0]).not.toContain(secreto);
+    });
+
+    it('ENLACE_CITA_CLAVE es obligatoria: el default de desarrollo no llega a producción', () => {
+      // Arrange
+      const sinClave: Record<string, unknown> = { ...PRODUCCION };
+      delete sinClave.ENLACE_CITA_CLAVE;
+
+      // Act & Assert
+      expect(erroresDe(sinClave)).toEqual([
+        'ENLACE_CITA_CLAVE: es obligatoria en producción.',
+      ]);
+      expect(validarEntorno(PRODUCCION).ENLACE_CITA_CLAVE).toBe(
+        CLAVE_ENLACE_FUERTE,
+      );
+    });
+
+    it.each([
+      ['corta', 'corta'],
+      [
+        'el default de desarrollo',
+        'dev-only-enlace-cita-clave-no-usar-en-produccion',
+      ],
+      ['de ejemplo', 'dev-only-change-me-super-secret'],
+    ])('rechaza una ENLACE_CITA_CLAVE %s sin mostrarla', (_caso, clave) => {
+      const errores = erroresDe({ ...PRODUCCION, ENLACE_CITA_CLAVE: clave });
+      expect(errores).toHaveLength(1);
+      expect(errores[0]).toMatch(
+        /^ENLACE_CITA_CLAVE: en producción debe tener al menos 32/,
+      );
+      expect(errores[0]).not.toContain(clave);
+    });
+
+    it('rechaza una ENLACE_CITA_CLAVE igual a JWT_SECRET sin mostrarla', () => {
+      const errores = erroresDe({
+        ...PRODUCCION,
+        ENLACE_CITA_CLAVE: SECRETO_FUERTE,
+      });
+      expect(errores).toEqual([
+        'ENLACE_CITA_CLAVE: debe ser distinta de JWT_SECRET (valor oculto).',
+      ]);
+    });
+
+    it('el límite de tasa está encendido por defecto', () => {
+      expect(validarEntorno(PRODUCCION).LIMITE_TASA_ACTIVO).toBe(true);
     });
   });
 });

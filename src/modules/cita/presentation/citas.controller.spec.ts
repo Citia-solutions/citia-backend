@@ -9,6 +9,7 @@ import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import { CitasService } from '../application/citas.service';
+import { EnlacesCitaService } from '../application/enlaces-cita.service';
 import { CitaNoEncontradaError } from '../application/cita-no-encontrada.error';
 import { PacienteNoEncontradoError } from '../../paciente/application/paciente-no-encontrado.error';
 import { RangoFechasInvalidoError } from '../application/rango-fechas-invalido.error';
@@ -29,6 +30,7 @@ describe('CitasController', () => {
     detalle: jest.Mock;
     listarEnRango: jest.Mock;
   };
+  let mockEnlacesCita: { invalidar: jest.Mock };
 
   const usuario: AuthenticatedUser = {
     userId: 'usuario-1',
@@ -44,10 +46,14 @@ describe('CitasController', () => {
       detalle: jest.fn(),
       listarEnRango: jest.fn(),
     };
+    mockEnlacesCita = { invalidar: jest.fn().mockResolvedValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CitasController],
-      providers: [{ provide: CitasService, useValue: mockCitasService }],
+      providers: [
+        { provide: CitasService, useValue: mockCitasService },
+        { provide: EnlacesCitaService, useValue: mockEnlacesCita },
+      ],
     })
       // El guard real requiere passport/JWT; aquí probamos solo el controller.
       .overrideGuard(JwtAuthGuard)
@@ -179,6 +185,8 @@ describe('CitasController', () => {
           correo: null,
         },
         accionesPermitidas: ['confirmar', 'cancelar', 'reagendar', 'editar'],
+        confirmadaPor: null,
+        canceladaPor: null,
       });
       mockCitasService.detalle.mockResolvedValue(detalle);
 
@@ -210,6 +218,39 @@ describe('CitasController', () => {
 
       // Act & Assert
       await expect(controller.detalle('cita-1', usuario)).rejects.toBe(error);
+    });
+  });
+
+  describe('invalidarEnlace (POST /citas/:id/enlace/invalidar)', () => {
+    it('debería delegar en EnlacesCitaService con el id y el @CurrentUser, sin cuerpo de respuesta', async () => {
+      // Act
+      const result = await controller.invalidarEnlace('cita-1', usuario);
+
+      // Assert
+      expect(mockEnlacesCita.invalidar).toHaveBeenCalledWith('cita-1', usuario);
+      expect(result).toBeUndefined();
+    });
+
+    it('debería responder 204 (HttpCode de la ruta)', () => {
+      // Assert — metadato que Nest usa para el status de éxito
+      const status: unknown = Reflect.getMetadata(
+        '__httpCode__',
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        CitasController.prototype.invalidarEnlace,
+      );
+      expect(status).toBe(204);
+    });
+
+    it('debería traducir CitaNoEncontradaError a 404 (otro tenant o inexistente)', async () => {
+      // Arrange
+      mockEnlacesCita.invalidar.mockRejectedValue(
+        new CitaNoEncontradaError('cita-x'),
+      );
+
+      // Act & Assert
+      await expect(
+        controller.invalidarEnlace('cita-x', usuario),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 

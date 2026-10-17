@@ -9,10 +9,16 @@ import {
   TransactionRunner,
 } from '../../src/shared/application/transaction-runner';
 import { rangoDelDiaEnZona } from '../../src/shared/domain/timezone';
-import { CambioCita } from '../../src/modules/cita/domain/cambio-cita.entity';
+import {
+  ActorCambio,
+  CambioCita,
+  TipoCambio,
+} from '../../src/modules/cita/domain/cambio-cita.entity';
 import { CambioCitaRepository } from '../../src/modules/cita/domain/cambio-cita.repository';
 import { Cita, EstadoCita } from '../../src/modules/cita/domain/cita.entity';
 import { CitaRepository } from '../../src/modules/cita/domain/cita.repository';
+import { EnlaceCita } from '../../src/modules/cita/domain/enlace-cita.entity';
+import { EnlaceCitaRepository } from '../../src/modules/cita/domain/enlace-cita.repository';
 import {
   CambioContactoPaciente,
   Paciente,
@@ -21,8 +27,12 @@ import { PacienteRepository } from '../../src/modules/paciente/domain/paciente.r
 import {
   EstadoSolicitud,
   SolicitudCita,
+  TipoSolicitud,
 } from '../../src/modules/solicitud/domain/solicitud-cita.entity';
-import { SolicitudCitaRepository } from '../../src/modules/solicitud/domain/solicitud-cita.repository';
+import {
+  FiltrosListadoSolicitudes,
+  SolicitudCitaRepository,
+} from '../../src/modules/solicitud/domain/solicitud-cita.repository';
 
 /**
  * Dobles de persistencia para las e2e SIN base de datos.
@@ -64,6 +74,9 @@ const clonarSolicitud = (s: SolicitudCita): SolicitudCita =>
     citaId: s.citaId,
     recibidaEn: s.recibidaEn,
     resueltaEn: s.resueltaEn,
+    tipo: s.tipo,
+    citaOrigenId: s.citaOrigenId,
+    enlaceId: s.enlaceId,
   });
 
 export class InMemoryCitaRepository extends CitaRepository {
@@ -93,6 +106,28 @@ export class InMemoryCitaRepository extends CitaRepository {
     const cita = this.citas.get(id);
     return Promise.resolve(
       cita && cita.tenantId === tenantId ? clonarCita(cita) : null,
+    );
+  }
+
+  buscarPorIdParaActualizar(
+    id: string,
+    tenantId: string,
+    tx: TransactionContext,
+  ): Promise<Cita | null> {
+    // Mismo guardia que el adaptador real: sin tx el bloqueo no protege nada.
+    if (!tx) {
+      return Promise.reject(
+        new Error('buscarPorIdParaActualizar requiere una transacción'),
+      );
+    }
+    return this.buscarPorId(id, tenantId);
+  }
+
+  buscarPorIds(ids: readonly string[], tenantId: string): Promise<Cita[]> {
+    return Promise.resolve(
+      [...this.citas.values()]
+        .filter((c) => ids.includes(c.id) && c.tenantId === tenantId)
+        .map(clonarCita),
     );
   }
 
@@ -146,6 +181,122 @@ export class InMemoryCambioCitaRepository extends CambioCitaRepository {
       this.cambios.filter(
         (c) => c.citaId === citaId && c.tenantId === tenantId,
       ),
+    );
+  }
+
+  // El orden de inserción es el cronológico: gana el último de cada tipo.
+  ultimoActorPorTipo(
+    citaId: string,
+    tenantId: string,
+    tipos: readonly TipoCambio[],
+  ): Promise<Partial<Record<TipoCambio, ActorCambio>>> {
+    const resultado: Partial<Record<TipoCambio, ActorCambio>> = {};
+    for (const c of this.cambios) {
+      if (
+        c.citaId === citaId &&
+        c.tenantId === tenantId &&
+        tipos.includes(c.tipo)
+      ) {
+        resultado[c.tipo] = c.actorTipo;
+      }
+    }
+    return Promise.resolve(resultado);
+  }
+}
+
+/**
+ * Doble de `enlaces_cita`. Reproduce las tres claves únicas (hash,
+ * (cita, versión) y un activo por cita) para `insertarSiNoExiste`, y exige
+ * `tx` como el adaptador real. No reproduce bloqueos.
+ */
+export class InMemoryEnlaceCitaRepository extends EnlaceCitaRepository {
+  readonly enlaces = new Map<string, EnlaceCita>();
+
+  private static clonar(e: EnlaceCita): EnlaceCita {
+    return EnlaceCita.reconstituir({
+      id: e.id,
+      citaId: e.citaId,
+      tenantId: e.tenantId,
+      version: e.version,
+      tokenHash: e.tokenHash,
+      emitidoEn: e.emitidoEn,
+      revocadoEn: e.revocadoEn,
+      motivoRevocacion: e.motivoRevocacion,
+      revocadoPor: e.revocadoPor,
+    });
+  }
+
+  private static exigirTx(tx: TransactionContext, operacion: string): void {
+    if (!tx) {
+      throw new Error(
+        `EnlaceCitaRepository.${operacion} requiere una transacción`,
+      );
+    }
+  }
+
+  buscarActivoPorCita(
+    citaId: string,
+    tx: TransactionContext,
+  ): Promise<EnlaceCita | null> {
+    InMemoryEnlaceCitaRepository.exigirTx(tx, 'buscarActivoPorCita');
+    const e = [...this.enlaces.values()].find(
+      (x) => x.citaId === citaId && x.estaActivo(),
+    );
+    return Promise.resolve(e ? InMemoryEnlaceCitaRepository.clonar(e) : null);
+  }
+
+  buscarPorTokenHash(
+    hash: string,
+    tx: TransactionContext,
+  ): Promise<EnlaceCita | null> {
+    InMemoryEnlaceCitaRepository.exigirTx(tx, 'buscarPorTokenHash');
+    const e = [...this.enlaces.values()].find((x) => x.tokenHash === hash);
+    return Promise.resolve(e ? InMemoryEnlaceCitaRepository.clonar(e) : null);
+  }
+
+  insertarSiNoExiste(
+    enlace: EnlaceCita,
+    tx: TransactionContext,
+  ): Promise<boolean> {
+    InMemoryEnlaceCitaRepository.exigirTx(tx, 'insertarSiNoExiste');
+    const choca = [...this.enlaces.values()].some(
+      (x) =>
+        x.tokenHash === enlace.tokenHash ||
+        (x.citaId === enlace.citaId && x.version === enlace.version) ||
+        (x.citaId === enlace.citaId && x.estaActivo()),
+    );
+    if (choca) return Promise.resolve(false);
+    const copia = InMemoryEnlaceCitaRepository.clonar(enlace);
+    copia.id = randomUUID();
+    copia.emitidoEn = new Date();
+    this.enlaces.set(copia.id, copia);
+    return Promise.resolve(true);
+  }
+
+  maxVersion(citaId: string, tx: TransactionContext): Promise<number | null> {
+    InMemoryEnlaceCitaRepository.exigirTx(tx, 'maxVersion');
+    const versiones = [...this.enlaces.values()]
+      .filter((x) => x.citaId === citaId)
+      .map((x) => x.version);
+    return Promise.resolve(
+      versiones.length === 0 ? null : Math.max(...versiones),
+    );
+  }
+
+  guardar(enlace: EnlaceCita, tx: TransactionContext): Promise<EnlaceCita> {
+    InMemoryEnlaceCitaRepository.exigirTx(tx, 'guardar');
+    const actual = this.enlaces.get(enlace.id);
+    if (!actual) {
+      return Promise.reject(
+        new Error('EnlaceCitaRepository.guardar: el enlace no existe'),
+      );
+    }
+    // Como el UPDATE real: solo revoca uno activo; gana la primera revocación.
+    if (actual.estaActivo() && !enlace.estaActivo()) {
+      this.enlaces.set(enlace.id, InMemoryEnlaceCitaRepository.clonar(enlace));
+    }
+    return Promise.resolve(
+      InMemoryEnlaceCitaRepository.clonar(this.enlaces.get(enlace.id)!),
     );
   }
 }
@@ -231,6 +382,7 @@ export class InMemorySolicitudCitaRepository extends SolicitudCitaRepository {
       (x) =>
         x.rut === rut &&
         x.tenantId === tenantId &&
+        x.tipo === TipoSolicitud.NUEVA &&
         x.estado === EstadoSolicitud.RECIBIDA &&
         x.recibidaEn >= desde,
     );
@@ -259,10 +411,41 @@ export class InMemorySolicitudCitaRepository extends SolicitudCitaRepository {
     return this.buscarPorId(id, tenantId);
   }
 
+  buscarReagendamientoAbierto(
+    citaOrigenId: string,
+    tenantId: string,
+  ): Promise<SolicitudCita | null> {
+    const s = [...this.solicitudes.values()].find(
+      (x) =>
+        x.citaOrigenId === citaOrigenId &&
+        x.tenantId === tenantId &&
+        x.tipo === TipoSolicitud.REAGENDAMIENTO &&
+        x.estado === EstadoSolicitud.RECIBIDA,
+    );
+    return Promise.resolve(s ? clonarSolicitud(s) : null);
+  }
+
+  buscarReagendamientoAbiertoParaActualizar(
+    citaOrigenId: string,
+    tenantId: string,
+    tx: TransactionContext,
+  ): Promise<SolicitudCita | null> {
+    if (!tx) {
+      return Promise.reject(
+        new Error(
+          'buscarReagendamientoAbiertoParaActualizar requiere una transacción',
+        ),
+      );
+    }
+    this.cargasConBloqueo.push(tx);
+    return this.buscarReagendamientoAbierto(citaOrigenId, tenantId);
+  }
+
   listarPorEstado(
     tenantId: string,
     estado: EstadoSolicitud,
     limite: number,
+    filtros?: FiltrosListadoSolicitudes,
   ): Promise<SolicitudCita[]> {
     const t = (d: Date | null): number => (d ? d.getTime() : -Infinity);
     const orden =
@@ -273,7 +456,13 @@ export class InMemorySolicitudCitaRepository extends SolicitudCitaRepository {
             t(b.resueltaEn) - t(a.resueltaEn) || a.id.localeCompare(b.id);
     return Promise.resolve(
       [...this.solicitudes.values()]
-        .filter((s) => s.tenantId === tenantId && s.estado === estado)
+        .filter(
+          (s) =>
+            s.tenantId === tenantId &&
+            s.estado === estado &&
+            (filtros?.citaOrigenId === undefined ||
+              s.citaOrigenId === filtros.citaOrigenId),
+        )
         .sort(orden)
         .slice(0, limite)
         .map(clonarSolicitud),

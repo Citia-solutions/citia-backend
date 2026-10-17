@@ -15,6 +15,9 @@ import { HORAS_SIN_ENVIO_POR_DEFECTO } from '../../domain/horas-sin-envio';
  */
 const POR_DEFECTO = {
   APP_TZ: 'America/Santiago',
+  // El mismo default de desarrollo que `validarEntorno` (en producción es
+  // obligatoria).
+  FRONTEND_URL: 'http://localhost:5173',
   RECORDATORIO_MARGEN_MINIMO_MIN: 30,
   RECORDATORIO_ANTELACION_MINIMA_TARDIA_MIN: 60,
   RECORDATORIO_EXIGIR_CONSENTIMIENTO: false,
@@ -86,6 +89,8 @@ export function leerOpcionesEnvio(
   const base = leerOpcionesRecordatorios(config);
   return {
     tz: base.parametros.tz,
+    // Base del enlace del paciente (Fase 3, E5): `${FRONTEND_URL}/cita#<token>`.
+    urlFrontend: leer(config, 'FRONTEND_URL', POR_DEFECTO.FRONTEND_URL),
     silencio: base.parametros.silencio,
     exigirConsentimiento: leer(
       config,

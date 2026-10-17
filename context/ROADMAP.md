@@ -3,7 +3,7 @@
 Hoja de ruta de las historias de usuario (US-02 a US-10). Sirve para tener el orden, las
 dependencias y el estado real de cada pieza en un solo lugar.
 
-**Última revisión:** 2026-10-04 (Fase 2 implementada en la rama `feature/fase2-recordatorios`, pendiente de merge y de los prerrequisitos operativos) · antes: 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
+**Última revisión:** 2026-10-15 (**Fase 3 implementada y verificada en local**, pendiente de release; feature en [us04-respuesta-paciente](Features/us04-respuesta-paciente.md)) · antes: 2026-10-14 (Fase 3 en construcción: el arquitecto aprobó el diseño, ADR-10 aceptado con Q11 = B, plan en [US-04](US/04-respuesta-paciente.md)) · 2026-10-07 (**Fase 2 cerrada en producción**: release del 2026-10-06 en los dos repos y prueba de punta a punta con un correo real; el MVP completo está en producción) · 2026-10-04 (Fase 2 implementada en rama, pendiente de merge) · 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
 
 **Por fases:** este documento es la fuente del **estado**. Para leer todo lo que toca a una fase
 (decisiones, deudas, commits, contraparte del frontend) en orden, entra por [`Fases/`](Fases/README.md).
@@ -18,7 +18,11 @@ Aquí "fase" es siempre una fase de construcción; las etapas del producto está
   US-10 no depende de nada y puede entrar en cualquier momento. US-09 sigue sin definir.
 - **Alcance del MVP (2026-09-30):** Fase 0 (dashboard) + Fase 1 (gestión de citas) + **Fase 2
   (recordatorios)**. La Fase 5 (scoring) sale del MVP y pasa a la v2. Ver
-  [Descripcion/fase-3-mvp.md](Descripcion/fase-3-mvp.md).
+  [Descripcion/fase-3-mvp.md](Descripcion/fase-3-mvp.md). **El MVP completo está en producción**
+  (`app.citiahealth.cl`) desde el release del 2026-10-06; la Fase 2 se cerró el 2026-10-07.
+- **Entornos (Git Flow):** `develop` se despliega en **staging** y `main` en **production**, en Railway
+  (backend) y en Netlify (frontend). Una fase está "en producción" cuando llegó a `main`. Mapa en
+  [stack § Mapa de entornos](stack-tecnologico.md#mapa-de-entornos).
 - Auth y registro (US-00a/US-00b) quedan fuera: ya están cerrados (ver
   [Features/us00a-registro-inicial.md](Features/us00a-registro-inicial.md) y
   [Features/us00b-login.md](Features/us00b-login.md)). Guía de lectura de esa base:
@@ -38,7 +42,12 @@ Aquí "fase" es siempre una fase de construcción; las etapas del producto está
 ### Hecho
 - Layout del dashboard (sidebar, topbar, métricas, lista "Citas de hoy", badges de estado).
 - UI de citas del día con paciente, hora, duración, tipo de consulta y estado.
-- ✅ Conectado a `GET /citas/hoy` real (las métricas del diseño siguen en el mock de `dashboardApi.ts`).
+- ✅ Conectado a `GET /citas/hoy` real.
+- ✅ **Sin mock** (2026-10-05, frontend [PR #4](https://github.com/Citia-solutions/citia-frontend/pull/4)):
+  cuatro tarjetas con datos reales (citas de hoy, próxima cita, próximos 7 días, solicitudes por responder),
+  "Citas por semana" y estado de los recordatorios, todo desde endpoints existentes
+  ([dashboard-citas-del-dia](../../citia-frontend/context/Features/dashboard-citas-del-dia.md)). En producción desde el
+  2026-10-06.
 - ✅ Clic en una cita → voucher con reagendar/cancelar ([US-02.08](US/02.08-voucher-cita.md)).
 - ✅ Citas pasadas marcadas visualmente (tachado) en `TodayAppointments.vue`.
 
@@ -46,7 +55,8 @@ Aquí "fase" es siempre una fase de construcción; las etapas del producto está
   ([US-02.09](../../citia-frontend/context/us/02.09-dashboard-refleja-cambios.md)).
 
 ### Pendiente
-- Las métricas del dashboard (ausentismo, horas e ingresos recuperados) siguen siendo mock.
+- ~~Las métricas del dashboard (ausentismo, horas e ingresos recuperados) siguen siendo mock.~~ Se quitaron
+  el 2026-10-05: el ausentismo necesita RF-08 (v2) y volverá como tarjeta nueva, no sobre datos fijos.
 
 > Depende de US-02 (la lista real de citas).
 
@@ -64,7 +74,7 @@ Postgres. US-02.07 (lado paciente) quedó **fuera de la v1**
 
 | Subtarea | Lado | Estado |
 |---|---|---|
-| [US-02.07](US/02.07-paciente-reagenda-cancela.md) — el paciente cancela o pide reagendar | paciente | ⏸ aplazada fuera de la v1 (Q11 → C); pasa a la Fase 3 con US-04 |
+| [US-02.07](US/02.07-paciente-reagenda-cancela.md) — el paciente cancela o pide reagendar | paciente | ⏸ aplazada fuera de la v1 (Q11 → C) · 🔀 **absorbida por [US-04](US/04-respuesta-paciente.md)** (Fase 3: implementada y verificada en local el 2026-10-15, pendiente de release) |
 | [US-02.08](US/02.08-voucher-cita.md) — voucher con reagendar y cancelar | profesional | ✅ mergeada en `develop` |
 | [US-02.09](../../citia-frontend/context/us/02.09-dashboard-refleja-cambios.md) — el dashboard refleja los cambios | profesional (solo front) | ✅ mergeada · probada contra el backend real |
 | Agenda semanal + lista ([agenda-profesional](../../citia-frontend/context/Features/agenda-profesional.md)) | profesional | ✅ en `develop` |
@@ -100,7 +110,8 @@ Postgres. US-02.07 (lado paciente) quedó **fuera de la v1**
 - ✅ Frontend: flujo multi-paso `/agendar-cita`
   ([agendar-cita-paciente](../../citia-frontend/context/Features/agendar-cita-paciente.md)).
 - 🟠 Sin límite de tasa **por decisión** (2026-09-29): riesgo asumido, a revisar antes de difundir el
-  enlace de forma masiva ([DT-18](Deudas/DT-18.md)).
+  enlace de forma masiva ([DT-18](Deudas/DT-18.md)). *(2026-10-14: la Fase 3 le pone 5 solicitudes por hora
+  por IP. 2026-10-15: implementado y verificado en local; rige desde el release de la Fase 3.)*
 - ✅ **Decidido (2026-09-29):** el enlace **solo envía una solicitud** y el profesional la acepta en la
   bandeja (ADR-09). [FD-01](Frontend-Decisions/FD-01.md), que proponía reservar al instante, queda
   descartada.
@@ -122,12 +133,15 @@ solicitudes de sus pacientes y ve los choques de horario, todo reflejado.
 
 > Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-2-us03-recordatorios.md`](Fases/fase-2-us03-recordatorios.md).
 
-**Estado:** ✅ **implementada en la rama `feature/fase2-recordatorios`** (2026-10-04) · ⏳ **pendiente de
-merge** ([PR #1](https://github.com/Citia-solutions/citia-backend/pull/1) del backend y
-[PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2) del frontend, en el mismo release) **y de
-los prerrequisitos operativos** ([checklist](Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción)).
-Entra en el MVP (Q1 → A). 1274 unitarios, 212 e2e y 80 de integración en verde; Definición de Terminado
-cumplida salvo los dos puntos manuales.
+**Estado:** ✅ **cerrada en producción (2026-10-07).** Mergeada en `develop` el 2026-10-04
+([PR #1](https://github.com/Citia-solutions/citia-backend/pull/1) del backend y
+[PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2) del frontend) y llevada a `main` el
+2026-10-06 en un solo release ([PR #4](https://github.com/Citia-solutions/citia-backend/pull/4), `c057ade`, y
+[PR #6](https://github.com/Citia-solutions/citia-frontend/pull/6)). El 2026-10-07, con production configurada,
+la **prueba de punta a punta** envió tres recordatorios reales: llegaron a la bandeja de entrada, uno por
+cita, y el voucher los mostró *Entregado*. Entra en el MVP (Q1 → A). 1274 unitarios, 212 e2e y 80 de
+integración en verde; Definición de Terminado completa, con dos salvedades anotadas. Cierre, incidentes y
+lecciones en la [guía de la fase](Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07).
 Diseño en [ADR-12](Decisions/ADR-12.md) (outbox + planificador) y [ADR-13](Decisions/ADR-13.md)
 (recordatorios); plan en [US/03-recordatorios.md](US/03-recordatorios.md); lo construido en
 [Features/us03-recordatorios.md](Features/us03-recordatorios.md). Cronología commit → documento en la
@@ -138,17 +152,17 @@ Diseño en [ADR-12](Decisions/ADR-12.md) (outbox + planificador) y [ADR-13](Deci
 | Tema | Decisión |
 |---|---|
 | Canal | correo transaccional vía **Resend**. WhatsApp y SMS fuera del MVP (otro adaptador del mismo puerto, después) |
-| Remitente | uno solo para toda la plataforma, nombre visible **"Citia"**. Dominio **`citiahealth.cl`**, comprado y delegado a Cloudflare (al 2026-10-04); falta verificar el subdominio de envío en Resend |
+| Remitente | uno solo para toda la plataforma, nombre visible **"Citia"**: `Citia <recordatorios@notificaciones.citiahealth.cl>`. Dominio **`citiahealth.cl`** delegado a Cloudflare; subdominio de envío **verificado en Resend** (2026-10-07). Falta DMARC ([DT-41](Deudas/DT-41.md)) |
 | Contenido | solo informativo: fecha, hora, profesional, cómo contactar. Sin tipo de consulta. El enlace para responder llega en la Fase 3 |
 | Momentos | configurables por profesional; predeterminado **24 h y 2 h antes** |
 | Correo del paciente | **obligatorio** en el alta manual |
 | Consentimiento | **no se revisa** por ahora: riesgo aceptado ([DT-16](Deudas/DT-16.md)), revisión antes de la Ley 21.719 |
 | Hechos de dominio | outbox transaccional: **cierra [DT-27](Deudas/DT-27.md)** antes del primer suscriptor |
 | Planificador ([Q6](PREGUNTAS-ABIERTAS.md)) | cron dentro del proceso sobre Postgres con `FOR UPDATE SKIP LOCKED`; sin Redis ni BullMQ |
-| Hosting | backend + Postgres en **Railway** (siempre encendido); SPA en **Netlify** (revertido desde Cloudflare el 2026-10-04) |
-| Observabilidad | **Better Stack** gratis: uptime, latido del job, logs, alertas ([DT-19](Deudas/DT-19.md)) |
+| Hosting | backend + Postgres en **Railway** (siempre encendido); SPA en **Netlify** (revertido desde Cloudflare el 2026-10-04). Un entorno por rama en ambos: staging ← `develop`, production ← `main` |
+| Observabilidad | **Better Stack** gratis: uptime, latido del job, logs, alertas ([DT-19](Deudas/DT-19.md)). En producción: monitor y heartbeats en Up; la fuente de logs, pendiente |
 | Modo prueba | Resend Free: 3.000/mes y 100/día → ~50 citas al día en toda la plataforma; aviso al 80 % |
-| Asistencia en el voucher | **no**: se espera a la Fase 3, cuando el paciente confirme desde el enlace; no se toca el grafo de ADR-04 → [DT-30](Deudas/DT-30.md) |
+| Asistencia en el voucher | ~~**no**: se espera a la Fase 3, cuando el paciente confirme desde el enlace~~ → **revertida el 2026-10-05:** el voucher ofrece Confirmar, Asistió y No asistió, sin tocar el grafo de ADR-04 → [DT-30](Deudas/DT-30.md) mitigada |
 | Detalle (confirmado el mismo día) | `Reply-To` = correo que configure el profesional · sin envíos de 21:00 a 08:00 · activos por defecto a las 24 h y 2 h · un tardío si faltan ≥ 60 min · pacientes sin correo `omitido` + `PATCH /pacientes/:id` · completar el correo vacío al vincular por RUT · nombre de la organización en el cuerpo · subdominio de envío · 40 envíos al día por tenant · alerta sobre 5 % con n ≥ 20 ([ADR-13](Decisions/ADR-13.md#decisiones-confirmadas-2026-09-30)) |
 
 ### Backend
@@ -169,8 +183,10 @@ Diseño en [ADR-12](Decisions/ADR-12.md) (outbox + planificador) y [ADR-13](Deci
 | 12 | Tests: planificación, outbox, concurrencia `SKIP LOCKED`, webhooks, e2e del flujo | testing | ✅ `db46e37`, `a938f9d` |
 
 ### Frontend (`citia-frontend`)
-*(Todo ✅ en la rama `feature/fase2-recordatorios` de `citia-frontend`, [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2);
-probado solo con respuestas simuladas.)*
+*(Todo ✅: mergeado en `develop` con [PR #2](https://github.com/Citia-solutions/citia-frontend/pull/2) y
+[PR #3](https://github.com/Citia-solutions/citia-frontend/pull/3) el 2026-10-04, en producción con
+[PR #6](https://github.com/Citia-solutions/citia-frontend/pull/6) el 2026-10-06 y probado contra el backend
+real el 2026-10-07.)*
 
 1. ✅ Correo obligatorio en el modal "Nueva cita" (mismo release que el punto 10 del backend).
 2. ✅ Pantalla de configuración `/recordatorios`: activar, momentos de envío (1 a 3), teléfono y correo de
@@ -180,25 +196,50 @@ probado solo con respuestas simuladas.)*
    `PATCH /pacientes/:id`.
 4. ✅ Despliegue en **Netlify** con *fallback* de SPA a `index.html` (`public/_redirects`, incluye
    `/agendar-cita`); `VITE_API_URL` como variable del sitio. *(El `wrangler.jsonc` de Cloudflare se
-   quitó el 2026-10-04 al decidir quedarse en Netlify.)*
+   quitó el 2026-10-04 al decidir quedarse en Netlify.)* Sitios: `app.citiahealth.cl` ← `main` y
+   `citia-staging.netlify.app` ← `develop`.
+5. ✅ Limpieza previa al release ([PR #4](https://github.com/Citia-solutions/citia-frontend/pull/4) y
+   [PR #5](https://github.com/Citia-solutions/citia-frontend/pull/5)): sin mock, sesión persistente,
+   asistencia en el voucher, 404, fechas pasadas, zona horaria fija de Chile, calendario público. El
+   backend agregó `tenantNombre` al login para el sidebar
+   ([PR #3](https://github.com/Citia-solutions/citia-backend/pull/3)).
 
 ### Prerrequisitos operativos (usuario)
-- ✅ Dominio **`citiahealth.cl`** comprado y su DNS delegado a Cloudflare.
-- ⬜ Verificar el subdominio de envío en Resend (SPF, DKIM, DMARC) y crear el webhook.
-  **Sin esto no se puede escribir a pacientes reales.**
-- ⬜ Cuenta de Better Stack (monitor y latidos); Railway con "App Sleeping" desactivado y las variables
-  nuevas cargadas; frontend publicado; migraciones `1750000008000` a `1750000011000`; contar los pacientes
-  sin correo. Lista completa: [checklist de salida a producción](Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción).
+*(Estado al 2026-10-07; detalle punto por punto en el
+[checklist de salida a producción](Fases/fase-2-us03-recordatorios.md#checklist-de-salida-a-producción).)*
+- ✅ Dominio **`citiahealth.cl`** comprado (Hostinger, vence el 2027-10-01) y su DNS delegado a Cloudflare.
+- ✅ Subdominio de envío `notificaciones.citiahealth.cl` verificado en Resend y webhook creado en
+  production. ⬜ Falta el registro DMARC ([DT-41](Deudas/DT-41.md)).
+- ✅ Better Stack: monitor de `/api/health` y los dos heartbeats en Up. ⬜ Fuente de logs
+  ([DT-19](Deudas/DT-19.md)).
+- ✅ Railway: staging ← `develop` y production ← `main`, cada uno con su Postgres y sus variables;
+  migraciones aplicadas. 🔶 "App Sleeping" apagado, sin confirmar en el panel.
+- ✅ Frontend publicado en Netlify, un sitio por entorno.
 
 ### Integración
 - ✅ Crear / reagendar / cancelar una cita → los recordatorios se programan, reprograman o anulan (vía
   outbox): probado en los e2e con Postgres.
-- 🔶 Configuración ↔ API; estado por cita ↔ voucher: contrato cerrado y probado por separado en cada
-  repo; **falta la prueba manual del frontend contra el backend real**.
+- ✅ Configuración ↔ API; estado por cita ↔ voucher: **probado en producción** el 2026-10-07 (recordatorio a
+  30 min antes de tres citas, tres correos reales, *Entregado* en el voucher).
 
 **Entregable:** el profesional configura sus recordatorios; el sistema los programa, los envía por
 correo, registra su entrega y refleja reagendar y cancelar; si algo falla, el equipo se entera por
 una alerta antes que por el cliente.
+
+### Pendientes posteriores al cierre
+
+Ninguno bloquea el cierre; detalle en la
+[guía de la fase](Fases/fase-2-us03-recordatorios.md#pendientes-posteriores).
+
+- ⬜ Que `MENSAJERIA_ADAPTADOR=registro` no deje recordatorios "Enviado" en producción sin enviarse, o que la
+  app no arranque con él sin confirmarlo ([DT-40](Deudas/DT-40.md)).
+- ⬜ Registro **DMARC** del subdominio de envío y revisión de las cabeceras ([DT-41](Deudas/DT-41.md)).
+- ⬜ **Fuente de logs** en Better Stack, alertas por log y prueba de alerta forzada ([DT-19](Deudas/DT-19.md)).
+- ⬜ **Resend en staging** (hoy corre con `registro`).
+- ⬜ Redirigir el dominio raíz `citiahealth.cl` y `www` a `app.citiahealth.cl` (hoy, página estacionada de
+  Hostinger). Opcional.
+- ⬜ Confirmar "App Sleeping" apagado en production y el `FRONTEND_URL` del backend de staging; contar los
+  pacientes sin correo en production.
 
 > **Decisiones pendientes del usuario (2026-10-04),** ninguna bloquea el merge: ¿ocultar `/recordatorios`
 > al rol `recepcion`? (Q12) · textos y colores de los estados en el frontend (Q13) · ¿mantener la vista
@@ -213,47 +254,84 @@ una alerta antes que por el cliente.
 
 > Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-3-us04-respuesta-paciente.md`](Fases/fase-3-us04-respuesta-paciente.md).
 
-**Estado:** ⬜ nada. Diseño de producto en [FD-06](Frontend-Decisions/FD-06.md) (propuesta). El mecanismo de enlace por cita se está diseñando en
-[ADR-10](Decisions/ADR-10.md) (propuesto) para [US-02.07](US/02.07-paciente-reagenda-cancela.md).
+**Estado:** ✅ **implementada y verificada en local (2026-10-15) · pendiente de release.** Backend y
+frontend construidos en `feature/fase3-respuesta-paciente` (sin commits todavía) contra el plan
+[US-04](US/04-respuesta-paciente.md); [ADR-10](Decisions/ADR-10.md) aceptado el 2026-10-14 con
+[Q11](PREGUNTAS-ABIERTAS.md#q11--cómo-le-llega-al-paciente-el-enlace-de-su-cita) = **B** (el enlace va en el
+recordatorio) y los requisitos de seguridad S1–S3 más el límite de tasa. 1709 unitarios, 287 e2e y 139 de
+integración en verde; recorrido real en local de punta a punta. Lo que existe, en
+[Features/us04-respuesta-paciente.md](Features/us04-respuesta-paciente.md); lo que falta para producción, en
+el [checklist de salida](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción).
 
-> **Relación con US-02.07.** US-04 **se construye sobre** el enlace por cita de ADR-10: mismo token,
-> misma página pública. US-02.07 aporta cancelar y pedir reagendar; US-04 añade "Confirmar", el
-> envío del enlace dentro del recordatorio y el registro de la respuesta para el scoring. No hay que
-> diseñar un segundo mecanismo de token.
+> *Antes (2026-10-14):* 🔶 en construcción: el arquitecto aprobó el diseño ese día.
+
+> **Relación con US-02.07.** US-04 **absorbe** la subtarea [US-02.07](US/02.07-paciente-reagenda-cancela.md):
+> mismo enlace, misma página pública. El paciente **confirma**, **cancela** o **pide otra hora**; el enlace
+> viaja en cada recordatorio. El análisis de US-02.07 se conserva, con la tabla de lo que cambió.
+
+> *Antes (2026-10-07):* ⬜ nada · siguiente fase; para arrancar había que aceptar ADR-10.
 
 ### Backend
-1. Enlaces públicos con token único para "Confirmar" y "Cancelar" (reutiliza el enlace de ADR-10).
-2. Modelo para registrar la respuesta (fecha/hora) → alimenta US-07.
-3. API pública que procesa la respuesta usando el token.
-4. Validación: rechazar/caducar tras la hora de la cita.
-5. Marcar cita confirmada al confirmar.
-6. Cancelar cita y liberar el bloque horario al cancelar (transición existente, ADR-10).
-7. Guardar respuesta exacta (para scoring).
+*(Todo ✅ en la rama, sin commits ni release (2026-10-15). Detalle por agente en
+[US-04 § Orden de construcción](US/04-respuesta-paciente.md#orden-de-construcción); lo que el código hizo
+distinto del contrato, en [us04 § Desviaciones](Features/us04-respuesta-paciente.md#desviaciones-del-contrato-y-decisiones-tomadas-al-implementar).)*
 
-### Frontend (página pública responsive, sin cuenta)
-1. Página para confirmar/cancelar.
-2. Pantallas de éxito y de "enlace expirado".
-3. Bloquear interacción si el enlace caducó.
+| # | Pieza | Agente | Estado |
+|---|---|---|---|
+| 1 | `ENLACE_CITA_CLAVE`, `trust proxy`, CORS con `X-Enlace-Cita`, redacción en logs, cabeceras `no-store` / `no-referrer` | backend | ✅ |
+| 2 | Límite de tasa (`@nestjs/throttler`): enlace, login, registro y solicitud pública ([DT-18](Deudas/DT-18.md)) | backend | ✅ guard global opt-in (`@LimitarTasa`), apagable con `LIMITE_TASA_ACTIVO=false` |
+| 3 | Tabla `enlaces_cita`; `solicitudes_cita` con `tipo`, `cita_origen_id`, `enlace_id` y estado `descartada` | database | ✅ migraciones `1750000012000` a `1750000014000` |
+| 4 | Enlace por cita (HMAC recalculable, uno por cita, validez hasta `inicio`) e invalidación desde el voucher | api | ✅ + autocorrección si cambia la clave ([DT-45](Deudas/DT-45.md)) |
+| 5 | Refactor del actor en el esqueleto de mutación, con bloqueo de la cita; `confirmadaPor` / `canceladaPor` en el detalle | api | ✅ con `FOR NO KEY UPDATE` en vez de `FOR UPDATE` |
+| 6 | El recordatorio lleva el enlace (botón fijo *Ver o responder mi hora*) | api | ✅ |
+| 7 | Pedir otra hora como `SolicitudCita` de tipo `reagendamiento`; aceptar mueve la misma cita; suscriptor que la descarta | api | ✅ el suscriptor además la deja atendida si el profesional reagenda ([DT-44](Deudas/DT-44.md), parte 2) |
+| 8 | Módulo `portal-paciente`: `GET /api/publico/cita` y `POST …/confirmar`, `…/cancelar`, `…/otra-hora` | api | ✅ |
+| 9 | Tests: la Definición de Terminado de US-04 | testing | ✅ lo automático (1709 unitarios, 287 e2e, 139 de integración); ⬜ los dos manuales |
+
+### Frontend (`citia-frontend`)
+*(✅ en la rama, sin commits (2026-10-15): [responder-cita-paciente](../../citia-frontend/context/Features/responder-cita-paciente.md).)*
+
+1. ✅ Ruta pública `/cita` (sin cuenta, responsive): ver la cita, confirmar, cancelar, pedir otra hora;
+   pantallas de éxito, de *"Enlace no válido o vencido"*, de 409 y de 429; sin scripts de terceros. Relee el
+   token si cambia solo el fragmento en la misma pestaña (bug encontrado y corregido en la verificación).
+2. ✅ Voucher: quién confirmó o canceló, nota *"El paciente pidió otra hora"*, botón *"Invalidar enlace del
+   paciente"*.
+3. ✅ Bandeja: *"Pide otra hora"* con la hora original; aceptar pide solo fecha y hora; estado `descartada`.
+4. ✅ Netlify: `_headers` con `Referrer-Policy: no-referrer` (y `X-Robots-Tag: noindex, nofollow`) para `/cita`.
 
 ### Integración
-- Conectar página pública ↔ API de respuestas.
-- Disparar alertas (US-05) al confirmar/cancelar.
-- Reflejar cambio en agenda del profesional.
+- ✅ Página pública ↔ API del enlace; voucher y bandeja ↔ rutas autenticadas (verificado en local,
+  2026-10-15).
+- ✅ Cambio reflejado en el voucher, la bandeja y los recordatorios (aceptar mueve la misma cita y los
+  reprograma; la petición de otra hora va a la bandeja, **no** al dashboard).
+- ⬜ Correo real con el botón y escáneres de enlaces de Gmail y Outlook (staging con Resend o production).
+- ⬜ Release a `develop` y a `main`, con el [checklist de salida](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción).
+- Las alertas al profesional son de la Fase 4 ([DT-43](Deudas/DT-43.md)): los hechos ya salen con actor.
 
-**Entregable:** el paciente confirma/cancela desde el correo; agenda y alertas se actualizan.
+**Entregable:** el paciente confirma, cancela o pide otra hora desde el correo; el profesional lo ve en la
+agenda, en el voucher y en la bandeja.
 
-> **Fuera del MVP** (2026-09-30): el MVP termina en la Fase 2. Con los recordatorios diseñados, el
-> canal que ADR-10 echaba en falta va a existir; al retomar esta fase, ADR-10 se reabre con la salida B
-> de Q11 (el enlace viaja en el recordatorio, bloque `accion` de la plantilla de ADR-13 §12).
+> **Fuera del MVP** (2026-09-30): el MVP termina en la Fase 2.
 >
-> **Al entrar esta fase se reabre [DT-30](Deudas/DT-30.md)** (decisión del 2026-09-30): la
-> confirmación del paciente es lo que lleva las citas a `confirmada`, y recién entonces los botones de
-> asistencia e inasistencia del voucher funcionan sin tocar el grafo de ADR-04.
+> **DT-30:** mitigada desde el 2026-10-05 (los botones de asistencia ya están en el voucher). La
+> confirmación del paciente desde el enlace se suma y reduce las citas que llegan `pendiente` a su hora.
 >
-> Depende de la Fase 2 (el recordatorio es lo que lleva el enlace) y de que se **acepte ADR-10**
-> (bloqueado por [H7 y Q11](PREGUNTAS-ABIERTAS.md)). **No** depende de ADR-08: el enlace no lleva
-> `tenantSlug`. Sin límite de tasa por decisión ([DT-18](Deudas/DT-18.md)): revisarlo antes de
-> difundir enlaces de forma masiva.
+> **Ghosting:** la regla G1 queda escrita en [DT-11](Deudas/DT-11.md#regla-del-ghosting-g1-2026-10-14); el
+> job no se construye en esta fase y la **fecha de corte es el despliegue de esta fase en producción**
+> (escribirla en DT-11 ese día).
+>
+> **"Cambiar la hora" ([FD-06](Frontend-Decisions/FD-06.md)):** la v1 lo resuelve como una petición manual
+> que el profesional atiende en la bandeja. Que el paciente elija entre horarios disponibles queda para
+> después (necesita el modelo de disponibilidad, Q9).
+>
+> **Límite de tasa:** entra en esta fase ([DT-18](Deudas/DT-18.md): implementada, se cierra al desplegar).
+> **No** depende de ADR-08: el enlace no lleva `tenantSlug`. El consentimiento sigue como deuda
+> ([DT-16](Deudas/DT-16.md)).
+>
+> **Prerrequisito operativo:** cargar `ENLACE_CITA_CLAVE` en staging y en production **antes** del
+> despliegue (sin ella el servicio no arranca; distinta en cada entorno; no copiarla entre ellos,
+> [DT-45](Deudas/DT-45.md)). El resto, en el
+> [checklist de salida](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción).
 
 ---
 
@@ -261,7 +339,7 @@ una alerta antes que por el cliente.
 
 > Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-4-us05-alertas.md`](Fases/fase-4-us05-alertas.md).
 
-**Estado:** ⬜ nada propio. Desde la Fase 2 (en rama, 2026-10-04) existe el **outbox** con su despachador
+**Estado:** ⬜ nada propio. Desde la Fase 2 (en producción desde el 2026-10-06) existe el **outbox** con su despachador
 y un primer suscriptor (recordatorios): las alertas se enchufan como otro suscriptor
 ([ADR-12 §4](Decisions/ADR-12.md)); para entregar en menos de 3 s hará falta `LISTEN/NOTIFY`
 ([DT-33](Deudas/DT-33.md)), y conviene resolver el orden entre hechos ([DT-32](Deudas/DT-32.md)).
@@ -318,8 +396,8 @@ agregado del negocio; se retoma después de validar el MVP con recordatorios.
 > El punto 4 depende del **proceso de cierre**. Su mecanismo ya está decidido ([ADR-12](Decisions/ADR-12.md))
 > y el job se aplaza con esta fase ([DT-11](Deudas/DT-11.md)): el `ghosting` se puede reconstruir
 > después, con una fecha de corte. **Lo que no se reconstruye es la asistencia real**
-> ([DT-30](Deudas/DT-30.md)): los botones del voucher esperan a la Fase 3 (decisión del 2026-09-30),
-> así que esta fase arrancará sin el historial de asistencia anterior a esa fecha.
+> ([DT-30](Deudas/DT-30.md)): desde el 2026-10-05 el voucher la registra (mitigada), así que esta fase
+> arrancará sin el historial de asistencia anterior a esa fecha.
 
 ---
 
@@ -327,7 +405,7 @@ agregado del negocio; se retoma después de validar el MVP con recordatorios.
 
 > Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fases-6-7-us09-sin-diseno.md`](Fases/fases-6-7-us09-sin-diseno.md#fase-6--us-08-monitoreo-y-seguimiento-del-paciente).
 
-**Estado:** 🔶 solo `POST /pacientes` y, desde la Fase 2 (en rama), `PATCH /pacientes/:id` (teléfono y correo).
+**Estado:** 🔶 solo `POST /pacientes` y, desde la Fase 2 (en producción), `PATCH /pacientes/:id` (teléfono y correo).
 
 ### Backend
 1. Modelo de notas de seguimiento (fecha, contenido, vínculo profesional+paciente).
@@ -392,11 +470,11 @@ agregado del negocio; se retoma después de validar el MVP con recordatorios.
 
 | Fase | US | Depende de | Estado |
 |---|---|---|---|
-| 0 | US-06 Dashboard | US-02 | ✅ cerrada |
-| 1 | US-02 Gestión de citas | — | ✅ cerrada (develop 2026-09-28) · US-02.07 ⏸ aplazada |
-| 2 | US-03 Recordatorios | US-02, ADR-12 (outbox + planificador), subdominio verificado en Resend | ✅ implementada en rama (2026-10-04) · ⏳ pendiente de merge y de los prerrequisitos operativos · **en el MVP** |
-| 3 | US-04 Respuesta paciente (+ US-02.07) | US-03, ADR-10 | ⬜ · fuera del MVP |
-| 4 | US-05 Alertas | US-02/03/04 | ⬜ (solo puerto) |
+| 0 | US-06 Dashboard | US-02 | ✅ cerrada · sin mock (2026-10-05) · en producción |
+| 1 | US-02 Gestión de citas | — | ✅ cerrada (develop 2026-09-28) · en producción (2026-10-04) · US-02.07 ⏸ aplazada |
+| 2 | US-03 Recordatorios | US-02, ADR-12 (outbox + planificador), subdominio verificado en Resend | ✅ **cerrada en producción (2026-10-07)** · release 2026-10-06 · **en el MVP** · [pendientes posteriores](#pendientes-posteriores-al-cierre) |
+| 3 | US-04 Respuesta paciente (+ US-02.07) | US-03 ✅, ADR-10 ✅ (aceptado 2026-10-14) | ✅ **implementada y verificada en local (2026-10-15)** · pendiente de release · fuera del MVP · [us04](Features/us04-respuesta-paciente.md) · [checklist](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción) |
+| 4 | US-05 Alertas | US-02/03/04 | ⬜ (el outbox ya existe) |
 | 5 | US-07 Scoring | US-02/04, proceso de cierre (ADR-12), asistencia registrada (DT-30) | ⏸ v2 (fuera del MVP, 2026-09-30) |
 | 6 | US-08 Monitoreo | US-02/07 | 🔶 solo alta y `PATCH` de contacto |
 | 7 | US-10 Perfil/soporte | — | ⬜ |
@@ -409,10 +487,25 @@ agregado del negocio; se retoma después de validar el MVP con recordatorios.
 3. Tiempo real (Fase 4): WebSockets vs SSE.
 4. ~~Planificador/cola de jobs (Fases 2 y 5)~~ → **resuelta 2026-09-30**: planificador en proceso sobre
    Postgres con `SKIP LOCKED`, sin Redis ([ADR-12](Decisions/ADR-12.md)).
-5. Enlace por cita (Fases 1 y 3): aceptar [ADR-10](Decisions/ADR-10.md) tras
-   [H7 y Q11](PREGUNTAS-ABIERTAS.md), incluido si el correo ofrece "cambiar hora" además de
-   confirmar/cancelar ([FD-06](Frontend-Decisions/FD-06.md)).
+5. ~~Enlace por cita (Fases 1 y 3): aceptar [ADR-10](Decisions/ADR-10.md) tras
+   [Q11](PREGUNTAS-ABIERTAS.md#q11--cómo-le-llega-al-paciente-el-enlace-de-su-cita) y la seguridad del enlace, incluido si el correo ofrece "cambiar hora" además de
+   confirmar/cancelar ([FD-06](Frontend-Decisions/FD-06.md)). **Es lo que bloquea arrancar la Fase 3**
+   (2026-10-07).~~ → **resuelta 2026-10-14**: ADR-10 aceptado con Q11 = B y los requisitos S1–S3 y de
+   límite de tasa. El correo lleva un solo botón (*Ver o responder mi hora*); la página permite confirmar,
+   cancelar y **pedir otra hora** como petición manual; elegir entre horarios disponibles queda para después.
+   Plan en [US-04](US/04-respuesta-paciente.md).
 6. ~~FD-01 vs ADR-09~~ → **resuelta 2026-09-29**: el enlace solo envía una solicitud (ADR-09).
 7. ~~Límite de tasa antes de desplegar~~ → **resuelta 2026-09-29**: se sigue sin límite por ahora (DT-18).
+   *(2026-10-14: la Fase 3 lo construye para el enlace, el login, el registro y la solicitud pública.
+   2026-10-15: implementado y verificado en local; rige desde el release de la Fase 3.)*
 8. [ADR-08](Decisions/ADR-08.md) (tenant en URL): la fase 1 ya se aplica en la ruta pública
    (ADR-09 §11.b); falta el login. Ya no bloquea la Fase 3.
+9. ~~Hosting y entornos (Fase 2)~~ → **resuelta 2026-10-04**: backend + Postgres en Railway, SPA en Netlify,
+   DNS en Cloudflare; un entorno por rama (staging ← `develop`, production ← `main`). Aplicada y verificada
+   el 2026-10-07 ([stack § Mapa de entornos](stack-tecnologico.md#mapa-de-entornos)).
+10. ~~Asistencia en el voucher~~ → **resuelta 2026-10-05**: se agrega ya, sin esperar a la Fase 3
+    ([DT-30](Deudas/DT-30.md) mitigada).
+11. Pendientes del usuario que dejó la Fase 2, ninguna bloqueante:
+    [Q12–Q15](PREGUNTAS-ABIERTAS.md#fase-2--decisiones-pendientes-tras-implementar-2026-10-04)
+    (`/recordatorios` para `recepcion`, textos y colores de los estados, vista *Contacto*, reinicio de la
+    cuota mensual de Resend).
