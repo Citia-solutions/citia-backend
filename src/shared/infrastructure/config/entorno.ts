@@ -548,13 +548,14 @@ export function validarEntorno(
       `debe ser un dominio, p. ej. notificaciones.citia.cl (recibido "${CORREO_DOMINIO}").`,
     );
   }
-  // ADR-13 §13: "Citia <recordatorios@${CORREO_DOMINIO}>"; sin dominio, el
-  // remitente de pruebas de Resend (§18).
+  // ADR-13 §13: "citiahealth <recordatorios@${CORREO_DOMINIO}>" (el nombre
+  // visible era "Citia" hasta el 2026-10-18); sin dominio, el remitente de
+  // pruebas de Resend (§18).
   const CORREO_REMITENTE = l.texto(
     'CORREO_REMITENTE',
     CORREO_DOMINIO && DOMINIO.test(CORREO_DOMINIO)
-      ? `Citia <recordatorios@${CORREO_DOMINIO}>`
-      : 'Citia <onboarding@resend.dev>',
+      ? `citiahealth <recordatorios@${CORREO_DOMINIO}>`
+      : 'citiahealth <onboarding@resend.dev>',
   );
   if (!REMITENTE.test(CORREO_REMITENTE)) {
     l.error(

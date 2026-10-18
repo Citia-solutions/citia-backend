@@ -58,7 +58,7 @@ describe('validarEntorno', () => {
         EVENTOS_SALIDA_MAX_INTENTOS: 10,
         EVENTOS_SALIDA_RETENCION_DIAS: 14,
         MENSAJERIA_ADAPTADOR: 'registro',
-        CORREO_REMITENTE: 'Citia <onboarding@resend.dev>',
+        CORREO_REMITENTE: 'citiahealth <onboarding@resend.dev>',
         RESEND_CUOTA_DIARIA: 100,
         RESEND_CUOTA_MENSUAL: 3000,
         CUOTA_UMBRAL_AVISO: 0.8,
@@ -173,7 +173,7 @@ describe('validarEntorno', () => {
         CORREO_DOMINIO: 'notificaciones.citia.cl',
       });
       expect(e.CORREO_REMITENTE).toBe(
-        'Citia <recordatorios@notificaciones.citia.cl>',
+        'citiahealth <recordatorios@notificaciones.citia.cl>',
       );
     });
   });
