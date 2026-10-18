@@ -10,6 +10,7 @@ sin doc.**
 
 | Si quieres saber… | Ve a |
 |---|---|
+| **acabas de llegar y quieres entender todo el proyecto en lenguaje simple**, en orden | [`Explicado/`](Explicado/index.md) |
 | **todo lo de una fase** (qué se hizo, con qué decisiones, deudas y commits, en qué orden leerlo) | [`Fases/`](Fases/README.md) |
 | **en qué estado está cada fase** y qué viene después | [`ROADMAP.md`](ROADMAP.md) |
 | **por qué existe el proyecto** y qué entra en la v1 | [`Descripcion/`](Descripcion/README.md) |
@@ -56,7 +57,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 | Buscas… | Camino |
 |---|---|
 | ponerte al día con el proyecto | este README → [ROADMAP § Resumen](ROADMAP.md#resumen) → [Fases/](Fases/README.md) → la guía de la fase en curso |
-| entender la respuesta del paciente (lo último construido, sin release) | [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) —estado, guía de lectura de la implementación y [checklist de salida a producción](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción)— y la feature [us04-respuesta-paciente](Features/us04-respuesta-paciente.md) |
+| entender la respuesta del paciente (lo último en producción, desde el 2026-10-17) | [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) —estado, guía de lectura de la implementación y [checklist de salida a producción](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción)— y la feature [us04-respuesta-paciente](Features/us04-respuesta-paciente.md) |
 | entender los recordatorios (lo último en producción) | [Fase 2](Fases/fase-2-us03-recordatorios.md) —guía de lectura del diseño y de la implementación, checklist de salida a producción y [cierre](Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07)— y la feature [us03-recordatorios](Features/us03-recordatorios.md) |
 | qué está desplegado y dónde (staging y production) | [stack § Mapa de entornos](stack-tecnologico.md#mapa-de-entornos) e [Infraestructura en producción](stack-tecnologico.md#infraestructura-en-producción-2026-10-07) |
 | qué quedó al cerrar la gestión de citas | [Fase 1 § Cierre](Fases/fase-1-us02-gestion-citas.md#cierre-de-la-fase-resumen) |
@@ -72,6 +73,10 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 
 ### Carpetas
 
+- **[`Explicado/`](Explicado/index.md)** — el proyecto entero contado en lenguaje simple, para quien
+  llega nuevo: producto, arquitectura, ADRs, fases, US, features, deudas, preguntas abiertas, frontend
+  y glosario, con un `index.md` que dice en qué orden leerlo. Traduce a los documentos oficiales; si
+  no coinciden, manda el oficial.
 - **[`Fases/`](Fases/README.md)** — una guía por fase del roadmap: objetivo, estado, orden de lectura,
   cronología commit → documento, decisiones, features, deudas, preguntas, contraparte del frontend y
   dependencias. Es navegación: no reemplaza a ningún documento.
@@ -88,8 +93,8 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 - **`US/`** — planes de historias de usuario previos a implementar: decisiones y orden de
   construcción, sin código. [US-00](US/00-auth.md) autenticación · [US-06](US/06-epic.md) dashboard ·
   [US-03](US/03-recordatorios.md) recordatorios al paciente (✅ cerrada en producción, 2026-10-07) ·
-  [US-04](US/04-respuesta-paciente.md) respuesta del paciente desde el recordatorio (✅ implementada y
-  verificada en local, 2026-10-15, pendiente de release; [ADR-10](Decisions/ADR-10.md) aceptado).
+  [US-04](US/04-respuesta-paciente.md) respuesta del paciente desde el recordatorio (✅ en producción
+  desde el 2026-10-17; [ADR-10](Decisions/ADR-10.md) aceptado).
   **Subtareas de US-02** (archivos `02.NN-*`, no son historias propias):
   [US-02.07](US/02.07-paciente-reagenda-cancela.md) el paciente cancela o pide reagendar (⏸ aplazada
   fuera de la v1; 🔀 **absorbida por US-04** el 2026-10-14, en la
@@ -106,30 +111,33 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 - **[`rules.md`](rules.md)** — reglas transversales de código.
 - **[`stack-tecnologico.md`](stack-tecnologico.md)** — stack, despliegue, mapa de entornos (staging y
   production) e infraestructura en producción.
-- **[`PREGUNTAS-ABIERTAS.md`](PREGUNTAS-ABIERTAS.md)** — las once decisiones que bloqueaban el MVP
-  (cuatro ya respondidas), repartidas por rol (I+D, desarrollo, seguridad) con el entregable esperado
-  de cada una, más cuatro pendientes que dejó la implementación de la Fase 2 (Q12–Q15, no bloquean).
+- **[`PREGUNTAS-ABIERTAS.md`](PREGUNTAS-ABIERTAS.md)** — diecisiete preguntas repartidas por rol (I+D,
+  desarrollo, arquitecto) con el entregable esperado de cada una: las once que bloqueaban el MVP (Q1, Q4,
+  Q6 en su mecanismo y Q11 ya respondidas), cuatro que dejó la implementación de la Fase 2 (Q12–Q15, no
+  bloquean) y dos de seguridad para el arquitecto (Q16 y Q17).
 - **[`TRAZABILIDAD.md`](TRAZABILIDAD.md)** — matriz commit ↔ documentación, con la fase de cada commit.
 
 ---
 
 ## Estado, de un vistazo
 
-*(Actualizado el 2026-10-07; la Fase 3, el 2026-10-15. Fuente: [ROADMAP § Resumen](ROADMAP.md#resumen).)*
+*(Actualizado el 2026-10-07; la Fase 3, el 2026-10-18, tras su release del 2026-10-17. Fuente:
+[ROADMAP § Resumen](ROADMAP.md#resumen).)*
 
 **El MVP está en producción.** Alcance: dashboard de citas (Fase 0) · gestión de citas (Fase 1) ·
 **recordatorios al paciente** (Fase 2). Release a `main` el 2026-10-06 en los dos repos; la Fase 2 se cerró
 el 2026-10-07, cuando tres recordatorios reales llegaron a la bandeja de entrada y el voucher los mostró
 *Entregado*. La calificación de asistencia (scoring, Fase 5) pasó a la v2 el 2026-09-30
-([etapa 3 del producto](Descripcion/fase-3-mvp.md)).
+([etapa 3 del producto](Descripcion/fase-3-mvp.md)). Fuera del MVP, la **Fase 3** (respuesta del paciente)
+está en producción desde el 2026-10-17.
 
 | Fase | Estado |
 |---|---|
 | [Fundaciones](Fases/fase-base-fundaciones.md) — registro, login, infraestructura | ✅ cerrada · en producción |
 | [Fase 0](Fases/fase-0-us06-dashboard.md) — US-06 dashboard | ✅ cerrada (2026-09-28) · sin mock desde el 2026-10-05 · en producción |
-| [Fase 1](Fases/fase-1-us02-gestion-citas.md) — US-02 gestión de citas | ✅ cerrada (2026-09-28) · en producción · US-02.07 aplazada |
+| [Fase 1](Fases/fase-1-us02-gestion-citas.md) — US-02 gestión de citas | ✅ cerrada (2026-09-28) · en producción · US-02.07 absorbida por US-04 (Fase 3) |
 | [Fase 2](Fases/fase-2-us03-recordatorios.md) — US-03 recordatorios | ✅ **cerrada en producción (2026-10-07)** · [pendientes posteriores](Fases/fase-2-us03-recordatorios.md#pendientes-posteriores) |
-| [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) — US-04 respuesta del paciente | ✅ **implementada y verificada en local (2026-10-15)** · pendiente de release · [us04](Features/us04-respuesta-paciente.md) · fuera del MVP |
+| [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) — US-04 respuesta del paciente | ✅ **en producción (2026-10-17)** · cierre pendiente de las pruebas manuales · [us04](Features/us04-respuesta-paciente.md) · fuera del MVP |
 | [Fase 4](Fases/fase-4-us05-alertas.md) — US-05 alertas | ⬜ fuera del MVP |
 | [Fase 5](Fases/fase-5-us07-scoring.md) — US-07 scoring | ⏸ v2 |
 | [Fases 6, 7 y US-09](Fases/fases-6-7-us09-sin-diseno.md) | ⬜ sin diseño |
@@ -145,18 +153,22 @@ solapamiento ([ADR-11](Decisions/ADR-11.md)) · solicitudes públicas de hora y 
 por correo** con Resend sobre un **outbox** transaccional y un **planificador** en Postgres, con estado por
 cita en el voucher y configuración por profesional · correo del paciente obligatorio y
 `PATCH /api/pacientes/:id` · logs JSON, `GET /api/health`, latidos y validación estricta del entorno. Ver
-[us03-recordatorios](Features/us03-recordatorios.md#en-producción-2026-10-07).
+[us03-recordatorios](Features/us03-recordatorios.md#en-producción-2026-10-07). **Desde el 2026-10-17:** el
+paciente **confirma, cancela o pide otra hora** desde el enlace de su recordatorio (página `/cita`), el
+profesional ve quién confirmó o canceló e invalida el enlace desde el voucher, la bandeja recibe las peticiones
+de otra hora, y hay **límite de tasa** en el login, el registro, la solicitud pública y el portal. Ver
+[us04-respuesta-paciente](Features/us04-respuesta-paciente.md).
 
 **Lo siguiente:**
 
-1. **Release de la Fase 3 — US-04, respuesta del paciente** (✅ implementada y verificada en local el
-   2026-10-15, pendiente de release): el paciente confirma, cancela o pide otra hora desde el enlace del
-   recordatorio, y la fase trae además el límite de tasa ([DT-18](Deudas/DT-18.md)). Lo que existe está en
-   [us04-respuesta-paciente](Features/us04-respuesta-paciente.md); para llevarlo a producción faltan los
-   commits y el PR, cargar `ENLACE_CITA_CLAVE` en cada entorno (sin ella el servicio no arranca), comprobar en
-   staging la IP real detrás del proxy y las cabeceras de Netlify, la prueba con un correo real y con los
-   escáneres de enlaces, y fijar la fecha de corte de [DT-11](Deudas/DT-11.md) el día del despliegue
-   ([checklist](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción)).
+1. **Cerrar la Fase 3 — US-04, respuesta del paciente** (✅ en producción desde el 2026-10-17: backend
+   PR #7, frontend PR #8): el paciente confirma, cancela o pide otra hora desde el enlace del recordatorio, y
+   la fase trajo además el límite de tasa ([DT-18](Deudas/DT-18.md)). Lo que existe está en
+   [us04-respuesta-paciente](Features/us04-respuesta-paciente.md). Para cerrarla faltan la prueba con un
+   correo real y con los escáneres de Gmail y Outlook, la prueba de `trust proxy` en production (la IP real
+   detrás del proxy de Railway) y, en el frontend, `ENLACE_PUBLICO_LISTO = true`
+   ([checklist](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción)). El release tuvo
+   un corte de ~9 minutos ([incidente](Fases/fase-3-us04-respuesta-paciente.md#incidente-production-caído-9-minutos)).
 2. **Cerrar [DT-40](Deudas/DT-40.md)**: con `MENSAJERIA_ADAPTADOR=registro`, los recordatorios quedan
    "Enviado" sin enviarse. Pasó en producción con variables copiadas de staging y se repite con solo
    volver a copiarlas.

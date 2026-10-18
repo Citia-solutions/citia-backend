@@ -75,14 +75,14 @@ DT-18.
 |---|---|
 | US-02.07 (el paciente cancela o pide reagendar) | ⏸ fuera de la v1 (Q11 → C) → [Fase 3](fase-3-us04-respuesta-paciente.md) |
 | Tests automáticos del `FOR UPDATE` concurrente y del `NULLS LAST` | solo verificados a mano → [DT-20](../Deudas/DT-20.md) |
-| Límite de tasa en la ruta pública | riesgo aceptado (2026-09-29) → [DT-18](../Deudas/DT-18.md) |
+| Límite de tasa en la ruta pública | riesgo aceptado (2026-09-29) → [DT-18](../Deudas/DT-18.md) · *(2026-10-17: en producción con la Fase 3, 5 solicitudes por hora por IP)* |
 | Zona explícita en `inicio` al crear y reagendar | recomendado en el contrato, **no aplicado**: solo `AceptarSolicitudDto` usa `@IsInstanteConZona` → [DT-14](../Deudas/DT-14.md) |
 | Citas en el pasado | [DT-13](../Deudas/DT-13.md) abierta |
 | Historial de la cita en el voucher | "segunda entrega"; la ruta existe y no se consume → [DT-29](../Deudas/DT-29.md) |
-| Botones de asistencia en el voucher | decisión del 2026-09-30: esperan a la Fase 3 → [DT-30](../Deudas/DT-30.md) |
+| Botones de asistencia en el voucher | ~~decisión del 2026-09-30: esperan a la Fase 3~~ → **agregados el 2026-10-05** (Confirmar, Asistió y No asistió): [DT-30](../Deudas/DT-30.md) mitigada |
 | Campos definitivos del formulario público | provisionales ([ADR-09 §10](../Decisions/ADR-09.md)) |
 | Prellenar la hora al aceptar, marcar "paciente conocido", actualizar contacto al aceptar | [us02 § Fuera de este cierre](../Features/us02-gestion-citas.md#fuera-de-este-cierre-anotado-no-olvidado); el contacto quedó en parte decidido por ADR-13 §14 |
-| Métricas del dashboard | con datos de prueba → [DTF-03](../../../citia-frontend/context/Deudas/DTF-03.md) |
+| Métricas del dashboard | ~~con datos de prueba~~ → datos reales desde el 2026-10-05 ([DTF-03](../../../citia-frontend/context/Deudas/DTF-03.md) cerrada) |
 | ADR-08 en el login | propuesto; solo su fase 1 se aplica en la ruta pública |
 
 ---
@@ -147,7 +147,7 @@ FD-06 es de la [Fase 3](fase-3-us04-respuesta-paciente.md).
 
 > **DT-23, DT-25 y DT-26 figuran como "previstas"** en el índice de deudas, pero la vía pública y la
 > bandeja ya están implementadas. Ver la nota del 2026-09-30 en
-> [Deudas/README](../Deudas/README.md#previstas--se-contraen-al-implementar-la-vía-pública-de-adr-09).
+> [Deudas/README](../Deudas/README.md#contraídas-con-la-vía-pública-de-adr-09-2026-09-10).
 
 ---
 

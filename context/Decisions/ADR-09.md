@@ -3,8 +3,13 @@
 > **Fase:** [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md) (origen), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) · **Feature:** [us02](../Features/us02-gestion-citas.md) · **Plan:** [US-02.08](../US/02.08-voucher-cita.md) · **Relacionado:** [ADR-04](../Decisions/ADR-04.md), [ADR-08](../Decisions/ADR-08.md), [ADR-10](../Decisions/ADR-10.md), [ADR-11](../Decisions/ADR-11.md), [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [FD-01](../Frontend-Decisions/FD-01.md), [DT-18](../Deudas/DT-18.md), [DT-27](../Deudas/DT-27.md)
 
 **Fecha:** 2026-08-23
-**Estado:** Aceptado · **implementado por partes** — ver tabla abajo
-**Commits:** — (pendiente)
+**Estado:** Aceptado · **implementado por partes** — ver tabla abajo · en producción desde el primer
+release (2026-10-04, `f1f711f`); el límite de tasa de la decisión 8 llegó con la Fase 3 (en producción desde
+el 2026-10-17)
+**Commits:** `f2a7dff` (release 1, §3–§7), `e1253c3` (vía pública, §1, §2, §8–§11), `e06862a` (bandeja) ·
+docs `439a5fe`, `4c543a5`, `31ea490`, `ab30bb7` · límite de tasa de la decisión 8: `c757e0e` (Fase 3)
+*(cabecera puesta al día el 2026-10-18; antes decía "— (pendiente)" aunque la nota de abajo ya listaba los
+commits)*
 
 > **Nota (2026-09-30).** Commits que implementan este ADR: `f2a7dff` (release 1, §3–§7), `e1253c3`
 > (vía pública, §1, §2, §8–§11) y `e06862a` (bandeja), más los docs `439a5fe`, `4c543a5`, `31ea490`
@@ -27,14 +32,15 @@ deuda de historial) · **adopta la fase 1 de** [ADR-08](ADR-08.md) en la ruta p�
 | 5 | `Cita.reagendar()` | ✅ 2026-08-23 |
 | 6 | Bitácora `CambioCita` | ✅ 2026-08-23 |
 | 7 | Publicación de hechos | ✅ 2026-08-23 |
-| 8 | Ruta pública + límite de tasa | ruta ✅ · límite de tasa 🟠 **aceptado sin límite por ahora** (decisión de producto 2026-09-29, [DT-18](../Deudas/DT-18.md)) |
+| 8 | Ruta pública + límite de tasa | ruta ✅ · límite de tasa ✅ **en producción desde el 2026-10-17** (Fase 3: 5 solicitudes por hora por IP, [DT-18](../Deudas/DT-18.md)) · antes: 🟠 aceptado sin límite (decisión de producto 2026-09-29) |
 | 9 | Formulario propio, no de terceros | ✅ (backend listo; el formulario es del frontend) |
 | 10 | Campos del formulario | 🟡 ✅ provisionales — a confirmar cuando el frontend los cierre |
 | — | Bandeja: listar, aceptar, rechazar | ✅ 2026-09-28 (contrato en [us02 §c](../Features/us02-gestion-citas.md#c-bandeja-de-solicitudes-autenticada)) |
 
 > **Límite de tasa:** la decisión 8 no tiene límite de tasa. El 2026-09-29 se decidió desplegar y
 > seguir **sin límite por el momento**, asumiendo el riesgo de abuso de la ruta pública. Ver
-> [DT-18](../Deudas/DT-18.md).
+> [DT-18](../Deudas/DT-18.md). *(2026-10-17: ya lo tiene. La Fase 3 lo construyó —`c757e0e`,
+> [ADR-10 §10](ADR-10.md#10-límite-de-tasa-l1l3)— y está en producción.)*
 
 ---
 

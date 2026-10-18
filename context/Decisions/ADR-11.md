@@ -3,8 +3,10 @@
 > **Fase:** [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md) · **Feature:** [us02](../Features/us02-gestion-citas.md) · **Plan:** — · **Relacionado:** [ADR-09](../Decisions/ADR-09.md), [DT-12](../Deudas/DT-12.md), [Q4](../PREGUNTAS-ABIERTAS.md#q4--solapamiento-avisar-o-rechazar)
 
 **Fecha:** 2026-09-25
-**Estado:** Aceptado · sin implementar (contrato en [us02-gestion-citas §Cierre de Fase 1](../Features/us02-gestion-citas.md#cierre-de-fase-1--contrato-2026-09-25))
-**Commits:** — (pendiente)
+**Estado:** Aceptado · **implementado** (2026-09-28) · en producción desde el primer release (2026-10-04,
+`f1f711f`) · contrato en [us02-gestion-citas §Cierre de Fase 1](../Features/us02-gestion-citas.md#cierre-de-fase-1--contrato-2026-09-25)
+**Commits:** `4c543a5` (doc) · `538657e`, `9140bc3` (implementación) · `06858f2` (tests) · merge `abe9045`
+a `develop` *(cabecera puesta al día el 2026-10-18; antes decía "sin implementar · Commits: — (pendiente)")*
 
 > **Nota (2026-09-30).** Implementado: `538657e` (`Cita.fin` y `chocaCon`), `9140bc3`
 > (`avisos.solapamientos` en crear, editar y reagendar) y tests en `06858f2`; en `develop` desde el
@@ -13,7 +15,8 @@
 > roadmap.
 
 **Relación:** **resuelve** la decisión que [ADR-09](ADR-09.md) dejó abierta a propósito (solapamiento)
-· **responde** [Q4](../PREGUNTAS-ABIERTAS.md) · **cierra en diseño** [DT-12](../Deudas/DT-12.md) · se
+· **responde** [Q4](../PREGUNTAS-ABIERTAS.md) · **cierra** [DT-12](../Deudas/DT-12.md) (en diseño el
+2026-09-25, en el código el 2026-09-28) · se
 apoya en [ADR-04](ADR-04.md) (estados vigentes/terminales) sin tocar su grafo.
 
 > **Sobre el número.** [Q6](../PREGUNTAS-ABIERTAS.md) (planificador del proceso de cierre) iba a usar

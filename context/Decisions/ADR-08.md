@@ -3,8 +3,12 @@
 > **Fase:** [Fundaciones](../Fases/fase-base-fundaciones.md) (login), [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md) (ruta pública) · **Feature:** [us00b](../Features/us00b-login.md), [us02](../Features/us02-gestion-citas.md) · **Plan:** — · **Relacionado:** [ADR-03](../Decisions/ADR-03.md), [ADR-09](../Decisions/ADR-09.md), [FD-02](../Frontend-Decisions/FD-02.md), [DT-05](../Deudas/DT-05.md), [Q8](../PREGUNTAS-ABIERTAS.md#q8--adr-08-el-tenant-en-la-url-dev-b--prioridad-2)
 
 **Fecha:** 2026-08-16
-**Estado:** Propuesto · **Sin implementar**
-**Commits:** — (pendiente)
+**Estado:** Propuesto · **sin implementar en el login** · su fase 1 (el tenant como segmento de la ruta)
+**ya la usa la ruta pública**: `POST /api/publico/:tenantSlug/solicitudes`, desde el 2026-09-10
+([ADR-09 §11.b](ADR-09.md)). Esa ruta toma el slug del segmento y lo resuelve con `findBySlug` en el
+servicio, sin el puerto `TenantResolver` que propone este ADR.
+**Commits:** `bfeada0` (propuesto) · `e1253c3` (su fase 1, en la ruta pública) *(cabecera puesta al día el
+2026-10-18; antes decía "Sin implementar · Commits: — (pendiente)")*
 **Relación:** supersede **parcialmente** a [ADR-03](ADR-03.md) — solo su regla 4 (*transporte* del
 tenant). El resto de ADR-03 (unicidad compuesta, slug autogenerado, 401 genérico) sigue vigente.
 

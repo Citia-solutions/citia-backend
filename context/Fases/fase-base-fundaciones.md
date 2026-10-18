@@ -108,13 +108,13 @@
 | [DT-01](../Deudas/DT-01.md) sin renovación ni revocación de sesión | 🔴 abierta |
 | [DT-02](../Deudas/DT-02.md) el rol se emite y nadie lo verifica | abierta (escala con DT-07) |
 | [DT-03](../Deudas/DT-03.md) sin verificación de correo ni recuperación de contraseña | 🔴 abierta |
-| [DT-04](../Deudas/DT-04.md) login sin límite de intentos | abierta |
+| [DT-04](../Deudas/DT-04.md) login sin límite de intentos | abierta · desde el 2026-10-17 el login tiene 5 intentos por minuto por IP ([DT-18](../Deudas/DT-18.md)), no el bloqueo por cuenta que pide esta deuda |
 | [DT-05](../Deudas/DT-05.md) respuesta de login no uniforme en el tiempo | abierta |
 | [DT-06](../Deudas/DT-06.md) registro público sin freno | 🔴 abierta |
 | [DT-07](../Deudas/DT-07.md) no existe alta de un segundo usuario | abierta |
 | [DT-08](../Deudas/DT-08.md) colisión de slug bajo concurrencia | abierta |
 | [DT-09](../Deudas/DT-09.md) comprobación de correo duplicado inalcanzable | abierta |
-| [DT-18](../Deudas/DT-18.md) sin límite de tasa (transversal) | aceptada sin límite por ahora (2026-09-29, Fase 1) |
+| [DT-18](../Deudas/DT-18.md) sin límite de tasa (transversal) | 🟢 **en producción** con la Fase 3 (2026-10-17): login, registro, solicitud pública y portal del paciente; se cierra con la prueba de `trust proxy` · antes: aceptada sin límite por ahora (2026-09-29, Fase 1) |
 | [DT-19](../Deudas/DT-19.md) sin observabilidad | 🟢 resuelta en diseño (2026-09-30, Fase 2) · implementada (2026-10-03) y verificada en producción (2026-10-07), abierta solo por la fuente de logs |
 | [DT-21](../Deudas/DT-21.md) carpetas vacías mal escritas | ✅ cerrada en la Fase 2 (2026-10-03) |
 

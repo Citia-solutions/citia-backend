@@ -19,9 +19,10 @@
 1. **[Descripcion/fase-3-mvp.md](../Descripcion/fase-3-mvp.md#la-calificación-sale-del-mvp-pero-su-materia-prima-corre)**
    — por qué sale del MVP y qué se pierde mientras tanto.
 2. **[DT-30](../Deudas/DT-30.md)** — **lo más importante de esta fase hoy**: la asistencia real no se
-   registra y no se puede reconstruir. Esta fase arrancará sin ese historial.
+   registra y no se puede reconstruir. Esta fase arrancará sin ese historial. *(2026-10-05: mitigada; el
+   voucher la registra desde esa fecha. Lo que se pierde es lo anterior.)*
 3. **[DT-11](../Deudas/DT-11.md)** — el `ghosting` sí se reconstruye, con una fecha de corte. Desde el
-   2026-10-14 tiene su **regla G1** escrita y la fecha de corte es el despliegue de la Fase 3.
+   2026-10-14 tiene su **regla G1** escrita y la fecha de corte es el despliegue de la Fase 3: **2026-10-17**.
 4. **[ADR-04](../Decisions/ADR-04.md)** §2 y §4 — `ghosting` ≠ `no_asistio` y el estado materializado.
 5. **[ADR-12 §8](../Decisions/ADR-12.md)** — el proceso de cierre aplazado con el mecanismo listo y la
    tabla de preguntas de Q6.
@@ -38,9 +39,9 @@
 | Estados `ghosting` / `no_asistio` / `asistio` | ✅ modelados | ADR-04 §2 (Fase 0) |
 | Historial de reagendamientos | ✅ bitácora `cambios_cita` | ADR-09 §6 · DT-22 cerrada (Fase 1) |
 | Job de cierre (`ghosting`) | mecanismo decidido, job aplazado | ADR-12 §8 · DT-11 |
-| Asistencia real | **no se registra** hasta la Fase 3 | DT-30 |
-| Confirmación del paciente | llega con la Fase 3 (en construcción desde el 2026-10-14); pesa igual que la del profesional (G2), el peso se decide aquí | ADR-10 · [Fase 3](fase-3-us04-respuesta-paciente.md) |
-| Regla del `ghosting` | ✅ escrita (G1, 2026-10-14); corte = despliegue de la Fase 3 | [DT-11](../Deudas/DT-11.md#regla-del-ghosting-g1-2026-10-14) |
+| Asistencia real | ✅ se registra desde el 2026-10-05 (Confirmar, Asistió y No asistió en el voucher); lo anterior no se recupera · *(antes: "no se registra hasta la Fase 3")* | DT-30 (mitigada) |
+| Confirmación del paciente | ✅ en producción desde el 2026-10-17 (Fase 3); pesa igual que la del profesional (G2), el peso se decide aquí | ADR-10 · [Fase 3](fase-3-us04-respuesta-paciente.md) |
+| Regla del `ghosting` | ✅ escrita (G1, 2026-10-14); corte = **2026-10-17** (despliegue de la Fase 3) | [DT-11](../Deudas/DT-11.md#regla-del-ghosting-g1-2026-10-14) |
 
 ---
 
@@ -65,7 +66,7 @@ Ninguno.
 | Deuda | Relación |
 |---|---|
 | [DT-30](../Deudas/DT-30.md) | sin asistencia registrada no hay qué calificar; adelantar el scoring obliga a elegir A o B |
-| [DT-11](../Deudas/DT-11.md) | se cierra al retomar RF-08: implementar la regla G1 (ya escrita, 2026-10-14) con la fecha de corte del despliegue de la Fase 3, y decidir la pregunta 2 de Q6 |
+| [DT-11](../Deudas/DT-11.md) | se cierra al retomar RF-08: implementar la regla G1 (ya escrita, 2026-10-14) con la fecha de corte del despliegue de la Fase 3 (2026-10-17), y decidir la pregunta 2 de Q6 |
 | [DT-13](../Deudas/DT-13.md) | con el proceso de cierre, una cita creada en el pasado fabricaría un incumplimiento falso |
 | [DT-23](../Deudas/DT-23.md) | un tercero podría ensuciar la reputación de una persona real |
 | [DT-29](../Deudas/DT-29.md) | los estados `recuperada` / `riesgo_alto` del diseño del dashboard dependen de RF-08 |

@@ -103,6 +103,18 @@ de un PR a `develop` son filas de tipo `merge`; los que llegan a `main`, de tipo
 | 81 | `e603ed3` docs(context): asistencia desde el voucher mitiga DT-30 | 2026-10-05 | docs/decisión | [DT-30](Deudas/DT-30.md) mitigada (el usuario revierte la decisión del 2026-09-30); [DT-29](Deudas/DT-29.md) (rutas consumidas); [Deudas/README](Deudas/README.md) | F2 · F3 |
 | 82 | `4fc9a86` merge PR #3 `feature/login-tenant-nombre` → `develop` | 2026-10-05 | merge | — (integra 79–81) | F2 |
 | 83 | `c057ade` merge PR #4 `develop` → `main` | 2026-10-06 | release | — (**release de la Fase 2 a producción**: lleva 74 y 76–82 a `main`; el frontend sale con citia-frontend#6) · cierre en [Fase 2 § Cierre](Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07) | F2 |
+| 84 | `9fc1ddd` docs(context): cierre de la Fase 2 en producción | 2026-10-07 | docs | [Fase 2 § Cierre](Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07) (prueba de punta a punta, incidentes y lecciones); [stack § Mapa de entornos](stack-tecnologico.md#mapa-de-entornos) e [Infraestructura en producción](stack-tecnologico.md#infraestructura-en-producción-2026-10-07); [us03 § En producción](Features/us03-recordatorios.md#en-producción-2026-10-07); [DT-19](Deudas/DT-19.md) verificada en producción; **[DT-40](Deudas/DT-40.md)** y **[DT-41](Deudas/DT-41.md)** (nuevas); estado de ADR-12 y ADR-13; filas 74–83 de este archivo (ver nota) | F2 |
+| 85 | `c757e0e` feat(infra): límite de tasa, trust proxy y clave del enlace del paciente | 2026-10-15 | feature/infra | [us04 § Límite de tasa](Features/us04-respuesta-paciente.md#límite-de-tasa) y [§ Configuración](Features/us04-respuesta-paciente.md#configuración); [infra § Fase 3](Features/infra-contenedores.md#fase-3-límite-de-tasa-trust-proxy-y-la-clave-del-enlace); [DT-18](Deudas/DT-18.md); [ADR-10](Decisions/ADR-10.md) §10 | F3 · Base |
+| 86 | `6fbf4e3` feat(database): enlaces_cita y solicitudes de reagendamiento | 2026-10-15 | feature/BD | [us04 § Esquema de BD](Features/us04-respuesta-paciente.md#esquema-de-bd) (migraciones `1750000012000` a `1750000014000`); [DT-46](Deudas/DT-46.md) (corrige `recibida_en`) | F3 |
+| 87 | `4d3d88f` feat(cita): enlace por cita con HMAC y actor en la bitácora | 2026-10-15 | feature | [us04](Features/us04-respuesta-paciente.md) (enlace, invalidación, `confirmadaPor` / `canceladaPor`); [ADR-10 § Notas de implementación](Decisions/ADR-10.md#notas-de-implementación-2026-10-15); [DT-45](Deudas/DT-45.md) (corrección); `src/modules/cita/CLAUDE.md` (nuevo) | F3 |
+| 88 | `5f8ac6d` feat(recordatorio): el correo lleva el enlace del paciente | 2026-10-15 | feature | [us04](Features/us04-respuesta-paciente.md); [ADR-13](Decisions/ADR-13.md) §1 y §12 (bloque `accion`); `src/modules/recordatorio/CLAUDE.md` | F3 · F2 |
+| 89 | `92b8020` feat(solicitud): pedir otra hora como solicitud de reagendamiento | 2026-10-15 | feature | [us04 § Hechos y suscriptor](Features/us04-respuesta-paciente.md#hechos-y-suscriptor); [DT-44](Deudas/DT-44.md) (parte 2 resuelta); [ADR-12](Decisions/ADR-12.md) §4 (suscriptor nuevo); `src/modules/solicitud/CLAUDE.md` | F3 |
+| 90 | `143c8fb` feat(portal-paciente): portal público del paciente por el enlace de su cita | 2026-10-15 | feature | [us04 § Endpoints](Features/us04-respuesta-paciente.md#endpoints) y [§ Seguridad y privacidad](Features/us04-respuesta-paciente.md#seguridad-y-privacidad); `src/modules/portal-paciente/CLAUDE.md` (nuevo) | F3 |
+| 91 | `3b312f9` test(e2e): Definición de Terminado de la Fase 3 | 2026-10-15 | test | [US-04 § Definición de Terminado](US/04-respuesta-paciente.md#definición-de-terminado); [us04 § Tests y verificación](Features/us04-respuesta-paciente.md#tests-y-verificación) | F3 |
+| 92 | `b93f2c0` docs(context): Fase 3 documentada y equipo sin hacker ético ni QA | 2026-10-15 | docs/decisión | **[us04-respuesta-paciente](Features/us04-respuesta-paciente.md)**, **[US-04](US/04-respuesta-paciente.md)** y **[DT-42](Deudas/DT-42.md)…[DT-46](Deudas/DT-46.md)** (nuevos); [ADR-10](Decisions/ADR-10.md) aceptado con notas de implementación; regla G1 en [ADR-04](Decisions/ADR-04.md) y [DT-11](Deudas/DT-11.md#regla-del-ghosting-g1-2026-10-14); [DT-18](Deudas/DT-18.md) implementada; [US-02.07](US/02.07-paciente-reagenda-cancela.md) absorbida; [FD-06](Frontend-Decisions/FD-06.md) resuelta en parte; [checklist de salida](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción); PREGUNTAS (ver nota) | F3 |
+| 93 | `72d117f` merge PR #5 `docs/cierre-fase2` → `develop` | 2026-10-15 | merge | — (integra 84) | F2 |
+| 94 | `ce0c533` merge PR #6 `feature/fase3-respuesta-paciente` → `develop` | 2026-10-15 | merge | — (lleva 85–92 a `develop`: **implementación de la Fase 3**, se despliega en staging; el frontend, con citia-frontend#7) | F3 |
+| 95 | `05bae58` merge PR #7 `develop` → `main` | 2026-10-17 | release | — (**release de la Fase 3 a producción**: lleva 84–94 a `main`; el frontend sale con citia-frontend#8) · [Fase 3 § Release a producción](Fases/fase-3-us04-respuesta-paciente.md#release-a-producción-2026-10-17) (ver nota) | F3 |
 
 > **Nota commit 31.** `core.autocrlf=true` marcaba ~32 archivos como modificados con contenido
 > idéntico, ensuciando `git status` y los diffs de cada PR. `.gitattributes` fija LF para repo y
@@ -158,6 +170,25 @@ de un PR a `develop` son filas de tipo `merge`; los que llegan a `main`, de tipo
 > **Nota fila 83.** No trae cambios propios (el árbol es idéntico al de `4fc9a86`). La Fase 2 se dio por
 > **cerrada** el 2026-10-07, tras la prueba de punta a punta en producción.
 
+> **Nota fila 84.** Es el commit que cerró la pasada del 2026-10-07 (registró las filas 74–83): por la
+> convención de abajo, se registra en esta. Vivió en la rama `docs/cierre-fase2` hasta el merge `72d117f`
+> (fila 93), y la rama de la Fase 3 partió de él: `c757e0e` es su hijo.
+
+> **Nota filas 85–92.** Se commitearon el 2026-10-15 en cuatro segundos (10:41:58 → 10:42:02), con la
+> implementación ya terminada y verificada en local: un commit por paso del
+> [orden de construcción de US-04](US/04-respuesta-paciente.md#orden-de-construcción) (85 = paso 1, …, 91 =
+> paso 7) más el de documentación. No hay commits intermedios de trabajo.
+
+> **Nota fila 92.** Además de documentar la Fase 3, deja al equipo sin roles de hacker ético ni QA: las
+> preguntas de seguridad pasan al arquitecto (Q5, Q7, Q8, Q11, Q16 y Q17) y la fila 41 de este archivo deja
+> de mencionar la pregunta H7.
+
+> **Nota fila 95.** Como la 83, vive **solo en `main`**: `develop` no la contiene. El backend de production
+> no arrancó durante unos 9 minutos (00:13 a 00:22, hora de Chile): `ENLACE_CITA_CLAVE` no le llegaba al
+> contenedor y la validación del entorno detuvo la app; las migraciones ya habían corrido. El frontend
+> (citia-frontend#8, `1a7f324`) se mergeó después, con el backend ya verificado. Detalle en el
+> [incidente](Fases/fase-3-us04-respuesta-paciente.md#incidente-production-caído-9-minutos).
+
 > **Nota fila 53.** Los tests del cierre de la Fase 1 no se listaron en la tabla de
 > [us02 §Tests](Features/us02-gestion-citas.md#tests), que quedó en el estado del 2026-09-24. La
 > verificación del cierre está en el ROADMAP.
@@ -180,7 +211,12 @@ de un PR a `develop` son filas de tipo `merge`; los que llegan a `main`, de tipo
 > *Pasada del 2026-10-07:* registra hasta `c057ade` inclusive (filas 74–83), tomadas de
 > `git log --date=short` sobre `origin/main` y `origin/develop`. El commit de documentación que cierre
 > esta pasada (cierre de la Fase 2 en `context/`, rama `docs/cierre-fase2`) **no tiene fila**: se registra
-> en la siguiente.
+> en la siguiente. *(Es `9fc1ddd`, fila 84.)*
+>
+> *Pasada del 2026-10-18:* registra hasta `05bae58` inclusive (filas 84–95), tomadas de
+> `git log --date=short` sobre `origin/main` y `origin/develop`. El commit de documentación que cierre esta
+> pasada (coherencia de `context/` tras la Fase 3, rama `docs/coherencia-contexto`) **no tiene fila**: se
+> registra en la siguiente.
 
 ## Cobertura por decisión (ADR ↔ commits)
 
@@ -190,16 +226,16 @@ de un PR a `develop` son filas de tipo `merge`; los que llegan a `main`, de tipo
 | ADR-01 | Auth Passport + JWT | `45198c3`, `346a034` |
 | ADR-02 | Español + hexagonal | `718fe1f`, `ce7d99e` (regla transversal), `a938f9d` (el check del §4 pasa a ser `src/arquitectura.spec.ts`) |
 | ADR-03 | Login multi-tenant por `tenantSlug` | `195431b`, `cfa35f3`, `45198c3` |
-| ADR-04 | Máquina de estados de Cita + ghosting | `e592d74`, `77523c9`, `ab30bb7` (nota: BullMQ → ADR-12) |
+| ADR-04 | Máquina de estados de Cita + ghosting | `e592d74`, `77523c9`, `ab30bb7` (nota: BullMQ → ADR-12), `b93f2c0` (regla G1) |
 | **ADR-05** | Contenedorización Docker + migraciones en arranque | `b8cac2a`, `df53128`, `0e54f0b`, `77a97c9`, `b623b6a` |
 | **ADR-06** | Atomicidad transaccional (TransactionRunner opaco) | `d4fa476`, `f573485`, `a6c237f` (el `tx` llega a `publicar`) |
 | **ADR-07** | Día/hora en zona de la clínica (DST-safe) | `08dad63`, `717800e` (rangos y corrección del inicio del día en DST) |
 | ADR-08 | Tenant en la URL | `bfeada0` (propuesto) · fase 1 adoptada en la ruta pública por `e1253c3` |
 | **ADR-09** | Gestión de citas: solicitud aparte, RUT como identidad, reagendar con bitácora | `f2a7dff` (§3–§7), `e1253c3` (§1,§2,§8–§11), `439a5fe` (docs), `e06862a` (bandeja), `4c543a5`, `31ea490` (decisión 2 reafirmada, límite de tasa), `ab30bb7` (matiz §3) |
-| ADR-10 | Enlace por cita del paciente (US-02.07) | `2877b13` (propuesto), `4c543a5` (aplazado) |
+| ADR-10 | Enlace por cita del paciente (US-04 + US-02.07) | `2877b13` (propuesto), `4c543a5` (aplazado), `b93f2c0` (aceptado y notas de implementación), `c757e0e`, `6fbf4e3`, `4d3d88f`, `5f8ac6d`, `92b8020`, `143c8fb`, `3b312f9` (implementación) · `ce0c533` (a `develop`), `05bae58` (a producción) |
 | ADR-11 | Solapamiento: avisar y permitir | `4c543a5` (doc), `538657e`, `9140bc3` (implementación), `06858f2` (tests) |
-| ADR-12 | Outbox transaccional + planificador en Postgres | `ab30bb7` (diseño), `daf0617`, `a6c237f`, `d45de20` (latidos, entorno), `f95b637`, `db46e37` (implementación) · `060303c` (a `develop`), `c057ade` (a producción) |
-| ADR-13 | Recordatorios por correo (Resend) | `ab30bb7` (diseño), `d45de20`, `a37f175`, `f2d80aa`, `a13d80a`, `f719c66`, `a938f9d` (implementación) · `060303c` (a `develop`), `c057ade` (a producción) |
+| ADR-12 | Outbox transaccional + planificador en Postgres | `ab30bb7` (diseño), `daf0617`, `a6c237f`, `d45de20` (latidos, entorno), `f95b637`, `db46e37` (implementación) · `060303c` (a `develop`), `c057ade` (a producción) · `9fc1ddd` (estado) · `92b8020` (suscriptor de solicitudes, Fase 3), `b93f2c0` (nota) |
+| ADR-13 | Recordatorios por correo (Resend) | `ab30bb7` (diseño), `d45de20`, `a37f175`, `f2d80aa`, `a13d80a`, `f719c66`, `a938f9d` (implementación) · `060303c` (a `develop`), `c057ade` (a producción) · `9fc1ddd` (estado) · `5f8ac6d` (bloque `accion`, Fase 3), `b93f2c0` (nota) |
 
 > **ADRs en negrita** = creados en la pasada de alineación (2026-07-12) para cerrar decisiones que
 > estaban implementadas en el código pero no documentadas.
@@ -213,6 +249,6 @@ de un PR a `develop` son filas de tipo `merge`; los que llegan a `main`, de tipo
 | [Fundaciones](Fases/fase-base-fundaciones.md) | 1–19, 26–34 | `258542f` → `bfeada0` |
 | [Fase 0 — US-06](Fases/fase-0-us06-dashboard.md) | 20–25, 28 (+ 30, 32 en docs; 48, 57 para el cierre) | `9ab2bec` → `08dad63`, `f200557` |
 | [Fase 1 — US-02](Fases/fase-1-us02-gestion-citas.md) | 35–39, 41–58 | `f2a7dff` → `c9ac69f` |
-| [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | 59, 61–74, 76–83 | `ab30bb7` (diseño) · `daf0617` → `f2ccb01` (implementación) · `060303c` (a `develop`) · `893c112` → `4fc9a86` (Netlify, `tenantNombre`, DT-30) · `c057ade` (release a producción, 2026-10-06) |
-| [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | ninguna propia (ADR-10 y FD-06 entraron en 38, 41 y 54) | — |
+| [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | 59, 61–74, 76–84, 93 | `ab30bb7` (diseño) · `daf0617` → `f2ccb01` (implementación) · `060303c` (a `develop`) · `893c112` → `4fc9a86` (Netlify, `tenantNombre`, DT-30) · `c057ade` (release a producción, 2026-10-06) · `9fc1ddd` (cierre, 2026-10-07) y su merge `72d117f` |
+| [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | 85–92, 94, 95 (antes, ADR-10 y FD-06 entraron en 38, 41 y 54) | `c757e0e` → `b93f2c0` (implementación y docs, 2026-10-15) · `ce0c533` (a `develop`) · `05bae58` (release a producción, 2026-10-17) |
 | transversal | 40 (ROADMAP), 60 (navegación por fases), 75 (primer release a `main`) | `cea0bd1`, `2f33394`, `f1f711f` |
