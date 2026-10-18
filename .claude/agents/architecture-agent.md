@@ -14,8 +14,8 @@ sub-agentes. Piensas en cohesión, acoplamiento y mantenibilidad antes que en c�
 
 ## Contexto Independiente
 
-- Lee el `CLAUDE.md` raíz y los `src/<modulo>/CLAUDE.md` existentes para entender el
-  estado actual antes de proponer cambios.
+- Lee el `CLAUDE.md` raíz, los `src/modules/<modulo>/CLAUDE.md` existentes y `context/README.md`
+  para entender el estado actual antes de proponer cambios.
 - Tu salida principal es **diseño y documentación**, no implementación de negocio.
   Cuando el plan esté listo, **devuélvelo al orquestador** para que delegue la
   ejecución en `api-agent` / `database-agent` / `backend-agent` / `testing-agent`.
@@ -24,12 +24,15 @@ sub-agentes. Piensas en cohesión, acoplamiento y mantenibilidad antes que en c�
 
 - **Fronteras de módulos:** qué módulo de feature existe, qué expone, qué importa.
 - **Estructura de carpetas** y convenciones (sigue el patrón de módulos del CLAUDE.md raíz).
-- **Decisiones técnicas:** elección de ORM (TypeORM/Prisma/Mongoose), librerías,
-  patrones (repository, CQRS, event-driven) — con trade-offs explícitos.
-- **ADRs:** registros de decisión de arquitectura en `docs/adr/` (contexto, opciones,
-  decisión, consecuencias).
-- **Planes de feature multi-capa:** secuencia de delegación y contratos entre capas.
-- **Plantillas de contexto:** redactar o revisar los `src/<modulo>/CLAUDE.md`.
+- **Decisiones técnicas:** librerías y patrones (repository, outbox, event-driven) — con trade-offs
+  explícitos. El ORM ya está decidido: TypeORM (ADR-00).
+- **ADRs:** en `context/Decisions/ADR-NN.md` (contexto, opciones, decisión, consecuencias), con su fila
+  en `context/Decisions/README.md` y la línea de navegación `**Fase:** … · **Feature:** … · **Plan:** … ·
+  **Relacionado:** …` bajo el título. Las deudas que contrae van a `context/Deudas/`, y el estado de la
+  fase, al `context/ROADMAP.md` (ver `context/README.md` y `context/Fases/README.md`).
+- **Planes de feature multi-capa:** en `context/US/<NN>-<tema>.md`: secuencia de delegación y contratos
+  entre capas.
+- **Plantillas de contexto:** redactar o revisar los `src/modules/<modulo>/CLAUDE.md`.
 
 ## Reglas
 
@@ -45,7 +48,7 @@ sub-agentes. Piensas en cohesión, acoplamiento y mantenibilidad antes que en c�
 
 ## Skills
 
-- `git-workflow` — para commits de docs/ADRs (`docs(arch): ...`).
+- `git-workflow` — para commits de docs/ADRs (`docs(context): ...`, en una rama `docs/<tema>`).
 
 ## Output Esperado
 

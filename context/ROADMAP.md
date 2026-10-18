@@ -3,7 +3,7 @@
 Hoja de ruta de las historias de usuario (US-02 a US-10). Sirve para tener el orden, las
 dependencias y el estado real de cada pieza en un solo lugar.
 
-**Última revisión:** 2026-10-15 (**Fase 3 implementada y verificada en local**, pendiente de release; feature en [us04-respuesta-paciente](Features/us04-respuesta-paciente.md)) · antes: 2026-10-14 (Fase 3 en construcción: el arquitecto aprobó el diseño, ADR-10 aceptado con Q11 = B, plan en [US-04](US/04-respuesta-paciente.md)) · 2026-10-07 (**Fase 2 cerrada en producción**: release del 2026-10-06 en los dos repos y prueba de punta a punta con un correo real; el MVP completo está en producción) · 2026-10-04 (Fase 2 implementada en rama, pendiente de merge) · 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
+**Última revisión:** 2026-10-18 (**Fase 3 en producción** desde el release del 2026-10-17, con un corte de ~9 minutos; cierre pendiente de las pruebas manuales; feature en [us04-respuesta-paciente](Features/us04-respuesta-paciente.md)) · antes: 2026-10-15 (Fase 3 mergeada a `develop`: backend PR #6 y frontend PR #7) · 2026-10-15, en la mañana (Fase 3 implementada y verificada en local, sin commits) · 2026-10-14 (Fase 3 en construcción: el arquitecto aprobó el diseño, ADR-10 aceptado con Q11 = B, plan en [US-04](US/04-respuesta-paciente.md)) · 2026-10-07 (**Fase 2 cerrada en producción**: release del 2026-10-06 en los dos repos y prueba de punta a punta con un correo real; el MVP completo está en producción) · 2026-10-04 (Fase 2 implementada en rama, pendiente de merge) · 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
 
 **Por fases:** este documento es la fuente del **estado**. Para leer todo lo que toca a una fase
 (decisiones, deudas, commits, contraparte del frontend) en orden, entra por [`Fases/`](Fases/README.md).
@@ -74,7 +74,7 @@ Postgres. US-02.07 (lado paciente) quedó **fuera de la v1**
 
 | Subtarea | Lado | Estado |
 |---|---|---|
-| [US-02.07](US/02.07-paciente-reagenda-cancela.md) — el paciente cancela o pide reagendar | paciente | ⏸ aplazada fuera de la v1 (Q11 → C) · 🔀 **absorbida por [US-04](US/04-respuesta-paciente.md)** (Fase 3: implementada y verificada en local el 2026-10-15, pendiente de release) |
+| [US-02.07](US/02.07-paciente-reagenda-cancela.md) — el paciente cancela o pide reagendar | paciente | ⏸ aplazada fuera de la v1 (Q11 → C) · 🔀 **absorbida por [US-04](US/04-respuesta-paciente.md)** (Fase 3: en producción desde el 2026-10-17) |
 | [US-02.08](US/02.08-voucher-cita.md) — voucher con reagendar y cancelar | profesional | ✅ mergeada en `develop` |
 | [US-02.09](../../citia-frontend/context/us/02.09-dashboard-refleja-cambios.md) — el dashboard refleja los cambios | profesional (solo front) | ✅ mergeada · probada contra el backend real |
 | Agenda semanal + lista ([agenda-profesional](../../citia-frontend/context/Features/agenda-profesional.md)) | profesional | ✅ en `develop` |
@@ -111,7 +111,7 @@ Postgres. US-02.07 (lado paciente) quedó **fuera de la v1**
   ([agendar-cita-paciente](../../citia-frontend/context/Features/agendar-cita-paciente.md)).
 - 🟠 Sin límite de tasa **por decisión** (2026-09-29): riesgo asumido, a revisar antes de difundir el
   enlace de forma masiva ([DT-18](Deudas/DT-18.md)). *(2026-10-14: la Fase 3 le pone 5 solicitudes por hora
-  por IP. 2026-10-15: implementado y verificado en local; rige desde el release de la Fase 3.)*
+  por IP. 2026-10-17: en production con el release de la Fase 3.)*
 - ✅ **Decidido (2026-09-29):** el enlace **solo envía una solicitud** y el profesional la acepta en la
   bandeja (ADR-09). [FD-01](Frontend-Decisions/FD-01.md), que proponía reservar al instante, queda
   descartada.
@@ -254,15 +254,30 @@ Ninguno bloquea el cierre; detalle en la
 
 > Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-3-us04-respuesta-paciente.md`](Fases/fase-3-us04-respuesta-paciente.md).
 
-**Estado:** ✅ **implementada y verificada en local (2026-10-15) · pendiente de release.** Backend y
-frontend construidos en `feature/fase3-respuesta-paciente` (sin commits todavía) contra el plan
-[US-04](US/04-respuesta-paciente.md); [ADR-10](Decisions/ADR-10.md) aceptado el 2026-10-14 con
+**Estado:** ✅ **en producción (2026-10-17)** · cierre pendiente de las pruebas manuales (correo real y
+escáneres) y de la de `trust proxy`. Backend y frontend construidos contra el plan
+[US-04](US/04-respuesta-paciente.md), verificados en local y mergeados a `develop` el 2026-10-15 (backend
+[PR #6](https://github.com/Citia-solutions/citia-backend/pull/6), merge `ce0c533`; commits `c757e0e` →
+`b93f2c0`; frontend [PR #7](https://github.com/Citia-solutions/citia-frontend/pull/7), merge `e8ce193`), y
+llevados a `main` el 2026-10-17 (backend [PR #7](https://github.com/Citia-solutions/citia-backend/pull/7),
+`05bae58`; frontend [PR #8](https://github.com/Citia-solutions/citia-frontend/pull/8), `1a7f324`); filas
+85–92, 94 y 95 de la [TRAZABILIDAD](TRAZABILIDAD.md). [ADR-10](Decisions/ADR-10.md) aceptado el 2026-10-14 con
 [Q11](PREGUNTAS-ABIERTAS.md#q11--cómo-le-llega-al-paciente-el-enlace-de-su-cita) = **B** (el enlace va en el
 recordatorio) y los requisitos de seguridad S1–S3 más el límite de tasa. 1709 unitarios, 287 e2e y 139 de
 integración en verde; recorrido real en local de punta a punta. Lo que existe, en
-[Features/us04-respuesta-paciente.md](Features/us04-respuesta-paciente.md); lo que falta para producción, en
-el [checklist de salida](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción).
+[Features/us04-respuesta-paciente.md](Features/us04-respuesta-paciente.md); cómo salió, el incidente y lo que
+queda, en la [guía de la fase](Fases/fase-3-us04-respuesta-paciente.md#release-a-producción-2026-10-17).
 
+> **Corte en el release (2026-10-17).** Production respondió 502 unos 9 minutos (00:13 a 00:22, hora de
+> Chile): `ENLACE_CITA_CLAVE` no le llegaba al contenedor y la validación del entorno detuvo el arranque. Se
+> resolvió aplicando la variable en Railway; sin pérdida de datos. El frontend salió después, con el backend
+> ya verificado.
+
+> *Antes (2026-10-15):* ✅ mergeada a `develop`, pendiente de release.
+>
+> *Antes (2026-10-15, en la mañana):* implementada y verificada en local, en la rama
+> `feature/fase3-respuesta-paciente` de cada repo, todavía sin commits.
+>
 > *Antes (2026-10-14):* 🔶 en construcción: el arquitecto aprobó el diseño ese día.
 
 > **Relación con US-02.07.** US-04 **absorbe** la subtarea [US-02.07](US/02.07-paciente-reagenda-cancela.md):
@@ -272,7 +287,7 @@ el [checklist de salida](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-sa
 > *Antes (2026-10-07):* ⬜ nada · siguiente fase; para arrancar había que aceptar ADR-10.
 
 ### Backend
-*(Todo ✅ en la rama, sin commits ni release (2026-10-15). Detalle por agente en
+*(Todo ✅; en `develop` desde el 2026-10-15 (PR #6) y en producción desde el 2026-10-17 (release `05bae58`). Detalle por agente en
 [US-04 § Orden de construcción](US/04-respuesta-paciente.md#orden-de-construcción); lo que el código hizo
 distinto del contrato, en [us04 § Desviaciones](Features/us04-respuesta-paciente.md#desviaciones-del-contrato-y-decisiones-tomadas-al-implementar).)*
 
@@ -289,7 +304,7 @@ distinto del contrato, en [us04 § Desviaciones](Features/us04-respuesta-pacient
 | 9 | Tests: la Definición de Terminado de US-04 | testing | ✅ lo automático (1709 unitarios, 287 e2e, 139 de integración); ⬜ los dos manuales |
 
 ### Frontend (`citia-frontend`)
-*(✅ en la rama, sin commits (2026-10-15): [responder-cita-paciente](../../citia-frontend/context/Features/responder-cita-paciente.md).)*
+*(✅ en `develop` desde el 2026-10-15 ([PR #7](https://github.com/Citia-solutions/citia-frontend/pull/7), `e8ce193`) y en producción desde el 2026-10-17 ([PR #8](https://github.com/Citia-solutions/citia-frontend/pull/8), `1a7f324`): [responder-cita-paciente](../../citia-frontend/context/Features/responder-cita-paciente.md).)*
 
 1. ✅ Ruta pública `/cita` (sin cuenta, responsive): ver la cita, confirmar, cancelar, pedir otra hora;
    pantallas de éxito, de *"Enlace no válido o vencido"*, de 409 y de 429; sin scripts de terceros. Relee el
@@ -304,8 +319,11 @@ distinto del contrato, en [us04 § Desviaciones](Features/us04-respuesta-pacient
   2026-10-15).
 - ✅ Cambio reflejado en el voucher, la bandeja y los recordatorios (aceptar mueve la misma cita y los
   reprograma; la petición de otra hora va a la bandeja, **no** al dashboard).
-- ⬜ Correo real con el botón y escáneres de enlaces de Gmail y Outlook (staging con Resend o production).
-- ⬜ Release a `develop` y a `main`, con el [checklist de salida](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción).
+- ⬜ Correo real con el botón y escáneres de enlaces de Gmail y Outlook (en production, ya desplegada).
+- ✅ Merge a `develop` en los dos repos (2026-10-15: backend PR #6, frontend PR #7).
+- ✅ Release a `main` (2026-10-17: backend PR #7, frontend PR #8), con el
+  [checklist de salida](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción); corte de
+  ~9 minutos en el backend.
 - Las alertas al profesional son de la Fase 4 ([DT-43](Deudas/DT-43.md)): los hechos ya salen con actor.
 
 **Entregable:** el paciente confirma, cancela o pide otra hora desde el correo; el profesional lo ve en la
@@ -317,14 +335,15 @@ agenda, en el voucher y en la bandeja.
 > confirmación del paciente desde el enlace se suma y reduce las citas que llegan `pendiente` a su hora.
 >
 > **Ghosting:** la regla G1 queda escrita en [DT-11](Deudas/DT-11.md#regla-del-ghosting-g1-2026-10-14); el
-> job no se construye en esta fase y la **fecha de corte es el despliegue de esta fase en producción**
-> (escribirla en DT-11 ese día).
+> job no se construye en esta fase y la **fecha de corte es el despliegue de esta fase en producción**:
+> **2026-10-17** (escrita en DT-11).
 >
 > **"Cambiar la hora" ([FD-06](Frontend-Decisions/FD-06.md)):** la v1 lo resuelve como una petición manual
 > que el profesional atiende en la bandeja. Que el paciente elija entre horarios disponibles queda para
 > después (necesita el modelo de disponibilidad, Q9).
 >
-> **Límite de tasa:** entra en esta fase ([DT-18](Deudas/DT-18.md): implementada, se cierra al desplegar).
+> **Límite de tasa:** entra en esta fase ([DT-18](Deudas/DT-18.md): en producción desde el 2026-10-17; se
+> cierra con la prueba de `trust proxy`).
 > **No** depende de ADR-08: el enlace no lleva `tenantSlug`. El consentimiento sigue como deuda
 > ([DT-16](Deudas/DT-16.md)).
 >
@@ -332,6 +351,8 @@ agenda, en el voucher y en la bandeja.
 > despliegue (sin ella el servicio no arranca; distinta en cada entorno; no copiarla entre ellos,
 > [DT-45](Deudas/DT-45.md)). El resto, en el
 > [checklist de salida](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción).
+> *(2026-10-17: en production no llegó al contenedor en el primer despliegue y el servicio cayó ~9 minutos;
+> confirmar siempre en los Deploy Logs.)*
 
 ---
 
@@ -473,7 +494,7 @@ agregado del negocio; se retoma después de validar el MVP con recordatorios.
 | 0 | US-06 Dashboard | US-02 | ✅ cerrada · sin mock (2026-10-05) · en producción |
 | 1 | US-02 Gestión de citas | — | ✅ cerrada (develop 2026-09-28) · en producción (2026-10-04) · US-02.07 ⏸ aplazada |
 | 2 | US-03 Recordatorios | US-02, ADR-12 (outbox + planificador), subdominio verificado en Resend | ✅ **cerrada en producción (2026-10-07)** · release 2026-10-06 · **en el MVP** · [pendientes posteriores](#pendientes-posteriores-al-cierre) |
-| 3 | US-04 Respuesta paciente (+ US-02.07) | US-03 ✅, ADR-10 ✅ (aceptado 2026-10-14) | ✅ **implementada y verificada en local (2026-10-15)** · pendiente de release · fuera del MVP · [us04](Features/us04-respuesta-paciente.md) · [checklist](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción) |
+| 3 | US-04 Respuesta paciente (+ US-02.07) | US-03 ✅, ADR-10 ✅ (aceptado 2026-10-14) | ✅ **en producción (2026-10-17)** · cierre pendiente de las pruebas manuales · fuera del MVP · [us04](Features/us04-respuesta-paciente.md) · [checklist](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción) |
 | 4 | US-05 Alertas | US-02/03/04 | ⬜ (el outbox ya existe) |
 | 5 | US-07 Scoring | US-02/04, proceso de cierre (ADR-12), asistencia registrada (DT-30) | ⏸ v2 (fuera del MVP, 2026-09-30) |
 | 6 | US-08 Monitoreo | US-02/07 | 🔶 solo alta y `PATCH` de contacto |
@@ -497,7 +518,7 @@ agregado del negocio; se retoma después de validar el MVP con recordatorios.
 6. ~~FD-01 vs ADR-09~~ → **resuelta 2026-09-29**: el enlace solo envía una solicitud (ADR-09).
 7. ~~Límite de tasa antes de desplegar~~ → **resuelta 2026-09-29**: se sigue sin límite por ahora (DT-18).
    *(2026-10-14: la Fase 3 lo construye para el enlace, el login, el registro y la solicitud pública.
-   2026-10-15: implementado y verificado en local; rige desde el release de la Fase 3.)*
+   2026-10-17: en production con el release de la Fase 3.)*
 8. [ADR-08](Decisions/ADR-08.md) (tenant en URL): la fase 1 ya se aplica en la ruta pública
    (ADR-09 §11.b); falta el login. Ya no bloquea la Fase 3.
 9. ~~Hosting y entornos (Fase 2)~~ → **resuelta 2026-10-04**: backend + Postgres en Railway, SPA en Netlify,

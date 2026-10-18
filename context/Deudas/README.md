@@ -29,20 +29,26 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-35](DT-35.md) | El correo del paciente no se verifica | 🟠 media | abierta (contraída en la Fase 2, 2026-10-03) | [ADR-13 §14](../Decisions/ADR-13.md) |
 | [DT-36](DT-36.md) | Una sola cuota de correo para toda la plataforma | 🟠 media | abierta (contraída en la Fase 2, 2026-10-03) | [ADR-13 §11](../Decisions/ADR-13.md) |
 | [DT-40](DT-40.md) | Con `MENSAJERIA_ADAPTADOR=registro` los recordatorios quedan "Enviado" sin haberse enviado | 🟠 media | abierta (detectada en producción, 2026-10-07) · la variable ya está en `resend` | puesta en producción · [ADR-13 §13](../Decisions/ADR-13.md) |
-| [DT-12](DT-12.md) | Solapamiento de citas no detectado | 🟠 media | 🟢 resuelta en diseño ([ADR-11](../Decisions/ADR-11.md)) · **implementada** en `develop` (2026-09-28): cumple su criterio de cierre, falta confirmarlo | [us06](../Features/us06-dashboard-citas.md) |
-| [DT-14](DT-14.md) | El instante de la cita se acepta sin zona horaria | 🟠 media | abierta | [ADR-07](../Decisions/ADR-07.md) |
+| [DT-23](DT-23.md) | Nada verifica que el RUT pertenezca a quien lo escribe | 🟠 media | abierta (contraída con la vía pública, 2026-09-10) | [ADR-09 §3, §8](../Decisions/ADR-09.md) |
+| [DT-25](DT-25.md) | La apuesta del formulario no se puede medir | 🟠 media | abierta (contraída con la vía pública, 2026-09-10) | [ADR-09 §10](../Decisions/ADR-09.md) |
+| [DT-26](DT-26.md) | Sin política de retención para las solicitudes | 🟠 media | abierta (contraída con la vía pública, 2026-09-10) | [ADR-09 §1, §10](../Decisions/ADR-09.md) |
+| [DT-42](DT-42.md) | El enlace por cita no verifica identidad: reenviado o mal dirigido, transfiere la capacidad | 🟠 media (riesgo aceptado) | abierta (contraída al desplegar la Fase 3, 2026-10-17) | [ADR-10 §9](../Decisions/ADR-10.md) |
+| [DT-45](DT-45.md) | Cambiar `ENLACE_CITA_CLAVE` deja sin servir, en silencio, los enlaces de los correos siguientes | 🟠 media → 🟡 baja con la corrección | abierta (2026-10-17) · **corrección en producción**: cumple su criterio de cierre, falta confirmarlo | [ADR-10 §1](../Decisions/ADR-10.md) |
+| [DT-14](DT-14.md) | El instante de la cita se acepta sin zona horaria | 🟠 media | abierta · avance parcial: aceptar una solicitud ya exige zona (2026-09-28); crear y reagendar no | [ADR-07](../Decisions/ADR-07.md) |
 | [DT-19](DT-19.md) | Sin observabilidad | 🟠 media (era 🔴) | 🟢 **verificada en producción** (2026-10-07): uptime y heartbeats en Up · abierta solo por la fuente de logs (sin ella, las alertas por log no llegan) y la prueba de alerta forzada | RNF-08 |
-| [DT-20](DT-20.md) | Las pruebas e2e nunca se han ejecutado | 🟠 media | abierta · avance: suites con BD en verde (2026-09-28; 2026-10-04: 212 e2e y 80 de integración) y concurrencia `SKIP LOCKED` automatizada; sin pipeline | [us06](../Features/us06-dashboard-citas.md) |
+| [DT-20](DT-20.md) | Las pruebas e2e no corren solas: no hay pipeline *(título hasta el 2026-10-18: "nunca se han ejecutado")* | 🟠 media | abierta · avance: suites con BD en verde (2026-09-28; 2026-10-15: 287 e2e y 139 de integración) y concurrencia `SKIP LOCKED` automatizada; sin pipeline | [us06](../Features/us06-dashboard-citas.md) |
 | [DT-04](DT-04.md) | Login sin límite de intentos | 🟠 media | abierta | [us00b](../Features/us00b-login.md) |
 | [DT-16](DT-16.md) | El consentimiento se captura y nadie lo lee | 🔴 alta (RF-06 en el MVP) | 🟠 **riesgo aceptado** (2026-09-30) · política implementada y **apagada** (2026-10-03) · revisar antes del 2026-12-01 (Ley 21.719) | [us06](../Features/us06-dashboard-citas.md) |
 | [DT-13](DT-13.md) | Se aceptan citas en el pasado | 🟡 baja→media | abierta | [us06](../Features/us06-dashboard-citas.md) |
 | [DT-05](DT-05.md) | La respuesta de login no es uniforme en el tiempo | 🟡 baja | abierta | [ADR-03 §5](../Decisions/ADR-03.md) |
 | [DT-08](DT-08.md) | Colisión de identificador público bajo concurrencia | 🟡 baja | abierta | [ADR-03 §2](../Decisions/ADR-03.md) |
 | [DT-09](DT-09.md) | Comprobación de correo duplicado inalcanzable | 🟡 baja | abierta | [us00a](../Features/us00a-registro-inicial.md) |
-| [DT-18](DT-18.md) | No existe límite de tasa en ninguna superficie | 🟠 riesgo asumido | 🔧 **implementada en la Fase 3 (2026-10-15), verificada en local; se cierra al desplegar** · queda abierto en DT-04, DT-06 y la nota de una réplica · antes: en implementación (2026-10-14), aceptada sin límite (2026-09-29) | transversal |
-| [DT-11](DT-11.md) | El historial de comportamiento no se está acumulando | 🟠 media (antes crítica) | 🔵 aplazada (2026-09-30, scoring a la v2) · mecanismo en [ADR-12](../Decisions/ADR-12.md) · regla G1 fijada (2026-10-14); corte = despliegue de la Fase 3 | [ADR-04 §4](../Decisions/ADR-04.md) |
+| [DT-18](DT-18.md) | No existe límite de tasa en ninguna superficie | 🟠 riesgo asumido | 🟢 **en producción** (2026-10-17) · se cierra con la prueba de `trust proxy` · queda abierto en DT-04, DT-06 y la nota de una réplica · antes: implementada (2026-10-15), en implementación (2026-10-14), aceptada sin límite (2026-09-29) | transversal |
+| [DT-11](DT-11.md) | El historial de comportamiento no se está acumulando | 🟠 media (antes crítica) | 🔵 aplazada (2026-09-30, scoring a la v2) · mecanismo en [ADR-12](../Decisions/ADR-12.md) · regla G1 fijada (2026-10-14); **corte = 2026-10-17** (despliegue de la Fase 3) | [ADR-04 §4](../Decisions/ADR-04.md) |
+| [DT-43](DT-43.md) | El profesional no se entera en el momento de lo que hace el paciente | 🟡 baja → 🟠 media | abierta (2026-10-17) · se cierra en la Fase 4 | [ADR-10 §7](../Decisions/ADR-10.md) |
+| [DT-44](DT-44.md) | La petición de otra hora se resuelve solo en la bandeja, y en silencio para el paciente | 🟡 baja | abierta (2026-10-17), solo la parte 1 (rechazar no avisa al paciente); la parte 2 la resolvió el suscriptor | [ADR-10 §4](../Decisions/ADR-10.md) |
 | [DT-17](DT-17.md) | Zona horaria única para toda la instalación | 🟡 baja | 🔵 aplazada | [ADR-07 §2](../Decisions/ADR-07.md) |
-| [DT-29](DT-29.md) | Funcionalidad implementada y no conectada (7 de 24 rutas sin consumidor) | 🟡 baja | abierta (mitigada) · las rutas de la Fase 2 nacieron consumidas | release 1 de US-02 |
+| [DT-29](DT-29.md) | Funcionalidad implementada y no conectada (4 de 29 rutas sin consumidor, 2026-10-18) | 🟡 baja | abierta (mitigada) · las rutas de las Fases 2 y 3 nacieron consumidas | release 1 de US-02 |
 | [DT-31](DT-31.md) | Imports que cruzan capas por debajo del check de ADR-02 | 🟡 baja | abierta (detectada el 2026-10-04) | [ADR-02 §2](../Decisions/ADR-02.md) |
 | [DT-32](DT-32.md) | Sin orden garantizado entre los hechos de un mismo agregado | 🟡 baja | abierta (contraída en la Fase 2) | [ADR-12 §4](../Decisions/ADR-12.md) |
 | [DT-33](DT-33.md) | Latencia de segundos entre el cambio y el suscriptor | 🟡 baja → media con RF-05 | abierta (contraída en la Fase 2) | [ADR-12](../Decisions/ADR-12.md) |
@@ -63,22 +69,26 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-27](DT-27.md) | Los hechos se publican fuera de la transacción | ✅ cerrada por el outbox de ADR-12 · `f95b637` · 2026-10-03 · en producción desde el 2026-10-06 (`c057ade`) |
 | [DT-21](DT-21.md) | Carpetas vacías con nombres mal escritos | ✅ cerrada · `recordatorio/` rehecho (`f2d80aa`) y carpetas de `paciente/` borradas (`a37f175`) · 2026-10-03 · en producción desde el 2026-10-06 |
 | [DT-30](DT-30.md) | La asistencia real de las citas pasadas no se registra | 🟢 mitigada (2026-10-05): Confirmar, Asistió y No asistió en el voucher (frontend); lo anterior a esa fecha no se reconstruye |
+| [DT-12](DT-12.md) | Solapamiento de citas no detectado | ✅ cerrada por [ADR-11](../Decisions/ADR-11.md) (avisar y permitir) · `538657e`, `9140bc3`, tests `06858f2` · 2026-09-28 · en producción desde el 2026-10-04 *(cierre registrado el 2026-10-18)* |
 
-## Previstas — se contraen al implementar la vía pública de [ADR-09](../Decisions/ADR-09.md)
+## Contraídas con la vía pública de [ADR-09](../Decisions/ADR-09.md) (2026-09-10)
 
 > **Nota (2026-09-30).** La vía pública está implementada desde el 2026-09-10 (`e1253c3`) y la bandeja
 > desde el 2026-09-28, así que, según la definición de `prevista` de arriba, **DT-23, DT-25 y DT-26 ya
 > están contraídas** (existen hoy en el código). Su estado no se cambió en esta pasada de navegación:
 > queda para confirmarlo y pasarlas a `abierta`. Guía de la fase: [Fase 1](../Fases/fase-1-us02-gestion-citas.md).
+>
+> *(2026-10-18: confirmado contra el código —no hay verificación de titularidad del RUT, ni conteo de visitas
+> al formulario, ni purga de solicitudes— y pasadas a `abierta`. Están también en la tabla *Por severidad*.)*
 
 | ID | Deuda | Severidad | Estado | Origen |
 |----|-------|-----------|--------|--------|
-| [DT-23](DT-23.md) | Nada verifica que el RUT pertenezca a quien lo escribe | 🟠 media | ⚪ prevista | [ADR-09 §3, §8](../Decisions/ADR-09.md) |
-| [DT-25](DT-25.md) | La apuesta del formulario no se puede medir | 🟠 media | ⚪ prevista | [ADR-09 §10](../Decisions/ADR-09.md) |
-| [DT-26](DT-26.md) | Sin política de retención para las solicitudes | 🟠 media | ⚪ prevista | [ADR-09 §1, §10](../Decisions/ADR-09.md) |
+| [DT-23](DT-23.md) | Nada verifica que el RUT pertenezca a quien lo escribe | 🟠 media | abierta (antes ⚪ prevista) | [ADR-09 §3, §8](../Decisions/ADR-09.md) |
+| [DT-25](DT-25.md) | La apuesta del formulario no se puede medir | 🟠 media | abierta (antes ⚪ prevista) | [ADR-09 §10](../Decisions/ADR-09.md) |
+| [DT-26](DT-26.md) | Sin política de retención para las solicitudes | 🟠 media | abierta (antes ⚪ prevista) | [ADR-09 §1, §10](../Decisions/ADR-09.md) |
 | [DT-24](DT-24.md) | Sin taxonomía de tipos de consulta | 🟡 baja | 🔵 aplazada | [ADR-09 §10](../Decisions/ADR-09.md) |
 
-## Previstas — se contraen al desplegar la Fase 3 ([ADR-10](../Decisions/ADR-10.md))
+## Contraídas al desplegar la Fase 3 ([ADR-10](../Decisions/ADR-10.md), 2026-10-17)
 
 *(2026-10-14.)* Fichadas al aceptar ADR-10, antes de implementar: son deuda **firmada a sabiendas** con el
 diseño de la [Fase 3](../Fases/fase-3-us04-respuesta-paciente.md). Pasan a `abierta` cuando la fase llegue
@@ -86,17 +96,20 @@ a producción. De las cuatro previstas de la propuesta, la 1 y la 2 son DT-42 y 
 descarte) y la 4 (bloqueo de fila) desaparecieron con el diseño aceptado
 ([ADR-10 § Deudas](../Decisions/ADR-10.md#deudas-técnicas-asociadas)).
 
-> *(2026-10-15, fase implementada y verificada en local, sin release.)* Siguen `prevista` hasta el
+> *(2026-10-15, fase implementada y mergeada a `develop`.)* Siguen `prevista` hasta el
 > despliegue, pero dos cambiaron al implementar: **DT-44** perdió su parte 2 (el suscriptor deja atendida la
 > petición cuando el profesional reagenda desde el voucher) y **DT-45** tiene su corrección en el código
 > (autocorrección en `asegurarActivo` + tests).
+>
+> *(2026-10-17.)* La Fase 3 llegó a producción: las cuatro pasan a **`abierta`**. Están también en la tabla
+> *Por severidad*.
 
 | ID | Deuda | Severidad | Estado | Origen |
 |----|-------|-----------|--------|--------|
-| [DT-42](DT-42.md) | El enlace por cita no verifica identidad: reenviado o mal dirigido, transfiere la capacidad | 🟠 media (riesgo aceptado) | ⚪ prevista | [ADR-10 §9](../Decisions/ADR-10.md) · prevista 1 |
-| [DT-45](DT-45.md) | Cambiar `ENLACE_CITA_CLAVE` deja sin servir, en silencio, los enlaces de los correos siguientes | 🟠 media → 🟡 baja con la corrección | ⚪ prevista · **corrección implementada** (2026-10-15): se cierra al desplegar | [ADR-10 §1](../Decisions/ADR-10.md) · E2 |
-| [DT-43](DT-43.md) | El profesional no se entera en el momento de lo que hace el paciente | 🟡 baja → 🟠 media | ⚪ prevista · se cierra en la Fase 4 | [ADR-10 §7](../Decisions/ADR-10.md) · prevista 2 |
-| [DT-44](DT-44.md) | La petición de otra hora se resuelve solo en la bandeja, y en silencio para el paciente | 🟡 baja | ⚪ prevista · **parte 2 resuelta** por el suscriptor (2026-10-15); queda la parte 1 (rechazar no avisa al paciente) | [ADR-10 §4](../Decisions/ADR-10.md) · R3 |
+| [DT-42](DT-42.md) | El enlace por cita no verifica identidad: reenviado o mal dirigido, transfiere la capacidad | 🟠 media (riesgo aceptado) | abierta (2026-10-17) | [ADR-10 §9](../Decisions/ADR-10.md) · prevista 1 |
+| [DT-45](DT-45.md) | Cambiar `ENLACE_CITA_CLAVE` deja sin servir, en silencio, los enlaces de los correos siguientes | 🟠 media → 🟡 baja con la corrección | abierta (2026-10-17) · **corrección en producción**: cumple su criterio de cierre, falta confirmarlo | [ADR-10 §1](../Decisions/ADR-10.md) · E2 |
+| [DT-43](DT-43.md) | El profesional no se entera en el momento de lo que hace el paciente | 🟡 baja → 🟠 media | abierta (2026-10-17) · se cierra en la Fase 4 | [ADR-10 §7](../Decisions/ADR-10.md) · prevista 2 |
+| [DT-44](DT-44.md) | La petición de otra hora se resuelve solo en la bandeja, y en silencio para el paciente | 🟡 baja | abierta (2026-10-17) · **parte 2 resuelta** por el suscriptor (2026-10-15); queda la parte 1 (rechazar no avisa al paciente) | [ADR-10 §4](../Decisions/ADR-10.md) · R3 |
 
 ## Detectada al implementar la Fase 3 (2026-10-15)
 
@@ -142,11 +155,14 @@ cambiaron el estado de otras dos. Detalle en el
 > 2026-09-29 se decidió seguir **sin límite de tasa por el momento**: ya no bloquea el despliegue y
 > pasa a ser un riesgo aceptado, que hay que revisar antes de difundir el enlace de forma masiva o
 > al entrar el primer cliente real. **2026-10-14:** la Fase 3 lo construye para las cuatro superficies
-> públicas. **2026-10-15:** implementado y verificado en local; se cierra al desplegar.
+> públicas. **2026-10-15:** implementado y mergeado a `develop`. **2026-10-17:** en producción; se cierra con
+> la prueba de `trust proxy`.
 
 > **`→` en la severidad** significa que la deuda escala sola cuando entre cierto requisito. DT-02
 > escala con DT-07; DT-13 escala cuando exista el proceso de cierre de DT-11. **DT-16, DT-19 y DT-27
-> ya escalaron** (2026-09-30): RF-06 entró en el MVP, así que su severidad se muestra ya alta.
+> escalaron** el 2026-09-30, cuando RF-06 entró en el MVP. *(2026-10-18: desde entonces DT-27 se cerró
+> —2026-10-03— y DT-19 volvió a 🟠 media al verificarse en producción —2026-10-07—; solo DT-16 sigue en 🔴
+> alta.)*
 
 ---
 
@@ -160,8 +176,8 @@ cambiaron el estado de otras dos. Detalle en el
 | [ADR-04](../Decisions/ADR-04.md) — modelo de Cita | DT-10 ✅ cerrada, DT-11, DT-22 ✅ cerrada, DT-30 (el grafo solo marca asistencia desde `confirmada`) |
 | [ADR-07](../Decisions/ADR-07.md) — zona de la clínica | DT-14, DT-17 |
 | [ADR-09](../Decisions/ADR-09.md) — gestión de citas | *cierra* DT-10 y DT-22 · *contrae* DT-23, DT-24, DT-25, DT-26, DT-27, DT-28 · *depende de* DT-15 y DT-18 · *deja abierta* DT-12 |
-| [ADR-10](../Decisions/ADR-10.md) — enlace por cita (aceptado 2026-10-14; implementado en local 2026-10-15) | *implementa* DT-18 (se cierra al desplegar) · *contrae* DT-42, DT-43, DT-44, DT-45 (previstas; DT-44 sin su parte 2 y DT-45 con su corrección, desde el 2026-10-15) · *fija la regla de* DT-11 (G1) · *toca* DT-04, DT-06, DT-16, DT-23, DT-26, DT-33 |
-| [ADR-11](../Decisions/ADR-11.md) — solapamiento | *cierra en diseño* DT-12 |
+| [ADR-10](../Decisions/ADR-10.md) — enlace por cita (aceptado 2026-10-14; en producción desde el 2026-10-17) | *implementa* DT-18 (en producción; se cierra con la prueba de `trust proxy`) · *contrae* DT-42, DT-43, DT-44, DT-45 (abiertas desde el 2026-10-17; DT-44 sin su parte 2 y DT-45 con su corrección) · *fija la regla de* DT-11 (G1) · *toca* DT-04, DT-06, DT-16, DT-23, DT-26, DT-33 |
+| [ADR-11](../Decisions/ADR-11.md) — solapamiento | *cierra* DT-12 ✅ (implementado el 2026-09-28) |
 | [ADR-12](../Decisions/ADR-12.md) — outbox + planificador | *cierra* DT-27 ✅ (2026-10-03) · *contrae* DT-32, DT-33, DT-34 · *avanza* DT-19 · *aplaza* DT-11 (mecanismo decidido) |
 | [ADR-13](../Decisions/ADR-13.md) — recordatorios | *cierra* DT-21 ✅ (2026-10-03) · *contrae* DT-35, DT-36, DT-37, DT-38, DT-39 · *avanza* DT-19 (verificada en producción; falta la fuente de logs) · *acepta como riesgo* DT-16 (política apagada) · *toca* DT-17, DT-23, DT-26, DT-29, DT-30 |
 | Decisión de producto 2026-09-30 (scoring a la v2, sin botones de asistencia) | DT-30 (mitigada el 2026-10-05 al revertir la decisión) |
@@ -177,18 +193,18 @@ cambiaron el estado de otras dos. Detalle en el
 
 ## Por fase del roadmap
 
-*(2026-09-30; Fase 2 actualizada el 2026-10-04 y el 2026-10-07; Fase 3, el 2026-10-15.)* Qué deudas creó, cerró o movió cada fase. El detalle y el orden de lectura están en
+*(2026-09-30; Fase 2 actualizada el 2026-10-04 y el 2026-10-07; Fase 3, el 2026-10-15 y el 2026-10-17.)* Qué deudas creó, cerró o movió cada fase. El detalle y el orden de lectura están en
 la guía de cada una, en [`../Fases/`](../Fases/README.md).
 
 | Fase | Creadas (origen) | Cerradas o mitigadas | Afectadas |
 |---|---|---|---|
 | [Fundaciones](../Fases/fase-base-fundaciones.md) | DT-01…DT-09, DT-18, DT-19, DT-21 | — | — |
 | [Fase 0 — US-06](../Fases/fase-0-us06-dashboard.md) | DT-10…DT-17, DT-20, DT-22 | — | — |
-| [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md) | DT-23…DT-29 | cierra DT-10 y DT-22 · mitiga DT-28 | DT-12 (implementada), DT-14, DT-15, DT-18 (aceptada), DT-20 (avance) |
+| [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md) | DT-23…DT-29 | cierra DT-10, DT-22 y DT-12 (esta, implementada el 2026-09-28 y registrada el 2026-10-18) · mitiga DT-28 | DT-14 (avance parcial), DT-15, DT-18 (aceptada), DT-20 (avance) |
 | [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md) | DT-30 (diseño) · DT-31 (detectada) · DT-32…DT-39 (las previstas, contraídas al implementar) · DT-40, DT-41 (detectadas en producción, 2026-10-07) | **cierra** DT-21 y DT-27 (2026-10-03) · **mitiga** DT-30 (2026-10-05) · DT-19 verificada en producción, abierta por la fuente de logs | DT-11 (aplazada), DT-16 (política apagada), DT-17, DT-20 (avance), DT-23, DT-26, DT-29, DT-37 (webhook activo) |
-| [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) | DT-42…DT-45 (previstas, 2026-10-14; las previstas 3 y 4 de la propuesta de ADR-10 desaparecieron) · DT-46 (detectada al implementar, 2026-10-15) | DT-18 **implementada** (2026-10-15), se cierra al desplegar · DT-44 parte 2 resuelta y DT-45 con su corrección, antes de contraerse | DT-30 (ya mitigada el 2026-10-05; la confirmación del paciente reduce las `pendiente` vencidas) · DT-11 (regla G1, corte = despliegue de la fase) · DT-04, DT-06 (límite por IP, no por cuenta ni captcha), DT-16 (sigue como deuda), DT-23, DT-26, DT-33 |
+| [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) | DT-42…DT-45 (previstas el 2026-10-14, abiertas desde el despliegue del 2026-10-17; las previstas 3 y 4 de la propuesta de ADR-10 desaparecieron) · DT-46 (detectada al implementar, 2026-10-15) | DT-18 **en producción** (2026-10-17), se cierra con la prueba de `trust proxy` · DT-44 parte 2 resuelta y DT-45 con su corrección, antes de contraerse | DT-30 (ya mitigada el 2026-10-05; la confirmación del paciente reduce las `pendiente` vencidas) · DT-11 (regla G1, corte = despliegue de la fase) · DT-04, DT-06 (límite por IP, no por cuenta ni captcha), DT-16 (sigue como deuda), DT-23, DT-26, DT-33 |
 | [Fase 4 — US-05](../Fases/fase-4-us05-alertas.md) | — | — | DT-28 (aviso al profesional) |
-| [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) | — | — | DT-11 se cierra aquí · depende de DT-30 (que se cierra en la Fase 3) · DT-13, DT-23 |
+| [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) | — | — | DT-11 se cierra aquí · depende de DT-30 (mitigada el 2026-10-05; lo anterior a esa fecha no se recupera) · DT-13, DT-23 |
 
 > Las deudas de Fundaciones y de la Fase 0 se **ficharon** el 2026-08-24 (`f2a7dff`), cuando se creó
 > este registro; su origen es anterior.
@@ -224,11 +240,17 @@ con fecha: [DT-16](DT-16.md), a revisar antes de que entre en vigor la Ley 21.71
 > producción: [DT-40](DT-40.md) (`registro` marca "Enviado" sin enviar; es la que más conviene cerrar,
 > porque el error se repite con solo copiar variables entre entornos) y [DT-41](DT-41.md) (DMARC).
 
-> **Actualizado 2026-10-15 (Fase 3 implementada y verificada en local, sin release):** [DT-18](DT-18.md)
+> **Actualizado 2026-10-15 (Fase 3 implementada y mergeada a `develop`):** [DT-18](DT-18.md)
 > está implementada y se cierra al desplegar; lo que no cubre (bloqueo por cuenta, captcha, almacén
 > compartido) sigue en [DT-04](DT-04.md) y [DT-06](DT-06.md). Al desplegar, lo que más conviene vigilar es
 > [DT-45](DT-45.md): su corrección ya está en el código, pero `ENLACE_CITA_CLAVE` **no se copia entre
 > entornos** (el patrón de DT-40). Nueva y menor: [DT-46](DT-46.md), que solo afecta a los tests.
+
+> **Actualizado 2026-10-17 (Fase 3 en producción):** [DT-42](DT-42.md) a [DT-45](DT-45.md) pasan a
+> `abierta`; [DT-18](DT-18.md) queda en producción y se cierra con la prueba de `trust proxy`. El release
+> confirmó por qué importa la clave: el primer despliegue no recibió `ENLACE_CITA_CLAVE` y production cayó
+> unos 9 minutos ([incidente](../Fases/fase-3-us04-respuesta-paciente.md#incidente-production-caído-9-minutos)).
+> Con la Fase 3 en producción, DT-12, DT-23, DT-25 y DT-26 también se pusieron al día (2026-10-18).
 
 **Cuatro deudas se resuelven en el mismo release que US-02** y conviene tratarlas como parte de su
 alcance, no como extras: DT-10 y DT-22 las cierra ADR-09; DT-15 la bloquea; DT-14 se agrava con
@@ -246,7 +268,7 @@ real. Las otras cinco previstas siguen sin contraerse porque dependen de la vía
 > [DT-11](DT-11.md) por fin tendría algo que distinguir. ~~El reloj sigue corriendo hasta que ese job
 > exista.~~ **Actualizado 2026-09-30:** el job se aplaza con el scoring; el reloj que sí corre es el de
 > [DT-30](DT-30.md) (la asistencia real), y en la v1 nadie puede confirmar una cita desde la interfaz;
-> sus botones esperan a la Fase 3.
+> sus botones esperan a la Fase 3. *(2026-10-05: ya no; el voucher tiene Confirmar, Asistió y No asistió.)*
 
 **ADR-09 cerró dos deudas y contrae seis.** Es un balance sano —las que cierra son de severidad alta
 y las que contrae son medias o menos— pero conviene mirarlas antes de implementar, porque **tres se

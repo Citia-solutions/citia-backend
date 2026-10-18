@@ -3,12 +3,18 @@
 > **Fase:** [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) · **Feature:** este documento · **Plan:** [US-04](../US/04-respuesta-paciente.md) (absorbe [US-02.07](../US/02.07-paciente-reagenda-cancela.md)) · **Relacionado:** [ADR-10](../Decisions/ADR-10.md), [ADR-13](../Decisions/ADR-13.md), [ADR-12](../Decisions/ADR-12.md), [ADR-09](../Decisions/ADR-09.md), [ADR-04](../Decisions/ADR-04.md), [DT-18](../Deudas/DT-18.md), [DT-42](../Deudas/DT-42.md)…[DT-46](../Deudas/DT-46.md), [DT-11](../Deudas/DT-11.md), [responder-cita-paciente (front)](../../../citia-frontend/context/Features/responder-cita-paciente.md)
 
 **Historia:** US-04 (RF-07) + subtarea US-02.07 · requisitos de seguridad S1–S3 y límite de tasa L1–L3 de ADR-10
-**Estado:** ✅ **implementada y verificada en local (2026-10-15)** · **pendiente de release** (rama
-`feature/fase3-respuesta-paciente` en los dos repos, sin commits todavía; checklist en la
-[guía de la fase](../Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción))
+**Estado:** ✅ **en producción (2026-10-17)** · mergeada a `develop` el 2026-10-15 (backend
+[PR #6](https://github.com/Citia-solutions/citia-backend/pull/6), frontend
+[PR #7](https://github.com/Citia-solutions/citia-frontend/pull/7)) y desplegada el 2026-10-17 (backend
+[PR #7](https://github.com/Citia-solutions/citia-backend/pull/7), frontend
+[PR #8](https://github.com/Citia-solutions/citia-frontend/pull/8)); lo que queda, en el
+[checklist de la fase](../Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción)
 **Pruebas:** 1709 unitarios (95 suites), 287 e2e (15 suites) y 139 de integración (8 suites) en verde ·
 cobertura global 84 % de líneas
-**Commits:** ninguno todavía
+**Commits:** `c757e0e` (infra y límite de tasa), `6fbf4e3` (persistencia), `4d3d88f` (enlace y actor),
+`5f8ac6d` (recordatorio), `92b8020` (pedir otra hora y suscriptor), `143c8fb` (`portal-paciente`), `3b312f9`
+(e2e), `b93f2c0` (docs) · merge `ce0c533` a `develop` (PR #6) · release `05bae58` (PR #7) · filas 85–92, 94 y
+95 de la [TRAZABILIDAD](../TRAZABILIDAD.md)
 **ADRs:** **[10](../Decisions/ADR-10.md)** (aceptado el 2026-10-14; [notas de implementación](../Decisions/ADR-10.md#notas-de-implementación-2026-10-15)) ·
 nota en [13 §1](../Decisions/ADR-13.md) (el recordatorio pide el enlace a `cita`) · se apoya en
 [12 §4](../Decisions/ADR-12.md) (suscriptor nuevo), [09](../Decisions/ADR-09.md) (bandeja),
@@ -573,12 +579,13 @@ hace distinto, o fija donde el contrato no decía nada:
 
 | Qué | Nota |
 |---|---|
-| **Release** | PR a `develop` (staging) y release a `main` (production) en los dos repos; [checklist de salida](../Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción) |
+| ~~**Release**~~ | ✅ PR a `develop` el 2026-10-15 (PR #6 y frontend PR #7) y release a `main` el 2026-10-17 (PR #7 y frontend PR #8), con un corte de ~9 minutos ([incidente](../Fases/fase-3-us04-respuesta-paciente.md#incidente-production-caído-9-minutos)) |
+| Prueba de `trust proxy` en production | seis logins desde una red y uno desde otra; cierra [DT-18](../Deudas/DT-18.md) |
 | Los dos puntos **manuales** de la Definición de Terminado | correo real con el botón; escáneres de Gmail y Outlook no confirman la cita |
-| **Fecha de corte de [DT-11](../Deudas/DT-11.md)** | el día del despliegue a production; escribirla en DT-11 ese día |
-| Commits y [TRAZABILIDAD](../TRAZABILIDAD.md) | sin commits todavía |
-| [DT-42](../Deudas/DT-42.md)…[DT-45](../Deudas/DT-45.md) de `prevista` a `abierta` | al llegar a production (DT-44 solo con su parte 1; DT-45 ya con su corrección) |
-| [DT-18](../Deudas/DT-18.md) | se cierra al desplegar; el frontend puede quitar la advertencia de "Copiar enlace de agenda" (`ENLACE_PUBLICO_LISTO`) |
+| ~~**Fecha de corte de [DT-11](../Deudas/DT-11.md)**~~ | ✅ 2026-10-17, escrita en DT-11 |
+| ~~Commits y [TRAZABILIDAD](../TRAZABILIDAD.md)~~ | ✅ 2026-10-15: filas 85–92 y 94 |
+| ~~[DT-42](../Deudas/DT-42.md)…[DT-45](../Deudas/DT-45.md) de `prevista` a `abierta`~~ | ✅ 2026-10-17 (DT-44 solo con su parte 1; DT-45 ya con su corrección) |
+| [DT-18](../Deudas/DT-18.md) | en producción; se cierra con la prueba de `trust proxy`. El frontend puede quitar la advertencia de "Copiar enlace de agenda" (`ENLACE_PUBLICO_LISTO`) |
 | Comentarios de código que aún dicen `FOR UPDATE` | `enlaces-cita.service.ts` y `citas.service.ts` describen la carga de la cita como `FOR UPDATE`; el código usa `FOR NO KEY UPDATE` (solo comentarios) |
 | [DT-46](../Deudas/DT-46.md) | columnas de fecha de entidades ORM sin `timestamptz` (solo afecta a los tests con `synchronize`) |
 | Decisiones abiertas de ADR-10 | elegir entre horarios disponibles (FD-06, Q9), avisar al rechazar ([DT-44](../Deudas/DT-44.md) parte 1), plazo mínimo para cancelar, el job de `ghosting` (Fase 5) |
@@ -587,10 +594,11 @@ hace distinto, o fija donde el contrato no decía nada:
 
 ## Deudas técnicas asociadas
 
-**Implementa:** [DT-18](../Deudas/DT-18.md) (límite de tasa en las cuatro superficies públicas; se cierra al
-desplegar) · la corrección de [DT-45](../Deudas/DT-45.md) (autocorrección de la clave y su test).
+**Implementa:** [DT-18](../Deudas/DT-18.md) (límite de tasa en las cuatro superficies públicas; en producción
+desde el 2026-10-17, se cierra con la prueba de `trust proxy`) · la corrección de [DT-45](../Deudas/DT-45.md)
+(autocorrección de la clave y su test).
 
-**Contrae al desplegar** (previstas al aceptar ADR-10): [DT-42](../Deudas/DT-42.md) (el enlace no verifica
+**Contrajo al desplegar** (2026-10-17; previstas al aceptar ADR-10): [DT-42](../Deudas/DT-42.md) (el enlace no verifica
 identidad) · [DT-43](../Deudas/DT-43.md) (sin aviso en tiempo real) · [DT-44](../Deudas/DT-44.md) (solo la
 parte 1: rechazar no avisa al paciente; **la parte 2 la resuelve el suscriptor**) · [DT-45](../Deudas/DT-45.md)
 (ya con su corrección).

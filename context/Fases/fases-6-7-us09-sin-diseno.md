@@ -12,7 +12,7 @@
 | | |
 |---|---|
 | **Objetivo** | Que el profesional gestione y siga a sus pacientes con notas e historial (RF-01). |
-| **Estado** | 🔶 solo existe `POST /pacientes` (de la [Fase 0](fase-0-us06-dashboard.md)). |
+| **Estado** | 🔶 solo existen `POST /api/pacientes` (de la [Fase 0](fase-0-us06-dashboard.md), sin consumidor) y `PATCH /api/pacientes/:id` (de la [Fase 2](fase-2-us03-recordatorios.md): teléfono y correo, lo usa la vista *Contacto* del voucher). |
 | **Tareas** | [ROADMAP § Fase 6](../ROADMAP.md#fase-6--us-08-monitoreo-y-seguimiento-del-paciente) |
 | **Depende de** | [Fase 1](fase-1-us02-gestion-citas.md) (historial de citas) y [Fase 5](fase-5-us07-scoring.md) (US-07). |
 

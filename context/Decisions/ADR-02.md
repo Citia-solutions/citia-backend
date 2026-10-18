@@ -47,6 +47,17 @@ Reglas estrictas:
 | `application/`   | `domain/`                  | `typeorm`, `@nestjs/*`, `infrastructure/` |
 | `infrastructure/`| `domain/`, `application/`, `typeorm`, `@nestjs/*` | — |
 
+> **Nota de implementación (2026-10-18): los controllers y los DTOs viven en `presentation/`.** La regla de
+> dependencias de arriba no cambia, pero el código tiene **cuatro** carpetas por módulo, no tres: desde el
+> primer módulo (`usuario`, `2ee856f`, 2026-06-22) los controllers HTTP y los DTOs con `class-validator`
+> están en `src/modules/<modulo>/presentation/` (y en `src/shared/presentation/` los transversales: salud,
+> límite de tasa, cabeceras), mientras `infrastructure/` queda para los adaptadores —persistencia TypeORM,
+> seguridad, configuración—. Así están los siete módulos con rutas (el octavo, `tenant`, no tiene) y los once controllers. `presentation/` se trata
+> como `infrastructure/`: conoce NestJS y `class-validator` y depende de `application/` y `domain/`, nunca
+> al revés. El test que reemplaza al §4 (abajo) prohíbe que `domain/` y `application/` importen de
+> `infrastructure/`, pero no mira `presentation/`; los servicios que hoy importan DTOs de `presentation/`
+> están en [DT-31](../Deudas/DT-31.md).
+
 ### 3. Puerto = abstract class (no interface)
 
 Los puertos de dominio se definen como `abstract class`, no como `interface`, porque NestJS necesita un valor en tiempo de ejecución como token de inyección de dependencias.

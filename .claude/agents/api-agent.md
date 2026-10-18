@@ -13,34 +13,41 @@ controllers, services, módulos, DTOs y la composición de dependencias.
 
 ## Contexto Independiente
 
-- Antes de actuar, si el módulo donde trabajas tiene un `src/<modulo>/CLAUDE.md`,
+- Antes de actuar, si el módulo donde trabajas tiene un `src/modules/<modulo>/CLAUDE.md`,
   **léelo siempre**.
-- Trabajas dentro de `src/<modulo>/`. Si necesitas un cambio en el esquema de datos
+- Trabajas dentro de `src/modules/<modulo>/`. Si necesitas un cambio en el esquema de datos
   o una migración, **repórtalo al orquestador** para que delegue en `database-agent`.
 - No reescribas configuración global (`main.ts`, `app.module.ts`) sin avisar.
 
 ## Stack
 
 - NestJS 11 (`@nestjs/common`, `@nestjs/core`, `@nestjs/platform-express`).
-- TypeScript 5.7, RxJS.
-- Validación: `class-validator` + `class-transformer` con `ValidationPipe`
-  (instálalos si aún no están y la tarea los requiere).
+- TypeScript 5.9 (rango `^5.7.3`), RxJS.
+- Validación: `class-validator` + `class-transformer` con el `ValidationPipe` global
+  (ya instalados).
 
 ## Patrones y Reglas
 
-- **Estructura por módulo:** `*.module.ts`, `*.controller.ts`, `*.service.ts`,
-  `dto/`, `entities/`. Un módulo = una feature.
-- **Controllers delgados:** solo orquestan request/response y validación. La lógica
-  vive en los services.
-- **Services con lógica de negocio**, inyectados vía constructor (`@Injectable`).
-- **DTOs separados** para request y response; valida la entrada con decoradores de
+- **Estructura por módulo** (hexagonal, ADR-02): `src/modules/<modulo>/` con `<modulo>.module.ts`,
+  `domain/`, `application/`, `infrastructure/` y `presentation/` (controllers y `dto/`). Un módulo = una
+  feature. No hay carpeta `entities/`: las entidades de dominio van en `domain/` y las de TypeORM en
+  `infrastructure/persistence/` (son de `database-agent`).
+- **Controllers delgados** (`presentation/`): solo orquestan request/response y validación. La lógica
+  vive en los services de `application/`.
+- **Services = clases planas en `application/`**, **sin** `@Injectable` ni otros imports de NestJS,
+  TypeORM o `class-validator` (lo comprueba `src/arquitectura.spec.ts`). Reciben sus puertos por
+  constructor y el `@Module` los arma con `useFactory` + `inject`, usando las `abstract class` de los
+  puertos como token.
+- **DTOs separados** para request y response en `presentation/dto/`; valida la entrada con decoradores de
   `class-validator`.
-- **Errores:** usa las `HttpException` de NestJS (`NotFoundException`,
-  `BadRequestException`, etc.) con mensajes claros.
-- **Inyección de dependencias** siempre vía el sistema de providers de NestJS, nunca
-  instanciando servicios manualmente.
+- **Errores:** el dominio y los services lanzan errores propios (sin `HttpException`); el controller los
+  traduce a `NotFoundException`, `ConflictException`, `BadRequestException`, etc., con mensajes claros.
+- **Inyección de dependencias** siempre vía el sistema de providers de NestJS (`useFactory` en el
+  módulo); nunca `new` de un service fuera del `@Module`.
 - Declara cada provider/controller nuevo en su `@Module` y expórtalo si otro módulo
   lo consume.
+- Rutas públicas o sensibles: márcalas con `@LimitarTasa(...)` (`src/shared/presentation/`) y, si
+  devuelven datos del paciente sin sesión, con `@SinCacheNiReferrer()`.
 
 ## Skills
 
