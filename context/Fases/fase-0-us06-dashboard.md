@@ -8,7 +8,7 @@
 |---|---|
 | **Objetivo** | Que el profesional vea sus citas del día con datos reales del backend, detrás del `JwtAuthGuard`. |
 | **Entregable** | `GET /api/citas/hoy` filtrado por tenant y profesional, en la zona de la clínica; y la fundación que no existía: módulo `Cita` con máquina de estados, `Paciente` mínimo y `POST /api/citas`. |
-| **Estado** | ✅ cerrada: conectada al backend real y probada contra Postgres (2026-09-28). Pendiente: las métricas del dashboard siguen con datos de prueba. |
+| **Estado** | ✅ cerrada: conectada al backend real y probada contra Postgres (2026-09-28). **Sin pendientes** desde el 2026-10-05, cuando el frontend quitó el mock: el dashboard muestra cuatro tarjetas con datos reales (frontend [PR #4](https://github.com/Citia-solutions/citia-frontend/pull/4), `DTF-03` cerrada). En producción desde el 2026-10-06. *(Antes: "las métricas del dashboard siguen con datos de prueba".)* |
 | **Fechas** | backend 2026-06-30 · zona horaria 2026-07-06 · seed demo 2026-08-16 · lista real y voucher en el front 2026-09-24 · cierre 2026-09-28 · marcada cerrada en el ROADMAP el 2026-09-29 (`31ea490`). |
 | **Historia** | US-06 — plan en [US/06-epic.md](../US/06-epic.md). |
 | **Commits** | filas 20–25 y 28 de [TRAZABILIDAD](../TRAZABILIDAD.md) (`9ab2bec` → `08dad63`, `f200557`). El cierre llegó con commits de la Fase 1. |
@@ -129,8 +129,9 @@ el dashboard no expone nada de dinero.
   — la lista conectada (US-06 + US-02.09).
 - [us/02.09-dashboard-refleja-cambios.md](../../../citia-frontend/context/us/02.09-dashboard-refleja-cambios.md)
   — el refresco tras cada cambio.
-- [DTF-03](../../../citia-frontend/context/Deudas/DTF-03.md) — métricas, ausentismo y actividad siguen
-  con datos de prueba (lo único pendiente de la fase).
+- [DTF-03](../../../citia-frontend/context/Deudas/DTF-03.md) — ~~métricas, ausentismo y actividad siguen
+  con datos de prueba (lo único pendiente de la fase)~~ → **cerrada el 2026-10-05**: el dashboard ya no
+  muestra datos inventados; todo sale de endpoints existentes.
 
 ---
 

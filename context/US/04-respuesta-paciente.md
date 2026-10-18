@@ -2,9 +2,13 @@
 
 > **Fase:** [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) · **Feature:** [us04-respuesta-paciente](../Features/us04-respuesta-paciente.md) · **Plan:** este documento · **Relacionado:** [ADR-10](../Decisions/ADR-10.md), [ADR-13](../Decisions/ADR-13.md), [ADR-12](../Decisions/ADR-12.md), [ADR-09](../Decisions/ADR-09.md), [ADR-04](../Decisions/ADR-04.md), [US-02.07](02.07-paciente-reagenda-cancela.md), [FD-06](../Frontend-Decisions/FD-06.md), [DT-11](../Deudas/DT-11.md), [DT-16](../Deudas/DT-16.md), [DT-18](../Deudas/DT-18.md), [DT-42](../Deudas/DT-42.md), [DT-43](../Deudas/DT-43.md), [DT-44](../Deudas/DT-44.md), [DT-45](../Deudas/DT-45.md), [Q11](../PREGUNTAS-ABIERTAS.md#q11--cómo-le-llega-al-paciente-el-enlace-de-su-cita)
 
-> **Estado (2026-10-15):** ✅ **implementada y verificada en local · pendiente de release.** Backend y
-> frontend construidos en la rama `feature/fase3-respuesta-paciente` de cada repo, contra el contrato de este
-> plan; sin commits todavía. Lo que existe y dónde se apartó del contrato:
+> **Estado (2026-10-17):** ✅ **en producción.** Backend y frontend construidos en la rama
+> `feature/fase3-respuesta-paciente` de cada repo, contra el contrato de este plan; verificados en local y
+> mergeados a `develop` el 2026-10-15 (backend [PR #6](https://github.com/Citia-solutions/citia-backend/pull/6),
+> commits `c757e0e` → `b93f2c0`, merge `ce0c533`; frontend
+> [PR #7](https://github.com/Citia-solutions/citia-frontend/pull/7), merge `e8ce193`) y llevados a producción
+> el 2026-10-17 (backend `05bae58`, frontend `1a7f324`).
+> Lo que existe y dónde se apartó del contrato:
 > [us04-respuesta-paciente](../Features/us04-respuesta-paciente.md). [Definición de
 > Terminado](#definición-de-terminado): lo automático ✅; los dos puntos manuales ⬜.
 > *(2026-10-14: en construcción; diseño aprobado por el arquitecto, [ADR-10](../Decisions/ADR-10.md)
@@ -274,6 +278,12 @@ deben seguir los commits.
 | 7 | `testing-agent` | La [Definición de Terminado](#definición-de-terminado) | 1–6 |
 | 8 | `architecture-agent` | Cierre de docs: feature nueva `Features/us04-respuesta-paciente.md`; DT-18 cerrada o mitigada; DT-42 a DT-45 de `prevista` a `abierta`; fecha concreta de corte en DT-11 al llegar a producción; TRAZABILIDAD con los commits | 7 |
 
+> *(2026-10-15.)* Los pasos 1 a 7 están en `develop`: un commit por paso del backend (`c757e0e` el 1,
+> `6fbf4e3` el 2, `4d3d88f` el 3, `5f8ac6d` el 4, `92b8020` el 5, `143c8fb` el 6 y `3b312f9` el 7; filas 85–91
+> de la [TRAZABILIDAD](../TRAZABILIDAD.md)). Del paso 8 están hechos la feature (`b93f2c0`) y la
+> TRAZABILIDAD; con el release del 2026-10-17, DT-42 a DT-45 pasaron a `abierta` y la fecha de corte de DT-11
+> quedó escrita (2026-10-17). DT-18 se cierra con la prueba de `trust proxy`.
+
 **Frontend (`citia-frontend`, en paralelo, mismo contrato):**
 
 1. **Ruta pública `/cita`** (sin auth, sin el layout del panel): lee `location.hash`, guarda el token en
@@ -458,10 +468,11 @@ production o en staging con Resend.
 ## Deudas que toca
 
 **Implementa:** [DT-18](../Deudas/DT-18.md) (límite de tasa en las cuatro superficies públicas;
-*2026-10-15: implementada, se cierra al desplegar*). *(2026-10-15: además, la parte 2 de DT-44 quedó resuelta
+*2026-10-15: implementada, se cierra al desplegar; 2026-10-17: en producción, se cierra con la prueba de
+`trust proxy`*). *(2026-10-15: además, la parte 2 de DT-44 quedó resuelta
 por el suscriptor y la corrección de DT-45 está en el código; al implementar se detectó
 [DT-46](../Deudas/DT-46.md).)*
-**Contrae** (previstas al aceptar ADR-10): [DT-42](../Deudas/DT-42.md) (enlace reenviado = capacidad
+**Contrae** (previstas al aceptar ADR-10; abiertas desde el despliegue del 2026-10-17): [DT-42](../Deudas/DT-42.md) (enlace reenviado = capacidad
 transferida) · [DT-43](../Deudas/DT-43.md) (sin aviso en tiempo real) · [DT-44](../Deudas/DT-44.md) (la
 petición de otra hora se resuelve solo en la bandeja) · [DT-45](../Deudas/DT-45.md) (cambiar
 `ENLACE_CITA_CLAVE`).

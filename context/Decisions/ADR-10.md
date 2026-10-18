@@ -5,9 +5,13 @@
 **Fecha:** 2026-09-23 (propuesto) · 2026-10-14 (aceptado)
 **Estado:** ✅ **Aceptado (2026-10-14)** por el arquitecto, con [Q11](../PREGUNTAS-ABIERTAS.md#q11--cómo-le-llega-al-paciente-el-enlace-de-su-cita)
 = **B** y los requisitos de seguridad S1–S3 más el límite de tasa ([Pendiente para aceptar](#pendiente-para-aceptar)).
-**Implementado y verificado en local (2026-10-15)** en la rama `feature/fase3-respuesta-paciente` (backend y
-frontend), sin commits todavía; **pendiente de release**. Cómo quedó: [Notas de
-implementación](#notas-de-implementación-2026-10-15) y [us04-respuesta-paciente](../Features/us04-respuesta-paciente.md).
+**Implementado y en producción desde el 2026-10-17** en los dos repos (merge a `develop` el 2026-10-15:
+backend [PR #6](https://github.com/Citia-solutions/citia-backend/pull/6), frontend
+[PR #7](https://github.com/Citia-solutions/citia-frontend/pull/7); release: backend
+[PR #7](https://github.com/Citia-solutions/citia-backend/pull/7), frontend
+[PR #8](https://github.com/Citia-solutions/citia-frontend/pull/8)). Cómo quedó:
+[Notas de implementación](#notas-de-implementación-2026-10-15) y
+[us04-respuesta-paciente](../Features/us04-respuesta-paciente.md).
 **Historia del estado:**
 - **2026-09-23 — Propuesto**, pendiente de Q11 y de los requisitos de seguridad del enlace.
 - **2026-09-25 — 🔵 Aplazado fuera de la v1** (Q11 → C): no había canal hacia el paciente. El diseño se
@@ -19,7 +23,10 @@ implementación](#notas-de-implementación-2026-10-15) y [us04-respuesta-pacient
   existente y la composición vive en un módulo nuevo `portal-paciente`. Detalle en
   [Qué cambió respecto de la propuesta](#qué-cambió-respecto-de-la-propuesta-2026-09-23).
 
-**Commits:** `2877b13` (propuesto) · `4c543a5` (aplazado) · implementación: sin commits todavía (en la rama)
+**Commits:** `2877b13` (propuesto) · `4c543a5` (aplazado) · `b93f2c0` (aceptado y notas de implementación) ·
+implementación: `c757e0e`, `6fbf4e3`, `4d3d88f`, `5f8ac6d`, `92b8020`, `143c8fb`, `3b312f9` · `ce0c533`
+(merge a `develop`, PR #6) · `05bae58` (release a producción, PR #7). Filas 85–92, 94 y 95 de la
+[TRAZABILIDAD](../TRAZABILIDAD.md).
 **Historias:** US-04 — plan en [US/04-respuesta-paciente.md](../US/04-respuesta-paciente.md) — y la subtarea
 [US-02.07](../US/02.07-paciente-reagenda-cancela.md), que US-04 absorbe.
 **Relación:** **matiza** [ADR-09](ADR-09.md) §8 regla 1 (la vía pública solo escribe en `solicitudes_cita`)
@@ -549,9 +556,9 @@ en paralelo contra el mismo contrato.
 
 ## Notas de implementación (2026-10-15)
 
-> Las decisiones de arriba **no cambian** salvo donde esta tabla lo dice. El código está en la rama
-> `feature/fase3-respuesta-paciente` (sin commits, **implementado y verificado en local**, pendiente de
-> release). Lo que existe, con su contrato exacto, está en
+> Las decisiones de arriba **no cambian** salvo donde esta tabla lo dice. El código está **implementado y
+> en producción** (commits `c757e0e` → `3b312f9`, mergeados a `develop` el 2026-10-15 y desplegados el
+> 2026-10-17). Lo que existe, con su contrato exacto, está en
 > [us04-respuesta-paciente](../Features/us04-respuesta-paciente.md); la tabla completa de desviaciones del
 > plan (veinte, ninguna rediseña), en
 > [us04 § Desviaciones](../Features/us04-respuesta-paciente.md#desviaciones-del-contrato-y-decisiones-tomadas-al-implementar).
@@ -657,7 +664,7 @@ El ADR pedía tres cosas para pasar de **Propuesto** a **Aceptado**. Las tres se
 ## Deudas técnicas asociadas
 
 **Implementa:** [DT-18](../Deudas/DT-18.md) — el límite de tasa se construye en esta fase para las cuatro
-superficies públicas (*2026-10-15: implementado y verificado en local; se cierra al desplegar*).
+superficies públicas (*2026-10-17: en producción; se cierra con la prueba de `trust proxy`*).
 
 **Depende de:** [DT-19](../Deudas/DT-19.md) — la redacción de `x-enlace-cita` se suma a la política de logs
 existente.

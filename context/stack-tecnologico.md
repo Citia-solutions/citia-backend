@@ -1,8 +1,8 @@
-1. Base de datos: Utilizaremos postgresql Integridad relacional + ACID + **Row-Level Security** para el aislamiento multi-tenant (RNF-02).
+1. Base de datos: Utilizaremos postgresql Integridad relacional + ACID ~~+ **Row-Level Security** para el aislamiento multi-tenant (RNF-02)~~. *(Corregido el 2026-10-18: el proyecto **no usa Row-Level Security**; ninguna migración crea políticas. El aislamiento multi-tenant (RNF-02) es de aplicación: el `tenantId` sale **solo del JWT**, nunca del cliente ([ADR-01 § Decisión, regla 2](Decisions/ADR-01.md#decisión)), y las consultas sobre datos de una organización filtran por `tenant_id` (las únicas tablas de toda la plataforma son `tenants` y `supresiones_correo`).)*
 2. Frontend: 
 	1. Vue: Familiaridad y curva de aprendizaje mas suave
 	2. Gestion de estado: Pinia ya que es el mas popular y recomendado por vue
-	3. Estilos y ui: prime vue o vuetify
+	3. Estilos y ui: ~~prime vue o vuetify~~ *(corregido el 2026-10-18: el frontend **no usa ninguna librería de componentes**; sus dependencias son `vue`, `vue-router` y `pinia`, y los componentes y estilos son propios)*
 	4. Conexión a api: Fetch
 3. Backend: 
 	1. NestJs: encajamos con una arquitectura limpia basada en hexagonal architecture 

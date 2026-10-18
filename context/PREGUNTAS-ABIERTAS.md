@@ -1,9 +1,16 @@
 # Preguntas abiertas — reparto por rol
 
-Once decisiones que bloqueaban el MVP. Aquí están reformuladas **en el lenguaje de quien puede
-responderlas**, con el entregable que se espera de cada una.
+Diecisiete preguntas: las **once que bloqueaban el MVP** (Q1–Q11) y seis que aparecieron después —cuatro
+de la implementación de la Fase 2 (Q12–Q15) y dos de seguridad para el arquitecto (Q16 y Q17)—. Aquí están
+reformuladas **en el lenguaje de quien puede responderlas**, con el entregable que se espera de cada una.
 
-> **Estado (2026-09-30):** respondidas Q1 (A), Q4, Q11 (C) y Q6 en cuanto al mecanismo
+> **Estado (2026-10-18):** respondidas **Q1** (A), **Q4**, **Q11** (**B**, 2026-10-14; antes C) y **Q6** en
+> cuanto al mecanismo ([ADR-12](Decisions/ADR-12.md)) y a su pregunta 1 (regla G1). Siguen abiertas Q2, Q3,
+> Q5, Q7, **Q8** (solo para el login: la ruta pública ya lleva el slug en la URL), Q9 y Q10, y las seis
+> posteriores: **Q12–Q15** (no bloquean) y **Q16–Q17** (arquitecto). La Fase 3, que dependía de Q11, está en
+> producción desde el 2026-10-17.
+>
+> *Antes (2026-09-30):* respondidas Q1 (A), Q4, Q11 (C) y Q6 en cuanto al mecanismo
 > ([ADR-12](Decisions/ADR-12.md)). Siguen abiertas Q2, Q3, Q5, Q7, Q8, Q9 y Q10.
 >
 > **2026-10-04:** la implementación de la Fase 2 dejó **cuatro preguntas nuevas, Q12 a Q15**, que no
@@ -16,6 +23,8 @@ responderlas**, con el entregable que se espera de cada una.
 > **2026-10-14:** **Q11 respondida B**, con su otra mitad de seguridad (requisitos S1–S3 y límite de
 > tasa): [ADR-10](Decisions/ADR-10.md) aceptado y la [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) en
 > construcción. La regla de `ghosting` G1 responde además la **pregunta 1 de Q6**.
+>
+> **2026-10-17:** la Fase 3 llegó a producción con el enlace y el límite de tasa que pedían Q11 y Q16.
 
 **Equipo:** 1 I+D · 2 desarrolladores · el arquitecto decide el diseño y los requisitos de seguridad.
 
@@ -38,28 +47,28 @@ se compromete, y los desarrolladores eligen el mecanismo que cumpla ese requisit
 | 4 | Solapamiento: ¿avisar o rechazar? | **I+D** decide, **dev** ejecuta | nada; es barato |
 | 6 | Planificador del proceso de cierre | **desarrolladores** | ✅ **mecanismo decidido (2026-09-30)** en [ADR-12](Decisions/ADR-12.md); el job de cierre se aplaza con el scoring (DT-11) · pregunta 1 ✅ por la regla G1 (2026-10-14) |
 | 7 | Renovación y revocación de sesión | **arquitecto** define requisito, **dev** elige mecanismo | DT-01 |
-| 8 | ADR-08 — tenant en la URL | **desarrolladores** | toda la vía pública |
+| 8 | ADR-08 — tenant en la URL | **desarrolladores** | el login · *(antes: "toda la vía pública"; la ruta pública ya lleva el slug en la URL desde el 2026-09-10, [ADR-09 §11.b](Decisions/ADR-09.md))* |
 | 9 | Modelo de disponibilidad | **desarrolladores** (solo evaluar riesgo) | nada hoy |
-| 11 | ¿Cómo llega al paciente el enlace de su cita, y cómo se sabe que es él? | **I+D** → decisión conjunta; seguridad del enlace: **arquitecto** | ✅ **respondida (2026-10-14): B** — el enlace va en el recordatorio · seguridad: S1–S3 + límite de tasa · ADR-10 aceptado, Fase 3 en construcción |
+| 11 | ¿Cómo llega al paciente el enlace de su cita, y cómo se sabe que es él? | **I+D** → decisión conjunta; seguridad del enlace: **arquitecto** | ✅ **respondida (2026-10-14): B** — el enlace va en el recordatorio · seguridad: S1–S3 + límite de tasa · ADR-10 aceptado, Fase 3 en producción (2026-10-17) |
 | 12 | ¿Se oculta `/recordatorios` al rol `recepcion`? | **I+D** (producto) → **dev** ejecuta | nada; afecta a la primera cuenta con ese rol |
 | 13 | Textos y colores de los estados de recordatorio | **I+D** (UX) | nada; es copy |
 | 14 | ¿Se mantiene la vista *Contacto* del voucher? | **I+D** (producto) | nada |
 | 15 | ¿Cuándo reinicia Resend la cuota mensual del plan gratis? | **desarrolladores** (verificar con el proveedor) | nada hoy; afina el contador ([DT-36](Deudas/DT-36.md)) |
-| 16 | Modelo de amenazas de la vía pública | **arquitecto** | nada hoy (la vía pública ya está construida); afina DT-18, DT-23 y DT-28 · el límite de tasa de la ruta pública ya quedó fijado en la Fase 3 (2026-10-14) |
+| 16 | Modelo de amenazas de la vía pública | **arquitecto** | nada hoy (la vía pública ya está construida); afina DT-18, DT-23 y DT-28 · el límite de tasa de la ruta pública ya quedó fijado en la Fase 3 (2026-10-14) y está en producción (2026-10-17) |
 | 17 | Manejo de datos de salud y retención | **arquitecto** | DT-26 |
 
 ### Por fase del roadmap
 
-*(2026-09-30; Q12–Q15 el 2026-10-04; Q16 y Q17 el 2026-10-11; Q11 y Q6 el 2026-10-14.)* A qué fase de construcción ([`Fases/`](Fases/README.md)) toca cada pregunta. Las que no
+*(2026-09-30; Q12–Q15 el 2026-10-04; Q16 y Q17 el 2026-10-11; Q11 y Q6 el 2026-10-14; Q8 el 2026-10-18.)* A qué fase de construcción ([`Fases/`](Fases/README.md)) toca cada pregunta. Las que no
 tienen fase son de producto o de modelo de negocio.
 
 | Fase | Preguntas |
 |---|---|
 | [Fundaciones](Fases/fase-base-fundaciones.md) | Q5 (registro) · Q7 (sesión) · Q8 (ADR-08 en el login) |
 | [Fase 0 — US-06](Fases/fase-0-us06-dashboard.md) | Q4 (solapamiento, ✅) · Q6 (job de ghosting) |
-| [Fase 1 — US-02](Fases/fase-1-us02-gestion-citas.md) | Q4 ✅ · Q11 ✅ C (en la Fase 1; en la Fase 3 pasó a B) · Q8 (ruta pública) · Q9 (disponibilidad) · Q16 · Q17 |
+| [Fase 1 — US-02](Fases/fase-1-us02-gestion-citas.md) | Q4 ✅ · Q11 ✅ C (en la Fase 1; en la Fase 3 pasó a B) · Q8 (la ruta pública ya usa el slug; falta el login) · Q9 (disponibilidad) · Q16 · Q17 |
 | [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | Q1 ✅ A · Q6 ✅ (mecanismo) · Q12, Q13, Q14, Q15 (2026-10-04) |
-| [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | Q11 ✅ **B** (2026-10-14), con la seguridad del enlace (S1–S3 y límite de tasa) · Q6 pregunta 1 ✅ (regla G1) |
+| [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | Q11 ✅ **B** (2026-10-14), con la seguridad del enlace (S1–S3 y límite de tasa) · Q6 pregunta 1 ✅ (regla G1) · en producción desde el 2026-10-17 |
 | [Fase 5 — US-07](Fases/fase-5-us07-scoring.md) | Q6 (pregunta 2 del job de cierre; la 1 la resolvió G1) |
 | sin fase | Q2 (prepago) · Q3 (agenda de la organización) · Q10 (validación, [etapa 1 del producto](Descripcion/fase-1-validacion.md)) |
 
@@ -152,7 +161,8 @@ invitación no cuesta nada y elimina un problema entero. Si la apuesta es crecim
 registro abierto necesita defensas que hoy no existen.
 
 **La otra mitad: superficie de abuso** *(arquitecto)*. `POST /api/usuarios` es público, sin
-verificación de correo, sin captcha y sin límite de tasa. Un mismo correo puede fundar organizaciones
+verificación de correo, sin captcha y sin límite de tasa *(2026-10-17: ya tiene uno, 5 registros por hora
+por IP, con la Fase 3 —[DT-18](Deudas/DT-18.md)—; lo demás sigue igual)*. Un mismo correo puede fundar organizaciones
 ilimitadas. Y el identificador público que se genera es **permanente** y será el subdominio del
 cliente: el daño no es solo de almacenamiento, es de espacio de nombres. ¿Cuánto se puede ensuciar
 esto y con qué esfuerzo? ¿Cuál es el mínimo de defensas para poder abrir el registro?
@@ -182,6 +192,8 @@ que construir nada.
 o pida reagendar **sin cuenta**, desde un enlace que sirve para una sola cita. El mecanismo está
 diseñado; lo que no existe es **quién le entrega ese enlace**. RF-07 dice *"desde el recordatorio"*,
 y los recordatorios (RF-06) están fuera del MVP. Es la misma pregunta que Q1 vista desde el paciente.
+*(Así era el 2026-09-25. Con Q1 → A los recordatorios entraron al MVP y, desde el 2026-10-17, llevan el
+enlace.)*
 
 **Pregunta para el campo:** ¿el profesional aceptaría **copiar y enviar él mismo** el enlace por
 WhatsApp al agendar? Es un paso manual —justo lo que el producto promete eliminar— pero es un único
@@ -235,7 +247,8 @@ Lo que se espera está en [ADR-10 § Pendiente para aceptar](Decisions/ADR-10.md
 Sugerencia de reparto entre los dos, porque las dos mitades no se bloquean entre sí:
 
 - **Dev A — parar el reloj:** Q6 (planificador) y el proceso de cierre.
-- **Dev B — habilitar la vía pública:** Q8 (ADR-08) y el límite de tasa.
+- **Dev B — habilitar la vía pública:** Q8 (ADR-08) y el límite de tasa. *(2026-10-18: la vía pública
+  existe desde el 2026-09-10 y el límite de tasa desde la Fase 3; de Q8 solo queda el login.)*
 
 ### Q6 — Planificador para el proceso de cierre *(Dev A · ~~prioridad 1~~)*
 
@@ -254,7 +267,9 @@ Sugerencia de reparto entre los dos, porque las dos mitades no se bloquean entre
 > tiene una petición de otra hora abierta ([DT-11](Deudas/DT-11.md#regla-del-ghosting-g1-2026-10-14)). El
 > job sigue aplazado. **Sigue abierta la pregunta 2** (las `confirmada` que nadie cerró). Lo que sí se
 > pierde cada día es la asistencia real de las citas pasadas ([DT-30](Deudas/DT-30.md)), no el
-> `ghosting`; sus botones esperan a la Fase 3 (decisión del 2026-09-30).
+> `ghosting`; sus botones esperan a la Fase 3 (decisión del 2026-09-30). *(Revertida el 2026-10-05: los
+> botones Confirmar, Asistió y No asistió están en el voucher y DT-30 quedó mitigada. La fecha de corte de G1
+> es el 2026-10-17.)*
 
 **Por qué es lo más urgente del tablero:** el historial de comportamiento del paciente
 —[DT-11](Deudas/DT-11.md), el diferenciador del producto y un pilar del MVP— **no se está
@@ -284,9 +299,16 @@ que ADR-10 §5 le deja anotada: **una petición de reagendamiento sin atender no
 
 ### Q8 — ADR-08, el tenant en la URL *(Dev B · prioridad 2)*
 
+> **Estado (2026-10-18):** la vía pública **ya no depende de esto**. `POST /api/publico/:tenantSlug/solicitudes`
+> lleva el slug en la URL desde el 2026-09-10 (`e1253c3`, [ADR-09 §11.b](Decisions/ADR-09.md)), y el enlace
+> del paciente de la Fase 3 no lleva `tenantSlug` ([ADR-10](Decisions/ADR-10.md), *Relación*). Lo que queda
+> es el **login**, que sigue recibiendo `tenantSlug` en el cuerpo. La condición para mergear de abajo vale
+> para ese cambio.
+
 Ya está decidido y documentado; falta implementarlo. **Dejó de ser una mejora de experiencia del
 login: es prerrequisito de infraestructura de la vía pública** — el enlace que el profesional
-comparte necesita identificar al profesional en la dirección.
+comparte necesita identificar al profesional en la dirección. *(Ver el estado de arriba: ese
+prerrequisito se cumplió sin migrar el login.)*
 
 **Entregable:** Fase 1 del plan de ADR-08 (segmento de ruta). El plan de ejecución ya está escrito,
 paso a paso.

@@ -27,12 +27,21 @@ features grandes.
 
 ## Stack y Convenciones Globales
 
-- **Framework:** NestJS 11, TypeScript 5.7, Node 22.
-- **Tests:** Jest (`*.spec.ts` unit, `test/` e2e con Supertest).
+- **Framework:** NestJS 11, TypeScript 5.9 (rango `^5.7.3` en `package.json`), Node 22.
+- **Persistencia:** PostgreSQL + TypeORM (ADR-00): `synchronize: false` y migraciones versionadas en
+  `src/database/migrations/`, que el contenedor aplica al arrancar (ADR-05).
+- **Tests:** Jest. `*.spec.ts` unitarios junto al código; `*.integration.spec.ts` de integración contra
+  Postgres (`npm run test:integration`); `test/*.e2e-spec.ts` e2e con Supertest. Las suites con base
+  necesitan Postgres local (`docker compose up db`).
 - **Calidad:** ESLint + Prettier (`npm run lint`, `npm run format`).
-- **Git:** Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `test:`).
-- **Ramas:** `feature/<scope>-<descripcion>` (ej. `feature/auth-jwt-refresh`).
+- **Git:** Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `test:`, `docs:`).
+- **Ramas (Git Flow):** `main` = producción y `develop` = integración (se despliega en staging). Las ramas
+  `feature/<scope>-<descripcion>` (ej. `feature/auth-jwt-refresh`) y `docs/<tema>` salen de `develop` y
+  vuelven por PR; un release es un PR `develop` → `main`.
 - **PR:** descripción clara + lint y tests pasando.
+- **Documentación:** en `context/`, en español (entrada: `context/README.md`). Toda decisión de diseño vive
+  en un ADR (`context/Decisions/`), toda funcionalidad en una feature (`context/Features/`), toda limitación
+  en una deuda (`context/Deudas/`), y cada commit sustantivo tiene su fila en `context/TRAZABILIDAD.md`.
 
 ### Scripts del proyecto
 
@@ -43,35 +52,44 @@ features grandes.
 | Tests unit      | `npm test`           |
 | Tests + cov     | `npm run test:cov`   |
 | Tests e2e       | `npm run test:e2e`   |
+| Tests integración | `npm run test:integration` |
+| Migraciones     | `npm run migration:generate` · `migration:run` · `migration:revert` |
 | Lint (fix)      | `npm run lint`       |
 | Format          | `npm run format`     |
 
 ## Arquitectura por Módulos (NestJS)
 
-El backend se organiza en **módulos de feature** dentro de `src/`. Cada módulo es
-autocontenido:
+El backend se organiza en **módulos de feature** dentro de `src/modules/`, con arquitectura hexagonal
+(ADR-02). Cada módulo es autocontenido:
 
 ```
-src/<modulo>/
-├── <modulo>.module.ts       # @Module: declara controllers + providers
-├── <modulo>.controller.ts   # Rutas HTTP + validación de entrada
-├── <modulo>.service.ts      # Lógica de negocio
-├── dto/                     # DTOs con class-validator (request/response)
-├── entities/                # Entidades de persistencia (cuando aplique)
-├── <modulo>.controller.spec.ts
-└── <modulo>.service.spec.ts
+src/modules/<modulo>/
+├── <modulo>.module.ts       # @Module: arma los providers con useFactory
+├── domain/                  # TS puro: entidades, puertos (abstract class), errores
+├── application/             # Casos de uso: clases planas, sin decoradores de NestJS
+├── infrastructure/          # Adaptadores: persistence/ (TypeORM), seguridad, config
+├── presentation/            # Controllers HTTP + dto/ (class-validator)
+├── integration/             # *.integration.spec.ts contra Postgres (si aplica)
+└── CLAUDE.md                # contexto local (si el módulo lo necesita)
 ```
 
-> Estado actual: el proyecto está recién inicializado (`src/main.ts`,
-> `src/app.module.ts`). Aún no hay módulos de feature ni capa de persistencia.
+Los `*.spec.ts` unitarios van junto a cada archivo. `domain/` y `application/` no importan NestJS,
+TypeORM ni `class-validator` (lo comprueba `src/arquitectura.spec.ts`); los servicios se instancian en el
+módulo con `useFactory` + `inject`, y los puertos son el token de inyección.
+
+> Estado actual (2026-10-18): módulos `auth`, `cita`, `paciente`, `portal-paciente`, `recordatorio`,
+> `solicitud`, `tenant` y `usuario`, más `src/shared/` (configuración y validación del entorno, logs,
+> límite de tasa, outbox y planificador) y 15 migraciones. En producción hasta la Fase 3; el estado de
+> cada fase está en `context/ROADMAP.md`.
 
 ### Convención: contexto por módulo (CLAUDE.md local)
 
 Cuando un módulo crezca y tenga reglas/estructura/endpoints propios, **crea un
-`src/<modulo>/CLAUDE.md`** documentando: estructura de carpetas, endpoints
+`src/modules/<modulo>/CLAUDE.md`** documentando: estructura de carpetas, endpoints
 existentes, convenciones locales y notas importantes. Claude lo carga
 automáticamente al trabajar en esa carpeta, dando contexto aislado y reduciendo
-tokens. No crees un CLAUDE.md para carpetas sin reglas especiales.
+tokens. No crees un CLAUDE.md para carpetas sin reglas especiales. Hoy lo tienen
+`cita`, `portal-paciente`, `recordatorio`, `solicitud` y `usuario`.
 
 ## Sub-Agentes Disponibles
 

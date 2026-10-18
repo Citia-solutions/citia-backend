@@ -190,7 +190,8 @@ con compose toman su default. En Railway no aplica (las variables se cargan en e
 
 ## Fase 3: límite de tasa, `trust proxy` y la clave del enlace
 
-*(2026-10-15, rama `feature/fase3-respuesta-paciente`, implementado y verificado en local, **sin release**.)*
+*(2026-10-15: commit `c757e0e`, en `develop` desde el merge `ce0c533` (PR #6); **en producción** desde el
+release `05bae58` del 2026-10-17.)*
 Piezas transversales de la Fase 3; el detalle está en
 [us04-respuesta-paciente](us04-respuesta-paciente.md#configuración).
 
@@ -236,7 +237,9 @@ clave ya las dejó aplicadas.
 
 ## Deudas técnicas asociadas
 
-- [DT-18](../Deudas/DT-18.md) — no existe límite de tasa en ninguna superficie.
+- [DT-18](../Deudas/DT-18.md) — no existía límite de tasa en ninguna superficie: **implementado** en la Fase 3
+  ([§ Fase 3](#fase-3-límite-de-tasa-trust-proxy-y-la-clave-del-enlace)) y **en producción** desde el
+  2026-10-17; se cierra con la prueba de `trust proxy`.
 - [DT-19](../Deudas/DT-19.md) — sin observabilidad: **implementada** en la Fase 2 y **verificada en
   producción** (2026-10-07: heartbeats y monitor en Up); falta la fuente de logs y la prueba de alerta
   forzada.

@@ -47,7 +47,7 @@
 |---|---|---|
 | [ADR-09](../Decisions/ADR-09.md) §7 | los hechos ya se publican | Aceptado · implementado |
 | [ADR-12](../Decisions/ADR-12.md) §4 | reglas de suscriptores; latencia y `LISTEN/NOTIFY` | Aceptado · implementado con la Fase 2, en producción (sin `LISTEN/NOTIFY`) |
-| [ADR-10](../Decisions/ADR-10.md) | prevé la deuda "sin aviso en tiempo real al profesional" mientras RF-05 esté fuera | Propuesto |
+| [ADR-10](../Decisions/ADR-10.md) | prevé la deuda "sin aviso en tiempo real al profesional" mientras RF-05 esté fuera: es [DT-43](../Deudas/DT-43.md), abierta desde el 2026-10-17 y se cierra en esta fase | ✅ Aceptado (2026-10-14) · en producción (2026-10-17) · *(antes figuraba como "Propuesto")* |
 
 **Decisiones del frontend:** ninguna.
 
@@ -84,5 +84,6 @@ Ninguna todavía.
 
 - **Depende de:** [Fase 1](fase-1-us02-gestion-citas.md) (disparadores de reagendar y cancelar),
   [Fase 2](fase-2-us03-recordatorios.md) (outbox) y [Fase 3](fase-3-us04-respuesta-paciente.md)
-  (confirmar y cancelar del paciente).
+  (confirmar y cancelar del paciente; ✅ en producción desde el 2026-10-17, con los hechos ya publicados con
+  actor).
 - **Desbloquea:** nada declarado en el ROADMAP.
