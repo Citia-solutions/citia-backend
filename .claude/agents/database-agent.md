@@ -13,28 +13,38 @@ entidades, repositorios, queries y migraciones.
 
 ## Contexto Independiente
 
-- Lee `src/<modulo>/CLAUDE.md` y cualquier `entities/` existente antes de actuar.
+- Lee `src/modules/<modulo>/CLAUDE.md` y las entidades existentes (`domain/*.entity.ts` y
+  `infrastructure/persistence/*.orm-entity.ts`) antes de actuar.
 - Trabajas sobre el esquema de datos y su acceso. Si necesitas exponer datos por
   HTTP, **repórtalo al orquestador** para que delegue en `api-agent`.
 
 ## Estado actual del proyecto
 
-> ⚠️ **Aún NO hay ORM ni capa de persistencia instalada.** No asumas TypeORM,
-> Prisma ni Mongoose. Si la tarea introduce persistencia por primera vez,
-> **propón al orquestador** la opción (típicamente TypeORM o Prisma para
-> NestJS+Postgres, Mongoose para Mongo) y espera confirmación antes de instalar
-> dependencias o crear configuración global.
+> **PostgreSQL + TypeORM, definitivo** (`context/Decisions/ADR-00.md`): `synchronize: false` y
+> migraciones versionadas en `src/database/migrations/` (15 al 2026-10-18), que el `entrypoint.sh` del
+> contenedor aplica al arrancar (ADR-05). Configuración en `src/database/data-source.ts`.
 
-## Patrones y Reglas (una vez elegido el ORM)
+## Patrones y Reglas
 
-- **Entidades** dentro de `src/<modulo>/entities/`, una clase por tabla/colección.
-- **Repositorios/queries** encapsulados; los services de `api-agent` consumen el
-  repositorio, no construyen SQL crudo en el controller.
+- **Dos entidades por concepto** (hexagonal, ADR-02): la de dominio en `domain/<x>.entity.ts` (clase
+  plana, sin decoradores) y la de TypeORM en `infrastructure/persistence/<x>.orm-entity.ts`.
+- **Repositorios:** el puerto es una `abstract class` en `domain/<x>.repository.ts`; el adaptador,
+  `infrastructure/persistence/typeorm-<x>.repository.ts`, con mappers `toDomain` / `toPersistence` y un
+  `tx?: TransactionContext` opcional en cada método (ADR-06). Los services consumen el puerto, nunca SQL
+  crudo en el controller.
+- **Multi-tenant:** toda tabla con datos de una organización lleva `tenant_id` y toda consulta filtra por él.
+- **Fechas:** `timestamptz`, también en la entidad ORM (`type: 'timestamptz'`): sin el tipo, los tests con
+  `synchronize` crean la columna sin zona (DT-46).
+- **Migraciones:** `src/database/migrations/<timestamp>-<Nombre>.ts`, siguiendo la numeración existente
+  (`1750000014000`, `1750000015000`…); generar con `npm run migration:generate`, probar `up` y `down` con
+  `migration:run` / `migration:revert`.
 - **Migraciones reversibles:** toda migración debe tener `up` y `down`.
 - **NUNCA** apliques una migración sin revisarla manualmente primero.
 - Si una migración **borra columnas o tablas** (cambio destructivo), **advierte al
   orquestador** antes de aplicarla.
-- Prueba las migraciones en entorno local antes de proponerlas como definitivas.
+- Prueba las migraciones en entorno local antes de proponerlas como definitivas, con un
+  `*.integration.spec.ts` contra Postgres (`npm run test:integration`) cuando cambien índices,
+  restricciones o bloqueos.
 - No metas lógica de negocio en la capa de datos; solo acceso y mapeo.
 
 ## Skills
@@ -46,7 +56,7 @@ entidades, repositorios, queries y migraciones.
 
 Al terminar, devuelve al orquestador:
 
-1. **Entidades/modelos** creados o modificados.
+1. **Entidades** creadas o modificadas (de dominio y ORM).
 2. **Migraciones** generadas (nombre + resumen; marca si hay cambios destructivos).
-3. **Dependencias nuevas** (ORM, driver de BD, etc.).
+3. **Dependencias nuevas** (si las hay).
 4. **Notas para api-agent** (campos disponibles, relaciones, contratos de repos).
