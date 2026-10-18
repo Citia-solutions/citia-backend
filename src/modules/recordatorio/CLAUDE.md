@@ -147,7 +147,7 @@ no toca la fila, corta el lote, alerta e `informarFallo` · `posible_duplicado`
 |---|---|---|
 | `MENSAJERIA_ADAPTADOR` | `registro` | **Obligatoria en producción** (sin default) |
 | `RESEND_API_KEY` / `RESEND_WEBHOOK_SECRET` | — | obligatorias con `resend`; el secreto empieza con `whsec_` |
-| `CORREO_DOMINIO` / `CORREO_REMITENTE` | — / `Citia <onboarding@resend.dev>` | remitente derivado del dominio si no se define |
+| `CORREO_DOMINIO` / `CORREO_REMITENTE` | — / `citiahealth <onboarding@resend.dev>` | remitente derivado del dominio si no se define |
 | `RESEND_CUOTA_DIARIA` / `_MENSUAL` / `CUOTA_UMBRAL_AVISO` | 100 / 3000 / 0.8 | contador local (día y mes UTC) |
 | `RECORDATORIO_ANTELACIONES_MIN` | `1440,120` | configuración predeterminada |
 | `RECORDATORIO_SILENCIO_DESDE` / `HASTA` | `21:00` / `08:00` | zona `APP_TZ` |

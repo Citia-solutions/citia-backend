@@ -136,7 +136,7 @@ export function generarPlantillaRecordatorio(
       : ['', 'Este correo no recibe respuestas: por favor no lo respondas.']),
     ...(accion ? ['', `${accion.texto}: ${accion.url}`] : []),
     '',
-    `Este es un aviso automático enviado por Citia en nombre de ${profesional}.`,
+    `Este es un aviso automático enviado por citiahealth en nombre de ${profesional}.`,
     '',
   ].join('\n');
 
@@ -184,7 +184,7 @@ export function generarPlantillaRecordatorio(
           `<a href="${escaparHtml(accion.url)}" style="color:#1a56db;">${escaparHtml(accion.texto)}</a>`,
         )
       : '',
-    `<p style="margin:24px 0 0 0;font-size:12px;color:#6b7280;">Este es un aviso automático enviado por Citia en nombre de ${h.profesional}.</p>`,
+    `<p style="margin:24px 0 0 0;font-size:12px;color:#6b7280;">Este es un aviso automático enviado por citiahealth en nombre de ${h.profesional}.</p>`,
   ].join('');
 
   const html =
