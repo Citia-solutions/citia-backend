@@ -508,7 +508,7 @@ producción todo tiene default salvo `JWT_SECRET`. Un valor vacío cuenta como n
 | `MENSAJERIA_ADAPTADOR` | `registro` fuera de producción; **obligatoria** en producción | `registro` (no envía, pero marca *Enviado*: [DT-40](../Deudas/DT-40.md)) o `resend` |
 | `RESEND_API_KEY` · `RESEND_WEBHOOK_SECRET` | — | obligatorias con `resend`; el secreto empieza con `whsec_` |
 | `CORREO_DOMINIO` | — | subdominio de envío verificado |
-| `CORREO_REMITENTE` | `Citia <recordatorios@${CORREO_DOMINIO}>`, o `Citia <onboarding@resend.dev>` sin dominio | remitente visible |
+| `CORREO_REMITENTE` | `citiahealth <recordatorios@${CORREO_DOMINIO}>`, o `citiahealth <onboarding@resend.dev>` sin dominio | remitente visible |
 | `RESEND_CUOTA_DIARIA` · `RESEND_CUOTA_MENSUAL` · `CUOTA_UMBRAL_AVISO` | 100 · 3000 · 0.8 | contador local y aviso |
 | `RECORDATORIO_ANTELACIONES_MIN` | `1440,120` | configuración predeterminada |
 | `RECORDATORIO_SILENCIO_DESDE` · `_HASTA` | `21:00` · `08:00` | horas sin envío (`APP_TZ`) |
@@ -552,7 +552,7 @@ Eventos con nombre estable para buscar: `recordatorio.enviado` / `.omitido` / `.
 
 ## Contenido del correo
 
-- **Remitente** único: `Citia <recordatorios@<subdominio de envío>>`. **`Reply-To`** = el
+- **Remitente** único: `citiahealth <recordatorios@<subdominio de envío>>`. **`Reply-To`** = el
   `correoRespuesta` del profesional, si lo configuró.
 - **Asunto neutro:** *"Recordatorio de tu hora: martes 14 de octubre, 10:30"* (sin profesional ni
   organización: se ve con la pantalla bloqueada).
@@ -635,7 +635,7 @@ general de la infraestructura en [stack § Mapa de entornos](../stack-tecnologic
 | Backend | Railway, entorno `staging`, repo `Citia-solutions/citia-backend` | Railway, entorno `production`, mismo repo |
 | Base de datos | Postgres propio del entorno | Postgres propio del entorno (base nueva desde el 2026-10-04) |
 | Frontend que lo consume | Netlify `citia-staging` → `https://citia-staging.netlify.app` | Netlify `app.citiahealth.cl` → `https://app.citiahealth.cl` |
-| Envío de correo | `registro`: **no envía**; los recordatorios quedan *Enviado* ([DT-40](../Deudas/DT-40.md)) | `resend`, desde `Citia <recordatorios@notificaciones.citiahealth.cl>` |
+| Envío de correo | `registro`: **no envía**; los recordatorios quedan *Enviado* ([DT-40](../Deudas/DT-40.md)) | `resend`, desde `citiahealth <recordatorios@notificaciones.citiahealth.cl>` |
 | Webhook de Resend | — | `POST /api/webhooks/resend` del backend de production, eventos `email.*` |
 | Observabilidad | logs de Railway | logs de Railway · Better Stack: monitor de `GET /api/health`, heartbeats `citia-prod-recordatorios` y `citia-prod-eventos` |
 

@@ -532,7 +532,7 @@ Detalle de costos en [stack-tecnologico.md](../stack-tecnologico.md#modo-prueba)
 
 ### 13. Remitente, dominio y desarrollo
 
-- **`CORREO_REMITENTE="Citia <recordatorios@${CORREO_DOMINIO}>"`**, igual para todos los tenants.
+- **`CORREO_REMITENTE="Citia <recordatorios@${CORREO_DOMINIO}>"`**, igual para todos los tenants. *(2026-10-18: el nombre visible pasa a `citiahealth`, igual que el pie del correo.)*
 - **El dominio no está comprado. Prerrequisito de la salida a producción:**
   1. comprar el `.cl` en NIC Chile y delegar su DNS a Cloudflare;
   2. agregar el dominio en Resend y crear en Cloudflare los registros que Resend indique: **SPF**

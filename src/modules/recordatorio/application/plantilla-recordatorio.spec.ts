@@ -52,7 +52,7 @@ describe('generarPlantillaRecordatorio (ADR-13 §12)', () => {
         expect(contenido).toContain('10:30');
         expect(contenido).toContain('Dra. Ana Pérez');
         expect(contenido).toContain('Centro Norte');
-        expect(contenido).toContain('aviso automático enviado por Citia');
+        expect(contenido).toContain('aviso automático enviado por citiahealth');
       }
     });
 

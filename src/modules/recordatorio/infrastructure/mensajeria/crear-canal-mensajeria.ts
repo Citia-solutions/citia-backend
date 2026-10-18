@@ -15,7 +15,7 @@ export interface ConfiguracionCanal {
 }
 
 /** Remitente de pruebas de Resend (ADR-13 §18), si el entorno no trae uno. */
-export const REMITENTE_POR_DEFECTO = 'Citia <onboarding@resend.dev>';
+export const REMITENTE_POR_DEFECTO = 'citiahealth <onboarding@resend.dev>';
 
 /**
  * Elige el adaptador de `CanalMensajeria` (ADR-13 §8, §13):
