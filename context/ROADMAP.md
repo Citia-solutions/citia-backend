@@ -152,7 +152,7 @@ Diseño en [ADR-12](Decisions/ADR-12.md) (outbox + planificador) y [ADR-13](Deci
 | Tema | Decisión |
 |---|---|
 | Canal | correo transaccional vía **Resend**. WhatsApp y SMS fuera del MVP (otro adaptador del mismo puerto, después) |
-| Remitente | uno solo para toda la plataforma, nombre visible **"Citia"**: `Citia <recordatorios@notificaciones.citiahealth.cl>`. Dominio **`citiahealth.cl`** delegado a Cloudflare; subdominio de envío **verificado en Resend** (2026-10-07). Falta DMARC ([DT-41](Deudas/DT-41.md)) |
+| Remitente | uno solo para toda la plataforma, nombre visible **"citiahealth"** (era "Citia" hasta el 2026-10-18): `citiahealth <recordatorios@notificaciones.citiahealth.cl>`. Dominio **`citiahealth.cl`** delegado a Cloudflare; subdominio de envío **verificado en Resend** (2026-10-07). Falta DMARC ([DT-41](Deudas/DT-41.md)) |
 | Contenido | solo informativo: fecha, hora, profesional, cómo contactar. Sin tipo de consulta. El enlace para responder llega en la Fase 3 |
 | Momentos | configurables por profesional; predeterminado **24 h y 2 h antes** |
 | Correo del paciente | **obligatorio** en el alta manual |
