@@ -14,14 +14,15 @@ const FORMATO_UUID =
 
 /** Columnas de lectura, ya con el nombre de la propiedad de dominio. */
 const COLUMNAS = `"id",
-       "cita_id"           AS "citaId",
-       "tenant_id"         AS "tenantId",
+       "cita_id"             AS "citaId",
+       "tenant_id"           AS "tenantId",
        "version",
-       "token_hash"        AS "tokenHash",
-       "emitido_en"        AS "emitidoEn",
-       "revocado_en"       AS "revocadoEn",
-       "motivo_revocacion" AS "motivoRevocacion",
-       "revocado_por"      AS "revocadoPor"`;
+       "token_hash"          AS "tokenHash",
+       "emitido_en"          AS "emitidoEn",
+       "revocado_en"         AS "revocadoEn",
+       "motivo_revocacion"   AS "motivoRevocacion",
+       "revocado_por"        AS "revocadoPor",
+       "primera_apertura_en" AS "primeraAperturaEn"`;
 
 interface FilaEnlace {
   id: string;
@@ -33,6 +34,7 @@ interface FilaEnlace {
   revocadoEn: Date | null;
   motivoRevocacion: MotivoRevocacionEnlace | null;
   revocadoPor: string | null;
+  primeraAperturaEn: Date | null;
 }
 
 /**
@@ -172,6 +174,29 @@ export class TypeOrmEnlaceCitaRepository extends EnlaceCitaRepository {
     }
     return aDominio(existente);
   }
+
+  async registrarPrimeraApertura(
+    enlaceId: string,
+    ahora: Date,
+    tx: TransactionContext,
+  ): Promise<boolean> {
+    const manager = exigirTransaccion(tx, 'registrarPrimeraApertura');
+    // Un id con otra forma no puede estar en la tabla: no se consulta.
+    if (!FORMATO_UUID.test(enlaceId)) return false;
+    // Solo la primera vez: con una apertura ya anotada no cambia nada. Toma
+    // la fila del enlace DESPUÉS de la cita que ya bloqueó `resolver`.
+    const filas = filasDe<{ id: string }>(
+      await manager.query(
+        `UPDATE "enlaces_cita"
+            SET "primera_apertura_en" = $2
+          WHERE "id" = $1
+            AND "primera_apertura_en" IS NULL
+         RETURNING "id"`,
+        [enlaceId, ahora],
+      ),
+    );
+    return filas.length > 0;
+  }
 }
 
 function aDominio(fila: FilaEnlace): EnlaceCita {
@@ -185,6 +210,7 @@ function aDominio(fila: FilaEnlace): EnlaceCita {
     revocadoEn: fila.revocadoEn,
     motivoRevocacion: fila.motivoRevocacion,
     revocadoPor: fila.revocadoPor,
+    primeraAperturaEn: fila.primeraAperturaEn,
   });
 }
 

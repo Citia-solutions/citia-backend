@@ -31,7 +31,7 @@ import { TypeOrmEnlaceCitaRepository } from '../infrastructure/persistence/typeo
  *  - los CHECK (formato del hash, versión, coherencia de la revocación);
  *  - la revocación "gana la primera";
  *  - `buscarPorIdParaActualizar` (FOR NO KEY UPDATE) bloqueando a otra conexión;
- *  - el `DISTINCT ON` de `ultimoActorPorTipo`.
+ *  - el `DISTINCT ON` de `ultimosCambiosPorTipo`.
  *
  * Dos DataSource = dos "procesos", cada uno con su pool.
  *
@@ -532,7 +532,7 @@ describe('Enlaces de cita y bloqueo de cita contra PostgreSQL (integration)', ()
   });
 
   // ---------------------------------------------------------------------------
-  describe('CambioCitaRepository.ultimoActorPorTipo', () => {
+  describe('CambioCitaRepository.ultimosCambiosPorTipo', () => {
     const registrar = (
       citaId: string,
       tipo: TipoCambio,
@@ -578,14 +578,22 @@ describe('Enlaces de cita y bloqueo de cita contra PostgreSQL (integration)', ()
       );
 
       // Act
-      const actores = await repo.ultimoActorPorTipo(citaId, tenantId, [
+      const ultimos = await repo.ultimosCambiosPorTipo(citaId, tenantId, [
         TipoCambio.CONFIRMADA,
+        TipoCambio.REAGENDADA,
         TipoCambio.CANCELADA,
       ]);
 
-      // Assert
-      expect(actores).toEqual({
-        [TipoCambio.CONFIRMADA]: ActorCambio.PACIENTE,
+      // Assert — con el instante, para comparar confirmación y reagendamiento.
+      expect(ultimos).toEqual({
+        [TipoCambio.CONFIRMADA]: {
+          actor: ActorCambio.PACIENTE,
+          ocurridoEn: new Date('2026-10-04T10:00:00Z'),
+        },
+        [TipoCambio.REAGENDADA]: {
+          actor: ActorCambio.PROFESIONAL,
+          ocurridoEn: new Date('2026-10-03T10:00:00Z'),
+        },
       });
     });
 
@@ -602,13 +610,20 @@ describe('Enlaces de cita y bloqueo de cita contra PostgreSQL (integration)', ()
       );
 
       expect(
-        await repo.ultimoActorPorTipo(citaId, otroTenantId, [
+        await repo.ultimosCambiosPorTipo(citaId, otroTenantId, [
           TipoCambio.CANCELADA,
         ]),
       ).toEqual({});
       expect(
-        await repo.ultimoActorPorTipo(citaId, tenantId, [TipoCambio.CANCELADA]),
-      ).toEqual({ [TipoCambio.CANCELADA]: ActorCambio.PACIENTE });
+        await repo.ultimosCambiosPorTipo(citaId, tenantId, [
+          TipoCambio.CANCELADA,
+        ]),
+      ).toEqual({
+        [TipoCambio.CANCELADA]: {
+          actor: ActorCambio.PACIENTE,
+          ocurridoEn: new Date('2026-10-02T10:00:00Z'),
+        },
+      });
     });
   });
 });

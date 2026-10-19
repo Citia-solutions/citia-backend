@@ -10,11 +10,13 @@ import {
 } from '../../src/shared/application/transaction-runner';
 import { rangoDelDiaEnZona } from '../../src/shared/domain/timezone';
 import {
-  ActorCambio,
   CambioCita,
   TipoCambio,
 } from '../../src/modules/cita/domain/cambio-cita.entity';
-import { CambioCitaRepository } from '../../src/modules/cita/domain/cambio-cita.repository';
+import {
+  CambioCitaRepository,
+  UltimoCambio,
+} from '../../src/modules/cita/domain/cambio-cita.repository';
 import { Cita, EstadoCita } from '../../src/modules/cita/domain/cita.entity';
 import { CitaRepository } from '../../src/modules/cita/domain/cita.repository';
 import { EnlaceCita } from '../../src/modules/cita/domain/enlace-cita.entity';
@@ -54,6 +56,7 @@ const clonarCita = (c: Cita): Cita =>
     tenantId: c.tenantId,
     pacienteId: c.pacienteId,
     usuarioId: c.usuarioId,
+    origen: c.origen,
     creadoEn: c.creadoEn,
     actualizadoEn: c.actualizadoEn,
   });
@@ -170,8 +173,18 @@ export class InMemoryCitaRepository extends CitaRepository {
 
 export class InMemoryCambioCitaRepository extends CambioCitaRepository {
   readonly cambios: CambioCita[] = [];
+  private ultimoInstante = 0;
 
+  /**
+   * Como la BD, pone `ocurridoEn` si no viene (`DEFAULT now()`). Para que el
+   * orden de inserción sea también el cronológico, el reloj del doble es
+   * estrictamente creciente: dos cambios en el mismo milisegundo no empatan.
+   */
   registrar(cambio: CambioCita): Promise<CambioCita> {
+    if (cambio.ocurridoEn === undefined) {
+      this.ultimoInstante = Math.max(Date.now(), this.ultimoInstante + 1);
+      cambio.ocurridoEn = new Date(this.ultimoInstante);
+    }
     this.cambios.push(cambio);
     return Promise.resolve(cambio);
   }
@@ -184,20 +197,25 @@ export class InMemoryCambioCitaRepository extends CambioCitaRepository {
     );
   }
 
-  // El orden de inserción es el cronológico: gana el último de cada tipo.
-  ultimoActorPorTipo(
+  // Gana el `ocurridoEn` más reciente de cada tipo; a igual instante, el
+  // último insertado (la BD desempata por `id`).
+  ultimosCambiosPorTipo(
     citaId: string,
     tenantId: string,
     tipos: readonly TipoCambio[],
-  ): Promise<Partial<Record<TipoCambio, ActorCambio>>> {
-    const resultado: Partial<Record<TipoCambio, ActorCambio>> = {};
+  ): Promise<Partial<Record<TipoCambio, UltimoCambio>>> {
+    const resultado: Partial<Record<TipoCambio, UltimoCambio>> = {};
     for (const c of this.cambios) {
       if (
-        c.citaId === citaId &&
-        c.tenantId === tenantId &&
-        tipos.includes(c.tipo)
+        c.citaId !== citaId ||
+        c.tenantId !== tenantId ||
+        !tipos.includes(c.tipo)
       ) {
-        resultado[c.tipo] = c.actorTipo;
+        continue;
+      }
+      const actual = resultado[c.tipo];
+      if (!actual || c.ocurridoEn.getTime() >= actual.ocurridoEn.getTime()) {
+        resultado[c.tipo] = { actor: c.actorTipo, ocurridoEn: c.ocurridoEn };
       }
     }
     return Promise.resolve(resultado);
@@ -212,7 +230,10 @@ export class InMemoryCambioCitaRepository extends CambioCitaRepository {
 export class InMemoryEnlaceCitaRepository extends EnlaceCitaRepository {
   readonly enlaces = new Map<string, EnlaceCita>();
 
-  private static clonar(e: EnlaceCita): EnlaceCita {
+  private static clonar(
+    e: EnlaceCita,
+    cambios: { primeraAperturaEn?: Date | null } = {},
+  ): EnlaceCita {
     return EnlaceCita.reconstituir({
       id: e.id,
       citaId: e.citaId,
@@ -223,6 +244,10 @@ export class InMemoryEnlaceCitaRepository extends EnlaceCitaRepository {
       revocadoEn: e.revocadoEn,
       motivoRevocacion: e.motivoRevocacion,
       revocadoPor: e.revocadoPor,
+      primeraAperturaEn:
+        cambios.primeraAperturaEn === undefined
+          ? e.primeraAperturaEn
+          : cambios.primeraAperturaEn,
     });
   }
 
@@ -292,12 +317,38 @@ export class InMemoryEnlaceCitaRepository extends EnlaceCitaRepository {
       );
     }
     // Como el UPDATE real: solo revoca uno activo; gana la primera revocación.
+    // Solo escribe la revocación: la primera apertura guardada no se pisa.
     if (actual.estaActivo() && !enlace.estaActivo()) {
-      this.enlaces.set(enlace.id, InMemoryEnlaceCitaRepository.clonar(enlace));
+      this.enlaces.set(
+        enlace.id,
+        InMemoryEnlaceCitaRepository.clonar(enlace, {
+          primeraAperturaEn: actual.primeraAperturaEn,
+        }),
+      );
     }
     return Promise.resolve(
       InMemoryEnlaceCitaRepository.clonar(this.enlaces.get(enlace.id)!),
     );
+  }
+
+  // Como el UPDATE real: escribe solo si todavía no tenía apertura.
+  registrarPrimeraApertura(
+    enlaceId: string,
+    ahora: Date,
+    tx: TransactionContext,
+  ): Promise<boolean> {
+    InMemoryEnlaceCitaRepository.exigirTx(tx, 'registrarPrimeraApertura');
+    const actual = this.enlaces.get(enlaceId);
+    if (!actual || actual.primeraAperturaEn !== null) {
+      return Promise.resolve(false);
+    }
+    this.enlaces.set(
+      enlaceId,
+      InMemoryEnlaceCitaRepository.clonar(actual, {
+        primeraAperturaEn: new Date(ahora.getTime()),
+      }),
+    );
+    return Promise.resolve(true);
   }
 }
 

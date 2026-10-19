@@ -34,6 +34,7 @@ import {
   DURACION_MAXIMA_MIN,
   ESTADOS_VIGENTES,
   EstadoCita,
+  OrigenCita,
 } from '../domain/cita.entity';
 import { CitaRepository } from '../domain/cita.repository';
 import { EnlaceCita } from '../domain/enlace-cita.entity';
@@ -157,7 +158,9 @@ export class CitasService {
     dto: CrearCitaDto,
     usuario: AuthenticatedUser,
   ): Promise<CitaResponseDto> {
-    return this.tx.run((tx) => this.agendar(dto, usuario, tx));
+    return this.tx.run((tx) =>
+      this.agendar(dto, usuario, tx, OrigenCita.MANUAL),
+    );
   }
 
   /**
@@ -173,11 +176,16 @@ export class CitasService {
    * reves.
    *
    * tenantId y usuarioId vienen SIEMPRE del token, nunca del body.
+   *
+   * `origen` (US-07.01, H4) lo decide quien llama y es obligatorio a
+   * propósito: `crearCita` pasa `MANUAL` y la bandeja, al aceptar una
+   * solicitud pública `nueva`, `SOLICITUD_PUBLICA`.
    */
   async agendar(
     dto: CrearCitaDto,
     usuario: AuthenticatedUser,
     tx: TransactionContext,
+    origen: OrigenCita,
   ): Promise<CitaResponseDto> {
     const paciente = await this.resolverPaciente(dto, usuario.tenantId, tx);
 
@@ -188,6 +196,7 @@ export class CitasService {
       tenantId: usuario.tenantId,
       pacienteId: paciente.id,
       usuarioId: usuario.userId,
+      origen,
     });
 
     const guardada = await this.citaRepository.guardar(cita, tx);
@@ -776,17 +785,17 @@ export class CitasService {
       return { confirmadaPor: null, canceladaPor: null };
     }
 
-    const ultimos = await this.cambioCitaRepository.ultimoActorPorTipo(
+    const ultimos = await this.cambioCitaRepository.ultimosCambiosPorTipo(
       cita.id,
       tenantId,
       tipos,
     );
     return {
       confirmadaPor: tipos.includes(TipoCambio.CONFIRMADA)
-        ? (ultimos[TipoCambio.CONFIRMADA] ?? null)
+        ? (ultimos[TipoCambio.CONFIRMADA]?.actor ?? null)
         : null,
       canceladaPor: tipos.includes(TipoCambio.CANCELADA)
-        ? (ultimos[TipoCambio.CANCELADA] ?? null)
+        ? (ultimos[TipoCambio.CANCELADA]?.actor ?? null)
         : null,
     };
   }

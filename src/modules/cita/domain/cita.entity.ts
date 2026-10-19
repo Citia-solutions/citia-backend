@@ -9,6 +9,21 @@ export enum EstadoCita {
   GHOSTING = 'ghosting',
 }
 
+/**
+ * De dónde salió la cita (US-07.01, H4). Se fija al crearla y no cambia:
+ * reagendar mueve la MISMA cita (ADR-09 §5) y aceptar una petición de otra
+ * hora también (ADR-10 R2), así que "reagendamiento" no es un origen.
+ *
+ * Solo se guarda para medir y calibrar (US-07.02): no se expone en el
+ * detalle ni en el dashboard.
+ */
+export enum OrigenCita {
+  /** El profesional la creó a mano (`POST /api/citas`). */
+  MANUAL = 'manual',
+  /** Nació al aceptar en la bandeja una solicitud pública `nueva`. */
+  SOLICITUD_PUBLICA = 'solicitud_publica',
+}
+
 // Estados terminales: de ellos no sale ninguna transición.
 const ESTADOS_TERMINALES: ReadonlySet<EstadoCita> = new Set([
   EstadoCita.CANCELADA,
@@ -57,6 +72,9 @@ export interface CrearCitaProps {
   tenantId: string;
   pacienteId: string;
   usuarioId: string;
+  // Obligatorio a propósito (US-07.01): el compilador impide crear una cita
+  // sin decir de dónde salió.
+  origen: OrigenCita;
 }
 
 // Datos completos para reconstituir una cita desde persistencia, incluido el
@@ -70,6 +88,7 @@ export interface ReconstituirCitaProps {
   tenantId: string;
   pacienteId: string;
   usuarioId: string;
+  origen: OrigenCita;
   creadoEn: Date;
   actualizadoEn: Date;
 }
@@ -89,13 +108,16 @@ export class Cita {
   // el grafo cerrado. Nadie lo asigna a mano desde fuera del dominio.
   private _estado: EstadoCita;
 
-  private constructor() {
+  private constructor(
+    // De dónde salió (US-07.01). Solo lectura: se fija al crear y no cambia.
+    readonly origen: OrigenCita,
+  ) {
     // Se construye vía crear() o reconstituir() para garantizar invariantes.
   }
 
   // Fábrica para una cita nueva. Nace siempre en PENDIENTE.
   static crear(props: CrearCitaProps): Cita {
-    const cita = new Cita();
+    const cita = new Cita(props.origen);
     cita.inicio = props.inicio;
     cita.duracionMin = props.duracionMin;
     cita.tipoConsulta = props.tipoConsulta;
@@ -109,7 +131,7 @@ export class Cita {
   // Reconstitución desde persistencia: repuebla el estado ya materializado sin
   // pasar por las validaciones de transición. Uso exclusivo del repositorio.
   static reconstituir(props: ReconstituirCitaProps): Cita {
-    const cita = new Cita();
+    const cita = new Cita(props.origen);
     cita.id = props.id;
     cita.inicio = props.inicio;
     cita.duracionMin = props.duracionMin;

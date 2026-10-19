@@ -8,9 +8,18 @@ import {
   Repository,
 } from 'typeorm';
 
-import { Cita, ESTADOS_VIGENTES, EstadoCita } from '../../domain/cita.entity';
+import {
+  Cita,
+  ESTADOS_VIGENTES,
+  EstadoCita,
+  OrigenCita,
+} from '../../domain/cita.entity';
 import { CitaOrmEntity } from './cita.orm-entity';
-import { TypeOrmCitaRepository } from './typeorm-cita.repository';
+import {
+  citaDesdeFila,
+  columnasCita,
+  TypeOrmCitaRepository,
+} from './typeorm-cita.repository';
 
 /**
  * Adaptador TypeORM de citas SIN base de datos: se comprueba la consulta que
@@ -34,6 +43,7 @@ describe('TypeOrmCitaRepository', () => {
       tenantId: 'tenant-1',
       pacienteId: 'paciente-1',
       usuarioId: 'usuario-1',
+      origen: OrigenCita.SOLICITUD_PUBLICA,
       creadoEn: new Date('2026-09-01T00:00:00Z'),
       actualizadoEn: new Date('2026-09-01T00:00:00Z'),
     });
@@ -188,6 +198,84 @@ describe('TypeOrmCitaRepository', () => {
       expect(
         await repositorio.buscarPorIdParaActualizar('c1', 'otro-tenant', tx),
       ).toBeNull();
+    });
+  });
+
+  describe('origen (US-07.01)', () => {
+    it('guardar debería persistir el origen de la cita y devolverlo', async () => {
+      // Arrange
+      // Lo que "relee" la base es lo que se le pasó: si el adaptador no
+      // escribiera `origen`, volvería el de la fila base (`manual`).
+      repoOrm.save.mockImplementation((orm: Partial<CitaOrmEntity>) =>
+        Promise.resolve({ ...fila('c1'), origen: OrigenCita.MANUAL, ...orm }),
+      );
+      const cita = Cita.crear({
+        inicio: new Date('2026-10-22T13:00:00.000Z'),
+        duracionMin: 45,
+        tipoConsulta: 'Control',
+        tenantId: 'tenant-1',
+        pacienteId: 'paciente-1',
+        usuarioId: 'usuario-1',
+        origen: OrigenCita.SOLICITUD_PUBLICA,
+      });
+
+      // Act
+      const guardada = await repositorio.guardar(cita);
+
+      // Assert
+      expect(repoOrm.save).toHaveBeenCalledWith(
+        expect.objectContaining({ origen: OrigenCita.SOLICITUD_PUBLICA }),
+      );
+      expect(guardada.origen).toBe(OrigenCita.SOLICITUD_PUBLICA);
+    });
+
+    it('debería reconstituir el origen leído', async () => {
+      // Arrange
+      repoOrm.findOne.mockResolvedValue(fila('c1'));
+
+      // Act
+      const cita = await repositorio.buscarPorId('c1', 'tenant-1');
+
+      // Assert
+      expect(cita?.origen).toBe(OrigenCita.SOLICITUD_PUBLICA);
+    });
+  });
+
+  describe('mapeo compartido con el SQL a mano', () => {
+    it('columnasCita debería seleccionar cada columna con el nombre de su propiedad', () => {
+      expect(columnasCita('c')).toBe(
+        [
+          'c."id" AS "id"',
+          'c."inicio" AS "inicio"',
+          'c."duracion_min" AS "duracionMin"',
+          'c."tipo_consulta" AS "tipoConsulta"',
+          'c."estado" AS "estado"',
+          'c."origen" AS "origen"',
+          'c."tenant_id" AS "tenantId"',
+          'c."paciente_id" AS "pacienteId"',
+          'c."usuario_id" AS "usuarioId"',
+          'c."creado_en" AS "creadoEn"',
+          'c."actualizado_en" AS "actualizadoEn"',
+        ].join(', '),
+      );
+    });
+
+    it('citaDesdeFila debería reconstituir la Cita con todos sus datos', () => {
+      // Act
+      const cita = citaDesdeFila(fila('c9'));
+
+      // Assert
+      expect(cita).toBeInstanceOf(Cita);
+      expect(cita).toMatchObject({
+        id: 'c9',
+        duracionMin: 50,
+        tipoConsulta: 'Control',
+        estado: EstadoCita.CONFIRMADA,
+        origen: OrigenCita.SOLICITUD_PUBLICA,
+        tenantId: 'tenant-1',
+        pacienteId: 'paciente-1',
+        usuarioId: 'usuario-1',
+      });
     });
   });
 

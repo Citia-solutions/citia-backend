@@ -11,7 +11,9 @@ import {
   DURACION_MAXIMA_MIN,
   ESTADOS_VIGENTES,
   EstadoCita,
+  OrigenCita,
 } from '../domain/cita.entity';
+import { UltimoCambio } from '../domain/cambio-cita.repository';
 import { EnlaceCita } from '../domain/enlace-cita.entity';
 import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-estado-invalida.error';
 import { AvisosCitaDto } from '../presentation/dto/avisos-cita.dto';
@@ -40,7 +42,7 @@ describe('CitasService', () => {
   let mockCambioCitaRepository: {
     registrar: jest.Mock;
     historialDeCita: jest.Mock;
-    ultimoActorPorTipo: jest.Mock;
+    ultimosCambiosPorTipo: jest.Mock;
   };
   // Tipado con la firma del puerto (ADR-12 §2): `publicar(evento, tx)`.
   let mockEventos: {
@@ -78,7 +80,7 @@ describe('CitasService', () => {
     mockCambioCitaRepository = {
       registrar: jest.fn().mockResolvedValue(undefined),
       historialDeCita: jest.fn().mockResolvedValue([]),
-      ultimoActorPorTipo: jest.fn().mockResolvedValue({}),
+      ultimosCambiosPorTipo: jest.fn().mockResolvedValue({}),
     };
     mockEventos = {
       publicar: jest
@@ -371,6 +373,7 @@ describe('CitasService', () => {
         tenantId: 'tenant-1',
         pacienteId: 'paciente-1',
         usuarioId: 'usuario-1',
+        origen: OrigenCita.MANUAL,
         creadoEn: new Date(),
         actualizadoEn: new Date(),
       });
@@ -506,6 +509,7 @@ describe('CitasService', () => {
         tenantId: 'tenant-1',
         pacienteId: 'paciente-1',
         usuarioId: 'usuario-1',
+        origen: OrigenCita.MANUAL,
         creadoEn: new Date(),
         actualizadoEn: new Date(),
       });
@@ -589,6 +593,7 @@ describe('CitasService', () => {
         tenantId: 'tenant-1',
         pacienteId,
         usuarioId: 'usuario-1',
+        origen: OrigenCita.MANUAL,
         creadoEn: new Date(),
         actualizadoEn: new Date(),
       });
@@ -754,6 +759,7 @@ describe('CitasService', () => {
         tenantId: 'tenant-1',
         pacienteId: 'paciente-1',
         usuarioId: 'otro-profesional',
+        origen: OrigenCita.MANUAL,
         creadoEn: new Date(),
         actualizadoEn: new Date(),
       });
@@ -858,6 +864,7 @@ describe('CitasService', () => {
         tenantId: 'tenant-2',
         pacienteId: 'paciente-2',
         usuarioId: 'usuario-2',
+        origen: OrigenCita.MANUAL,
         creadoEn: new Date(),
         actualizadoEn: new Date(),
       });
@@ -1000,6 +1007,7 @@ describe('CitasService', () => {
       tenantId: 'tenant-1',
       pacienteId: props.pacienteId ?? 'paciente-1',
       usuarioId: props.usuarioId ?? 'usuario-1',
+      origen: OrigenCita.MANUAL,
       creadoEn: props.creadoEn ?? new Date('2026-09-01T00:00:00Z'),
       actualizadoEn: new Date('2026-09-01T00:00:00Z'),
     });
@@ -1046,6 +1054,7 @@ describe('CitasService', () => {
         tenantId: 'tenant-1',
         pacienteId: 'paciente-1',
         usuarioId: 'usuario-1',
+        origen: OrigenCita.MANUAL,
         creadoEn: new Date('2026-10-01T00:00:00Z'),
         actualizadoEn: new Date('2026-10-01T00:00:00Z'),
       });
@@ -1681,7 +1690,7 @@ describe('CitasService', () => {
     });
 
     describe('crearCita / agendar', () => {
-      it('debería abrir UNA sola transacción y delegar en agendar con ese tx', async () => {
+      it('debería abrir UNA sola transacción y delegar en agendar con ese tx y origen manual', async () => {
         // Arrange
         prepararAlta();
         const espiaAgendar = jest.spyOn(service, 'agendar');
@@ -1696,8 +1705,10 @@ describe('CitasService', () => {
           dtoAlta,
           usuarioAutenticado,
           'tx',
+          OrigenCita.MANUAL,
         );
         expect(result).toBe(await espiaAgendar.mock.results[0].value);
+        expect(primeraCitaGuardada().origen).toBe(OrigenCita.MANUAL);
       });
 
       it('agendar NO debería abrir otra transacción: usa en todo el tx que recibe', async () => {
@@ -1710,6 +1721,7 @@ describe('CitasService', () => {
           dtoAlta,
           usuarioAutenticado,
           txExterna,
+          OrigenCita.SOLICITUD_PUBLICA,
         );
 
         // Assert
@@ -1734,6 +1746,8 @@ describe('CitasService', () => {
         expect(txPublicado).toBe(txExterna);
         expect(result.avisos).toEqual({ solapamientos: [] });
         expect(result.paciente?.id).toBe('paciente-1');
+        // El origen lo decide quien llama (US-07.01).
+        expect(primeraCitaGuardada().origen).toBe(OrigenCita.SOLICITUD_PUBLICA);
       });
 
       it('agendar debería registrar el cambio "creada" y responder con el paciente', async () => {
@@ -1741,7 +1755,12 @@ describe('CitasService', () => {
         prepararAlta();
 
         // Act
-        const result = await service.agendar(dtoAlta, usuarioAutenticado, 'tx');
+        const result = await service.agendar(
+          dtoAlta,
+          usuarioAutenticado,
+          'tx',
+          OrigenCita.MANUAL,
+        );
 
         // Assert
         const cambio = (
@@ -1818,6 +1837,7 @@ describe('CitasService', () => {
           tenantId: 'tenant-1',
           pacienteId: 'paciente-1',
           usuarioId: 'usuario-1',
+          origen: OrigenCita.MANUAL,
           creadoEn: new Date(),
           actualizadoEn: new Date(),
         }),
@@ -1933,6 +1953,7 @@ describe('CitasService', () => {
         tenantId: 'tenant-1',
         pacienteId: 'paciente-1',
         usuarioId,
+        origen: OrigenCita.MANUAL,
         creadoEn: new Date('2026-10-01T00:00:00Z'),
         actualizadoEn: new Date('2026-10-01T00:00:00Z'),
       });
@@ -1954,6 +1975,7 @@ describe('CitasService', () => {
         revocadoEn: props.revocadoEn ?? null,
         motivoRevocacion: null,
         revocadoPor: null,
+        primeraAperturaEn: null,
       });
 
     const primerCambio = (): CambioCita =>
@@ -2349,13 +2371,27 @@ describe('CitasService', () => {
         tenantId: 'tenant-1',
       };
 
+      // `actores`: el actor del último cambio de cada tipo. El puerto también
+      // devuelve cuándo ocurrió; aquí basta un instante fijo.
       const detalleCon = async (
         estado: EstadoCita,
-        ultimos: Partial<Record<TipoCambio, ActorCambio>>,
+        actores: Partial<Record<TipoCambio, ActorCambio>>,
       ): Promise<CitaDetalleDto> => {
+        const ultimos: Partial<Record<TipoCambio, UltimoCambio>> = {};
+        for (const [tipo, actor] of Object.entries(actores) as [
+          TipoCambio,
+          ActorCambio,
+        ][]) {
+          ultimos[tipo] = {
+            actor,
+            ocurridoEn: new Date('2026-10-01T12:00:00Z'),
+          };
+        }
         mockCitaRepository.buscarPorId.mockResolvedValue(citaDe(estado));
         mockPacienteRepository.buscarPorId.mockResolvedValue(paciente);
-        mockCambioCitaRepository.ultimoActorPorTipo.mockResolvedValue(ultimos);
+        mockCambioCitaRepository.ultimosCambiosPorTipo.mockResolvedValue(
+          ultimos,
+        );
         return conReloj.detalle(CITA_ID, usuarioAutenticado);
       };
 
@@ -2383,7 +2419,7 @@ describe('CitasService', () => {
 
         // Assert
         expect(
-          mockCambioCitaRepository.ultimoActorPorTipo,
+          mockCambioCitaRepository.ultimosCambiosPorTipo,
         ).toHaveBeenCalledWith(CITA_ID, 'tenant-1', [TipoCambio.CONFIRMADA]);
       });
 
@@ -2397,7 +2433,7 @@ describe('CitasService', () => {
         expect(result.confirmadaPor).toBeNull();
         expect(result.canceladaPor).toBeNull();
         expect(
-          mockCambioCitaRepository.ultimoActorPorTipo,
+          mockCambioCitaRepository.ultimosCambiosPorTipo,
         ).not.toHaveBeenCalled();
       });
 

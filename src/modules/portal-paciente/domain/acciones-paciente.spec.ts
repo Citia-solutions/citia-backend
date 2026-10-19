@@ -1,4 +1,4 @@
-import { Cita, EstadoCita } from '../../cita/domain/cita.entity';
+import { Cita, EstadoCita, OrigenCita } from '../../cita/domain/cita.entity';
 import { accionesPermitidasPaciente } from './acciones-paciente';
 
 describe('accionesPermitidasPaciente (portal del paciente, Fase 3)', () => {
@@ -15,6 +15,7 @@ describe('accionesPermitidasPaciente (portal del paciente, Fase 3)', () => {
       tenantId: 'tenant-1',
       pacienteId: 'paciente-1',
       usuarioId: 'usuario-1',
+      origen: OrigenCita.MANUAL,
       creadoEn: new Date('2026-10-01T00:00:00Z'),
       actualizadoEn: new Date('2026-10-01T00:00:00Z'),
     });

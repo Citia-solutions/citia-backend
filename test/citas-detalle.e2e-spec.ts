@@ -12,12 +12,18 @@ import { JwtStrategy } from '../src/modules/auth/jwt.strategy';
 import { CitasService } from '../src/modules/cita/application/citas.service';
 import { EnlacesCitaService } from '../src/modules/cita/application/enlaces-cita.service';
 import {
-  ActorCambio,
   CambioCita,
   TipoCambio,
 } from '../src/modules/cita/domain/cambio-cita.entity';
-import { CambioCitaRepository } from '../src/modules/cita/domain/cambio-cita.repository';
-import { Cita, EstadoCita } from '../src/modules/cita/domain/cita.entity';
+import {
+  CambioCitaRepository,
+  UltimoCambio,
+} from '../src/modules/cita/domain/cambio-cita.repository';
+import {
+  Cita,
+  EstadoCita,
+  OrigenCita,
+} from '../src/modules/cita/domain/cita.entity';
 import { CitaRepository } from '../src/modules/cita/domain/cita.repository';
 import { CitasController } from '../src/modules/cita/presentation/citas.controller';
 import { PacientesService } from '../src/modules/paciente/application/pacientes.service';
@@ -138,8 +144,15 @@ class InMemoryCitaRepository extends CitaRepository {
 
 class InMemoryCambioCitaRepository extends CambioCitaRepository {
   readonly cambios: CambioCita[] = [];
+  private ultimoInstante = 0;
 
+  // Como la BD, pone `ocurridoEn` si no viene; reloj estrictamente creciente
+  // para que el orden de inserción sea también el cronológico.
   registrar(cambio: CambioCita): Promise<CambioCita> {
+    if (cambio.ocurridoEn === undefined) {
+      this.ultimoInstante = Math.max(Date.now(), this.ultimoInstante + 1);
+      cambio.ocurridoEn = new Date(this.ultimoInstante);
+    }
     this.cambios.push(cambio);
     return Promise.resolve(cambio);
   }
@@ -152,19 +165,25 @@ class InMemoryCambioCitaRepository extends CambioCitaRepository {
     );
   }
 
-  ultimoActorPorTipo(
+  // Gana el `ocurridoEn` más reciente de cada tipo (a igual instante, el
+  // último insertado).
+  ultimosCambiosPorTipo(
     citaId: string,
     tenantId: string,
     tipos: readonly TipoCambio[],
-  ): Promise<Partial<Record<TipoCambio, ActorCambio>>> {
-    const resultado: Partial<Record<TipoCambio, ActorCambio>> = {};
+  ): Promise<Partial<Record<TipoCambio, UltimoCambio>>> {
+    const resultado: Partial<Record<TipoCambio, UltimoCambio>> = {};
     for (const c of this.cambios) {
       if (
-        c.citaId === citaId &&
-        c.tenantId === tenantId &&
-        tipos.includes(c.tipo)
+        c.citaId !== citaId ||
+        c.tenantId !== tenantId ||
+        !tipos.includes(c.tipo)
       ) {
-        resultado[c.tipo] = c.actorTipo;
+        continue;
+      }
+      const actual = resultado[c.tipo];
+      if (!actual || c.ocurridoEn.getTime() >= actual.ocurridoEn.getTime()) {
+        resultado[c.tipo] = { actor: c.actorTipo, ocurridoEn: c.ocurridoEn };
       }
     }
     return Promise.resolve(resultado);
@@ -273,6 +292,7 @@ describe('GET /api/citas/:id — voucher (e2e sin BD, US-02.08)', () => {
       tenantId,
       pacienteId,
       usuarioId,
+      origen: OrigenCita.MANUAL,
       creadoEn: new Date(),
       actualizadoEn: new Date(),
     });

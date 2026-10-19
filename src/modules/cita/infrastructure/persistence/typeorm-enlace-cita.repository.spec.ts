@@ -41,6 +41,7 @@ describe('TypeOrmEnlaceCitaRepository', () => {
     revocadoEn: null,
     motivoRevocacion: null,
     revocadoPor: null,
+    primeraAperturaEn: null,
     ...extra,
   });
 
@@ -79,6 +80,10 @@ describe('TypeOrmEnlaceCitaRepository', () => {
       'guardar',
       () => repositorio.guardar(EnlaceCita.reconstituir(fila()), undefined),
     ],
+    [
+      'registrarPrimeraApertura',
+      () => repositorio.registrarPrimeraApertura(ENLACE, new Date(), undefined),
+    ],
   ])('%s sin tx debería lanzar', async (op, fn) => {
     // Act & Assert
     await expect(fn()).rejects.toThrow(
@@ -110,6 +115,20 @@ describe('TypeOrmEnlaceCitaRepository', () => {
         emitidoEn: EMITIDO,
       });
       expect(enlace?.estaActivo()).toBe(true);
+      expect(enlace?.primeraAperturaEn).toBeNull();
+    });
+
+    it('debería leer y reconstituir la primera apertura (US-07.01)', async () => {
+      // Arrange
+      const apertura = new Date('2026-10-19T15:00:00.000Z');
+      tx.query.mockResolvedValue([fila({ primeraAperturaEn: apertura })]);
+
+      // Act
+      const enlace = await repositorio.buscarActivoPorCita(CITA, comoTx());
+
+      // Assert
+      expect(sql()).toContain(`"primera_apertura_en" AS "primeraAperturaEn"`);
+      expect(enlace?.primeraAperturaEn).toEqual(apertura);
     });
 
     it('debería devolver null sin fila', async () => {
@@ -271,6 +290,8 @@ describe('TypeOrmEnlaceCitaRepository', () => {
       );
       expect(sql()).not.toContain('"token_hash" =');
       expect(sql()).not.toContain('"version" =');
+      // La revocación nunca pisa la primera apertura (US-07.01).
+      expect(sql()).not.toContain('"primera_apertura_en" =');
       expect(parametros()).toEqual([
         ENLACE,
         enlace.revocadoEn,
@@ -321,6 +342,47 @@ describe('TypeOrmEnlaceCitaRepository', () => {
       await expect(
         repositorio.guardar(EnlaceCita.reconstituir(fila()), comoTx()),
       ).rejects.toThrow(/solo persiste la revocación/);
+      expect(tx.query).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('registrarPrimeraApertura (US-07.01)', () => {
+    const AHORA = new Date('2026-10-19T15:00:00.000Z');
+
+    it('debería escribir solo primera_apertura_en, solo si estaba vacía, y devolver true si escribió', async () => {
+      // Arrange — TypeORM devuelve [filas, cantidad] en un UPDATE.
+      tx.query.mockResolvedValue([[{ id: ENLACE }], 1]);
+
+      // Act
+      const escribio = await repositorio.registrarPrimeraApertura(
+        ENLACE,
+        AHORA,
+        comoTx(),
+      );
+
+      // Assert
+      expect(escribio).toBe(true);
+      expect(sql()).toBe(
+        `UPDATE "enlaces_cita" SET "primera_apertura_en" = $2 WHERE "id" = $1 AND "primera_apertura_en" IS NULL RETURNING "id"`,
+      );
+      expect(parametros()).toEqual([ENLACE, AHORA]);
+      expect(tx.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('debería devolver false si ya tenía apertura (o el enlace no existe)', async () => {
+      // Arrange — el UPDATE no afecta filas.
+      tx.query.mockResolvedValue([[], 0]);
+
+      // Act & Assert
+      expect(
+        await repositorio.registrarPrimeraApertura(ENLACE, AHORA, comoTx()),
+      ).toBe(false);
+    });
+
+    it('debería devolver false sin consultar cuando el id no es un UUID', async () => {
+      expect(
+        await repositorio.registrarPrimeraApertura('no-uuid', AHORA, comoTx()),
+      ).toBe(false);
       expect(tx.query).not.toHaveBeenCalled();
     });
   });

@@ -9,6 +9,7 @@ import {
   CitasService,
   ResumenCita,
 } from '../../cita/application/citas.service';
+import { OrigenCita } from '../../cita/domain/cita.entity';
 import { CitaResponseDto } from '../../cita/presentation/dto/cita-response.dto';
 import {
   EstadoSolicitud,
@@ -271,6 +272,8 @@ export class BandejaSolicitudesService {
       },
       usuario,
       tx,
+      // US-07.01 (H4): la cita nace de la solicitud pública.
+      OrigenCita.SOLICITUD_PUBLICA,
     );
   }
 

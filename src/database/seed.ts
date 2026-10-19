@@ -27,7 +27,11 @@ import { NestFactory } from '@nestjs/core';
 import { DataSource } from 'typeorm';
 
 import { AppModule } from '../app.module';
-import { Cita, EstadoCita } from '../modules/cita/domain/cita.entity';
+import {
+  Cita,
+  EstadoCita,
+  OrigenCita,
+} from '../modules/cita/domain/cita.entity';
 import { CitaRepository } from '../modules/cita/domain/cita.repository';
 import { CambioCitaOrmEntity } from '../modules/cita/infrastructure/persistence/cambio-cita.orm-entity';
 import { CitaOrmEntity } from '../modules/cita/infrastructure/persistence/cita.orm-entity';
@@ -241,6 +245,8 @@ async function seed(): Promise<void> {
         tenantId: registro.tenantId,
         pacienteId: pacientes[plan.pacienteIdx].id,
         usuarioId: registro.id,
+        // Las citas demo las "crea a mano" el profesional (US-07.01).
+        origen: OrigenCita.MANUAL,
       });
       llevarAEstado(cita, plan.estado);
       await citaRepository.guardar(cita);

@@ -14,7 +14,7 @@ import { CitasService } from '../../cita/application/citas.service';
 import { EnlaceCitaNoValidoError } from '../../cita/application/enlace-cita-no-valido.error';
 import { EnlacesCitaService } from '../../cita/application/enlaces-cita.service';
 import { ActorCambio, TipoCambio } from '../../cita/domain/cambio-cita.entity';
-import { Cita, EstadoCita } from '../../cita/domain/cita.entity';
+import { Cita, EstadoCita, OrigenCita } from '../../cita/domain/cita.entity';
 import { PacientesService } from '../../paciente/application/pacientes.service';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import { SolicitudesOtraHoraService } from '../../solicitud/application/solicitudes-otra-hora.service';
@@ -87,6 +87,7 @@ describe('PortalPacienteService', () => {
       tenantId: props.tenantId ?? tenantId,
       pacienteId: props.pacienteId ?? pacienteId,
       usuarioId: duenio,
+      origen: OrigenCita.MANUAL,
       creadoEn: new Date('2026-10-01T00:00:00Z'),
       actualizadoEn: new Date('2026-10-01T00:00:00Z'),
     });

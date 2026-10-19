@@ -8,7 +8,7 @@ import {
 } from '../../../../test/support/in-memory-repositories';
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
-import { Cita, EstadoCita } from '../domain/cita.entity';
+import { Cita, EstadoCita, OrigenCita } from '../domain/cita.entity';
 import {
   EnlaceCita,
   MotivoRevocacionEnlace,
@@ -76,6 +76,7 @@ describe('EnlacesCitaService', () => {
       tenantId: props.tenantId ?? tenantId,
       pacienteId: randomUUID(),
       usuarioId: usuario.userId,
+      origen: OrigenCita.MANUAL,
       creadoEn: new Date('2026-10-01T00:00:00Z'),
       actualizadoEn: new Date('2026-10-01T00:00:00Z'),
     });
@@ -200,6 +201,7 @@ describe('EnlacesCitaService', () => {
           revocadoEn: null,
           motivoRevocacion: null,
           revocadoPor: null,
+          primeraAperturaEn: null,
         }),
       );
       jest.spyOn(enlaces, 'buscarActivoPorCita').mockResolvedValueOnce(null);
@@ -229,6 +231,7 @@ describe('EnlacesCitaService', () => {
           revocadoEn: null,
           motivoRevocacion: null,
           revocadoPor: null,
+          primeraAperturaEn: null,
         }),
       );
       jest.spyOn(enlaces, 'buscarActivoPorCita').mockResolvedValueOnce(null);

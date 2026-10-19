@@ -5,6 +5,7 @@ import {
   DURACION_MAXIMA_MIN,
   ESTADOS_VIGENTES,
   EstadoCita,
+  OrigenCita,
   ReconstituirCitaProps,
 } from './cita.entity';
 import { TransicionEstadoInvalidaError } from './exceptions/transicion-estado-invalida.error';
@@ -17,6 +18,7 @@ describe('Cita (dominio)', () => {
     tenantId: 'tenant-1',
     pacienteId: 'paciente-1',
     usuarioId: 'usuario-1',
+    origen: OrigenCita.MANUAL,
   };
 
   describe('crear', () => {
@@ -39,6 +41,34 @@ describe('Cita (dominio)', () => {
       expect(cita.tenantId).toBe(baseProps.tenantId);
       expect(cita.pacienteId).toBe(baseProps.pacienteId);
       expect(cita.usuarioId).toBe(baseProps.usuarioId);
+      expect(cita.origen).toBe(OrigenCita.MANUAL);
+    });
+
+    it('debería conservar el origen con que se crea (US-07.01)', () => {
+      // Arrange & Act
+      const cita = Cita.crear({
+        ...baseProps,
+        origen: OrigenCita.SOLICITUD_PUBLICA,
+      });
+
+      // Assert
+      expect(cita.origen).toBe(OrigenCita.SOLICITUD_PUBLICA);
+    });
+
+    it('reconstituir debería repoblar el origen guardado (US-07.01)', () => {
+      // Arrange & Act
+      const cita = Cita.reconstituir({
+        ...baseProps,
+        id: 'cita-1',
+        estado: EstadoCita.CONFIRMADA,
+        origen: OrigenCita.SOLICITUD_PUBLICA,
+        creadoEn: new Date('2026-06-01T00:00:00Z'),
+        actualizadoEn: new Date('2026-06-01T00:00:00Z'),
+      });
+
+      // Assert
+      expect(cita.origen).toBe(OrigenCita.SOLICITUD_PUBLICA);
+      expect(cita.estado).toBe(EstadoCita.CONFIRMADA);
     });
 
     it('una cita recién creada NO debe ser terminal', () => {
@@ -300,13 +330,14 @@ describe('Cita (dominio)', () => {
 });
 
 describe('Cita.reagendar', () => {
-  const props = {
+  const props: CrearCitaProps = {
     inicio: new Date('2026-08-25T14:00:00Z'),
     duracionMin: 30,
     tipoConsulta: 'Control',
     tenantId: 'tenant-1',
     pacienteId: 'paciente-1',
     usuarioId: 'usuario-1',
+    origen: OrigenCita.MANUAL,
   };
   const NUEVA_HORA = new Date('2026-08-26T16:00:00Z');
 
@@ -376,13 +407,14 @@ describe('Cita.reagendar', () => {
 });
 
 describe('Cita.editar', () => {
-  const props = {
+  const props: CrearCitaProps = {
     inicio: new Date('2026-08-25T14:00:00Z'),
     duracionMin: 30,
     tipoConsulta: 'Control',
     tenantId: 'tenant-1',
     pacienteId: 'paciente-1',
     usuarioId: 'usuario-1',
+    origen: OrigenCita.MANUAL,
   };
 
   it('cambia duración y tipo sin tocar el estado ni el inicio', () => {
@@ -428,6 +460,7 @@ describe('Cita.accionesPermitidas (US-02.08)', () => {
       tenantId: 'tenant-1',
       pacienteId: 'paciente-1',
       usuarioId: 'usuario-1',
+      origen: OrigenCita.MANUAL,
       creadoEn: new Date(),
       actualizadoEn: new Date(),
     });
@@ -542,6 +575,7 @@ describe('Cita.fin y Cita.chocaCon (ADR-11)', () => {
       tenantId: 'tenant-1',
       pacienteId: 'paciente-1',
       usuarioId: 'usuario-1',
+      origen: OrigenCita.MANUAL,
       creadoEn: new Date(),
       actualizadoEn: new Date(),
       ...over,

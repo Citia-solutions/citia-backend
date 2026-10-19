@@ -10,7 +10,11 @@ import { JwtAuthGuard } from '../src/modules/auth/jwt-auth.guard';
 import { JwtPayload } from '../src/modules/auth/jwt-payload.interface';
 import { JwtStrategy } from '../src/modules/auth/jwt.strategy';
 import { CitasService } from '../src/modules/cita/application/citas.service';
-import { Cita, EstadoCita } from '../src/modules/cita/domain/cita.entity';
+import {
+  Cita,
+  EstadoCita,
+  OrigenCita,
+} from '../src/modules/cita/domain/cita.entity';
 import { PacientesService } from '../src/modules/paciente/application/pacientes.service';
 import { BandejaSolicitudesService } from '../src/modules/solicitud/application/bandeja-solicitudes.service';
 import {
@@ -681,6 +685,7 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
           tenantId: TENANT_A,
           pacienteId: PACIENTE_CONOCIDO,
           usuarioId: USUARIO_A,
+          origen: OrigenCita.MANUAL,
           creadoEn: new Date('2026-09-01T00:00:00Z'),
           actualizadoEn: new Date('2026-09-01T00:00:00Z'),
         }),
@@ -932,6 +937,7 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
           tenantId: TENANT_A,
           pacienteId: PACIENTE_ORIGEN,
           usuarioId: USUARIO_A,
+          origen: OrigenCita.MANUAL,
           creadoEn: new Date('2026-09-01T00:00:00Z'),
           actualizadoEn: new Date('2026-09-01T00:00:00Z'),
         }),
