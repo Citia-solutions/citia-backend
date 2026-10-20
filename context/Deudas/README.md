@@ -58,6 +58,7 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-39](DT-39.md) | No hay herramienta para quitar una dirección suprimida | 🟡 baja | abierta (contraída en la Fase 2) | [ADR-13 §2](../Decisions/ADR-13.md) |
 | [DT-41](DT-41.md) | El subdominio de envío no tiene DMARC y la autenticación del correo no se inspeccionó | 🟡 baja | abierta (detectada en producción, 2026-10-07) | puesta en producción · [ADR-13 §12–§13](../Decisions/ADR-13.md) |
 | [DT-46](DT-46.md) | Columnas de fecha de varias entidades ORM sin `timestamptz`: con `synchronize` (tests) quedan sin zona | 🟡 baja | abierta (detectada al implementar la Fase 3, 2026-10-15) | entidades de `cita`, `paciente`, `tenant`, `usuario` |
+| [DT-47](DT-47.md) | `cambios_cita.ocurrido_en` usa `DEFAULT now()`: con transacciones concurrentes la bitácora puede quedar en orden invertido | 🟡 baja → 🟠 media con US-07.02 | abierta (detectada en US-07.01, confirmada 2026-10-20) | migración de `cambios_cita` (Fase 1) |
 
 ## Cerradas o mitigadas
 
