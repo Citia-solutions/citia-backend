@@ -204,6 +204,119 @@ describe('SuscriptorSolicitudes (outbox, Fase 3)', () => {
   );
 
   // ---------------------------------------------------------------------
+  // US-07.01 (H8): ningún hecho nuevo. La inasistencia sobre una `pendiente`
+  // (del profesional) y el cierre del job G1 (del sistema, `id: null`)
+  // publican `CitaNoAsistida` con `estado: 'ghosting'`: la petición abierta se
+  // descarta igual que con `no_asistio`.
+  describe('CitaNoAsistida con estado ghosting (US-07.01)', () => {
+    it.each<[string, Record<string, unknown>]>([
+      [
+        'del profesional (inasistencia sobre una pendiente)',
+        { tipo: 'profesional', id: PROFESIONAL },
+      ],
+      ['del sistema (job G1, id nulo)', { tipo: 'sistema', id: null }],
+    ])(
+      '%s → descarta la petición abierta con el tx recibido',
+      async (_caso, actor) => {
+        // Arrange
+        sembrar(pedida());
+
+        // Act
+        await suscriptor.manejar(
+          hecho('CitaNoAsistida', { estado: 'ghosting', actor }),
+          TX,
+        );
+
+        // Assert
+        expect(repo.busquedas).toEqual([[CITA, TENANT, TX]]);
+        expect(repo.guardadas).toHaveLength(1);
+        expect(repo.guardadas[0][1]).toBe(TX);
+        const s = repo.filas.get('sol-1')!;
+        expect(s.estado).toBe(EstadoSolicitud.DESCARTADA);
+        expect(s.resueltaEn).toEqual(AHORA);
+        // La descarta el sistema: ni el dueño ni la cita cambian
+        expect(s.usuarioId).toBe('duenio');
+        expect(s.citaId).toBeNull();
+      },
+    );
+
+    it('del sistema con actor.id nulo NO es un hecho inválido (a diferencia de CitaReagendada del profesional sin id)', async () => {
+      // Arrange
+      sembrar(pedida());
+
+      // Act & Assert
+      await expect(
+        suscriptor.manejar(
+          hecho('CitaNoAsistida', {
+            estado: 'ghosting',
+            actor: { tipo: 'sistema', id: null },
+          }),
+          TX,
+        ),
+      ).resolves.toBeUndefined();
+      expect(estadoDe()).toBe(EstadoSolicitud.DESCARTADA);
+    });
+
+    it('tiene el mismo efecto que un CitaNoAsistida con estado no_asistio', async () => {
+      // Arrange — dos peticiones abiertas, una por cita
+      const OTRA = '0c1a0000-0000-4000-8000-000000000099';
+      sembrar(pedida());
+      sembrar(pedida(OTRA, TENANT, RECIBIDA_EN, 'sol-otra'));
+
+      // Act
+      await suscriptor.manejar(
+        hecho('CitaNoAsistida', {
+          estado: 'ghosting',
+          actor: { tipo: 'sistema', id: null },
+        }),
+        TX,
+      );
+      await suscriptor.manejar(
+        hecho('CitaNoAsistida', { citaId: OTRA, estado: 'no_asistio' }),
+        TX,
+      );
+
+      // Assert
+      expect(estadoDe('sol-1')).toBe(EstadoSolicitud.DESCARTADA);
+      expect(estadoDe('sol-otra')).toBe(EstadoSolicitud.DESCARTADA);
+      expect(repo.filas.get('sol-1')?.resueltaEn).toEqual(
+        repo.filas.get('sol-otra')?.resueltaEn,
+      );
+    });
+
+    it('repetir el hecho del job no cambia nada (idempotente)', async () => {
+      // Arrange
+      sembrar(pedida());
+      const delJob = hecho('CitaNoAsistida', {
+        estado: 'ghosting',
+        actor: { tipo: 'sistema', id: null },
+      });
+      await suscriptor.manejar(delJob, TX);
+
+      // Act
+      await suscriptor.manejar(delJob, TX);
+
+      // Assert
+      expect(repo.guardadas).toHaveLength(1);
+      expect(estadoDe()).toBe(EstadoSolicitud.DESCARTADA);
+    });
+
+    it('sin petición abierta no hace nada', async () => {
+      // Act
+      await suscriptor.manejar(
+        hecho('CitaNoAsistida', {
+          estado: 'ghosting',
+          actor: { tipo: 'sistema', id: null },
+        }),
+        TX,
+      );
+
+      // Assert
+      expect(repo.guardadas).toHaveLength(0);
+    });
+  });
+
+  // ---------------------------------------------------------------------
   describe('CitaReagendada', () => {
     it('del profesional → la petición abierta queda ATENDIDA (aceptada por quien reagendó, citaId = la cita)', async () => {
       // Arrange

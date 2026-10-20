@@ -654,6 +654,74 @@ describe('Cita.accionesPermitidas(ahora) (US-02.08, US-07.01)', () => {
     }
   });
 
+  // Más allá de la hora exacta: lo que vale "desde el inicio" sigue valiendo
+  // mucho después (la cita terminó hace días y nadie la marcó), y una fecha
+  // inválida no habilita nada (ante la duda, no se marca).
+  const MUCHO_DESPUES = new Date(INICIO.getTime() + 30 * 86_400_000);
+  const MUCHO_ANTES = new Date(INICIO.getTime() - 30 * 86_400_000);
+
+  it.each(Object.values(EstadoCita))(
+    'en %s, días después del inicio anuncia lo mismo que a la hora exacta, y días antes lo mismo que un ms antes',
+    (estado) => {
+      expect(enEstado(estado).accionesPermitidas(MUCHO_DESPUES)).toEqual(
+        enEstado(estado).accionesPermitidas(DESDE),
+      );
+      expect(enEstado(estado).accionesPermitidas(MUCHO_ANTES)).toEqual(
+        enEstado(estado).accionesPermitidas(ANTES),
+      );
+    },
+  );
+
+  it.each([EstadoCita.PENDIENTE, EstadoCita.CONFIRMADA])(
+    'en %s, con un reloj inválido (NaN) no anuncia asistencia ni inasistencia y las marcas lanzan CitaAunNoComienzaError',
+    (estado) => {
+      // Arrange
+      const invalido = new Date(Number.NaN);
+      const cita = enEstado(estado);
+
+      // Act
+      const acciones = cita.accionesPermitidas(invalido);
+
+      // Assert
+      expect(acciones).not.toContain('asistencia');
+      expect(acciones).not.toContain('inasistencia');
+      expect(() => cita.marcarAsistencia(invalido)).toThrow(
+        CitaAunNoComienzaError,
+      );
+      expect(() => cita.marcarInasistencia(invalido)).toThrow(
+        CitaAunNoComienzaError,
+      );
+      expect(cita.estado).toBe(estado);
+    },
+  );
+
+  it('con un reloj inválido, marcarGhosting tampoco cierra una pendiente', () => {
+    const cita = enEstado(EstadoCita.PENDIENTE);
+
+    expect(() => cita.marcarGhosting(new Date(Number.NaN))).toThrow(
+      CitaAunNoComienzaError,
+    );
+    expect(cita.estado).toBe(EstadoCita.PENDIENTE);
+  });
+
+  it('no depende de la duración: a mitad de la cita y después de su fin se anuncian las marcas', () => {
+    // Arrange — 30 minutos de duración
+    const cita = enEstado(EstadoCita.CONFIRMADA);
+    const aMitad = new Date(INICIO.getTime() + 15 * 60_000);
+    const trasElFin = new Date(cita.fin.getTime() + 1);
+
+    // Act & Assert
+    for (const ahora of [aMitad, trasElFin]) {
+      expect(cita.accionesPermitidas(ahora)).toEqual([
+        'cancelar',
+        'reagendar',
+        'asistencia',
+        'inasistencia',
+        'editar',
+      ]);
+    }
+  });
+
   // Las pruebas de arriba parten de `reconstituir`. Estas recorren transiciones
   // reales: la respuesta debe seguir al estado vivo, no a una foto inicial.
   describe('sigue al estado tras cada transición', () => {

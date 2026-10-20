@@ -4,7 +4,10 @@ import {
   ConteoCandidatasGhosting,
   CriterioCierreGhosting,
 } from '../domain/candidatas-ghosting';
-import { CORTE_GHOSTING } from '../domain/cierre-ghosting';
+import {
+  CORTE_GHOSTING,
+  limiteCierreGhosting,
+} from '../domain/cierre-ghosting';
 import { Cita, EstadoCita, OrigenCita } from '../domain/cita.entity';
 import { CierreGhostingService } from './cierre-ghosting.service';
 import { CitasService } from './citas.service';
@@ -246,6 +249,105 @@ describe('CierreGhostingService (job G1, US-07.01)', () => {
       await expect(
         servicio.ejecutar({ activo: true, lote: 0 }),
       ).rejects.toBeInstanceOf(RangeError);
+    });
+
+    it.each([1.5, -1, Number.NaN])(
+      'rechaza el lote %s sin reclamar nada',
+      async (lote) => {
+        const servicio = crear([citaPendiente('c1')]);
+
+        await expect(
+          servicio.ejecutar({ activo: true, lote }),
+        ).rejects.toBeInstanceOf(RangeError);
+        expect(transacciones.run).not.toHaveBeenCalled();
+      },
+    );
+
+    it('apagado no valida el lote (solo cuenta)', async () => {
+      const servicio = crear([], { candidatas: 0, masAntigua: null });
+
+      await expect(
+        servicio.ejecutar({ activo: false, lote: 0 }),
+      ).resolves.toMatchObject({ modo: 'simulado', candidatas: 0 });
+    });
+  });
+
+  describe('código del error de una cita fallida (para el log: nunca el mensaje)', () => {
+    it.each<[string, unknown, string]>([
+      [
+        'un error de la base con code (QueryFailedError)',
+        Object.assign(new Error('violates check: Paciente Secreta'), {
+          name: 'QueryFailedError',
+          code: '23514',
+        }),
+        'QueryFailedError:23514',
+      ],
+      [
+        'un error con code de red',
+        Object.assign(new Error('socket'), { code: 'ECONNRESET' }),
+        'Error:ECONNRESET',
+      ],
+      [
+        'un nombre con espacios u otros caracteres (no se copia)',
+        Object.assign(new Error('x'), { name: 'Nombre con espacios <script>' }),
+        'Error',
+      ],
+      [
+        'un code con caracteres raros (se omite)',
+        Object.assign(new Error('x'), { name: 'ErrorX', code: '23 514; drop' }),
+        'ErrorX',
+      ],
+      [
+        'algo que no es un objeto (un texto)',
+        'texto con datos del paciente',
+        'Desconocido',
+      ],
+      ['null', null, 'Desconocido'],
+    ])('%s → %j', async (_caso, lanzado, esperado) => {
+      // Arrange
+      const servicio = crear([citaPendiente('c1', 'tenant-a')]);
+      cerrarPorGhostingEnTx.mockImplementationOnce(() =>
+        // A propósito: también un rechazo que no es un Error (texto, null).
+        // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+        Promise.reject(lanzado),
+      );
+
+      // Act
+      const resultado = await servicio.ejecutar({ activo: true, lote: 1 });
+
+      // Assert
+      expect(resultado).toMatchObject({
+        cerradas: 0,
+        fallidas: [{ citaId: 'c1', tenantId: 'tenant-a', error: esperado }],
+      });
+      expect(JSON.stringify(resultado)).not.toMatch(
+        /Secreta|socket|datos del paciente|drop|script/,
+      );
+    });
+  });
+
+  describe('reloj', () => {
+    it('sin reloj inyectado usa la hora real para el límite (00:00 de hoy en APP_TZ)', async () => {
+      // Arrange
+      candidatas = new CandidatasFalsas([]);
+      const servicio = new CierreGhostingService(
+        transacciones,
+        candidatas,
+        { cerrarPorGhostingEnTx } as unknown as CitasService,
+        TZ,
+      );
+      const antes = limiteCierreGhosting(new Date(), TZ).getTime();
+
+      // Act
+      const resultado = await servicio.ejecutar({ activo: false, lote: 1 });
+
+      // Assert — antes o después de la llamada (por si cruzó la medianoche)
+      const despues = limiteCierreGhosting(new Date(), TZ).getTime();
+      expect([antes, despues]).toContain(resultado.limite.getTime());
+      expect(candidatas.conteos[0]).toEqual({
+        limite: resultado.limite,
+        corte: CORTE_GHOSTING,
+      });
     });
   });
 });

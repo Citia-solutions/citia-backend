@@ -2513,6 +2513,30 @@ describe('CitasService', () => {
         expect(evento.payload).not.toHaveProperty('pedidoPor');
       });
 
+      it.each([PedidoPor.PACIENTE, PedidoPor.PROFESIONAL])(
+        'debería anotar en la bitácora el pedidoPor que recibe (%s), sin inventarlo',
+        async (pedidoPor) => {
+          // Arrange
+          mockCitaRepository.buscarPorIdParaActualizar.mockResolvedValue(
+            citaDe(EstadoCita.PENDIENTE),
+          );
+
+          // Act
+          await conReloj.reagendarEnTx(
+            CITA_ID,
+            new Date('2026-10-23T13:00:00Z'),
+            usuarioAutenticado,
+            'tx',
+            pedidoPor,
+          );
+
+          // Assert
+          expect(primerCambio().tipo).toBe(TipoCambio.REAGENDADA);
+          expect(primerCambio().pedidoPor).toBe(pedidoPor);
+          expect(primerCambio().motivo).toBeNull();
+        },
+      );
+
       it('debería aceptar un Date como nuevo inicio', async () => {
         // Arrange
         mockCitaRepository.buscarPorIdParaActualizar.mockResolvedValue(

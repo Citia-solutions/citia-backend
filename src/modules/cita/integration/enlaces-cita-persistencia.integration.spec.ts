@@ -8,7 +8,12 @@ import { PacienteOrmEntity } from '../../paciente/infrastructure/persistence/pac
 import { TenantOrmEntity } from '../../tenant/infrastructure/persistence/tenant.orm-entity';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import { UsuarioOrmEntity } from '../../usuario/infrastructure/persistence/usuario.orm-entity';
-import { ActorCambio, TipoCambio } from '../domain/cambio-cita.entity';
+import {
+  ActorCambio,
+  CambioCita,
+  PedidoPor,
+  TipoCambio,
+} from '../domain/cambio-cita.entity';
 import { EstadoCita } from '../domain/cita.entity';
 import {
   EnlaceCita,
@@ -31,7 +36,11 @@ import { TypeOrmEnlaceCitaRepository } from '../infrastructure/persistence/typeo
  *  - los CHECK (formato del hash, versión, coherencia de la revocación);
  *  - la revocación "gana la primera";
  *  - `buscarPorIdParaActualizar` (FOR NO KEY UPDATE) bloqueando a otra conexión;
- *  - el `DISTINCT ON` de `ultimosCambiosPorTipo`.
+ *  - el `DISTINCT ON` de `ultimosCambiosPorTipo`;
+ *  - US-07.01: `registrarPrimeraApertura` (`UPDATE … WHERE primera_apertura_en
+ *    IS NULL`) una sola vez, también con dos transacciones a la vez, sin pisar
+ *    la revocación; y `pedido_por` de ida y vuelta por el adaptador, con sus
+ *    dos CHECK.
  *
  * Dos DataSource = dos "procesos", cada uno con su pool.
  *
@@ -624,6 +633,328 @@ describe('Enlaces de cita y bloqueo de cita contra PostgreSQL (integration)', ()
           ocurridoEn: new Date('2026-10-02T10:00:00Z'),
         },
       });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('EnlaceCitaRepository.registrarPrimeraApertura (US-07.01, H5)', () => {
+    const T1 = new Date('2026-10-19T15:00:00.000Z');
+    const T2 = new Date('2026-10-19T16:00:00.000Z');
+
+    const emitirV1 = async (citaId: string): Promise<EnlaceCita> => {
+      await enTx((tx) => enlaces.insertarSiNoExiste(emitir(citaId, 1), tx));
+      return (await enTx((tx) => enlaces.buscarActivoPorCita(citaId, tx)))!;
+    };
+
+    const columnasDe = async (enlaceId: string) => {
+      const [fila] = await baseA.query<
+        {
+          apertura: Date | null;
+          revocadoEn: Date | null;
+          motivo: string | null;
+          revocadoPor: string | null;
+        }[]
+      >(
+        `SELECT primera_apertura_en     AS apertura,
+                revocado_en             AS "revocadoEn",
+                motivo_revocacion::text AS motivo,
+                revocado_por::text      AS "revocadoPor"
+           FROM enlaces_cita WHERE id = $1`,
+        [enlaceId],
+      );
+      return fila;
+    };
+
+    it('debería escribir la primera vez (true) y no cambiar el valor la segunda (false); el dominio la relee', async () => {
+      // Arrange
+      const citaId = await crearCita();
+      const enlace = await emitirV1(citaId);
+      expect(enlace.primeraAperturaEn).toBeNull();
+
+      // Act
+      const primera = await enTx((tx) =>
+        enlaces.registrarPrimeraApertura(enlace.id, T1, tx),
+      );
+      const segunda = await enTx((tx) =>
+        enlaces.registrarPrimeraApertura(enlace.id, T2, tx),
+      );
+
+      // Assert
+      expect([primera, segunda]).toEqual([true, false]);
+      expect((await columnasDe(enlace.id)).apertura).toEqual(T1);
+      expect(
+        (await enTx((tx) => enlaces.buscarActivoPorCita(citaId, tx)))
+          ?.primeraAperturaEn,
+      ).toEqual(T1);
+      expect(
+        (
+          await enTx((tx) =>
+            enlaces.buscarPorTokenHash(hashDe(`${citaId}:1`), tx),
+          )
+        )?.primeraAperturaEn,
+      ).toEqual(T1);
+    });
+
+    it('dos a la vez (dos procesos): la segunda espera el candado de la fila, reevalúa el WHERE y no escribe', async () => {
+      // Arrange
+      const citaId = await crearCita();
+      const enlace = await emitirV1(citaId);
+      const a = baseA.createQueryRunner();
+      await a.connect();
+      await a.startTransaction();
+      try {
+        expect(
+          await enlaces.registrarPrimeraApertura(enlace.id, T1, a.manager),
+        ).toBe(true);
+
+        // Act — B (otro pool) intenta la suya mientras A no confirma
+        const deB = observar(
+          enTx(
+            (tx) => enlaces.registrarPrimeraApertura(enlace.id, T2, tx),
+            baseB,
+          ),
+        );
+        await esperarBloqueadas();
+        expect(deB.terminada()).toBe(false);
+        await a.commitTransaction();
+
+        // Assert
+        expect(await deB.promesa).toBe(false);
+      } finally {
+        if (a.isTransactionActive) await a.rollbackTransaction();
+        await a.release();
+      }
+      expect((await columnasDe(enlace.id)).apertura).toEqual(T1);
+    });
+
+    it('si la primera se revierte, la que esperaba escribe la suya (sigue habiendo una sola)', async () => {
+      // Arrange
+      const citaId = await crearCita();
+      const enlace = await emitirV1(citaId);
+      const a = baseA.createQueryRunner();
+      await a.connect();
+      await a.startTransaction();
+      try {
+        await enlaces.registrarPrimeraApertura(enlace.id, T1, a.manager);
+        const deB = observar(
+          enTx(
+            (tx) => enlaces.registrarPrimeraApertura(enlace.id, T2, tx),
+            baseB,
+          ),
+        );
+        await esperarBloqueadas();
+
+        // Act
+        await a.rollbackTransaction();
+
+        // Assert
+        expect(await deB.promesa).toBe(true);
+      } finally {
+        if (a.isTransactionActive) await a.rollbackTransaction();
+        await a.release();
+      }
+      expect((await columnasDe(enlace.id)).apertura).toEqual(T2);
+    });
+
+    it('seis a la vez desde los dos procesos, sin coordinar → escribe exactamente una', async () => {
+      // Arrange
+      const citaId = await crearCita();
+      const enlace = await emitirV1(citaId);
+      const instantes = Array.from(
+        { length: 6 },
+        (_, i) => new Date(T1.getTime() + i * 1000),
+      );
+
+      // Act
+      const escritas = await Promise.all(
+        instantes.map((instante, i) =>
+          enTx(
+            (tx) => enlaces.registrarPrimeraApertura(enlace.id, instante, tx),
+            i % 2 === 0 ? baseA : baseB,
+          ),
+        ),
+      );
+
+      // Assert
+      expect(escritas.filter(Boolean)).toHaveLength(1);
+      const ganadora = instantes[escritas.indexOf(true)];
+      expect((await columnasDe(enlace.id)).apertura).toEqual(ganadora);
+    });
+
+    it('no toca las columnas de revocación, y revocar (guardar) no pisa la apertura aunque la entidad se haya leído antes', async () => {
+      // Arrange — la entidad se lee ANTES de la apertura (queda vieja)
+      const citaId = await crearCita();
+      const leidaAntes = await emitirV1(citaId);
+      await enTx((tx) =>
+        enlaces.registrarPrimeraApertura(leidaAntes.id, T1, tx),
+      );
+      expect(await columnasDe(leidaAntes.id)).toEqual({
+        apertura: T1,
+        revocadoEn: null,
+        motivo: null,
+        revocadoPor: null,
+      });
+
+      // Act
+      leidaAntes.invalidar(usuarioId, T2);
+      const revocado = await enTx((tx) => enlaces.guardar(leidaAntes, tx));
+
+      // Assert
+      expect(await columnasDe(leidaAntes.id)).toEqual({
+        apertura: T1,
+        revocadoEn: T2,
+        motivo: MotivoRevocacionEnlace.INVALIDADO,
+        revocadoPor: usuarioId,
+      });
+      expect(revocado.primeraAperturaEn).toEqual(T1);
+    });
+
+    it('se guarda por versión: tras invalidar, la v2 empieza sin apertura y la v1 conserva la suya', async () => {
+      // Arrange
+      const citaId = await crearCita();
+      const v1 = await emitirV1(citaId);
+      await enTx((tx) => enlaces.registrarPrimeraApertura(v1.id, T1, tx));
+      v1.invalidar(usuarioId, T2);
+      await enTx((tx) => enlaces.guardar(v1, tx));
+
+      // Act
+      await enTx((tx) => enlaces.insertarSiNoExiste(emitir(citaId, 2), tx));
+      const v2 = await enTx((tx) => enlaces.buscarActivoPorCita(citaId, tx));
+
+      // Assert
+      expect(v2?.version).toBe(2);
+      expect(v2?.primeraAperturaEn).toBeNull();
+      expect((await columnasDe(v1.id)).apertura).toEqual(T1);
+    });
+
+    it('un id que no es UUID o que no existe → false, sin escribir nada', async () => {
+      // Arrange
+      const citaId = await crearCita();
+      const enlace = await emitirV1(citaId);
+
+      // Act & Assert
+      expect(
+        await enTx((tx) =>
+          enlaces.registrarPrimeraApertura('no-es-un-uuid', T1, tx),
+        ),
+      ).toBe(false);
+      expect(
+        await enTx((tx) =>
+          enlaces.registrarPrimeraApertura(
+            '00000000-0000-4000-8000-000000000123',
+            T1,
+            tx,
+          ),
+        ),
+      ).toBe(false);
+      expect((await columnasDe(enlace.id)).apertura).toBeNull();
+    });
+
+    it('sin transacción lanza (como todo el puerto)', async () => {
+      // Arrange
+      const citaId = await crearCita();
+      const enlace = await emitirV1(citaId);
+
+      // Act & Assert
+      await expect(
+        enlaces.registrarPrimeraApertura(enlace.id, T1, undefined),
+      ).rejects.toThrow(/requiere una transacción/);
+      expect((await columnasDe(enlace.id)).apertura).toBeNull();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('CambioCitaRepository: pedido_por de ida y vuelta (US-07.01, H3)', () => {
+    const repo = () =>
+      new TypeOrmCambioCitaRepository(baseA.getRepository(CambioCitaOrmEntity));
+
+    const insertarCrudoCambio = (
+      citaId: string,
+      tipo: string,
+      actor: string,
+      pedidoPor: string | null,
+    ): Promise<unknown> =>
+      baseA.query(
+        `INSERT INTO cambios_cita (cita_id, tenant_id, tipo, actor_tipo, pedido_por)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [citaId, tenantId, tipo, actor, pedidoPor],
+      );
+
+    it('registrar persiste pedido_por y historialDeCita lo devuelve tal cual (el vacío como null)', async () => {
+      // Arrange
+      const citaId = await crearCita();
+      const cambio = (
+        tipo: TipoCambio,
+        pedidoPor: PedidoPor | null,
+        actorTipo = ActorCambio.PROFESIONAL,
+      ) =>
+        CambioCita.registrar({
+          citaId,
+          tenantId,
+          tipo,
+          actorTipo,
+          actorId: actorTipo === ActorCambio.PROFESIONAL ? usuarioId : null,
+          pedidoPor,
+        });
+
+      // Act — uno detrás de otro, para que `ocurrido_en` los ordene
+      await repo().registrar(cambio(TipoCambio.CREADA, null));
+      await repo().registrar(cambio(TipoCambio.REAGENDADA, PedidoPor.PACIENTE));
+      await repo().registrar(
+        cambio(TipoCambio.REAGENDADA, PedidoPor.PROFESIONAL),
+      );
+      await repo().registrar(cambio(TipoCambio.CANCELADA, null));
+
+      // Assert
+      const historial = await repo().historialDeCita(citaId, tenantId);
+      expect(historial.map((c) => [c.tipo, c.pedidoPor])).toEqual([
+        [TipoCambio.CREADA, null],
+        [TipoCambio.REAGENDADA, PedidoPor.PACIENTE],
+        [TipoCambio.REAGENDADA, PedidoPor.PROFESIONAL],
+        [TipoCambio.CANCELADA, null],
+      ]);
+      const [{ n }] = await baseA.query<{ n: number }[]>(
+        `SELECT count(*)::int AS n FROM cambios_cita
+          WHERE cita_id = $1 AND pedido_por::text = 'paciente'`,
+        [citaId],
+      );
+      expect(n).toBe(1);
+    });
+
+    it('una fila anterior a US-07.01 (cancelada por el paciente, sin pedido_por) vuelve con null: el adaptador no la completa', async () => {
+      // Arrange
+      const citaId = await crearCita();
+      await insertarCrudoCambio(citaId, 'cancelada', 'paciente', null);
+
+      // Act
+      const [cambio] = await repo().historialDeCita(citaId, tenantId);
+
+      // Assert
+      expect(cambio.actorTipo).toBe(ActorCambio.PACIENTE);
+      expect(cambio.pedidoPor).toBeNull();
+    });
+
+    it('los CHECK del esquema de synchronize rechazan lo mismo que el dominio', async () => {
+      // Arrange
+      const citaId = await crearCita();
+
+      // Act & Assert
+      expect(
+        await errorDe(
+          insertarCrudoCambio(citaId, 'confirmada', 'profesional', 'paciente'),
+        ),
+      ).toEqual({ code: '23514', constraint: 'CHK_cambios_cita_pedido_por' });
+      expect(
+        await errorDe(
+          insertarCrudoCambio(citaId, 'cancelada', 'paciente', 'profesional'),
+        ),
+      ).toEqual({
+        code: '23514',
+        constraint: 'CHK_cambios_cita_pedido_por_paciente',
+      });
+      await expect(
+        insertarCrudoCambio(citaId, 'cancelada', 'paciente', 'paciente'),
+      ).resolves.toBeDefined();
     });
   });
 });
