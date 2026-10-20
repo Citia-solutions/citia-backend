@@ -1,13 +1,18 @@
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { DataSource, QueryRunner } from 'typeorm';
+import { DataSource, DataSourceOptions, QueryRunner } from 'typeorm';
 
 import { typeOrmTestConfig } from '../../../../test/typeorm-test.config';
 import { TransactionRunner } from '../../../shared/application/transaction-runner';
 import { EventoSalidaOrmEntity } from '../../../shared/infrastructure/salida/evento-salida.orm-entity';
+import { PublicadorEventosEnSalida } from '../../../shared/infrastructure/salida/publicador-eventos-en-salida';
+import { TypeOrmEventosSalidaRepository } from '../../../shared/infrastructure/salida/typeorm-eventos-salida.repository';
+import { TypeOrmTransactionRunner } from '../../../shared/infrastructure/typeorm-transaction-runner';
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
+import { PacientesService } from '../../paciente/application/pacientes.service';
 import { PacienteOrmEntity } from '../../paciente/infrastructure/persistence/paciente.orm-entity';
+import { TypeOrmPacienteRepository } from '../../paciente/infrastructure/persistence/typeorm-paciente.repository';
 import { RecordatorioOrmEntity } from '../../recordatorio/infrastructure/persistence/recordatorio.orm-entity';
 import { SolicitudCitaOrmEntity } from '../../solicitud/infrastructure/persistence/solicitud-cita.orm-entity';
 import { TenantOrmEntity } from '../../tenant/infrastructure/persistence/tenant.orm-entity';
@@ -33,6 +38,9 @@ import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-e
 import { CambioCitaOrmEntity } from '../infrastructure/persistence/cambio-cita.orm-entity';
 import { CitaOrmEntity } from '../infrastructure/persistence/cita.orm-entity';
 import { EnlaceCitaOrmEntity } from '../infrastructure/persistence/enlace-cita.orm-entity';
+import { SqlCandidatasGhosting } from '../infrastructure/persistence/sql-candidatas-ghosting';
+import { TypeOrmCambioCitaRepository } from '../infrastructure/persistence/typeorm-cambio-cita.repository';
+import { TypeOrmCitaRepository } from '../infrastructure/persistence/typeorm-cita.repository';
 
 /**
  * Job G1 (US-07.01, DT-11) contra PostgreSQL real, con el SQL de
@@ -44,9 +52,10 @@ import { EnlaceCitaOrmEntity } from '../infrastructure/persistence/enlace-cita.o
  *    `rechazada`…), con los bordes exclusivos del corte y del límite;
  *  - `SKIP LOCKED`: dos `reclamarSiguiente` en dos transacciones a la vez
  *    toman citas distintas, sin esperar;
- *  - dos `ejecutar` en paralelo desde dos "procesos" (dos `CitaModule`, dos
- *    pools): cada cita se cierra UNA vez, con una fila en `cambios_cita` y un
- *    hecho en `eventos_salida`; volver a correr no cierra nada;
+ *  - dos `ejecutar` en paralelo desde dos "procesos" (el `CitaModule` y una
+ *    réplica armada a mano con los mismos adaptadores sobre OTRO DataSource,
+ *    otro pool): cada cita se cierra UNA vez, con una fila en `cambios_cita` y
+ *    un hecho en `eventos_salida`; volver a correr no cierra nada;
  *  - el modo apagado no escribe nada y su conteo coincide con lo que después
  *    cierra el modo prendido;
  *  - el bloqueo es `FOR NO KEY UPDATE`: el `INSERT` en `enlaces_cita` sobre la
@@ -164,8 +173,8 @@ function comoActivo(
 
 describe('Job G1: cierre por ghosting contra PostgreSQL (integration)', () => {
   let modulo: TestingModule;
-  // La "segunda réplica": otro CitaModule con su propio pool.
-  let moduloB: TestingModule;
+  // La "segunda réplica": su propio DataSource (otro pool de conexiones).
+  let baseB: DataSource;
   let datos: DataSource;
   let transacciones: TransactionRunner;
   let candidatas: CandidatasGhosting;
@@ -353,18 +362,16 @@ describe('Job G1: cierre por ghosting contra PostgreSQL (integration)', () => {
         CitaModule,
       ],
     }).compile();
-    // Otro "proceso": mismo esquema, sin volver a crearlo.
-    moduloB = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }),
-        TypeOrmModule.forRoot({
-          ...configuracionTypeOrm,
-          synchronize: false,
-          dropSchema: false,
-        }),
-        CitaModule,
-      ],
-    }).compile();
+    // Otro "proceso": su PROPIO DataSource (otro pool), mismo esquema, sin
+    // volver a crearlo. No es un segundo `TypeOrmModule.forRoot`: el registro
+    // de nombres de @nestjs/typeorm es del proceso entero y no admite dos
+    // data sources por defecto, y `CitaModule` solo sabe usar el por defecto.
+    baseB = new DataSource({
+      ...(configuracionTypeOrm as DataSourceOptions),
+      synchronize: false,
+      dropSchema: false,
+    });
+    await baseB.initialize();
 
     datos = modulo.get(DataSource);
     transacciones = modulo.get(TransactionRunner);
@@ -379,10 +386,29 @@ describe('Job G1: cierre por ghosting contra PostgreSQL (integration)', () => {
       TZ,
       () => AHORA,
     );
+    // La réplica B, con los MISMOS adaptadores reales que arma `CitaModule`
+    // (cita.module.ts, paciente.module.ts y shared.module.ts), sobre su pool.
+    const pacientesB = new TypeOrmPacienteRepository(
+      baseB.getRepository(PacienteOrmEntity),
+    );
+    const transaccionesB = new TypeOrmTransactionRunner(baseB);
     servicioB = new CierreGhostingService(
-      moduloB.get(TransactionRunner),
-      moduloB.get(CandidatasGhosting),
-      moduloB.get(CitasService),
+      transaccionesB,
+      new SqlCandidatasGhosting(baseB),
+      new CitasService(
+        new TypeOrmCitaRepository(
+          baseB.getRepository(CitaOrmEntity),
+          new ConfigService(),
+        ),
+        new TypeOrmCambioCitaRepository(
+          baseB.getRepository(CambioCitaOrmEntity),
+        ),
+        pacientesB,
+        new PacientesService(pacientesB),
+        transaccionesB,
+        new PublicadorEventosEnSalida(new TypeOrmEventosSalidaRepository()),
+        TZ,
+      ),
       TZ,
       () => AHORA,
     );
@@ -439,7 +465,7 @@ describe('Job G1: cierre por ghosting contra PostgreSQL (integration)', () => {
   });
 
   afterAll(async () => {
-    await moduloB?.close();
+    if (baseB?.isInitialized) await baseB.destroy();
     await modulo?.close();
   });
 
