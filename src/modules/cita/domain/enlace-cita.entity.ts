@@ -13,7 +13,9 @@ import { Cita, ESTADOS_VIGENTES } from './cita.entity';
  *    parcial. Invalidar (S1) revoca el actual; el siguiente es `max(version) + 1`.
  *  - El `id` es el `actor_id` del paciente en la bitácora de la cita.
  *  - Una fila nunca cambia su versión ni su hash: lo único mutable es la
- *    revocación.
+ *    revocación y la primera apertura (US-07.01, H5). Cada una va por su
+ *    propio método del puerto (`guardar` y `registrarPrimeraApertura`), y
+ *    ninguno pisa la columna del otro.
  */
 export enum MotivoRevocacionEnlace {
   /** El profesional lo invalidó desde el voucher (S1). */
@@ -38,6 +40,7 @@ export interface ReconstituirEnlaceCitaProps extends EmitirEnlaceCitaProps {
   revocadoEn: Date | null;
   motivoRevocacion: MotivoRevocacionEnlace | null;
   revocadoPor: string | null;
+  primeraAperturaEn: Date | null;
 }
 
 export class EnlaceCita {
@@ -53,6 +56,7 @@ export class EnlaceCita {
   private _revocadoEn: Date | null;
   private _motivoRevocacion: MotivoRevocacionEnlace | null;
   private _revocadoPor: string | null;
+  private _primeraAperturaEn: Date | null;
 
   private constructor() {
     // Se construye vía emitir() o reconstituir().
@@ -92,6 +96,9 @@ export class EnlaceCita {
     enlace._revocadoEn = null;
     enlace._motivoRevocacion = null;
     enlace._revocadoPor = null;
+    // Un enlace nuevo (también la versión siguiente tras invalidar) empieza
+    // sin apertura: se registra por versión.
+    enlace._primeraAperturaEn = null;
     return enlace;
   }
 
@@ -107,11 +114,22 @@ export class EnlaceCita {
     enlace._revocadoEn = props.revocadoEn;
     enlace._motivoRevocacion = props.motivoRevocacion;
     enlace._revocadoPor = props.revocadoPor;
+    enlace._primeraAperturaEn = props.primeraAperturaEn;
     return enlace;
   }
 
   get revocadoEn(): Date | null {
     return this._revocadoEn;
+  }
+
+  /**
+   * La primera vez que el paciente abrió su enlace con un token válido
+   * (US-07.01, H5), o `null` si nunca lo abrió. La escribe el portal con el
+   * reloj de la app, una sola vez, por
+   * `EnlaceCitaRepository.registrarPrimeraApertura`.
+   */
+  get primeraAperturaEn(): Date | null {
+    return this._primeraAperturaEn;
   }
 
   get motivoRevocacion(): MotivoRevocacionEnlace | null {

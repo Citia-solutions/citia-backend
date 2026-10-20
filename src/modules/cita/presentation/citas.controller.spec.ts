@@ -13,7 +13,9 @@ import { EnlacesCitaService } from '../application/enlaces-cita.service';
 import { CitaNoEncontradaError } from '../application/cita-no-encontrada.error';
 import { PacienteNoEncontradoError } from '../../paciente/application/paciente-no-encontrado.error';
 import { RangoFechasInvalidoError } from '../application/rango-fechas-invalido.error';
+import { PedidoPor } from '../domain/cambio-cita.entity';
 import { EstadoCita } from '../domain/cita.entity';
+import { CitaAunNoComienzaError } from '../domain/exceptions/cita-aun-no-comienza.error';
 import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-estado-invalida.error';
 import { CitaDashboardDto } from './dto/cita-dashboard.dto';
 import { CitaDetalleDto } from './dto/cita-detalle.dto';
@@ -29,6 +31,10 @@ describe('CitasController', () => {
     citasDeHoy: jest.Mock;
     detalle: jest.Mock;
     listarEnRango: jest.Mock;
+    cancelar: jest.Mock;
+    reagendar: jest.Mock;
+    marcarAsistencia: jest.Mock;
+    marcarInasistencia: jest.Mock;
   };
   let mockEnlacesCita: { invalidar: jest.Mock };
 
@@ -45,6 +51,10 @@ describe('CitasController', () => {
       citasDeHoy: jest.fn(),
       detalle: jest.fn(),
       listarEnRango: jest.fn(),
+      cancelar: jest.fn(),
+      reagendar: jest.fn(),
+      marcarAsistencia: jest.fn(),
+      marcarInasistencia: jest.fn(),
     };
     mockEnlacesCita = { invalidar: jest.fn().mockResolvedValue(undefined) };
 
@@ -218,6 +228,82 @@ describe('CitasController', () => {
 
       // Act & Assert
       await expect(controller.detalle('cita-1', usuario)).rejects.toBe(error);
+    });
+  });
+
+  describe('US-07.01: marcas antes de la hora y quién lo pidió', () => {
+    it.each(['asistencia', 'inasistencia'])(
+      '%s: CitaAunNoComienzaError → 409 con su mensaje',
+      async (ruta) => {
+        // Arrange — los dobles se crean en el beforeEach: se eligen aquí
+        const asistencia = ruta === 'asistencia';
+        (asistencia
+          ? mockCitasService.marcarAsistencia
+          : mockCitasService.marcarInasistencia
+        ).mockRejectedValue(new CitaAunNoComienzaError());
+
+        // Act
+        const error = await (
+          asistencia
+            ? controller.marcarAsistencia('cita-1', usuario)
+            : controller.marcarInasistencia('cita-1', usuario)
+        ).catch((e: unknown) => e);
+
+        // Assert
+        expect(error).toBeInstanceOf(ConflictException);
+        expect((error as ConflictException).getStatus()).toBe(409);
+        expect((error as ConflictException).message).toBe(
+          'La cita todavía no comienza: la asistencia y la inasistencia se marcan desde su hora de inicio',
+        );
+      },
+    );
+
+    it('cancelar pasa motivo y pedidoPor al servicio', async () => {
+      // Arrange
+      mockCitasService.cancelar.mockResolvedValue({});
+
+      // Act
+      await controller.cancelar(
+        'cita-1',
+        { motivo: 'Avisó por teléfono', pedidoPor: PedidoPor.PACIENTE },
+        usuario,
+      );
+      await controller.cancelar('cita-1', {}, usuario);
+
+      // Assert
+      expect(mockCitasService.cancelar).toHaveBeenNthCalledWith(
+        1,
+        'cita-1',
+        usuario,
+        'Avisó por teléfono',
+        PedidoPor.PACIENTE,
+      );
+      expect(mockCitasService.cancelar).toHaveBeenNthCalledWith(
+        2,
+        'cita-1',
+        usuario,
+        undefined,
+        undefined,
+      );
+    });
+
+    it('reagendar pasa el DTO completo (con pedidoPor) al servicio', async () => {
+      // Arrange
+      mockCitasService.reagendar.mockResolvedValue({});
+      const dto = {
+        inicio: '2026-10-22T15:00:00-03:00',
+        pedidoPor: PedidoPor.PROFESIONAL,
+      };
+
+      // Act
+      await controller.reagendar('cita-1', dto, usuario);
+
+      // Assert
+      expect(mockCitasService.reagendar).toHaveBeenCalledWith(
+        'cita-1',
+        dto,
+        usuario,
+      );
     });
   });
 

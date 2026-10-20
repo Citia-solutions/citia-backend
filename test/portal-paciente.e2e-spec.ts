@@ -252,6 +252,20 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
       [cita.id],
     );
 
+  /** `pedido_por` de los cambios de un tipo (US-07.01), en orden. */
+  const pedidoPorDe = async (
+    cita: CitaBody,
+    tipo: string,
+  ): Promise<(string | null)[]> =>
+    (
+      await datos.query<{ pedidoPor: string | null }[]>(
+        `SELECT pedido_por::text AS "pedidoPor" FROM cambios_cita
+          WHERE cita_id = $1 AND tipo::text = $2
+          ORDER BY ocurrido_en, id`,
+        [cita.id, tipo],
+      )
+    ).map((f) => f.pedidoPor);
+
   /** Los hechos del outbox de la cita, en orden. */
   const hechosDe = (cita: CitaBody): Promise<EventoFila[]> =>
     datos.query<EventoFila[]>(
@@ -412,7 +426,25 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
         const [{ eventos }] = await datos.query<{ eventos: number }[]>(
           'SELECT count(*)::int AS eventos FROM eventos_salida',
         );
-        return { cambios, eventos, estado: (await detalle(cita)).estado };
+        // US-07.01: la fila de la cita tampoco cambia, y la primera apertura
+        // (la anotó el GET anterior) no se vuelve a escribir.
+        const [{ actualizadoEn }] = await datos.query<
+          { actualizadoEn: Date }[]
+        >('SELECT actualizado_en AS "actualizadoEn" FROM citas WHERE id = $1', [
+          cita.id,
+        ]);
+        const [{ apertura }] = await datos.query<{ apertura: Date | null }[]>(
+          `SELECT primera_apertura_en AS apertura FROM enlaces_cita
+            WHERE cita_id = $1 AND revocado_en IS NULL`,
+          [cita.id],
+        );
+        return {
+          cambios,
+          eventos,
+          estado: (await detalle(cita)).estado,
+          actualizadoEn,
+          apertura,
+        };
       };
       const antes = await contar();
 
@@ -457,6 +489,107 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
       // Assert
       expect(res.body).toEqual(CUERPO_409);
       exigirCabecerasPublicas(res);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // US-07.01 (H5): la primera vez que el paciente abre su enlace con un token
+  // válido queda la fecha en `enlaces_cita.primera_apertura_en`. La página se
+  // ve igual y la cita no cambia.
+  describe('primera apertura del enlace (US-07.01, H5)', () => {
+    const aperturaDe = async (
+      cita: CitaBody,
+      version?: number,
+    ): Promise<Date | null> => {
+      const [fila] = await datos.query<{ apertura: Date | null }[]>(
+        version === undefined
+          ? `SELECT primera_apertura_en AS apertura FROM enlaces_cita
+              WHERE cita_id = $1 AND revocado_en IS NULL`
+          : `SELECT primera_apertura_en AS apertura FROM enlaces_cita
+              WHERE cita_id = $1 AND version = $2`,
+        version === undefined ? [cita.id] : [cita.id, version],
+      );
+      return fila.apertura;
+    };
+
+    it('el primer GET válido la llena y los siguientes no la cambian; la vista y las cabeceras son las de siempre', async () => {
+      // Arrange
+      const cita = await crearCita(a);
+      const token = await tokenDe(cita, a);
+      expect(await aperturaDe(cita)).toBeNull();
+      const antes = Date.now();
+
+      // Act
+      const primera = await ver(token).expect(200);
+      const despues = Date.now();
+      const apertura = await aperturaDe(cita);
+      const siguientes: request.Response[] = [];
+      for (let i = 0; i < 3; i++) siguientes.push(await ver(token).expect(200));
+
+      // Assert — la fecha es la del primer GET (reloj de la app)
+      expect(apertura).toBeInstanceOf(Date);
+      expect(apertura!.getTime()).toBeGreaterThanOrEqual(antes - 1_000);
+      expect(apertura!.getTime()).toBeLessThanOrEqual(despues + 1_000);
+      expect(await aperturaDe(cita)).toEqual(apertura);
+      // La página se ve igual: mismo cuerpo, mismas claves, mismas cabeceras
+      for (const res of siguientes) {
+        expect(res.body).toEqual(primera.body);
+        exigirCabecerasPublicas(res);
+      }
+      expect(Object.keys(primera.body as VistaBody).sort()).toEqual(
+        [
+          'accionesPermitidas',
+          'duracionMin',
+          'estado',
+          'inicio',
+          'organizacion',
+          'profesional',
+          'solicitudOtraHora',
+          'zonaHoraria',
+        ].sort(),
+      );
+      // La cita no cambió: sin bitácora ni hechos más allá del alta
+      expect((await bitacoraDe(cita)).map((c) => c.tipo)).toEqual(['creada']);
+      expect((await hechosDe(cita)).map((h) => h.nombre)).toEqual([
+        'CitaCreada',
+      ]);
+    });
+
+    it('los POST no la anotan: confirmar sin haber abierto la página la deja vacía', async () => {
+      // Arrange
+      const cita = await crearCita(a);
+      const token = await tokenDe(cita, a);
+
+      // Act
+      await post('confirmar', token).expect(200);
+
+      // Assert
+      expect(await aperturaDe(cita)).toBeNull();
+    });
+
+    it('se guarda por versión: tras invalidar, el enlace nuevo empieza sin apertura y el viejo conserva la suya', async () => {
+      // Arrange — v1 abierta
+      const cita = await crearCita(a);
+      const v1 = await tokenDe(cita, a);
+      await ver(v1).expect(200);
+      const aperturaV1 = await aperturaDe(cita, 1);
+      expect(aperturaV1).toBeInstanceOf(Date);
+
+      // Act — el profesional invalida y el siguiente recordatorio emite la v2
+      await request(server())
+        .post(`/api/citas/${cita.id}/enlace/invalidar`)
+        .set('Authorization', `Bearer ${a.token}`)
+        .expect(204);
+      const v2 = await tokenDe(cita, a);
+
+      // Assert
+      expect(v2).not.toBe(v1);
+      expect(await aperturaDe(cita, 2)).toBeNull();
+      await ver(v1).expect(404);
+      expect(await aperturaDe(cita, 2)).toBeNull();
+      await ver(v2).expect(200);
+      expect(await aperturaDe(cita, 2)).toBeInstanceOf(Date);
+      expect(await aperturaDe(cita, 1)).toEqual(aperturaV1);
     });
   });
 
@@ -802,6 +935,22 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
       // La de inicio pasado sigue pendiente (nadie la confirmó ni canceló)
       expect((await detalle(citasConEnlace[2])).estado).toBe('pendiente');
     });
+
+    it('ningún 404 anotó una primera apertura (US-07.01, H5): la columna sigue vacía en los tres enlaces', async () => {
+      // Act
+      const filas = await datos.query<
+        { version: number; apertura: Date | null }[]
+      >(
+        `SELECT version, primera_apertura_en AS apertura FROM enlaces_cita
+          WHERE cita_id = ANY($1::uuid[])
+          ORDER BY cita_id, version`,
+        [citasConEnlace.map((c) => c.id)],
+      );
+
+      // Assert — revocado, cita terminal e inicio pasado: ninguno se abrió
+      expect(filas).toHaveLength(3);
+      expect(filas.every((f) => f.apertura === null)).toBe(true);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -998,6 +1147,9 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
         estadoAnterior: 'pendiente',
         estadoNuevo: 'cancelada',
       });
+      // US-07.01 (H3): lo que cancela el paciente por su enlace queda como
+      // pedido por el paciente, sin preguntar.
+      expect(await pedidoPorDe(cita, 'cancelada')).toEqual(['paciente']);
       // Outbox: actor paciente, usuarioId = el DUEÑO de la cita
       const cancelada = (await hechosDe(cita)).find(
         (h) => h.nombre === 'CitaCancelada',
@@ -1097,6 +1249,8 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
         estadoAnterior: 'confirmada',
         estadoNuevo: 'pendiente',
       });
+      // US-07.01 (H3): la hizo el profesional, pero la pidió el paciente
+      expect(await pedidoPorDe(cita, 'reagendada')).toEqual(['paciente']);
       // Outbox: CitaReagendada (los recordatorios se reprograman) y la aceptación
       const hechos = await hechosDe(cita);
       expect(
@@ -1186,14 +1340,22 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
       ['marcar inasistencia', 'inasistencia', true, 'CitaNoAsistida'],
     ])(
       '%s → la petición queda descartada; repetir el hecho no cambia nada (idempotente)',
-      async (_caso, accion, confirmarAntes, hecho) => {
+      async (_caso, accion, marca, hecho) => {
         // Arrange — petición abierta (sobre una cita confirmada si hace falta)
         const cita = await crearCita(a);
         const token = await tokenDe(cita, a);
-        if (confirmarAntes) await post('confirmar', token).expect(200);
+        if (marca) await post('confirmar', token).expect(200);
         await post('otra-hora', token, {
           preferencia: 'cuando se pueda',
         }).expect(201);
+        if (marca) {
+          // US-07.01 (H2): asistencia e inasistencia solo desde la hora de
+          // inicio. El paciente ya actuó (antes del inicio); ahora llega la hora.
+          await datos.query(
+            `UPDATE citas SET inicio = now() - interval '1 hour' WHERE id = $1`,
+            [cita.id],
+          );
+        }
 
         // Act
         await desdeVoucher(cita, accion).expect(200);

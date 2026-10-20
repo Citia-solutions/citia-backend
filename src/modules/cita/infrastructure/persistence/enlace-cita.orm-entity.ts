@@ -17,8 +17,8 @@ const MOTIVOS_SQL = Object.values(MotivoRevocacionEnlace)
   .join(', ');
 
 /**
- * Fila de `enlaces_cita` (Fase 3, contrato §2.1). Esquema real: migración
- * 1750000012000.
+ * Fila de `enlaces_cita` (Fase 3, contrato §2.1). Esquema real: migraciones
+ * 1750000012000 y 1750000017000 (`primera_apertura_en`, US-07.01).
  *
  * Índices, CHECK y FK se declaran también aquí para que un esquema creado con
  * `synchronize` (BD efímera de tests) quede igual que el de la migración.
@@ -78,4 +78,9 @@ export class EnlaceCitaOrmEntity {
   // usuarioId de quien lo invalidó.
   @Column({ name: 'revocado_por', type: 'uuid', nullable: true })
   revocadoPor: string | null;
+
+  // US-07.01 (H5, migración 1750000017000): primera apertura con un token
+  // válido. La escribe la app, una sola vez; por versión del enlace.
+  @Column({ name: 'primera_apertura_en', type: 'timestamptz', nullable: true })
+  primeraAperturaEn: Date | null;
 }

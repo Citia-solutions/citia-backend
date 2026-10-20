@@ -69,11 +69,25 @@ export class PortalPacienteService {
     private readonly reloj: () => Date = () => new Date(),
   ) {}
 
-  /** `GET /publico/cita`. Abrir la página NUNCA cambia nada (S3). */
+  /**
+   * `GET /publico/cita`. Abrir la página no ejecuta ninguna acción (S3): no
+   * cambia la cita ni su bitácora y no publica hechos. Solo anota la PRIMERA
+   * apertura del enlace (US-07.01, H5), y solo con un enlace válido.
+   *
+   * La anotación va dentro de la transacción de siempre, DESPUÉS de `resolver`
+   * (que ya bloqueó la cita) y de la validez, y ANTES de armar la vista: el
+   * `UPDATE` toma la fila del enlace después de la cita, en el orden de
+   * bloqueo del módulo `cita`. Un enlace no válido lanza
+   * `EnlaceCitaNoValidoError` antes, así que el 404 uniforme no cambia y no
+   * se escribe nada. Si el `UPDATE` falla, falla la transacción (500
+   * genérico): no se esconde un fallo de la base. Solo en el GET: las
+   * acciones POST siempre vienen después de un GET de la misma página.
+   */
   ver(token: unknown): Promise<VistaCitaPacienteDto> {
-    return this.enTransaccion(token, (ctx, tx) =>
-      this.vista(ctx.cita, ctx.abierta, ctx.ahora, tx),
-    );
+    return this.enTransaccion(token, async (ctx, tx) => {
+      await this.enlaces.registrarPrimeraApertura(ctx.enlace, ctx.ahora, tx);
+      return this.vista(ctx.cita, ctx.abierta, ctx.ahora, tx);
+    });
   }
 
   /** `POST /publico/cita/confirmar`: `pendiente → confirmada` por el paciente. */

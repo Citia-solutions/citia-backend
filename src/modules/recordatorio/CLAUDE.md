@@ -140,6 +140,18 @@ no toca la fila, corta el lote, alerta e `informarFallo` · `posible_duplicado`
   la carga.
 - Si cambian estados o motivos: migración nueva para los CHECK
   (`database-agent`).
+- **`cita` lee esta tabla con SQL (US-07.01), sin importar el módulo:** el job
+  G1 (`cita/infrastructure/persistence/sql-candidatas-ghosting.ts`) solo
+  cierra como `ghosting` una cita con un recordatorio `estado IN ('enviado',
+  'entregado')`, `proveedor <> 'registro'` (DT-40), `enviado_en` desde el corte
+  y `inicio_cita` = el `inicio` vigente de la cita. Usa `idx_recordatorio_cita`.
+  Cambiar esas columnas, esos valores (también el nombre del adaptador
+  `registro`) o el significado de `inicio_cita` obliga a revisar ese archivo.
+- **`CitaNoAsistida` llega también con `estado = ghosting`** (US-07.01): la
+  inasistencia que el profesional marca sobre una `pendiente` y el cierre del
+  job G1 (actor `sistema`). `SuscriptorRecordatorios` no distingue: reconcilia
+  por el estado actual y anula lo `programado` (`cita_terminal`). Sin cambios
+  de código.
 
 ## Variables de entorno (ADR-13 §18; validadas en `shared/infrastructure/config/entorno.ts`)
 

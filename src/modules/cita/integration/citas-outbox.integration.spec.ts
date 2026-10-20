@@ -11,6 +11,7 @@ import {
   EventoEntregado,
   SuscriptorEventos,
 } from '../../../shared/application/suscriptor-eventos';
+import { TransactionRunner } from '../../../shared/application/transaction-runner';
 import { DespachadorEventosSalida } from '../../../shared/infrastructure/salida/despachador-eventos-salida';
 import { EventoSalidaOrmEntity } from '../../../shared/infrastructure/salida/evento-salida.orm-entity';
 import { RegistroSuscriptores } from '../../../shared/infrastructure/salida/registro-suscriptores';
@@ -21,8 +22,12 @@ import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import { UsuarioOrmEntity } from '../../usuario/infrastructure/persistence/usuario.orm-entity';
 import { CitasService } from '../application/citas.service';
 import { CitaModule } from '../cita.module';
-import { TipoCambio } from '../domain/cambio-cita.entity';
-import { EstadoCita } from '../domain/cita.entity';
+import {
+  ActorCambio,
+  PedidoPor,
+  TipoCambio,
+} from '../domain/cambio-cita.entity';
+import { EstadoCita, OrigenCita } from '../domain/cita.entity';
 import { CitaRepository } from '../domain/cita.repository';
 import { CambioCitaOrmEntity } from '../infrastructure/persistence/cambio-cita.orm-entity';
 import { CitaOrmEntity } from '../infrastructure/persistence/cita.orm-entity';
@@ -305,6 +310,194 @@ describe('CitasService + outbox eventos_salida (integration)', () => {
         .getRepository(CambioCitaOrmEntity)
         .find({ where: { citaId: cita.id } });
       expect(cambios.map((c) => c.tipo)).toEqual([TipoCambio.CREADA]);
+    });
+  });
+
+  // US-07.01 (H8): ningún hecho nuevo. El cierre del job G1 y la inasistencia
+  // del profesional sobre una `pendiente` publican `CitaNoAsistida` con
+  // `estado: 'ghosting'`; el actor dice quién lo materializó.
+  describe('CitaNoAsistida con estado ghosting (US-07.01)', () => {
+    // Datos que NUNCA pueden terminar en el payload.
+    const PROHIBIDOS = [
+      PACIENTE.nombre,
+      'Pérez',
+      '12.345.678',
+      '12345678',
+      '8765',
+      PACIENTE.correo,
+      '@',
+      TIPO_CONSULTA,
+    ];
+
+    /** La cita ya pasó: el job y las marcas exigen `ahora ≥ inicio`. */
+    const alPasado = (citaId: string): Promise<unknown> =>
+      dataSource.query(
+        `UPDATE citas SET inicio = now() - interval '1 day' WHERE id = $1`,
+        [citaId],
+      );
+
+    /** Lo que hace el job G1 con una cita ya reclamada: bloquearla y cerrarla en SU tx. */
+    const cerrarComoElJob = (
+      citaId: string,
+      despues?: () => void,
+    ): Promise<void> =>
+      modulo.get(TransactionRunner).run(async (tx) => {
+        const bloqueada = await modulo
+          .get<CitaRepository>(CitaRepository)
+          .buscarPorIdParaActualizar(citaId, actor.tenantId, tx);
+        await service.cerrarPorGhostingEnTx(bloqueada!, tx);
+        despues?.();
+      });
+
+    it('del job G1: un CitaNoAsistida pendiente con estado ghosting, actor sistema (id nulo) y el DUEÑO como usuarioId, sin datos del paciente', async () => {
+      // Arrange
+      const cita = await service.crearCita(dtoCita(), actor);
+      await alPasado(cita.id);
+
+      // Act
+      await cerrarComoElJob(cita.id);
+
+      // Assert — el outbox
+      const filas = await filasSalida();
+      expect(filas.map((f) => f.nombre)).toEqual([
+        'CitaCreada',
+        'CitaNoAsistida',
+      ]);
+      const hecho = filas[1];
+      expect(hecho).toMatchObject({
+        tenantId: actor.tenantId,
+        estado: EstadoEventoSalida.PENDIENTE,
+        intentos: 0,
+        ultimoError: null,
+      });
+      expect(Object.keys(hecho.payload).sort()).toEqual(CLAVES_PAYLOAD_CITA);
+      expect(hecho.payload).toMatchObject({
+        citaId: cita.id,
+        pacienteId: cita.pacienteId,
+        usuarioId: actor.userId,
+        estado: EstadoCita.GHOSTING,
+        inicioAnterior: null,
+        actor: { tipo: 'sistema', id: null },
+      });
+      const crudo = JSON.stringify(hecho.payload);
+      for (const prohibido of PROHIBIDOS) {
+        expect(crudo).not.toContain(prohibido);
+      }
+      expect(crudo).not.toContain('pedidoPor');
+      expect(crudo).not.toContain('origen');
+
+      // Assert — la bitácora y la cita, en la misma transacción
+      const cambios = await dataSource.getRepository(CambioCitaOrmEntity).find({
+        where: { citaId: cita.id },
+        order: { ocurridoEn: 'ASC' },
+      });
+      expect(
+        cambios.map((c) => [
+          c.tipo,
+          c.actorTipo,
+          c.actorId,
+          c.estadoAnterior,
+          c.estadoNuevo,
+          c.pedidoPor,
+        ]),
+      ).toEqual([
+        [
+          TipoCambio.CREADA,
+          ActorCambio.PROFESIONAL,
+          actor.userId,
+          null,
+          EstadoCita.PENDIENTE,
+          null,
+        ],
+        [
+          TipoCambio.GHOSTING,
+          ActorCambio.SISTEMA,
+          null,
+          EstadoCita.PENDIENTE,
+          EstadoCita.GHOSTING,
+          null,
+        ],
+      ]);
+      const orm = await dataSource
+        .getRepository(CitaOrmEntity)
+        .findOneByOrFail({ id: cita.id });
+      expect(orm.estado).toBe(EstadoCita.GHOSTING);
+      expect(orm.origen).toBe(OrigenCita.MANUAL);
+    });
+
+    it('de la inasistencia del profesional sobre una pendiente: el mismo hecho, con estado ghosting y actor profesional', async () => {
+      // Arrange
+      const cita = await service.crearCita(dtoCita(), actor);
+      await alPasado(cita.id);
+
+      // Act
+      const respuesta = await service.marcarInasistencia(cita.id, actor);
+
+      // Assert
+      expect(respuesta.estado).toBe(EstadoCita.GHOSTING);
+      const filas = await filasSalida();
+      expect(filas.map((f) => f.nombre)).toEqual([
+        'CitaCreada',
+        'CitaNoAsistida',
+      ]);
+      expect(Object.keys(filas[1].payload).sort()).toEqual(CLAVES_PAYLOAD_CITA);
+      expect(filas[1].payload).toMatchObject({
+        citaId: cita.id,
+        usuarioId: actor.userId,
+        estado: EstadoCita.GHOSTING,
+        actor: { tipo: 'profesional', id: actor.userId },
+      });
+      const ghosting = await dataSource
+        .getRepository(CambioCitaOrmEntity)
+        .findOneByOrFail({ citaId: cita.id, tipo: TipoCambio.GHOSTING });
+      expect(ghosting.actorTipo).toBe(ActorCambio.PROFESIONAL);
+      expect(ghosting.actorId).toBe(actor.userId);
+    });
+
+    it('si la transacción del job falla DESPUÉS de publicar, no queda el hecho, ni el cambio, ni el cierre', async () => {
+      // Arrange
+      const cita = await service.crearCita(dtoCita(), actor);
+      await alPasado(cita.id);
+
+      // Act
+      await expect(
+        cerrarComoElJob(cita.id, () => {
+          throw new Error('fallo simulado después de publicar');
+        }),
+      ).rejects.toThrow('fallo simulado después de publicar');
+
+      // Assert
+      expect((await filasSalida()).map((f) => f.nombre)).toEqual([
+        'CitaCreada',
+      ]);
+      const orm = await dataSource
+        .getRepository(CitaOrmEntity)
+        .findOneByOrFail({ id: cita.id });
+      expect(orm.estado).toBe(EstadoCita.PENDIENTE);
+      const cambios = await dataSource
+        .getRepository(CambioCitaOrmEntity)
+        .find({ where: { citaId: cita.id } });
+      expect(cambios.map((c) => c.tipo)).toEqual([TipoCambio.CREADA]);
+    });
+
+    it('cancelar con pedidoPor lo deja en la bitácora y NO en el hecho', async () => {
+      // Arrange
+      const cita = await service.crearCita(dtoCita(), actor);
+
+      // Act — US-07.01 (H3): el profesional cancela a pedido del paciente
+      await service.cancelar(cita.id, actor, undefined, PedidoPor.PACIENTE);
+
+      // Assert — en la bitácora…
+      const cancelacion = await dataSource
+        .getRepository(CambioCitaOrmEntity)
+        .findOneByOrFail({ citaId: cita.id, tipo: TipoCambio.CANCELADA });
+      expect(cancelacion.pedidoPor).toBe(PedidoPor.PACIENTE);
+      expect(cancelacion.actorTipo).toBe(ActorCambio.PROFESIONAL);
+      // …y no en el hecho (las claves de siempre, sin `pedidoPor`)
+      const [, hecho] = await filasSalida();
+      expect(hecho.nombre).toBe('CitaCancelada');
+      expect(Object.keys(hecho.payload).sort()).toEqual(CLAVES_PAYLOAD_CITA);
+      expect(hecho.payload).not.toHaveProperty('pedidoPor');
     });
   });
 

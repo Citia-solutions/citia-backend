@@ -22,6 +22,7 @@ fase del roadmap, en [`../Fases/`](../Fases/README.md).)*
 | [ADR-11](ADR-11.md) | Solapamiento de citas: avisar y permitir, regla en la entidad `Cita` (`chocaCon`), campo opcional `avisos.solapamientos` | Aceptado · **Implementado** (2026-09-28) | 2026-09-25 | [Fase 1](../Fases/fase-1-us02-gestion-citas.md) | `4c543a5` (doc), `538657e`, `9140bc3`, `06858f2` (tests) |
 | [ADR-12](ADR-12.md) | Outbox transaccional (`eventos_salida`) y planificador en proceso con `@nestjs/schedule` sobre Postgres (`FOR UPDATE SKIP LOCKED`); cierre de citas aplazado | Aceptado · **implementado y en producción** (2026-10-06) · [notas de implementación](ADR-12.md#notas-de-implementación-2026-10-04) | 2026-09-30 | [Fase 2](../Fases/fase-2-us03-recordatorios.md) · toca 4 y 5 | `ab30bb7` (doc), `daf0617`, `a6c237f`, `d45de20`, `f95b637`, `db46e37` |
 | [ADR-13](ADR-13.md) | Recordatorios al paciente por correo (RF-06): entidad `Recordatorio` con estado, planificación pura, Resend detrás de `CanalMensajeria`, webhooks firmados, cuota del modo prueba | Aceptado · **implementado y en producción** (2026-10-06; verificado con un correo real el 2026-10-07) · decisiones confirmadas (2026-09-30) · [notas de implementación](ADR-13.md#notas-de-implementación-2026-10-04) | 2026-09-30 | [Fase 2](../Fases/fase-2-us03-recordatorios.md) · toca 3 | `ab30bb7` (doc), `d45de20`, `a37f175`, `f2d80aa`, `a13d80a`, `f719c66`, `a938f9d` |
+| [ADR-14](ADR-14.md) | Calificación de asistencia del paciente y riesgo de cada cita (RF-08): puntos fijos sobre los hechos de los últimos 12 meses, cuatro etiquetas (`nuevo · regular · confiable · riesgo`), riesgo por cita que solo informa y ayuda, regla estricta de datos, dos transiciones nuevas desde `pendiente` y el registro de hechos de US-07.01 | **Aceptado en lo que toca a US-07.01** (2026-10-19; en construcción, [plan](../US/07.01-registro-hechos.md)) · US-07.02 y US-07.03 **propuestas** · [abierto](ADR-14.md#preguntas-abiertas-y-lo-que-queda-a-confirmar): la revisión legal, la calibración y el peso de `nuevo` | 2026-10-19 | [Fase 5](../Fases/fase-5-us07-scoring.md) · toca 1, 2 y 3 | — (pendiente) |
 
 ## Relaciones entre ADRs
 
@@ -73,5 +74,12 @@ fase del roadmap, en [`../Fases/`](../Fases/README.md).)*
   `PlanificacionModule`, respaldo sin candado global, `svix` 1.x, `cron` 4.4.0…) están en la sección
   *Notas de implementación* de cada ADR. ADR-02 ganó una nota: su check del §4 era un `grep` que no
   detectaba nada y lo reemplaza `src/arquitectura.spec.ts`; lo que ese test no cubre quedó en DT-31.
+- ADR-14 (calificación y riesgo, 2026-10-19; **aceptado en lo que toca a US-07.01**, el resto propuesto)
+  **extiende** ADR-04 §2 con dos transiciones desde `pendiente` y la guarda de la hora de inicio (es la salida B
+  que DT-30 dejaba para un ADR propio) y **contradice a sabiendas** la línea
+  "grafo de ADR-04 intacto" de ADR-10. **Usa** el outbox y el planificador de ADR-12 (el job G1 de DT-11 y dos
+  controles del riesgo), **lee** el estado de los recordatorios de ADR-13 y respeta su cuota y sus políticas,
+  y **fija** el peso de la confirmación que ADR-10 G2 dejó a la Fase 5. Su test de arquitectura sigue el
+  modelo de `src/arquitectura.spec.ts` (ADR-02).
 
 Ver la matriz completa commit ↔ doc en [`../TRAZABILIDAD.md`](../TRAZABILIDAD.md).

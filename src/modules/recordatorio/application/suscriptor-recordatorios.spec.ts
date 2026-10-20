@@ -303,6 +303,130 @@ describe('SuscriptorRecordatorios', () => {
     },
   );
 
+  // US-07.01 (H8): ningún hecho nuevo. La inasistencia sobre una `pendiente`
+  // (del profesional) y el cierre del job G1 (del sistema) publican
+  // `CitaNoAsistida` con `estado: 'ghosting'`; el efecto sale del estado de
+  // la cita (terminal), no del nombre ni del actor.
+  describe('CitaNoAsistida con estado ghosting (US-07.01)', () => {
+    const programarYEnviarElPrimero = async (): Promise<void> => {
+      await suscriptor.manejar(hecho('CitaCreada'), tx);
+      const [r24] = deLaCita();
+      await recordatorios.registrarEnvio(
+        r24.id,
+        tenantId,
+        { proveedor: 'resend', proveedorMensajeId: 'm-1' },
+        d('2026-10-13T18:00:00Z'),
+        tx,
+      );
+    };
+
+    it.each<[string, Record<string, unknown>]>([
+      [
+        'del profesional (inasistencia sobre una pendiente)',
+        { tipo: 'profesional', id: solicitante },
+      ],
+      ['del sistema (job G1, id nulo)', { tipo: 'sistema', id: null }],
+    ])(
+      '%s: anula los programados (cita_terminal) y deja el ya enviado, igual que hoy',
+      async (_caso, actor) => {
+        // Arrange
+        await programarYEnviarElPrimero();
+        lector.actualizarCita(cita.id, { estado: 'ghosting' });
+
+        // Act — el payload real: usuarioId = el dueño de la cita
+        await suscriptor.manejar(
+          hecho('CitaNoAsistida', {
+            estado: 'ghosting',
+            usuarioId: dueno,
+            actor,
+          }),
+          tx,
+        );
+
+        // Assert
+        expect(
+          deLaCita().map((r) => [r.antelacionMin, r.estado, r.motivo]),
+        ).toEqual([
+          [1440, EstadoRecordatorio.ENVIADO, null],
+          [120, EstadoRecordatorio.CANCELADO, MotivoRecordatorio.CITA_TERMINAL],
+        ]);
+      },
+    );
+
+    it('tiene el mismo efecto que un CitaNoAsistida desde confirmada (no_asistio)', async () => {
+      // Arrange — dos citas iguales, una cerrada como ghosting y otra como no_asistio
+      await programarYEnviarElPrimero();
+      const otra = lector.sembrarCita(
+        citaLeida({ tenantId, usuarioId: dueno, inicio: INICIO }),
+      );
+      await suscriptor.manejar(
+        { ...hecho('CitaCreada'), payload: { citaId: otra.id } },
+        tx,
+      );
+      const [r24Otra] = recordatorios
+        .todos()
+        .filter((r) => r.citaId === otra.id);
+      await recordatorios.registrarEnvio(
+        r24Otra.id,
+        tenantId,
+        { proveedor: 'resend', proveedorMensajeId: 'm-2' },
+        d('2026-10-13T18:00:00Z'),
+        tx,
+      );
+      lector.actualizarCita(cita.id, { estado: 'ghosting' });
+      lector.actualizarCita(otra.id, { estado: 'no_asistio' });
+
+      // Act
+      await suscriptor.manejar(
+        hecho('CitaNoAsistida', {
+          estado: 'ghosting',
+          actor: { tipo: 'sistema', id: null },
+        }),
+        tx,
+      );
+      await suscriptor.manejar(
+        {
+          ...hecho('CitaNoAsistida'),
+          payload: {
+            citaId: otra.id,
+            estado: 'no_asistio',
+            actor: { tipo: 'profesional', id: solicitante },
+          },
+        },
+        tx,
+      );
+
+      // Assert
+      const resumen = (citaId: string) =>
+        recordatorios
+          .todos()
+          .filter((r) => r.citaId === citaId)
+          .map((r) => [r.antelacionMin, r.estado, r.motivo]);
+      expect(resumen(cita.id)).toEqual(resumen(otra.id));
+    });
+
+    it('repetir el hecho del sistema no cambia nada (idempotente)', async () => {
+      // Arrange
+      await programarYEnviarElPrimero();
+      lector.actualizarCita(cita.id, { estado: 'ghosting' });
+      const delSistema = hecho('CitaNoAsistida', {
+        estado: 'ghosting',
+        usuarioId: dueno,
+        actor: { tipo: 'sistema', id: null },
+      });
+      await suscriptor.manejar(delSistema, tx);
+      const despuesDelPrimero = recordatorios.todos();
+      const anular = jest.spyOn(recordatorios, 'anular');
+
+      // Act
+      await suscriptor.manejar(delSistema, tx);
+
+      // Assert
+      expect(recordatorios.todos()).toEqual(despuesDelPrimero);
+      expect(anular).not.toHaveBeenCalled();
+    });
+  });
+
   describe.each(['CitaEditada', 'CitaConfirmada'])('%s', (nombre) => {
     it('no toca nada si la cita ya estaba reconciliada', async () => {
       // Arrange

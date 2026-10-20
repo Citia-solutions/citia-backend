@@ -8,7 +8,10 @@ import {
   CambioCita,
   TipoCambio,
 } from '../../domain/cambio-cita.entity';
-import { CambioCitaRepository } from '../../domain/cambio-cita.repository';
+import {
+  CambioCitaRepository,
+  UltimoCambio,
+} from '../../domain/cambio-cita.repository';
 import { CambioCitaOrmEntity } from './cambio-cita.orm-entity';
 
 @Injectable()
@@ -46,20 +49,23 @@ export class TypeOrmCambioCitaRepository extends CambioCitaRepository {
     return filas.map((orm) => this.toDomain(orm));
   }
 
-  async ultimoActorPorTipo(
+  async ultimosCambiosPorTipo(
     citaId: string,
     tenantId: string,
     tipos: readonly TipoCambio[],
     tx?: TransactionContext,
-  ): Promise<Partial<Record<TipoCambio, ActorCambio>>> {
+  ): Promise<Partial<Record<TipoCambio, UltimoCambio>>> {
     if (tipos.length === 0) return {};
     // DISTINCT ON: una fila por tipo, la de `ocurrido_en` más reciente (el
     // `id` solo desempata de forma estable). La comparación va por texto: el
     // nombre del tipo enum difiere entre la migración y `synchronize`.
     const filas = await this.repoFor(tx).query<
-      { tipo: TipoCambio; actorTipo: ActorCambio }[]
+      { tipo: TipoCambio; actorTipo: ActorCambio; ocurridoEn: Date }[]
     >(
-      `SELECT DISTINCT ON ("tipo") "tipo", "actor_tipo" AS "actorTipo"
+      `SELECT DISTINCT ON ("tipo")
+              "tipo",
+              "actor_tipo"  AS "actorTipo",
+              "ocurrido_en" AS "ocurridoEn"
          FROM "cambios_cita"
         WHERE "cita_id" = $1
           AND "tenant_id" = $2
@@ -68,8 +74,13 @@ export class TypeOrmCambioCitaRepository extends CambioCitaRepository {
       [citaId, tenantId, [...tipos]],
     );
 
-    const resultado: Partial<Record<TipoCambio, ActorCambio>> = {};
-    for (const fila of filas) resultado[fila.tipo] = fila.actorTipo;
+    const resultado: Partial<Record<TipoCambio, UltimoCambio>> = {};
+    for (const fila of filas) {
+      resultado[fila.tipo] = {
+        actor: fila.actorTipo,
+        ocurridoEn: fila.ocurridoEn,
+      };
+    }
     return resultado;
   }
 
@@ -85,6 +96,8 @@ export class TypeOrmCambioCitaRepository extends CambioCitaRepository {
       motivo: orm.motivo,
       actorTipo: orm.actorTipo,
       actorId: orm.actorId,
+      // Tal cual está en la base: vacío sigue vacío (H12).
+      pedidoPor: orm.pedidoPor,
     });
     cambio.id = orm.id;
     cambio.ocurridoEn = orm.ocurridoEn;
@@ -103,6 +116,7 @@ export class TypeOrmCambioCitaRepository extends CambioCitaRepository {
       motivo: domain.motivo,
       actorTipo: domain.actorTipo,
       actorId: domain.actorId,
+      pedidoPor: domain.pedidoPor,
     };
   }
 }

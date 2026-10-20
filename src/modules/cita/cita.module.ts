@@ -9,15 +9,18 @@ import type { Entorno } from '../../shared/infrastructure/config/entorno';
 import { PacientesService } from '../paciente/application/pacientes.service';
 import { PacienteModule } from '../paciente/paciente.module';
 import { PacienteRepository } from '../paciente/domain/paciente.repository';
+import { CierreGhostingService } from './application/cierre-ghosting.service';
 import { CitasService } from './application/citas.service';
 import { EnlacesCitaService } from './application/enlaces-cita.service';
 import { CambioCitaRepository } from './domain/cambio-cita.repository';
+import { CandidatasGhosting } from './domain/candidatas-ghosting';
 import { CitaRepository } from './domain/cita.repository';
 import { DerivadorTokenEnlace } from './domain/derivador-token-enlace';
 import { EnlaceCitaRepository } from './domain/enlace-cita.repository';
 import { CambioCitaOrmEntity } from './infrastructure/persistence/cambio-cita.orm-entity';
 import { CitaOrmEntity } from './infrastructure/persistence/cita.orm-entity';
 import { EnlaceCitaOrmEntity } from './infrastructure/persistence/enlace-cita.orm-entity';
+import { SqlCandidatasGhosting } from './infrastructure/persistence/sql-candidatas-ghosting';
 import { TypeOrmCambioCitaRepository } from './infrastructure/persistence/typeorm-cambio-cita.repository';
 import { TypeOrmCitaRepository } from './infrastructure/persistence/typeorm-cita.repository';
 import { TypeOrmEnlaceCitaRepository } from './infrastructure/persistence/typeorm-enlace-cita.repository';
@@ -131,11 +134,48 @@ import { CitasController } from './presentation/citas.controller';
         TransactionRunner,
       ],
     },
+    {
+      // Job G1 (US-07.01): lectura y reclamo de candidatas con SQL a mano.
+      // Barrido GLOBAL (ADR-12 §6): solo lo usa `CierreGhostingService`. Lee
+      // `recordatorios` y `solicitudes_cita` sin importar sus módulos.
+      provide: CandidatasGhosting,
+      useClass: SqlCandidatasGhosting,
+    },
+    {
+      // Caso de uso del job G1 sin Nest (ADR-02): se arma con fábrica. Lo
+      // usa solo `CitaPlanificacionModule` (el planificador).
+      provide: CierreGhostingService,
+      useFactory: (
+        tx: TransactionRunner,
+        candidatas: CandidatasGhosting,
+        citas: CitasService,
+        config: ConfigService,
+      ) =>
+        new CierreGhostingService(
+          tx,
+          candidatas,
+          citas,
+          config.get<string>('APP_TZ', 'America/Santiago'),
+        ),
+      inject: [
+        TransactionRunner,
+        CandidatasGhosting,
+        CitasService,
+        ConfigService,
+      ],
+    },
   ],
   // Quién puede importar este módulo (ver CLAUDE.md): `solicitud` (bandeja:
   // `agendar`, `reagendarEnTx`), `recordatorio` (`EnlacesCitaService.asegurarActivo`
-  // en el envío) y `portal-paciente` (`resolver` + acciones del paciente). Este
-  // módulo no importa ninguno de ellos (sin ciclo).
-  exports: [CitasService, EnlacesCitaService, DerivadorTokenEnlace],
+  // en el envío), `portal-paciente` (`resolver`, `registrarPrimeraApertura` y
+  // las acciones del paciente) y el módulo hermano `CitaPlanificacionModule`
+  // (`CierreGhostingService`, el job G1). Este módulo no importa ninguno de
+  // ellos (sin ciclo).
+  exports: [
+    CitasService,
+    EnlacesCitaService,
+    DerivadorTokenEnlace,
+    CierreGhostingService,
+  ],
 })
 export class CitaModule {}

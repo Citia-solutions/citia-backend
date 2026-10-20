@@ -3,7 +3,7 @@
 Hoja de ruta de las historias de usuario (US-02 a US-10). Sirve para tener el orden, las
 dependencias y el estado real de cada pieza en un solo lugar.
 
-**Última revisión:** 2026-10-18 (**Fase 3 en producción** desde el release del 2026-10-17, con un corte de ~9 minutos; cierre pendiente de las pruebas manuales; feature en [us04-respuesta-paciente](Features/us04-respuesta-paciente.md)) · antes: 2026-10-15 (Fase 3 mergeada a `develop`: backend PR #6 y frontend PR #7) · 2026-10-15, en la mañana (Fase 3 implementada y verificada en local, sin commits) · 2026-10-14 (Fase 3 en construcción: el arquitecto aprobó el diseño, ADR-10 aceptado con Q11 = B, plan en [US-04](US/04-respuesta-paciente.md)) · 2026-10-07 (**Fase 2 cerrada en producción**: release del 2026-10-06 en los dos repos y prueba de punta a punta con un correo real; el MVP completo está en producción) · 2026-10-04 (Fase 2 implementada en rama, pendiente de merge) · 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
+**Última revisión:** 2026-10-19 (**se reabre la Fase 5 por US-07.01**, registro de hechos: en construcción, adelantada a la Fase 4, de la que no depende; diseño en [ADR-14](Decisions/ADR-14.md), aceptado en lo que toca a US-07.01; plan en [US-07.01](US/07.01-registro-hechos.md); US-07.02 y US-07.03 siguen en la v2) · antes: 2026-10-18 (**Fase 3 en producción** desde el release del 2026-10-17, con un corte de ~9 minutos; cierre pendiente de las pruebas manuales; feature en [us04-respuesta-paciente](Features/us04-respuesta-paciente.md)) · antes: 2026-10-15 (Fase 3 mergeada a `develop`: backend PR #6 y frontend PR #7) · 2026-10-15, en la mañana (Fase 3 implementada y verificada en local, sin commits) · 2026-10-14 (Fase 3 en construcción: el arquitecto aprobó el diseño, ADR-10 aceptado con Q11 = B, plan en [US-04](US/04-respuesta-paciente.md)) · 2026-10-07 (**Fase 2 cerrada en producción**: release del 2026-10-06 en los dos repos y prueba de punta a punta con un correo real; el MVP completo está en producción) · 2026-10-04 (Fase 2 implementada en rama, pendiente de merge) · 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
 
 **Por fases:** este documento es la fuente del **estado**. Para leer todo lo que toca a una fase
 (decisiones, deudas, commits, contraparte del frontend) en orden, entra por [`Fases/`](Fases/README.md).
@@ -16,6 +16,8 @@ Aquí "fase" es siempre una fase de construcción; las etapas del producto está
 - Cada fase es entregable y testeable por sí sola.
 - Orden por dependencias: US-02 (+ US-06 en paralelo) → US-03 → US-04 → US-05 → US-07 → US-08.
   US-10 no depende de nada y puede entrar en cualquier momento. US-09 sigue sin definir.
+  *(2026-10-19: **US-07.01**, la primera subtarea de US-07, se adelanta a US-05: no depende de ella, solo de
+  US-02, US-04 y el planificador de ADR-12.)*
 - **Alcance del MVP (2026-09-30):** Fase 0 (dashboard) + Fase 1 (gestión de citas) + **Fase 2
   (recordatorios)**. La Fase 5 (scoring) sale del MVP y pasa a la v2. Ver
   [Descripcion/fase-3-mvp.md](Descripcion/fase-3-mvp.md). **El MVP completo está en producción**
@@ -393,10 +395,39 @@ y un primer suscriptor (recordatorios): las alertas se enchufan como otro suscri
 
 > Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-5-us07-scoring.md`](Fases/fase-5-us07-scoring.md).
 
-**Estado:** ⏸ **fuera del MVP, pasa a la v2** (decisión del usuario, 2026-09-30). Es el segundo valor
-agregado del negocio; se retoma después de validar el MVP con recordatorios.
+**Estado:** 🔶 **en construcción: US-07.01 (registro de hechos) desde el 2026-10-19; US-07.02 y US-07.03 siguen
+en la v2.** US-07.01 se adelanta a la [Fase 4](#fase-4--us-05-alertas-al-profesional) porque no depende de ella;
+US-07.02 (calificación y riesgo) y US-07.03 (acciones) esperan la revisión legal de
+[ADR-14](Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado).
+
+> *Antes (2026-09-30 → 2026-10-19):* ⏸ **fuera del MVP, pasa a la v2** (decisión del usuario, 2026-09-30). Es el
+> segundo valor agregado del negocio; se retomaba después de validar el MVP con recordatorios.
+
+**Diseño:** [ADR-14](Decisions/ADR-14.md) (2026-10-19; **aceptado en lo que toca a US-07.01**, el resto
+propuesto): puntos fijos sobre los hechos de los últimos 12 meses, **cuatro** etiquetas (agrega "regular" a las
+tres del punto 2), riesgo por cita, y el **registro de hechos** de US-07.01, que va primero. La fase se reparte
+en tres subtareas, con la convención de US-02.07 / US-02.08: **US-07.01** · registro de hechos, **US-07.02** ·
+calificación y riesgo, **US-07.03** · acciones. La calibración es una tarea posterior, sin US propia.
+
+### US-07.01 — Registro de hechos (🔶 en construcción desde el 2026-10-19)
+
+Plan y contrato: [`US/07.01-registro-hechos.md`](US/07.01-registro-hechos.md). Guarda lo que hoy se pierde y
+no se reconstruye, aunque la calificación tarde en llegar:
+
+1. ⬜ Asistió / No asistió **también sobre una cita `pendiente`** (`pendiente → asistio`; `pendiente → ghosting`
+   con actor profesional), y el dominio exige que ya haya llegado la hora de inicio.
+2. ⬜ **Quién pidió** cada cancelación o reagendamiento (`cambios_cita.pedido_por`): opcional en la API,
+   obligatorio en el voucher; `paciente` automático por el enlace y al aceptar una petición de otra hora.
+3. ⬜ **Origen** de cada cita (`manual` | `solicitud_publica`), con relleno de las existentes.
+4. ⬜ **Primera apertura** del enlace del paciente (`enlaces_cita.primera_apertura_en`), sin tocar la cita ni el
+   404 uniforme.
+5. ⬜ **Job G1** ([DT-11](Deudas/DT-11.md)) detrás de `CIERRE_GHOSTING_ACTIVO`, apagado por defecto (solo cuenta y
+   lo deja en el log). DT-11 se cierra cuando quede prendido en production.
+6. ⬜ Frontend: los dos botones sobre citas `pendiente` y *"¿Quién lo pidió?"* en cancelar y reagendar.
 
 ### Backend
+*(Lo que sigue es US-07.02 y US-07.03, sin plan. El punto 2 lo reemplaza [ADR-14](Decisions/ADR-14.md): cuatro
+etiquetas.)*
 1. Cálculo del % de asistencia.
 2. Algoritmo de clasificación ("confiable" / "riesgo" / "nuevo").
 3. Regla estricta: sin historial = siempre "nuevo".
@@ -416,7 +447,7 @@ agregado del negocio; se retoma después de validar el MVP con recordatorios.
 
 > El punto 4 depende del **proceso de cierre**. Su mecanismo ya está decidido ([ADR-12](Decisions/ADR-12.md))
 > y el job se aplaza con esta fase ([DT-11](Deudas/DT-11.md)): el `ghosting` se puede reconstruir
-> después, con una fecha de corte. **Lo que no se reconstruye es la asistencia real**
+> después, con una fecha de corte. *(2026-10-19: el job G1 se construye en US-07.01, arriba.)* **Lo que no se reconstruye es la asistencia real**
 > ([DT-30](Deudas/DT-30.md)): desde el 2026-10-05 el voucher la registra (mitigada), así que esta fase
 > arrancará sin el historial de asistencia anterior a esa fecha.
 
@@ -496,7 +527,7 @@ agregado del negocio; se retoma después de validar el MVP con recordatorios.
 | 2 | US-03 Recordatorios | US-02, ADR-12 (outbox + planificador), subdominio verificado en Resend | ✅ **cerrada en producción (2026-10-07)** · release 2026-10-06 · **en el MVP** · [pendientes posteriores](#pendientes-posteriores-al-cierre) |
 | 3 | US-04 Respuesta paciente (+ US-02.07) | US-03 ✅, ADR-10 ✅ (aceptado 2026-10-14) | ✅ **en producción (2026-10-17)** · cierre pendiente de las pruebas manuales · fuera del MVP · [us04](Features/us04-respuesta-paciente.md) · [checklist](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción) |
 | 4 | US-05 Alertas | US-02/03/04 | ⬜ (el outbox ya existe) |
-| 5 | US-07 Scoring | US-02/04, proceso de cierre (ADR-12), asistencia registrada (DT-30) | ⏸ v2 (fuera del MVP, 2026-09-30) |
+| 5 | US-07 Scoring (US-07.01 · 07.02 · 07.03) | US-02/04, proceso de cierre (ADR-12), asistencia registrada (DT-30) · **US-07.01 adelanta a la Fase 4 sin depender de ella** | 🔶 **US-07.01 en construcción (2026-10-19)** · [plan](US/07.01-registro-hechos.md) · US-07.02 y US-07.03 ⏸ v2 (fuera del MVP desde el 2026-09-30) |
 | 6 | US-08 Monitoreo | US-02/07 | 🔶 solo alta y `PATCH` de contacto |
 | 7 | US-10 Perfil/soporte | — | ⬜ |
 | — | US-09 | — | ⬜ pendiente |

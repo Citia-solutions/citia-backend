@@ -52,9 +52,12 @@ src/modules/solicitud/
 - `aceptar`: cuerpo `{ inicio, duracionMin?, tipoConsulta? }`.
   - `nueva`: `duracionMin` y `tipoConsulta` obligatorios (si faltan, 400 del servicio:
     "Para aceptar una solicitud nueva, duracionMin y tipoConsulta son obligatorios");
-    `cita` = respuesta de `POST /citas` (con `paciente` y `avisos`).
+    `cita` = respuesta de `POST /citas` (con `paciente` y `avisos`). La cita nace con
+    `origen = solicitud_publica` (US-07.01: `agendar(…, OrigenCita.SOLICITUD_PUBLICA)`; no se expone).
   - `reagendamiento`: solo `inicio` (lo demás se ignora). MUEVE la cita de origen con
-    `CitasService.reagendarEnTx` (mismo id, vuelve a `pendiente`, `CitaReagendada`);
+    `CitasService.reagendarEnTx(…, PedidoPor.PACIENTE)` (mismo id, vuelve a `pendiente`,
+    `CitaReagendada`; la bitácora anota `pedido_por = paciente` sin preguntar, US-07.01 H3: el
+    paciente lo pidió por su enlace. El parámetro es obligatorio en `reagendarEnTx`);
     `cita` = respuesta de `PATCH /citas/:id/reagendar` (con `avisos`, sin `paciente`);
     `solicitud.citaId = citaOrigenId`. Cita de origen terminal → 409; inexistente → 404.
 - Errores: `SolicitudNoEncontradaError`/`CitaNoEncontradaError` → 404,
@@ -68,6 +71,14 @@ src/modules/solicitud/
   por `CitaModule`); pedir otra hora lee la ficha con `PacienteRepository`. `cita` no
   importa nada de aquí: `solicitud` se entera de lo que le pasa a la cita por el
   **outbox** (suscriptor). `cita_id` y `cita_origen_id` no tienen FK a propósito (ADR-09).
+- **`cita` lee esta tabla con SQL (US-07.01), sin importar el módulo:**
+  - el job G1 (`cita/infrastructure/persistence/sql-candidatas-ghosting.ts`) excluye las citas con
+    una petición de otra hora abierta: lee `tipo` (`reagendamiento`), `estado` (`recibida`) y
+    `cita_origen_id`, y se apoya en `uq_solicitud_reagendamiento_recibida`;
+  - el relleno de `citas.origen` (migración `1750000015000`) leyó `cita_id`, `tipo = 'nueva'` y
+    `estado = 'aceptada'`.
+
+  Cambiar esas columnas, sus valores o ese índice obliga a revisar el job G1.
 - **Tres servicios separados.** `SolicitudesService` (anónimo) solo tiene el
   repositorio de solicitudes y tenants: **no** darle `CitasService` ni
   `TransactionRunner`. Todo lo autenticado va en `BandejaSolicitudesService`.
@@ -118,7 +129,7 @@ src/modules/solicitud/
 
 | Hecho | Efecto sobre la de reagendamiento `recibida` de esa cita |
 |---|---|
-| `CitaCancelada`, `CitaAsistida`, `CitaNoAsistida` | `descartada` (`resueltaEn` = ahora) |
+| `CitaCancelada`, `CitaAsistida`, `CitaNoAsistida` (también con `estado = ghosting`: la inasistencia del profesional sobre una `pendiente` o el job G1 de `cita`, US-07.01) | `descartada` (`resueltaEn` = ahora) |
 | `CitaReagendada` con `actor.tipo = 'profesional'` | **atendida** = `aceptada` con `usuarioId` = `actor.id` y `citaId` = la cita |
 | `CitaReagendada` del paciente / sistema / sin actor | nada |
 

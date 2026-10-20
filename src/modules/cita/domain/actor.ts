@@ -7,7 +7,9 @@ import { ActorCambio } from './cambio-cita.entity';
  *  - `profesional`: una ruta autenticada; `usuarioId` es el usuario del token
  *    (puede ser un colega del tenant, no necesariamente el dueño de la cita).
  *  - `paciente`: el portal del paciente; `enlaceId` es el `EnlaceCita` usado.
- *  - `sistema`: un proceso sin persona detrás (el futuro job de cierre, DT-11).
+ *  - `sistema`: un proceso sin persona detrás: el job G1 (US-07.01, DT-11),
+ *    que cierra como `ghosting` las citas `pendiente` que nadie marcó
+ *    (`CitasService.cerrarPorGhostingEnTx`).
  *
  * En la bitácora (`cambios_cita`) se guarda como `actor_tipo` + `actor_id`
  * (referencia polimórfica: usuario, enlace o nulo). En los hechos del outbox

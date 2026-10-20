@@ -9,6 +9,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
 import { AppModule } from '../src/app.module';
+import { CierreGhostingService } from '../src/modules/cita/application/cierre-ghosting.service';
+import {
+  CRON_CIERRE_GHOSTING,
+  PlanificadorCierreCitas,
+} from '../src/modules/cita/infrastructure/planificacion/planificador-cierre-citas';
 import { ReconciliacionRespaldoService } from '../src/modules/recordatorio/application/reconciliacion-respaldo.service';
 import { SuscriptorRecordatorios } from '../src/modules/recordatorio/application/suscriptor-recordatorios';
 import { PlanificadorRecordatorios } from '../src/modules/recordatorio/infrastructure/planificacion/planificador-recordatorios';
@@ -43,6 +48,7 @@ describe('Planificador (e2e)', () => {
     let despachar: jest.SpyInstance;
     let purgar: jest.SpyInstance;
     let respaldo: jest.SpyInstance;
+    let cierreGhosting: jest.SpyInstance;
 
     beforeAll(async () => {
       despachar = jest.spyOn(DespachadorEventosSalida.prototype, 'despachar');
@@ -51,6 +57,8 @@ describe('Planificador (e2e)', () => {
         ReconciliacionRespaldoService.prototype,
         'ejecutar',
       );
+      // US-07.01: el job G1. Con el planificador apagado no se llama nunca.
+      cierreGhosting = jest.spyOn(CierreGhostingService.prototype, 'ejecutar');
 
       const moduleFixture = await Test.createTestingModule({
         imports: [AppModule],
@@ -89,6 +97,19 @@ describe('Planificador (e2e)', () => {
         PlanificadorRecordatorios,
       );
       expect(respaldo).not.toHaveBeenCalled();
+    });
+
+    it('debería tener el job G1 cargado sin registrar citas.cierre_ghosting ni llamar a CierreGhostingService.ejecutar (US-07.01)', () => {
+      const scheduler = app.get(SchedulerRegistry);
+
+      expect(app.get(PlanificadorCierreCitas)).toBeInstanceOf(
+        PlanificadorCierreCitas,
+      );
+      expect(app.get(CierreGhostingService)).toBeInstanceOf(
+        CierreGhostingService,
+      );
+      expect(scheduler.doesExist('cron', CRON_CIERRE_GHOSTING)).toBe(false);
+      expect(cierreGhosting).not.toHaveBeenCalled();
     });
 
     it('debería registrar SuscriptorRecordatorios en el outbox al iniciar', () => {

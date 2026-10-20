@@ -4,7 +4,8 @@ import {
   CitasService,
   ResumenCita,
 } from '../../cita/application/citas.service';
-import { EstadoCita } from '../../cita/domain/cita.entity';
+import { PedidoPor } from '../../cita/domain/cambio-cita.entity';
+import { EstadoCita, OrigenCita } from '../../cita/domain/cita.entity';
 import { TransicionEstadoInvalidaError } from '../../cita/domain/exceptions/transicion-estado-invalida.error';
 import { AvisosCitaDto } from '../../cita/presentation/dto/avisos-cita.dto';
 import { CitaResponseDto } from '../../cita/presentation/dto/cita-response.dto';
@@ -207,12 +208,18 @@ describe('BandejaSolicitudesService', () => {
       mockEventos.publicar.mock.calls as unknown as [EventoDominio, unknown][]
     )[0][1];
 
-  const primerAgendar = (): [CrearCitaDto, AuthenticatedUser, unknown] =>
+  const primerAgendar = (): [
+    CrearCitaDto,
+    AuthenticatedUser,
+    unknown,
+    OrigenCita,
+  ] =>
     (
       mockCitasService.agendar.mock.calls as unknown as [
         CrearCitaDto,
         AuthenticatedUser,
         unknown,
+        OrigenCita,
       ][]
     )[0];
 
@@ -442,9 +449,11 @@ describe('BandejaSolicitudesService', () => {
 
       // Assert
       expect(mockCitasService.agendar).toHaveBeenCalledTimes(1);
-      const [, usuarioAgendar, tx] = primerAgendar();
+      const [, usuarioAgendar, tx, origen] = primerAgendar();
       expect(usuarioAgendar).toBe(usuario);
       expect(tx).toBe('tx');
+      // US-07.01 (H4): la cita nace de la solicitud pública.
+      expect(origen).toBe(OrigenCita.SOLICITUD_PUBLICA);
     });
 
     it('debería propagar a agendar la hora del profesional y los datos que escribió el paciente', async () => {
@@ -687,6 +696,8 @@ describe('BandejaSolicitudesService', () => {
         soloInicio.inicio,
         usuario,
         'tx',
+        // US-07.01 (H3): lo pidió el paciente desde su enlace.
+        PedidoPor.PACIENTE,
       );
       expect(mockCitasService.agendar).not.toHaveBeenCalled();
     });
@@ -701,6 +712,7 @@ describe('BandejaSolicitudesService', () => {
         dto.inicio,
         usuario,
         'tx',
+        PedidoPor.PACIENTE,
       );
       expect(mockCitasService.agendar).not.toHaveBeenCalled();
     });
