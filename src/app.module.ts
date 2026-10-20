@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config'; //Realiza la lectu
 import { TypeOrmModule } from '@nestjs/typeorm'; //Integra el orm para conexion con la base de datos
 
 import { AuthModule } from './modules/auth/auth.module';
+import { CitaPlanificacionModule } from './modules/cita/cita-planificacion.module';
 import { CitaModule } from './modules/cita/cita.module';
 import { PacienteModule } from './modules/paciente/paciente.module';
 import { PortalPacienteModule } from './modules/portal-paciente/portal-paciente.module';
@@ -70,6 +71,10 @@ import { PlanificacionModule } from './shared/planificacion.module';
     //Jobs de recordatorios (envio, reconciliacion de respaldo y tasa de
     //fallo). Mismo criterio que PlanificacionModule.
     RecordatorioPlanificacionModule,
+    //Job G1 de cierre de citas (US-07.01): cierra como ghosting las citas
+    //pendiente que nadie marco. Mismo criterio que PlanificacionModule; ademas
+    //CIERRE_GHOSTING_ACTIVO=false (default) solo cuenta y no escribe nada.
+    CitaPlanificacionModule,
   ],
 })
 export class AppModule {}

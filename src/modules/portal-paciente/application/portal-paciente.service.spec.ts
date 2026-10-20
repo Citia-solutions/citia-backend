@@ -14,7 +14,7 @@ import { CitasService } from '../../cita/application/citas.service';
 import { EnlaceCitaNoValidoError } from '../../cita/application/enlace-cita-no-valido.error';
 import { EnlacesCitaService } from '../../cita/application/enlaces-cita.service';
 import { ActorCambio, TipoCambio } from '../../cita/domain/cambio-cita.entity';
-import { Cita, EstadoCita } from '../../cita/domain/cita.entity';
+import { Cita, EstadoCita, OrigenCita } from '../../cita/domain/cita.entity';
 import { PacientesService } from '../../paciente/application/pacientes.service';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import { SolicitudesOtraHoraService } from '../../solicitud/application/solicitudes-otra-hora.service';
@@ -87,6 +87,7 @@ describe('PortalPacienteService', () => {
       tenantId: props.tenantId ?? tenantId,
       pacienteId: props.pacienteId ?? pacienteId,
       usuarioId: duenio,
+      origen: OrigenCita.MANUAL,
       creadoEn: new Date('2026-10-01T00:00:00Z'),
       actualizadoEn: new Date('2026-10-01T00:00:00Z'),
     });
@@ -281,6 +282,58 @@ describe('PortalPacienteService', () => {
       expect(vista.estado).toBe(EstadoCita.CONFIRMADA);
       expect(vista.accionesPermitidas).toEqual(['cancelar', 'pedirOtraHora']);
     });
+
+    describe('primera apertura (US-07.01, H5)', () => {
+      const aperturaDe = (c: Cita): Date | null =>
+        [...enlaces.enlaces.values()].find(
+          (e) => e.citaId === c.id && e.estaActivo(),
+        )!.primeraAperturaEn;
+
+      it('el primer GET válido la anota con el reloj del portal, en el tx, y los siguientes no la cambian', async () => {
+        // Arrange
+        const espia = jest.spyOn(enlacesService, 'registrarPrimeraApertura');
+        expect(aperturaDe(cita)).toBeNull();
+
+        // Act
+        await portal.ver(token);
+        const primera = aperturaDe(cita);
+        ahora = new Date(ANTES.getTime() + 60_000);
+        await portal.ver(token);
+
+        // Assert
+        expect(primera).toEqual(ANTES);
+        expect(aperturaDe(cita)).toEqual(ANTES);
+        expect(espia).toHaveBeenCalledTimes(2);
+        expect(espia.mock.calls[0][1]).toEqual(ANTES);
+        expect(espia.mock.calls[1][2]).toBe(transacciones.ultimoContexto);
+      });
+
+      it('la anota DESPUÉS de bloquear la cita (orden de bloqueo: la cita primero)', async () => {
+        // Arrange
+        const bloqueo = jest.spyOn(citas, 'buscarPorIdParaActualizar');
+        const apertura = jest.spyOn(enlaces, 'registrarPrimeraApertura');
+
+        // Act
+        await portal.ver(token);
+
+        // Assert
+        expect(bloqueo.mock.invocationCallOrder[0]).toBeLessThan(
+          apertura.mock.invocationCallOrder[0],
+        );
+      });
+
+      it('las acciones POST no la anotan', async () => {
+        // Arrange
+        const espia = jest.spyOn(enlacesService, 'registrarPrimeraApertura');
+
+        // Act
+        await portal.pedirOtraHora(token, { preferencia: 'martes' });
+        await portal.cancelar(token, undefined);
+
+        // Assert
+        expect(espia).not.toHaveBeenCalled();
+      });
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -361,6 +414,26 @@ describe('PortalPacienteService', () => {
         expect(nombres.leer).not.toHaveBeenCalled();
       });
     });
+
+    it.each(casos)(
+      'ver con un enlace %s no anota la primera apertura (US-07.01)',
+      async (_caso, preparar) => {
+        // Arrange
+        await preparar();
+        const espia = jest.spyOn(enlaces, 'registrarPrimeraApertura');
+
+        // Act & Assert
+        await expect(portal.ver(tokenUsado)).rejects.toBeInstanceOf(
+          EnlaceCitaNoValidoError,
+        );
+        expect(espia).not.toHaveBeenCalled();
+        expect(
+          [...enlaces.enlaces.values()].every(
+            (e) => e.primeraAperturaEn === null,
+          ),
+        ).toBe(true);
+      },
+    );
 
     it('no debería consultar la base con un token mal formado', async () => {
       // Arrange

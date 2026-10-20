@@ -25,7 +25,7 @@ import {
 } from '../../../../test/support/recordatorios-en-memoria';
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { EnlacesCitaService } from '../../cita/application/enlaces-cita.service';
-import { Cita, EstadoCita } from '../../cita/domain/cita.entity';
+import { Cita, EstadoCita, OrigenCita } from '../../cita/domain/cita.entity';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import { calcularHashCorreo } from '../domain/hash-correo';
 import { CitaLeida } from '../domain/lector-citas';
@@ -451,6 +451,7 @@ describe('EnviarRecordatoriosService', () => {
         tenantId,
         pacienteId: cita.pacienteId,
         usuarioId: dueno,
+        origen: OrigenCita.MANUAL,
         creadoEn: d('2026-10-01T00:00:00Z'),
         actualizadoEn: d('2026-10-01T00:00:00Z'),
       });

@@ -38,7 +38,7 @@ que corta el guard antes del interceptor y no lleva datos) y límite
 
 | Método | Ruta | Cuerpo | Éxito | Errores |
 |---|---|---|---|---|
-| GET | `/publico/cita` | — | 200 `VistaCitaPacienteDto` | 404 |
+| GET | `/publico/cita` | — | 200 `VistaCitaPacienteDto` (además anota la primera apertura, US-07.01) | 404 |
 | POST | `/publico/cita/confirmar` | — | 200 | 404 / 409 |
 | POST | `/publico/cita/cancelar` | `{ motivo?: string ≤ 300 }` | 200 | 400 / 404 / 409 |
 | POST | `/publico/cita/otra-hora` | `{ preferencia: string 1..300, motivo?: string ≤ 300 }` (recortados) | 201 | 400 / 404 / 409 |
@@ -82,16 +82,23 @@ VistaCitaPacienteDto = {
   3. la petición de otra hora abierta, **sin bloqueo** (`SolicitudesOtraHoraService.abierta`);
   4. `accionesPermitidasPaciente` → 409 si la acción no está;
   5. la acción (`CitasService.confirmarComoPaciente` / `cancelarComoPaciente`,
-     `SolicitudesOtraHoraService.pedir`) y la vista.
+     `SolicitudesOtraHoraService.pedir`) o, en el GET, la primera apertura
+     (`EnlacesCitaService.registrarPrimeraApertura`, que toma el enlace DESPUÉS de la cita), y la vista.
 - **No descartar la petición al cancelar** dentro del tx: bloquearla después de la cita
   invertiría el orden de la bandeja (solicitud → cita). La descarta
   `SuscriptorSolicitudes` al recibir `CitaCancelada` (segundos después, DT-33).
-- **Abrir la página nunca ejecuta una acción** (S3): el GET solo lee.
+- **Abrir la página nunca ejecuta una acción** (S3): el GET no cambia la cita ni su
+  bitácora y no publica hechos. **Solo anota la primera apertura del enlace** (US-07.01, H5):
+  `enlaces_cita.primera_apertura_en`, escrita una sola vez, solo con un enlace válido (después de
+  `resolver` y de la validez, antes de armar la vista) y solo en el GET (los POST no la tocan). Con un
+  enlace no válido se lanza el 404 antes y no se escribe nada: el 404 uniforme no cambia. La vista
+  no suma campos ni cabeceras. Si el `UPDATE` falla, 500 genérico (solo con un token válido).
 - **Nunca registrar el token ni su hash** (ni en logs ni en errores). La cabecera la
   redacta pino (`shared/infrastructure/observabilidad`).
-- `accionesPermitidasPaciente` toma las guardas de estado de `Cita.accionesPermitidas()`
-  (única fuente del grafo) y suma: nada si `ahora ≥ inicio`; sin `confirmar` ni
-  `pedirOtraHora` con una petición abierta (R6).
+- `accionesPermitidasPaciente` toma las guardas de estado de `Cita.accionesPermitidas(ahora)`
+  (única fuente del grafo; desde US-07.01 recibe el mismo `ahora` del portal) y suma: nada si
+  `ahora ≥ inicio`; sin `confirmar` ni `pedirOtraHora` con una petición abierta (R6). Lo que del
+  grafo depende del reloj (asistencia e inasistencia, desde el inicio) el portal no lo usa.
 
 ## Dependencias permitidas
 
@@ -107,7 +114,8 @@ VistaCitaPacienteDto = {
 - Unitarios: `domain/acciones-paciente.spec.ts`, `application/portal-paciente.service.spec.ts`
   (casos de uso REALES de `cita` y `solicitud` sobre los dobles en memoria: 404 de seis
   formas en las cuatro acciones, 409, nada después de inicio, abrir no ejecuta nada,
-  aislamiento), `presentation/portal-paciente.controller.spec.ts` (metadatos, cuerpos
+  primera apertura —una vez, con el reloj del portal, después del bloqueo de la cita, nunca con
+  un enlace no válido ni en los POST—, aislamiento), `presentation/portal-paciente.controller.spec.ts` (metadatos, cuerpos
   fijos, DTOs), `infrastructure/persistence/sql-lector-nombres-cita.spec.ts`.
 - Integración con Postgres: `integration/portal-paciente-concurrencia.integration.spec.ts`
   (transacciones abiertas en conexiones distintas: el paciente cancela mientras el

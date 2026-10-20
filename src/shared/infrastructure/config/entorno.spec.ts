@@ -53,6 +53,7 @@ describe('validarEntorno', () => {
         LOG_NIVEL: 'info',
         LOG_FORMATO: 'pretty',
         PLANIFICADOR_ACTIVO: true,
+        CIERRE_GHOSTING_ACTIVO: false,
         EVENTOS_SALIDA_INTERVALO_SEG: 5,
         EVENTOS_SALIDA_LOTE: 50,
         EVENTOS_SALIDA_MAX_INTENTOS: 10,
@@ -446,6 +447,44 @@ describe('validarEntorno', () => {
 
     it('el límite de tasa está encendido por defecto', () => {
       expect(validarEntorno(PRODUCCION).LIMITE_TASA_ACTIVO).toBe(true);
+    });
+
+    it('CIERRE_GHOSTING_ACTIVO no es obligatoria: ausente, la app arranca con el job G1 apagado (US-07.01)', () => {
+      expect(validarEntorno(PRODUCCION).CIERRE_GHOSTING_ACTIVO).toBe(false);
+      expect(
+        validarEntorno({ ...PRODUCCION, CIERRE_GHOSTING_ACTIVO: '' })
+          .CIERRE_GHOSTING_ACTIVO,
+      ).toBe(false);
+    });
+  });
+
+  describe('CIERRE_GHOSTING_ACTIVO (job G1, US-07.01)', () => {
+    it.each(['development', 'test'])('en %s, apagado por defecto', (env) => {
+      expect(
+        validarEntorno({ NODE_ENV: env, JWT_SECRET: 'dev' })
+          .CIERRE_GHOSTING_ACTIVO,
+      ).toBe(false);
+    });
+
+    it.each<[string, boolean]>([
+      ['true', true],
+      ['TRUE', true],
+      ['1', true],
+      ['false', false],
+      ['0', false],
+    ])('"%s" → %s', (valor, esperado) => {
+      expect(
+        validarEntorno({ JWT_SECRET: 'dev', CIERRE_GHOSTING_ACTIVO: valor })
+          .CIERRE_GHOSTING_ACTIVO,
+      ).toBe(esperado);
+    });
+
+    it('un valor inválido detiene el arranque con el mensaje de siempre', () => {
+      expect(
+        erroresDe({ JWT_SECRET: 'dev', CIERRE_GHOSTING_ACTIVO: 'si' }),
+      ).toEqual([
+        'CIERRE_GHOSTING_ACTIVO: debe ser true o false (recibido "si").',
+      ]);
     });
   });
 });

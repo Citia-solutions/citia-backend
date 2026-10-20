@@ -61,4 +61,21 @@ export abstract class EnlaceCitaRepository {
     enlace: EnlaceCita,
     tx: TransactionContext,
   ): Promise<EnlaceCita>;
+
+  /**
+   * Anota la PRIMERA apertura del enlace por el paciente (US-07.01, H5):
+   * `primera_apertura_en = ahora` solo si todavía no tenía una. Devuelve `true`
+   * si escribió y `false` si ya estaba anotada o el enlace no existe: abrirlo
+   * otra vez no cambia nada.
+   *
+   * Solo toca `primera_apertura_en` (nunca la revocación, la versión ni el
+   * hash). Se llama con la cita YA bloqueada (`resolver`): el `UPDATE` toma
+   * después la fila del enlace, en el orden de siempre (la cita primero). Dos
+   * aperturas a la vez: la segunda espera, reevalúa la condición y no escribe.
+   */
+  abstract registrarPrimeraApertura(
+    enlaceId: string,
+    ahora: Date,
+    tx: TransactionContext,
+  ): Promise<boolean>;
 }

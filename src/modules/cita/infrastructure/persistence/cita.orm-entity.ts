@@ -12,10 +12,18 @@ import {
 import { PacienteOrmEntity } from '../../../paciente/infrastructure/persistence/paciente.orm-entity';
 import { TenantOrmEntity } from '../../../tenant/infrastructure/persistence/tenant.orm-entity';
 import { UsuarioOrmEntity } from '../../../usuario/infrastructure/persistence/usuario.orm-entity';
-import { EstadoCita } from '../../domain/cita.entity';
+import { EstadoCita, OrigenCita } from '../../domain/cita.entity';
 
+// Esquema real: migraciones 1750000003000, 1750000015000 (`origen`) y
+// 1750000018000 (índice del job G1). Columnas, enums e índices se declaran
+// también aquí para que el esquema de `synchronize` (tests) quede igual.
 @Entity('citas')
 @Index('idx_cita_tenant_usuario_inicio', ['tenantId', 'usuarioId', 'inicio'])
+// US-07.01: el job G1 barre todos los tenants buscando citas `pendiente` por
+// rango de `inicio`. Su consulta escribe el predicado igual que el índice.
+@Index('idx_cita_pendiente_inicio', ['inicio'], {
+  where: `"estado" = '${EstadoCita.PENDIENTE}'`,
+})
 export class CitaOrmEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -35,6 +43,15 @@ export class CitaOrmEntity {
     default: EstadoCita.PENDIENTE,
   })
   estado: EstadoCita;
+
+  // US-07.01 (H4): de dónde salió. Lo fija el código al crear; el DEFAULT
+  // cubre la ventana del despliegue, los INSERT a mano de los tests y el seed.
+  @Column({
+    type: 'enum',
+    enum: OrigenCita,
+    default: OrigenCita.MANUAL,
+  })
+  origen: OrigenCita;
 
   @Column({ name: 'tenant_id', nullable: false })
   tenantId: string;

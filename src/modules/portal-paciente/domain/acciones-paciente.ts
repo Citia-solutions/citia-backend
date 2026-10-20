@@ -3,7 +3,7 @@ import { Cita } from '../../cita/domain/cita.entity';
 /**
  * Lo que el PACIENTE puede hacer desde el enlace de su cita (contrato de la
  * Fase 3 §3.4). Vocabulario propio del portal, distinto del de
- * `Cita.accionesPermitidas()` (que es el del profesional).
+ * `Cita.accionesPermitidas(ahora)` (que es el del profesional).
  */
 export type AccionPaciente = 'confirmar' | 'cancelar' | 'pedirOtraHora';
 
@@ -27,9 +27,11 @@ export const ACCIONES_PACIENTE: readonly AccionPaciente[] = [
  *  - `pedirOtraHora`: la cita se puede reagendar (vigente) y no hay ya una
  *    petición abierta (R5, R6).
  *
- * Las guardas de estado salen de `Cita.accionesPermitidas()`, la ÚNICA fuente
- * del grafo (ADR-04 §1): aquí solo se suman las reglas del paciente (la
- * petición abierta y el `inicio`).
+ * Las guardas de estado salen de `Cita.accionesPermitidas(ahora)`, la ÚNICA
+ * fuente del grafo (ADR-04 §1): aquí solo se suman las reglas del paciente (la
+ * petición abierta y el `inicio`). Se le pasa el mismo `ahora` (US-07.01): lo
+ * que depende del reloj en el grafo (asistencia e inasistencia, desde el
+ * inicio) no lo usa el portal, que además no ofrece nada desde el inicio.
  */
 export function accionesPermitidasPaciente(
   cita: Pick<Cita, 'inicio' | 'accionesPermitidas'>,
@@ -38,7 +40,7 @@ export function accionesPermitidasPaciente(
 ): AccionPaciente[] {
   if (!(ahora.getTime() < cita.inicio.getTime())) return [];
 
-  const delGrafo = cita.accionesPermitidas();
+  const delGrafo = cita.accionesPermitidas(ahora);
   const permitidas = new Set<AccionPaciente>();
 
   if (delGrafo.includes('confirmar') && !haySolicitudOtraHoraAbierta) {

@@ -1,4 +1,4 @@
-import { Cita, EstadoCita } from './cita.entity';
+import { Cita, EstadoCita, OrigenCita } from './cita.entity';
 import {
   EnlaceCita,
   MotivoRevocacionEnlace,
@@ -25,6 +25,7 @@ describe('EnlaceCita (dominio)', () => {
       revocadoEn: null,
       motivoRevocacion: null,
       revocadoPor: null,
+      primeraAperturaEn: null,
       ...extra,
     });
 
@@ -41,6 +42,7 @@ describe('EnlaceCita (dominio)', () => {
       tenantId: extra.tenantId ?? TENANT_ID,
       pacienteId: 'paciente-1',
       usuarioId: 'usuario-1',
+      origen: OrigenCita.MANUAL,
       creadoEn: new Date('2026-10-01T00:00:00.000Z'),
       actualizadoEn: new Date('2026-10-01T00:00:00.000Z'),
     });
@@ -85,6 +87,8 @@ describe('EnlaceCita (dominio)', () => {
         revocadoEn: null,
         motivoRevocacion: null,
         revocadoPor: null,
+        // US-07.01: un enlace nuevo empieza sin apertura.
+        primeraAperturaEn: null,
       });
     });
 
@@ -144,6 +148,20 @@ describe('EnlaceCita (dominio)', () => {
       // `revocadoEn` es solo lectura: la única forma de moverlo es invalidar.
       expect(
         Object.getOwnPropertyDescriptor(persistido(), 'revocadoEn'),
+      ).toBeUndefined();
+    });
+
+    it('debería repoblar la primera apertura, de solo lectura (US-07.01)', () => {
+      // Arrange
+      const apertura = new Date('2026-10-19T15:00:00.000Z');
+
+      // Act
+      const enlace = persistido({ primeraAperturaEn: apertura });
+
+      // Assert — solo la escribe el repositorio (`registrarPrimeraApertura`).
+      expect(enlace.primeraAperturaEn).toEqual(apertura);
+      expect(
+        Object.getOwnPropertyDescriptor(enlace, 'primeraAperturaEn'),
       ).toBeUndefined();
     });
   });

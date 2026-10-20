@@ -10,7 +10,12 @@ import { JwtAuthGuard } from '../src/modules/auth/jwt-auth.guard';
 import { JwtPayload } from '../src/modules/auth/jwt-payload.interface';
 import { JwtStrategy } from '../src/modules/auth/jwt.strategy';
 import { CitasService } from '../src/modules/cita/application/citas.service';
-import { Cita, EstadoCita } from '../src/modules/cita/domain/cita.entity';
+import { PedidoPor } from '../src/modules/cita/domain/cambio-cita.entity';
+import {
+  Cita,
+  EstadoCita,
+  OrigenCita,
+} from '../src/modules/cita/domain/cita.entity';
 import { PacientesService } from '../src/modules/paciente/application/pacientes.service';
 import { BandejaSolicitudesService } from '../src/modules/solicitud/application/bandeja-solicitudes.service';
 import {
@@ -600,6 +605,23 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
       expect(cita?.estado).toBe(EstadoCita.PENDIENTE);
     });
 
+    it('debería crear la cita con origen solicitud_publica (US-07.01, H4), sin exponerlo en la respuesta', async () => {
+      // Act
+      const res = await aceptar(SOL_A, tokenA).expect(201);
+
+      // Assert — persistido…
+      const body = res.body as AceptadaBody;
+      const cita = citaRepo.citas.get(body.cita.id);
+      expect(cita?.origen).toBe(OrigenCita.SOLICITUD_PUBLICA);
+      // …y no expuesto (H11)
+      expect(body.cita).not.toHaveProperty('origen');
+      expect(res.text).not.toContain('solicitud_publica');
+      // La bitácora del alta no lleva "quién lo pidió" (solo cancelar/reagendar)
+      expect(cambioRepo.cambios.map((c) => [c.tipo, c.pedidoPor])).toEqual([
+        ['creada', null],
+      ]);
+    });
+
     it('debería hacerlo todo en UNA transacción, cargando con bloqueo', async () => {
       // Act
       await aceptar(SOL_A, tokenA).expect(201);
@@ -681,6 +703,7 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
           tenantId: TENANT_A,
           pacienteId: PACIENTE_CONOCIDO,
           usuarioId: USUARIO_A,
+          origen: OrigenCita.MANUAL,
           creadoEn: new Date('2026-09-01T00:00:00Z'),
           actualizadoEn: new Date('2026-09-01T00:00:00Z'),
         }),
@@ -932,6 +955,7 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
           tenantId: TENANT_A,
           pacienteId: PACIENTE_ORIGEN,
           usuarioId: USUARIO_A,
+          origen: OrigenCita.MANUAL,
           creadoEn: new Date('2026-09-01T00:00:00Z'),
           actualizadoEn: new Date('2026-09-01T00:00:00Z'),
         }),
@@ -1065,6 +1089,26 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
         actor: { tipo: 'profesional', id: COLEGA_A },
       });
       expect(tx.abiertas).toBe(1);
+    });
+
+    it('aceptar deja pedido_por = paciente en la bitácora (US-07.01, H3) y conserva el origen de la cita movida', async () => {
+      // Act
+      await aceptar(SOL_REAGENDA, tokenColegaA, {
+        inicio: '2026-09-22T16:00:00-03:00',
+      }).expect(201);
+
+      // Assert — la hizo el profesional, la pidió el paciente
+      expect(cambioRepo.cambios).toHaveLength(1);
+      expect(cambioRepo.cambios[0]).toMatchObject({
+        tipo: 'reagendada',
+        actorTipo: 'profesional',
+        actorId: COLEGA_A,
+        pedidoPor: PedidoPor.PACIENTE,
+      });
+      // Reagendar no es un origen: la cita sigue siendo manual
+      expect(citaRepo.citas.get(CITA_ORIGEN)?.origen).toBe(OrigenCita.MANUAL);
+      // Y no viaja en el hecho
+      expect(eventos.eventos[0].payload).not.toHaveProperty('pedidoPor');
     });
 
     it('aceptar con la cita de origen ya terminal → 409, sin resolver la solicitud', async () => {

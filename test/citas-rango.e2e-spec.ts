@@ -11,7 +11,11 @@ import { JwtPayload } from '../src/modules/auth/jwt-payload.interface';
 import { JwtStrategy } from '../src/modules/auth/jwt.strategy';
 import { CitasService } from '../src/modules/cita/application/citas.service';
 import { EnlacesCitaService } from '../src/modules/cita/application/enlaces-cita.service';
-import { Cita, EstadoCita } from '../src/modules/cita/domain/cita.entity';
+import {
+  Cita,
+  EstadoCita,
+  OrigenCita,
+} from '../src/modules/cita/domain/cita.entity';
 import { CitasController } from '../src/modules/cita/presentation/citas.controller';
 import { PacientesService } from '../src/modules/paciente/application/pacientes.service';
 import { RolUsuario } from '../src/modules/usuario/domain/usuario.entity';
@@ -125,6 +129,7 @@ describe('Agenda por rango y avisos de solapamiento (e2e sin BD)', () => {
       tenantId: props.tenantId ?? TENANT_A,
       pacienteId: props.pacienteId ?? PACIENTE_A1,
       usuarioId: props.usuarioId ?? USUARIO_A,
+      origen: OrigenCita.MANUAL,
       creadoEn: new Date(props.creadoEn ?? '2026-09-01T00:00:00Z'),
       actualizadoEn: new Date('2026-09-01T00:00:00Z'),
     });

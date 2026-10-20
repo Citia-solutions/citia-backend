@@ -14,6 +14,7 @@ import { EnlacesCitaService } from '../../cita/application/enlaces-cita.service'
 import { CitaModule } from '../../cita/cita.module';
 import { CitaRepository } from '../../cita/domain/cita.repository';
 import { EnlaceCitaRepository } from '../../cita/domain/enlace-cita.repository';
+import { PedidoPor } from '../../cita/domain/cambio-cita.entity';
 import { TransicionEstadoInvalidaError } from '../../cita/domain/exceptions/transicion-estado-invalida.error';
 import { BandejaSolicitudesService } from '../../solicitud/application/bandeja-solicitudes.service';
 import { SolicitudModule } from '../../solicitud/solicitud.module';
@@ -342,6 +343,7 @@ describe('Portal del paciente: concurrencia contra PostgreSQL (integration)', ()
         nuevoInicio,
         profesional,
         delProfesional.manager,
+        PedidoPor.PACIENTE,
       );
 
       // Act — el paciente cancela por el portal (otra conexión)
@@ -550,6 +552,7 @@ describe('Portal del paciente: concurrencia contra PostgreSQL (integration)', ()
         enDias(8),
         profesional,
         delProfesional.manager,
+        PedidoPor.PACIENTE,
       );
       const envio = await abrirTx();
       // Si tuviera que esperar el candado, fallaría con 55P03 en vez de colgarse.
@@ -585,6 +588,7 @@ describe('Portal del paciente: concurrencia contra PostgreSQL (integration)', ()
         nuevoInicio,
         profesional,
         delProfesional.manager,
+        PedidoPor.PACIENTE,
       );
       await delProfesional.commitTransaction();
 
@@ -612,6 +616,138 @@ describe('Portal del paciente: concurrencia contra PostgreSQL (integration)', ()
           enlaces.asegurarActivo(citaId, profesional.tenantId, envio.manager),
         ),
       ).toBe('55P03');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // US-07.01 (H5): el GET anota la primera apertura del enlace. Toma la fila
+  // del enlace DESPUÉS de la cita (que `resolver` ya bloqueó), así que
+  // respeta "la cita primero, después su enlace" y no se interbloquea.
+  describe('primera apertura del enlace (US-07.01)', () => {
+    const aperturaDe = async (citaId: string): Promise<Date | null> => {
+      const [fila] = await datos.query<{ apertura: Date | null }[]>(
+        `SELECT primera_apertura_en AS apertura FROM enlaces_cita
+          WHERE cita_id = $1 AND revocado_en IS NULL`,
+        [citaId],
+      );
+      return fila.apertura;
+    };
+
+    it('el GET del paciente mientras el profesional reagenda la misma cita: espera el bloqueo, ve la hora NUEVA y anota la apertura; sin interbloqueo', async () => {
+      // Arrange — el profesional mueve la cita y no confirma todavía
+      const citaId = await crearCita();
+      const token = await emitirToken(citaId);
+      const nuevoInicio = enDias(6);
+      const delProfesional = await abrirTx();
+      await citas.reagendarEnTx(
+        citaId,
+        nuevoInicio,
+        profesional,
+        delProfesional.manager,
+        PedidoPor.PROFESIONAL,
+      );
+
+      // Act — el paciente abre su página (otra conexión)
+      const abre = observar(portal.ver(token));
+      await esperarBloqueo();
+      expect(abre.terminada()).toBe(false);
+      await delProfesional.commitTransaction();
+
+      // Assert
+      expect(await abre.promesa).toMatchObject({
+        inicio: nuevoInicio.toISOString(),
+        estado: 'pendiente',
+      });
+      expect(await aperturaDe(citaId)).toBeInstanceOf(Date);
+      // Abrir no escribió en la bitácora ni publicó nada
+      expect((await bitacoraDe(citaId)).map((c) => c.tipo)).toEqual([
+        'creada',
+        'reagendada',
+      ]);
+      expect(await hechosDe(citaId)).toEqual(['CitaCreada', 'CitaReagendada']);
+    });
+
+    it('al revés: con el GET a medio camino (cita bloqueada y apertura anotada, tx abierta), el reagendamiento espera y termina; la apertura queda', async () => {
+      // Arrange — los pasos del GET, en una transacción abierta
+      const citaId = await crearCita();
+      const token = await emitirToken(citaId);
+      const abierta = new Date(Math.floor(Date.now() / 1000) * 1000);
+      const delPaciente = await abrirTx();
+      const resuelto = await enlaces.resolver(token, delPaciente.manager);
+      expect(resuelto).not.toBeNull();
+      await enlaces.registrarPrimeraApertura(
+        resuelto!.enlace,
+        abierta,
+        delPaciente.manager,
+      );
+
+      // Act — el profesional reagenda desde el voucher (otra conexión)
+      const nuevoInicio = enDias(7);
+      const reagenda = observar(
+        citas.reagendar(
+          citaId,
+          { inicio: nuevoInicio.toISOString() },
+          profesional,
+        ),
+      );
+      await esperarBloqueo();
+      expect(reagenda.terminada()).toBe(false);
+      await delPaciente.commitTransaction();
+
+      // Assert
+      await expect(reagenda.promesa).resolves.toMatchObject({
+        estado: 'pendiente',
+      });
+      expect((await leerCita(citaId)).inicio).toEqual(nuevoInicio);
+      expect(await aperturaDe(citaId)).toEqual(abierta);
+    });
+
+    it('dos GET a la vez: el segundo espera al primero y no cambia su apertura (una sola primera_apertura_en)', async () => {
+      // Arrange — el primer GET, a medio camino (tx abierta)
+      const citaId = await crearCita();
+      const token = await emitirToken(citaId);
+      const primera = new Date(Math.floor(Date.now() / 1000) * 1000 - 5_000);
+      const primerGet = await abrirTx();
+      const resuelto = await enlaces.resolver(token, primerGet.manager);
+      await enlaces.registrarPrimeraApertura(
+        resuelto!.enlace,
+        primera,
+        primerGet.manager,
+      );
+
+      // Act — el segundo GET, por el camino de siempre
+      const segundoGet = observar(portal.ver(token));
+      await esperarBloqueo();
+      expect(segundoGet.terminada()).toBe(false);
+      await primerGet.commitTransaction();
+
+      // Assert — la vista sale igual y la apertura es la del primero
+      await expect(segundoGet.promesa).resolves.toMatchObject({
+        estado: 'pendiente',
+      });
+      expect(await aperturaDe(citaId)).toEqual(primera);
+    });
+
+    it('cinco GET en paralelo sin coordinar → cinco vistas iguales y una sola apertura; ni bitácora ni hechos nuevos', async () => {
+      // Arrange
+      const citaId = await crearCita();
+      const token = await emitirToken(citaId);
+      const antesDeAbrir = Date.now();
+
+      // Act
+      const vistas = await Promise.all(
+        Array.from({ length: 5 }, () => portal.ver(token)),
+      );
+
+      // Assert
+      expect(new Set(vistas.map((v) => JSON.stringify(v))).size).toBe(1);
+      const apertura = await aperturaDe(citaId);
+      expect(apertura).toBeInstanceOf(Date);
+      expect(apertura!.getTime()).toBeGreaterThanOrEqual(antesDeAbrir - 1_000);
+      // Una sola fila de enlace (la apertura no emite otro)
+      expect(await enlacesDe(citaId)).toHaveLength(1);
+      expect((await bitacoraDe(citaId)).map((c) => c.tipo)).toEqual(['creada']);
+      expect(await hechosDe(citaId)).toEqual(['CitaCreada']);
     });
   });
 });

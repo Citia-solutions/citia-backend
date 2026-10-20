@@ -36,8 +36,9 @@ export type AvisarEnlaceReemitido = (aviso: AvisoEnlaceReemitido) => void;
  * Enlace del paciente a su cita (Fase 3; ADR-10 §1, contrato §3.1).
  *
  * Exportado por `CitaModule`: lo usan `recordatorio` (`asegurarActivo`, en la
- * transacción del envío) y `portal-paciente` (`resolver`, en la transacción
- * de la acción). La ruta de invalidar vive en `CitasController`.
+ * transacción del envío) y `portal-paciente` (`resolver` y, en el GET,
+ * `registrarPrimeraApertura`, en la transacción de la petición). La ruta de
+ * invalidar vive en `CitasController`.
  *
  * **Orden de bloqueo: siempre la CITA primero** (`buscarPorIdParaActualizar`)
  * y después su enlace. Así una acción del paciente, una invalidación y una
@@ -138,6 +139,31 @@ export class EnlacesCitaService {
     }
 
     return { enlace, cita };
+  }
+
+  /**
+   * Anota la PRIMERA apertura del enlace por el paciente (US-07.01, H5).
+   * Corre DENTRO del `tx` del portal, con `enlace` recién devuelto por
+   * `resolver` (válido y con su cita YA bloqueada): el `UPDATE` toma la fila
+   * del enlace después de la cita, en el orden de bloqueo del módulo.
+   *
+   * Escribe solo la primera vez (`… WHERE primera_apertura_en IS NULL`); abrir
+   * otra vez no cambia nada. No cambia la cita, no escribe en la bitácora ni
+   * publica hechos, y no deja nada en el log (ni el resultado ni el token).
+   * Si la escritura falla, el error sube y revierte la transacción.
+   */
+  async registrarPrimeraApertura(
+    enlace: EnlaceCita,
+    ahora: Date,
+    tx: TransactionContext,
+  ): Promise<void> {
+    if (enlace.id === undefined) {
+      // Un enlace sin id no salió de `resolver`: error de programación.
+      throw new Error(
+        'EnlacesCitaService.registrarPrimeraApertura: el enlace no está persistido',
+      );
+    }
+    await this.enlaces.registrarPrimeraApertura(enlace.id, ahora, tx);
   }
 
   /**

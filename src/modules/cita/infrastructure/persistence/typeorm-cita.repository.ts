@@ -17,6 +17,70 @@ import { Cita, EstadoCita } from '../../domain/cita.entity';
 import { CitaRepository } from '../../domain/cita.repository';
 import { CitaOrmEntity } from './cita.orm-entity';
 
+/** Las columnas de `citas` que hacen falta para reconstituir una `Cita`. */
+export type FilaCita = Pick<
+  CitaOrmEntity,
+  | 'id'
+  | 'inicio'
+  | 'duracionMin'
+  | 'tipoConsulta'
+  | 'estado'
+  | 'origen'
+  | 'tenantId'
+  | 'pacienteId'
+  | 'usuarioId'
+  | 'creadoEn'
+  | 'actualizadoEn'
+>;
+
+// Propiedad de `FilaCita` → columna de `citas`. El `Record` obliga a nombrar
+// cada propiedad: una columna nueva en `FilaCita` no compila sin su entrada.
+const COLUMNAS_CITA: Readonly<Record<keyof FilaCita, string>> = {
+  id: 'id',
+  inicio: 'inicio',
+  duracionMin: 'duracion_min',
+  tipoConsulta: 'tipo_consulta',
+  estado: 'estado',
+  origen: 'origen',
+  tenantId: 'tenant_id',
+  pacienteId: 'paciente_id',
+  usuarioId: 'usuario_id',
+  creadoEn: 'creado_en',
+  actualizadoEn: 'actualizado_en',
+};
+
+/**
+ * Lista de `SELECT` de una `FilaCita` para el SQL escrito a mano sobre
+ * `citas` (p. ej. `SqlCandidatasGhosting`), con cada columna renombrada a su
+ * propiedad: `c."duracion_min" AS "duracionMin", …`. `alias` es el de la tabla
+ * en la consulta.
+ */
+export function columnasCita(alias: string): string {
+  return Object.entries(COLUMNAS_CITA)
+    .map(([propiedad, columna]) => `${alias}."${columna}" AS "${propiedad}"`)
+    .join(', ');
+}
+
+/**
+ * ÚNICO mapeo de una fila de `citas` a la entidad de dominio: lo usan este
+ * repositorio (sobre `CitaOrmEntity`) y el SQL a mano (sobre `columnasCita`).
+ */
+export function citaDesdeFila(fila: FilaCita): Cita {
+  return Cita.reconstituir({
+    id: fila.id,
+    inicio: fila.inicio,
+    duracionMin: fila.duracionMin,
+    tipoConsulta: fila.tipoConsulta,
+    estado: fila.estado,
+    origen: fila.origen,
+    tenantId: fila.tenantId,
+    pacienteId: fila.pacienteId,
+    usuarioId: fila.usuarioId,
+    creadoEn: fila.creadoEn,
+    actualizadoEn: fila.actualizadoEn,
+  });
+}
+
 // Adaptador de persistencia para el modulo cita.
 // Conecta la entidad de dominio con la base de datos via TypeORM.
 @Injectable()
@@ -141,18 +205,7 @@ export class TypeOrmCitaRepository extends CitaRepository {
   }
 
   private toDomain(orm: CitaOrmEntity): Cita {
-    return Cita.reconstituir({
-      id: orm.id,
-      inicio: orm.inicio,
-      duracionMin: orm.duracionMin,
-      tipoConsulta: orm.tipoConsulta,
-      estado: orm.estado,
-      tenantId: orm.tenantId,
-      pacienteId: orm.pacienteId,
-      usuarioId: orm.usuarioId,
-      creadoEn: orm.creadoEn,
-      actualizadoEn: orm.actualizadoEn,
-    });
+    return citaDesdeFila(orm);
   }
 
   private toPersistence(domain: Cita): Partial<CitaOrmEntity> {
@@ -162,6 +215,8 @@ export class TypeOrmCitaRepository extends CitaRepository {
     orm.duracionMin = domain.duracionMin;
     orm.tipoConsulta = domain.tipoConsulta;
     orm.estado = domain.estado;
+    // Inmutable en el dominio: en un UPDATE se reescribe el mismo valor.
+    orm.origen = domain.origen;
     orm.tenantId = domain.tenantId;
     orm.pacienteId = domain.pacienteId;
     orm.usuarioId = domain.usuarioId;

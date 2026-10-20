@@ -44,7 +44,7 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-08](DT-08.md) | Colisión de identificador público bajo concurrencia | 🟡 baja | abierta | [ADR-03 §2](../Decisions/ADR-03.md) |
 | [DT-09](DT-09.md) | Comprobación de correo duplicado inalcanzable | 🟡 baja | abierta | [us00a](../Features/us00a-registro-inicial.md) |
 | [DT-18](DT-18.md) | No existe límite de tasa en ninguna superficie | 🟠 riesgo asumido | 🟢 **en producción** (2026-10-17) · se cierra con la prueba de `trust proxy` · queda abierto en DT-04, DT-06 y la nota de una réplica · antes: implementada (2026-10-15), en implementación (2026-10-14), aceptada sin límite (2026-09-29) | transversal |
-| [DT-11](DT-11.md) | El historial de comportamiento no se está acumulando | 🟠 media (antes crítica) | 🔵 aplazada (2026-09-30, scoring a la v2) · mecanismo en [ADR-12](../Decisions/ADR-12.md) · regla G1 fijada (2026-10-14); **corte = 2026-10-17** (despliegue de la Fase 3) | [ADR-04 §4](../Decisions/ADR-04.md) |
+| [DT-11](DT-11.md) | El historial de comportamiento no se está acumulando | 🟠 media (antes crítica) | 🔶 **en construcción en [US-07.01](../US/07.01-registro-hechos.md)** (2026-10-19), detrás de `CIERRE_GHOSTING_ACTIVO`; se cierra al prenderlo en producción · *antes:* 🔵 aplazada (2026-09-30, scoring a la v2) · mecanismo en [ADR-12](../Decisions/ADR-12.md) · regla G1 fijada (2026-10-14); **corte = 2026-10-17** (despliegue de la Fase 3) | [ADR-04 §4](../Decisions/ADR-04.md) |
 | [DT-43](DT-43.md) | El profesional no se entera en el momento de lo que hace el paciente | 🟡 baja → 🟠 media | abierta (2026-10-17) · se cierra en la Fase 4 | [ADR-10 §7](../Decisions/ADR-10.md) |
 | [DT-44](DT-44.md) | La petición de otra hora se resuelve solo en la bandeja, y en silencio para el paciente | 🟡 baja | abierta (2026-10-17), solo la parte 1 (rechazar no avisa al paciente); la parte 2 la resolvió el suscriptor | [ADR-10 §4](../Decisions/ADR-10.md) |
 | [DT-17](DT-17.md) | Zona horaria única para toda la instalación | 🟡 baja | 🔵 aplazada | [ADR-07 §2](../Decisions/ADR-07.md) |
@@ -58,6 +58,7 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-39](DT-39.md) | No hay herramienta para quitar una dirección suprimida | 🟡 baja | abierta (contraída en la Fase 2) | [ADR-13 §2](../Decisions/ADR-13.md) |
 | [DT-41](DT-41.md) | El subdominio de envío no tiene DMARC y la autenticación del correo no se inspeccionó | 🟡 baja | abierta (detectada en producción, 2026-10-07) | puesta en producción · [ADR-13 §12–§13](../Decisions/ADR-13.md) |
 | [DT-46](DT-46.md) | Columnas de fecha de varias entidades ORM sin `timestamptz`: con `synchronize` (tests) quedan sin zona | 🟡 baja | abierta (detectada al implementar la Fase 3, 2026-10-15) | entidades de `cita`, `paciente`, `tenant`, `usuario` |
+| [DT-47](DT-47.md) | `cambios_cita.ocurrido_en` usa `DEFAULT now()`: con transacciones concurrentes la bitácora puede quedar en orden invertido | 🟡 baja → 🟠 media con US-07.02 | abierta (detectada en US-07.01, confirmada 2026-10-20) | migración de `cambios_cita` (Fase 1) |
 
 ## Cerradas o mitigadas
 

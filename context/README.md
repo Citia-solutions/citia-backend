@@ -31,7 +31,7 @@ sin doc.**
 |---|---|---|---|
 | **Fase del roadmap** | Etapa de **construcción**: Fundaciones, Fase 0 … Fase 7, US-09. Cada una tiene una guía de lectura | [`Fases/`](Fases/README.md) · estado en el [ROADMAP](ROADMAP.md) | [Fase 2 — recordatorios](Fases/fase-2-us03-recordatorios.md) |
 | **Etapa del producto** | Etapa de **descubrimiento**: problema, validación, requisitos, MVP. Los archivos se llaman `fase-*.md` por historia, pero **no** son fases del roadmap | [`Descripcion/`](Descripcion/README.md) | [etapa 3 — MVP](Descripcion/fase-3-mvp.md) |
-| **US** | Historia de usuario. Su plan (decisiones y orden de construcción, sin código) va en `US/` antes de implementar. Los archivos `02.NN-*` son **subtareas** de US-02, no historias | `US/` | [US-03](US/03-recordatorios.md) |
+| **US** | Historia de usuario. Su plan (decisiones y orden de construcción, sin código) va en `US/` antes de implementar. Los archivos `02.NN-*` y `07.NN-*` son **subtareas** de US-02 y de US-07, no historias | `US/` | [US-03](US/03-recordatorios.md) |
 | **ADR** | Una decisión de arquitectura: contexto, opciones, decisión, consecuencias | [`Decisions/`](Decisions/README.md) | [ADR-12](Decisions/ADR-12.md) |
 | **Feature** | Una funcionalidad **implementada**: qué hace, endpoints, esquema, tests, pendientes | [`Features/`](Features/README.md) | [us02](Features/us02-gestion-citas.md) |
 | **DT** | Deuda técnica: lo que el sistema no hace y debería, enlazada al párrafo que la originó | [`Deudas/`](Deudas/README.md) | [DT-30](Deudas/DT-30.md) |
@@ -95,6 +95,9 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
   [US-03](US/03-recordatorios.md) recordatorios al paciente (✅ cerrada en producción, 2026-10-07) ·
   [US-04](US/04-respuesta-paciente.md) respuesta del paciente desde el recordatorio (✅ en producción
   desde el 2026-10-17; [ADR-10](Decisions/ADR-10.md) aceptado).
+  **Subtareas de US-07** (archivos `07.NN-*`): [US-07.01](US/07.01-registro-hechos.md) registro de hechos
+  (🔶 en construcción desde el 2026-10-19; [ADR-14](Decisions/ADR-14.md) aceptado en lo que le toca). US-07.02
+  (calificación y riesgo) y US-07.03 (acciones) aún sin plan.
   **Subtareas de US-02** (archivos `02.NN-*`, no son historias propias):
   [US-02.07](US/02.07-paciente-reagenda-cancela.md) el paciente cancela o pide reagendar (⏸ aplazada
   fuera de la v1; 🔀 **absorbida por US-04** el 2026-10-14, en la
@@ -139,7 +142,7 @@ está en producción desde el 2026-10-17.
 | [Fase 2](Fases/fase-2-us03-recordatorios.md) — US-03 recordatorios | ✅ **cerrada en producción (2026-10-07)** · [pendientes posteriores](Fases/fase-2-us03-recordatorios.md#pendientes-posteriores) |
 | [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) — US-04 respuesta del paciente | ✅ **en producción (2026-10-17)** · cierre pendiente de las pruebas manuales · [us04](Features/us04-respuesta-paciente.md) · fuera del MVP |
 | [Fase 4](Fases/fase-4-us05-alertas.md) — US-05 alertas | ⬜ fuera del MVP |
-| [Fase 5](Fases/fase-5-us07-scoring.md) — US-07 scoring | ⏸ v2 |
+| [Fase 5](Fases/fase-5-us07-scoring.md) — US-07 scoring | 🔶 US-07.01 (registro de hechos) en construcción desde el 2026-10-19, antes que la Fase 4 · US-07.02 y US-07.03 ⏸ v2 |
 | [Fases 6, 7 y US-09](Fases/fases-6-7-us09-sin-diseno.md) | ⬜ sin diseño |
 
 **Entornos** ([mapa](stack-tecnologico.md#mapa-de-entornos)): `develop` → **staging** (Railway +

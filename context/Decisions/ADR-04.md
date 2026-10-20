@@ -7,6 +7,19 @@
 reemplazado por [ADR-12](ADR-12.md)** (2026-09-30)
 *(Nota del 2026-09-30: ADR-09 ya no está "propuesto": está aceptado e implementado.)*
 
+> **Nota (2026-10-19).** [ADR-14](ADR-14.md) **extiende** el grafo de la decisión 2 con dos transiciones desde
+> `pendiente`, que marca el profesional, **aceptadas por el usuario el 2026-10-19** (ADR-14 aceptado en lo que
+> toca a US-07.01): `pendiente → asistio` directo y, para la inasistencia, `pendiente → ghosting` con actor
+> `profesional` en la bitácora, que conserva el significado de `ghosting` ("nunca confirmó y no llegó"). Las dos
+> van por las rutas de siempre (`…/asistencia`, `…/inasistencia`): el destino lo decide el dominio según el
+> estado de origen. **Además, el dominio exige `ahora ≥ inicio`** para marcar asistencia o inasistencia desde
+> cualquier estado de origen (hasta ahora solo lo bloqueaba el voucher). "De un terminal no se sale" no cambia.
+> Se construyen en [US-07.01](../US/07.01-registro-hechos.md), con el job G1 de la decisión 4; hasta que se
+> desplieguen, el código sigue con la tabla de abajo. Detalle en
+> [ADR-14 §9](ADR-14.md#9-cambio-en-la-máquina-de-estados-extiende-adr-04).
+> *(Antes, en la mañana del mismo día: "propone"; la inasistencia desde `pendiente` estaba a confirmar, con
+> `no_asistio` como alternativa.)*
+
 > **Nota (2026-09-30).** La decisión 4 nombraba BullMQ como el worker que materializaría el
 > `ghosting`. [ADR-12](ADR-12.md) elige otro mecanismo: planificador dentro del proceso
 > (`@nestjs/schedule`) sobre tablas de Postgres con `FOR UPDATE SKIP LOCKED`, sin Redis. **La decisión

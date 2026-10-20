@@ -9,6 +9,8 @@ import {
   CitasService,
   ResumenCita,
 } from '../../cita/application/citas.service';
+import { PedidoPor } from '../../cita/domain/cambio-cita.entity';
+import { OrigenCita } from '../../cita/domain/cita.entity';
 import { CitaResponseDto } from '../../cita/presentation/dto/cita-response.dto';
 import {
   EstadoSolicitud,
@@ -115,9 +117,10 @@ export class BandejaSolicitudesService {
    *       vacío—, cita, bitácora, `CitaCreada`, avisos).
    *     - `reagendamiento` (Fase 3, R2): MUEVE la cita de origen con
    *       `CitasService.reagendarEnTx` (mismo id, vuelve a `pendiente`,
-   *       bitácora con el profesional del token, `CitaReagendada`, avisos). No
-   *       crea paciente ni cita; `duracionMin` y `tipoConsulta` se ignoran.
-   *       Cita de origen terminal -> 409 (`TransicionEstadoInvalidaError`).
+   *       bitácora con el profesional del token y `pedido_por = paciente`
+   *       —US-07.01—, `CitaReagendada`, avisos). No crea paciente ni cita;
+   *       `duracionMin` y `tipoConsulta` se ignoran. Cita de origen terminal
+   *       -> 409 (`TransicionEstadoInvalidaError`).
    *  4. Resuelve la solicitud (`citaId` = la cita creada o la de origen) y
    *     publica `SolicitudCitaAceptada`.
    *
@@ -271,6 +274,8 @@ export class BandejaSolicitudesService {
       },
       usuario,
       tx,
+      // US-07.01 (H4): la cita nace de la solicitud pública.
+      OrigenCita.SOLICITUD_PUBLICA,
     );
   }
 
@@ -295,6 +300,9 @@ export class BandejaSolicitudesService {
       dto.inicio,
       usuario,
       tx,
+      // US-07.01 (H3): el cambio de hora lo pidió el paciente desde su enlace;
+      // se anota sin preguntar al profesional.
+      PedidoPor.PACIENTE,
     );
   }
 

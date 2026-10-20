@@ -12,12 +12,18 @@ import { JwtStrategy } from '../src/modules/auth/jwt.strategy';
 import { CitasService } from '../src/modules/cita/application/citas.service';
 import { EnlacesCitaService } from '../src/modules/cita/application/enlaces-cita.service';
 import {
-  ActorCambio,
   CambioCita,
   TipoCambio,
 } from '../src/modules/cita/domain/cambio-cita.entity';
-import { CambioCitaRepository } from '../src/modules/cita/domain/cambio-cita.repository';
-import { Cita, EstadoCita } from '../src/modules/cita/domain/cita.entity';
+import {
+  CambioCitaRepository,
+  UltimoCambio,
+} from '../src/modules/cita/domain/cambio-cita.repository';
+import {
+  Cita,
+  EstadoCita,
+  OrigenCita,
+} from '../src/modules/cita/domain/cita.entity';
 import { CitaRepository } from '../src/modules/cita/domain/cita.repository';
 import { CitasController } from '../src/modules/cita/presentation/citas.controller';
 import { PacientesService } from '../src/modules/paciente/application/pacientes.service';
@@ -138,8 +144,15 @@ class InMemoryCitaRepository extends CitaRepository {
 
 class InMemoryCambioCitaRepository extends CambioCitaRepository {
   readonly cambios: CambioCita[] = [];
+  private ultimoInstante = 0;
 
+  // Como la BD, pone `ocurridoEn` si no viene; reloj estrictamente creciente
+  // para que el orden de inserción sea también el cronológico.
   registrar(cambio: CambioCita): Promise<CambioCita> {
+    if (cambio.ocurridoEn === undefined) {
+      this.ultimoInstante = Math.max(Date.now(), this.ultimoInstante + 1);
+      cambio.ocurridoEn = new Date(this.ultimoInstante);
+    }
     this.cambios.push(cambio);
     return Promise.resolve(cambio);
   }
@@ -152,19 +165,25 @@ class InMemoryCambioCitaRepository extends CambioCitaRepository {
     );
   }
 
-  ultimoActorPorTipo(
+  // Gana el `ocurridoEn` más reciente de cada tipo (a igual instante, el
+  // último insertado).
+  ultimosCambiosPorTipo(
     citaId: string,
     tenantId: string,
     tipos: readonly TipoCambio[],
-  ): Promise<Partial<Record<TipoCambio, ActorCambio>>> {
-    const resultado: Partial<Record<TipoCambio, ActorCambio>> = {};
+  ): Promise<Partial<Record<TipoCambio, UltimoCambio>>> {
+    const resultado: Partial<Record<TipoCambio, UltimoCambio>> = {};
     for (const c of this.cambios) {
       if (
-        c.citaId === citaId &&
-        c.tenantId === tenantId &&
-        tipos.includes(c.tipo)
+        c.citaId !== citaId ||
+        c.tenantId !== tenantId ||
+        !tipos.includes(c.tipo)
       ) {
-        resultado[c.tipo] = c.actorTipo;
+        continue;
+      }
+      const actual = resultado[c.tipo];
+      if (!actual || c.ocurridoEn.getTime() >= actual.ocurridoEn.getTime()) {
+        resultado[c.tipo] = { actor: c.actorTipo, ocurridoEn: c.ocurridoEn };
       }
     }
     return Promise.resolve(resultado);
@@ -273,6 +292,7 @@ describe('GET /api/citas/:id — voucher (e2e sin BD, US-02.08)', () => {
       tenantId,
       pacienteId,
       usuarioId,
+      origen: OrigenCita.MANUAL,
       creadoEn: new Date(),
       actualizadoEn: new Date(),
     });
@@ -532,10 +552,12 @@ describe('GET /api/citas/:id — voucher (e2e sin BD, US-02.08)', () => {
       );
 
       // Act: la ruta de escritura que ya existia (no se crea ninguna nueva).
+      // A una hora FUTURA (diciembre: UTC-3 en Chile): desde US-07.01 una
+      // pendiente cuya hora ya llegó también ofrece asistencia e inasistencia.
       await request(server())
         .patch(`/api/citas/${CITA_A}/reagendar`)
         .set('Authorization', `Bearer ${tokenA}`)
-        .send({ inicio: '2026-09-30T10:00:00-03:00' })
+        .send({ inicio: '2030-12-10T10:00:00-03:00' })
         .expect(200);
 
       // Assert: el frontend vuelve a pedir el detalle y ve el estado nuevo.
@@ -646,6 +668,384 @@ describe('GET /api/citas/:id — voucher (e2e sin BD, US-02.08)', () => {
       // Assert
       expect((res.body as DetalleBody).estado).toBe('pendiente');
       expect((res.body as DetalleBody).confirmadaPor).toBeNull();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // US-07.01: las marcas desde la hora de inicio (H1, H2), "quién lo pidió"
+  // (H3, H11) y `confirmadaPor` (H9), por HTTP. El reloj es el REAL de
+  // `CitasService`: las citas se siembran en el pasado o en el futuro.
+  describe('US-07.01: marcas desde la hora de inicio, quién lo pidió y confirmadaPor', () => {
+    const CITA_PASADA = '44444444-4444-4444-8444-444444444444';
+    const CITA_FUTURA = '55555555-5555-4555-8555-555555555555';
+    const MINUTO = 60_000;
+    const HORA = 60 * MINUTO;
+    const MENSAJE_AUN_NO_COMIENZA =
+      'La cita todavía no comienza: la asistencia y la inasistencia se marcan desde su hora de inicio';
+    const MENSAJE_PEDIDO_POR = 'pedidoPor debe ser "paciente" o "profesional"';
+
+    interface CambioBody {
+      tipo: string;
+      estadoAnterior: string | null;
+      estadoNuevo: string | null;
+      motivo: string | null;
+      actorTipo: string;
+      actorId: string | null;
+      pedidoPor: string | null;
+    }
+
+    interface ErrorBody {
+      statusCode: number;
+      message: string | string[];
+    }
+
+    const sembrarEn = (id: string, estado: EstadoCita, inicio: Date): void => {
+      citaRepo.citas.set(
+        id,
+        cita(id, TENANT_A, PACIENTE_A, USUARIO_A, estado, inicio),
+      );
+    };
+
+    const verDetalle = async (id: string): Promise<DetalleBody> =>
+      (
+        await request(server())
+          .get(`/api/citas/${id}`)
+          .set('Authorization', `Bearer ${tokenA}`)
+          .expect(200)
+      ).body as DetalleBody;
+
+    const verHistorial = async (id: string): Promise<CambioBody[]> =>
+      (
+        await request(server())
+          .get(`/api/citas/${id}/historial`)
+          .set('Authorization', `Bearer ${tokenA}`)
+          .expect(200)
+      ).body as CambioBody[];
+
+    const desdeVoucher = (id: string, accion: string, cuerpo: object = {}) =>
+      request(server())
+        .patch(`/api/citas/${id}/${accion}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send(cuerpo);
+
+    /** Una hora en el pasado, para reagendar sin perder la posibilidad de marcar. */
+    const haceMinutos = (minutos: number): string =>
+      new Date(Date.now() - minutos * MINUTO).toISOString();
+
+    beforeEach(() => {
+      // Una pendiente que empezó hace una hora y una confirmada de pasado mañana.
+      sembrarEn(CITA_PASADA, EstadoCita.PENDIENTE, new Date(Date.now() - HORA));
+      sembrarEn(
+        CITA_FUTURA,
+        EstadoCita.CONFIRMADA,
+        new Date(Date.now() + 48 * HORA),
+      );
+    });
+
+    describe('accionesPermitidas con el reloj', () => {
+      it('debería ofrecer asistencia e inasistencia cuando una pendiente ya empezó', async () => {
+        // Act
+        const body = await verDetalle(CITA_PASADA);
+
+        // Assert
+        expect(body.estado).toBe('pendiente');
+        expect(body.accionesPermitidas).toEqual([
+          'confirmar',
+          'cancelar',
+          'reagendar',
+          'asistencia',
+          'inasistencia',
+          'editar',
+        ]);
+      });
+
+      it('no debería ofrecer asistencia ni inasistencia cuando una confirmada todavía no empieza', async () => {
+        // Act
+        const body = await verDetalle(CITA_FUTURA);
+
+        // Assert
+        expect(body.estado).toBe('confirmada');
+        expect(body.accionesPermitidas).toEqual([
+          'cancelar',
+          'reagendar',
+          'editar',
+        ]);
+      });
+    });
+
+    describe('PATCH …/asistencia y …/inasistencia', () => {
+      it('debería dejar en asistio una pendiente pasada, sin confirmación previa (200)', async () => {
+        // Act
+        const res = await desdeVoucher(CITA_PASADA, 'asistencia').expect(200);
+
+        // Assert
+        expect((res.body as { estado: string }).estado).toBe('asistio');
+        expect(res.body).not.toHaveProperty('avisos');
+        expect(await verHistorial(CITA_PASADA)).toEqual([
+          expect.objectContaining({
+            tipo: 'asistio',
+            estadoAnterior: 'pendiente',
+            estadoNuevo: 'asistio',
+            actorTipo: 'profesional',
+            actorId: USUARIO_A,
+            pedidoPor: null,
+          }),
+        ]);
+        const detalle = await verDetalle(CITA_PASADA);
+        expect(detalle.accionesPermitidas).toEqual([]);
+        // Nunca confirmó: no se inventa una confirmación
+        expect(detalle.confirmadaPor).toBeNull();
+      });
+
+      it('debería dejar en ghosting una pendiente pasada al marcar inasistencia (200, la respuesta trae el estado real)', async () => {
+        // Act
+        const res = await desdeVoucher(CITA_PASADA, 'inasistencia').expect(200);
+
+        // Assert
+        expect((res.body as { estado: string }).estado).toBe('ghosting');
+        expect(await verHistorial(CITA_PASADA)).toEqual([
+          expect.objectContaining({
+            tipo: 'ghosting',
+            estadoAnterior: 'pendiente',
+            estadoNuevo: 'ghosting',
+            actorTipo: 'profesional',
+            actorId: USUARIO_A,
+          }),
+        ]);
+        const detalle = await verDetalle(CITA_PASADA);
+        expect(detalle.estado).toBe('ghosting');
+        expect(detalle.accionesPermitidas).toEqual([]);
+      });
+
+      it.each<[string, EstadoCita]>([
+        ['asistencia', EstadoCita.PENDIENTE],
+        ['asistencia', EstadoCita.CONFIRMADA],
+        ['inasistencia', EstadoCita.PENDIENTE],
+        ['inasistencia', EstadoCita.CONFIRMADA],
+      ])(
+        'debería responder 409 con el mensaje fijo a …/%s sobre una %s futura, sin escribir nada',
+        async (accion, estado) => {
+          // Arrange
+          sembrarEn(CITA_FUTURA, estado, new Date(Date.now() + 48 * HORA));
+
+          // Act
+          const res = await desdeVoucher(CITA_FUTURA, accion).expect(409);
+
+          // Assert
+          const body = res.body as ErrorBody;
+          expect(body.statusCode).toBe(409);
+          expect(body.message).toBe(MENSAJE_AUN_NO_COMIENZA);
+          expect(res.text).not.toContain(CITA_FUTURA);
+          expect((await verDetalle(CITA_FUTURA)).estado).toBe(estado);
+          expect(await verHistorial(CITA_FUTURA)).toEqual([]);
+        },
+      );
+
+      it('una cita terminal responde el 409 de la transición aunque sea antes de su hora (primero el estado)', async () => {
+        // Arrange
+        await desdeVoucher(CITA_FUTURA, 'cancelar').expect(200);
+
+        // Act
+        const res = await desdeVoucher(CITA_FUTURA, 'asistencia').expect(409);
+
+        // Assert
+        const body = res.body as ErrorBody;
+        expect(body.message).not.toBe(MENSAJE_AUN_NO_COMIENZA);
+        expect(body.message).toMatch(/no se puede aplicar/);
+      });
+    });
+
+    describe('pedidoPor en …/cancelar y …/reagendar', () => {
+      const cuerpos: Record<'cancelar' | 'reagendar', () => object> = {
+        cancelar: () => ({ motivo: 'Llamó por teléfono' }),
+        // Reagendar a una hora futura: la cita sigue vigente
+        reagendar: () => ({
+          inicio: new Date(Date.now() + 72 * HORA).toISOString(),
+        }),
+      };
+      const tiposDeCambio = {
+        cancelar: 'cancelada',
+        reagendar: 'reagendada',
+      } as const;
+
+      it.each<['cancelar' | 'reagendar', 'paciente' | 'profesional']>([
+        ['cancelar', 'paciente'],
+        ['cancelar', 'profesional'],
+        ['reagendar', 'paciente'],
+        ['reagendar', 'profesional'],
+      ])(
+        '…/%s con pedidoPor "%s" → 200 y el historial lo trae (el actor sigue siendo el profesional)',
+        async (accion, pedidoPor) => {
+          // Act
+          await desdeVoucher(CITA_FUTURA, accion, {
+            ...cuerpos[accion](),
+            pedidoPor,
+          }).expect(200);
+
+          // Assert
+          const [cambio] = await verHistorial(CITA_FUTURA);
+          expect(cambio).toMatchObject({
+            tipo: tiposDeCambio[accion],
+            actorTipo: 'profesional',
+            actorId: USUARIO_A,
+            pedidoPor,
+          });
+        },
+      );
+
+      it.each<['cancelar' | 'reagendar', string, Record<string, unknown>]>([
+        ['cancelar', 'sin el campo', {}],
+        ['cancelar', 'con null', { pedidoPor: null }],
+        ['reagendar', 'sin el campo', {}],
+        ['reagendar', 'con null', { pedidoPor: null }],
+      ])(
+        '…/%s %s → 200 con pedidoPor null en el historial (cuenta como del profesional)',
+        async (accion, _caso, extra) => {
+          // Act
+          await desdeVoucher(CITA_FUTURA, accion, {
+            ...cuerpos[accion](),
+            ...extra,
+          }).expect(200);
+
+          // Assert
+          const [cambio] = await verHistorial(CITA_FUTURA);
+          expect(cambio.tipo).toBe(tiposDeCambio[accion]);
+          expect(cambio).toHaveProperty('pedidoPor', null);
+        },
+      );
+
+      const invalidos: [string, unknown][] = [
+        ['"sistema"', 'sistema'],
+        ['vacío', ''],
+        ['en mayúsculas', 'PACIENTE'],
+        ['un número', 42],
+        ['un objeto', { tipo: 'paciente' }],
+      ];
+
+      it.each(
+        (['cancelar', 'reagendar'] as const).flatMap((accion) =>
+          invalidos.map(([caso, valor]) => [accion, caso, valor] as const),
+        ),
+      )(
+        '…/%s con pedidoPor %s → 400 con el mensaje del DTO, sin tocar la cita',
+        async (accion, _caso, valor) => {
+          // Act
+          const res = await desdeVoucher(CITA_FUTURA, accion, {
+            ...cuerpos[accion](),
+            pedidoPor: valor,
+          }).expect(400);
+
+          // Assert
+          expect((res.body as ErrorBody).message).toEqual([MENSAJE_PEDIDO_POR]);
+          expect((await verDetalle(CITA_FUTURA)).estado).toBe('confirmada');
+          expect(await verHistorial(CITA_FUTURA)).toEqual([]);
+        },
+      );
+
+      it('no se expone en el detalle ni en el dashboard (H11): solo en el historial', async () => {
+        // Arrange
+        await desdeVoucher(CITA_PASADA, 'reagendar', {
+          inicio: new Date(Date.now() + 2 * HORA).toISOString(),
+          pedidoPor: 'paciente',
+        }).expect(200);
+
+        // Act
+        const detalle = await request(server())
+          .get(`/api/citas/${CITA_PASADA}`)
+          .set('Authorization', `Bearer ${tokenA}`)
+          .expect(200);
+        const hoy = await request(server())
+          .get('/api/citas/hoy')
+          .set('Authorization', `Bearer ${tokenA}`)
+          .expect(200);
+
+        // Assert
+        expect(detalle.text).not.toMatch(/pedidoPor|origen/);
+        expect(hoy.text).not.toMatch(/pedidoPor|origen/);
+        expect((await verHistorial(CITA_PASADA))[0].pedidoPor).toBe('paciente');
+      });
+    });
+
+    describe('confirmadaPor (H9): solo una confirmación posterior al último reagendamiento', () => {
+      it('confirmada → asistio: confirmadaPor = profesional', async () => {
+        // Arrange
+        await desdeVoucher(CITA_PASADA, 'confirmar').expect(200);
+
+        // Act
+        await desdeVoucher(CITA_PASADA, 'asistencia').expect(200);
+
+        // Assert
+        expect(await verDetalle(CITA_PASADA)).toMatchObject({
+          estado: 'asistio',
+          confirmadaPor: 'profesional',
+          canceladaPor: null,
+        });
+      });
+
+      it('confirmada → reagendada → asistio desde pendiente: confirmadaPor = null (la confirmación era de otra hora)', async () => {
+        // Arrange — confirma, y se mueve a otra hora que también ya pasó
+        await desdeVoucher(CITA_PASADA, 'confirmar').expect(200);
+        await desdeVoucher(CITA_PASADA, 'reagendar', {
+          inicio: haceMinutos(30),
+        }).expect(200);
+        expect((await verDetalle(CITA_PASADA)).estado).toBe('pendiente');
+
+        // Act — Asistió directo desde pendiente (US-07.01)
+        await desdeVoucher(CITA_PASADA, 'asistencia').expect(200);
+
+        // Assert
+        expect(await verDetalle(CITA_PASADA)).toMatchObject({
+          estado: 'asistio',
+          confirmadaPor: null,
+        });
+        expect((await verHistorial(CITA_PASADA)).map((c) => c.tipo)).toEqual([
+          'confirmada',
+          'reagendada',
+          'asistio',
+        ]);
+      });
+
+      it('reagendada → confirmada → asistio: confirmadaPor = profesional (confirmó la hora vigente)', async () => {
+        // Arrange
+        await desdeVoucher(CITA_PASADA, 'reagendar', {
+          inicio: haceMinutos(30),
+        }).expect(200);
+        await desdeVoucher(CITA_PASADA, 'confirmar').expect(200);
+
+        // Act
+        await desdeVoucher(CITA_PASADA, 'asistencia').expect(200);
+
+        // Assert
+        expect(await verDetalle(CITA_PASADA)).toMatchObject({
+          estado: 'asistio',
+          confirmadaPor: 'profesional',
+        });
+      });
+
+      it('confirmada → no_asistio conserva la confirmación; pendiente → ghosting no muestra ninguna', async () => {
+        // Arrange — dos citas pasadas: una confirmada, otra no
+        const OTRA_PASADA = '66666666-6666-4666-8666-666666666666';
+        sembrarEn(
+          OTRA_PASADA,
+          EstadoCita.PENDIENTE,
+          new Date(Date.now() - HORA),
+        );
+        await desdeVoucher(CITA_PASADA, 'confirmar').expect(200);
+
+        // Act
+        await desdeVoucher(CITA_PASADA, 'inasistencia').expect(200);
+        await desdeVoucher(OTRA_PASADA, 'inasistencia').expect(200);
+
+        // Assert
+        expect(await verDetalle(CITA_PASADA)).toMatchObject({
+          estado: 'no_asistio',
+          confirmadaPor: 'profesional',
+        });
+        expect(await verDetalle(OTRA_PASADA)).toMatchObject({
+          estado: 'ghosting',
+          confirmadaPor: null,
+        });
+      });
     });
   });
 

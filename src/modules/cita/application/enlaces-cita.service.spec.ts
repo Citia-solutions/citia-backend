@@ -8,7 +8,7 @@ import {
 } from '../../../../test/support/in-memory-repositories';
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
-import { Cita, EstadoCita } from '../domain/cita.entity';
+import { Cita, EstadoCita, OrigenCita } from '../domain/cita.entity';
 import {
   EnlaceCita,
   MotivoRevocacionEnlace,
@@ -76,6 +76,7 @@ describe('EnlacesCitaService', () => {
       tenantId: props.tenantId ?? tenantId,
       pacienteId: randomUUID(),
       usuarioId: usuario.userId,
+      origen: OrigenCita.MANUAL,
       creadoEn: new Date('2026-10-01T00:00:00Z'),
       actualizadoEn: new Date('2026-10-01T00:00:00Z'),
     });
@@ -200,6 +201,7 @@ describe('EnlacesCitaService', () => {
           revocadoEn: null,
           motivoRevocacion: null,
           revocadoPor: null,
+          primeraAperturaEn: null,
         }),
       );
       jest.spyOn(enlaces, 'buscarActivoPorCita').mockResolvedValueOnce(null);
@@ -229,6 +231,7 @@ describe('EnlacesCitaService', () => {
           revocadoEn: null,
           motivoRevocacion: null,
           revocadoPor: null,
+          primeraAperturaEn: null,
         }),
       );
       jest.spyOn(enlaces, 'buscarActivoPorCita').mockResolvedValueOnce(null);
@@ -649,6 +652,75 @@ describe('EnlacesCitaService', () => {
       await expect(
         servicio.invalidar(randomUUID(), usuario),
       ).rejects.toBeInstanceOf(CitaNoEncontradaError);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('registrarPrimeraApertura (US-07.01, H5)', () => {
+    it('delega en el puerto con el id del enlace, el ahora recibido y el tx de quien llama', async () => {
+      // Arrange
+      const token = await servicio.asegurarActivo(cita.id, tenantId, tx);
+      const resuelto = await servicio.resolver(token, tx);
+      const espia = jest.spyOn(enlaces, 'registrarPrimeraApertura');
+      const ahora = new Date('2026-10-20T11:00:00.000Z');
+
+      // Act
+      await servicio.registrarPrimeraApertura(resuelto!.enlace, ahora, tx);
+
+      // Assert
+      expect(espia).toHaveBeenCalledTimes(1);
+      expect(espia).toHaveBeenCalledWith(resuelto!.enlace.id, ahora, tx);
+      expect(enlacesDe(cita.id)[0].primeraAperturaEn).toEqual(ahora);
+    });
+
+    it('la segunda apertura no cambia la primera', async () => {
+      // Arrange
+      const token = await servicio.asegurarActivo(cita.id, tenantId, tx);
+      const { enlace } = (await servicio.resolver(token, tx))!;
+      const primera = new Date('2026-10-20T11:00:00.000Z');
+      await servicio.registrarPrimeraApertura(enlace, primera, tx);
+
+      // Act
+      await servicio.registrarPrimeraApertura(
+        enlace,
+        new Date('2026-10-20T11:30:00.000Z'),
+        tx,
+      );
+
+      // Assert
+      expect(enlacesDe(cita.id)[0].primeraAperturaEn).toEqual(primera);
+    });
+
+    it('no toca la revocación ni la cita', async () => {
+      // Arrange
+      const token = await servicio.asegurarActivo(cita.id, tenantId, tx);
+      const { enlace } = (await servicio.resolver(token, tx))!;
+
+      // Act
+      await servicio.registrarPrimeraApertura(enlace, ANTES, tx);
+
+      // Assert
+      const [guardado] = enlacesDe(cita.id);
+      expect(guardado.estaActivo()).toBe(true);
+      expect(guardado.revocadoPor).toBeNull();
+      expect(citas.citas.get(cita.id)?.estado).toBe(EstadoCita.PENDIENTE);
+    });
+
+    it('un enlace sin id (no salió de resolver) lanza y no escribe', async () => {
+      // Arrange
+      const espia = jest.spyOn(enlaces, 'registrarPrimeraApertura');
+      const sinId = EnlaceCita.emitir({
+        citaId: cita.id,
+        tenantId,
+        version: 1,
+        tokenHash: 'a'.repeat(64),
+      });
+
+      // Act & Assert
+      await expect(
+        servicio.registrarPrimeraApertura(sinId, ANTES, tx),
+      ).rejects.toThrow('no está persistido');
+      expect(espia).not.toHaveBeenCalled();
     });
   });
 });

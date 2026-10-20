@@ -530,6 +530,13 @@ describe('Recordatorios: políticas de envío y flujo (e2e con Postgres)', () =>
         await patchCita(general, cita.id, 'confirmar');
         await despacharOutbox();
         const confirmada = await recordatoriosDe(cita.id, general);
+        // US-07.01 (H2): asistencia e inasistencia solo desde la hora de
+        // inicio, con el reloj REAL de `CitasService`: llega la hora (sin
+        // hecho, así que nada se reconcilia hasta la marca).
+        await base.query(
+          `UPDATE citas SET inicio = now() - interval '1 hour' WHERE id = $1`,
+          [cita.id],
+        );
         await patchCita(general, cita.id, accion);
         await despacharOutbox();
         const cerrada = await recordatoriosDe(cita.id, general);
