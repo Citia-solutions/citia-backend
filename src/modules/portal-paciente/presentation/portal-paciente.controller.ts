@@ -59,7 +59,11 @@ export const CUERPO_ACCION_NO_DISPONIBLE = Object.freeze({
 export class PortalPacienteController {
   constructor(private readonly portal: PortalPacienteService) {}
 
-  /** GET /api/publico/cita → 200. Solo lee: abrir la página no ejecuta nada. */
+  /**
+   * GET /api/publico/cita → 200. Abrir la página no ejecuta ninguna acción
+   * (S3): no cambia la cita ni su bitácora; solo anota la primera apertura del
+   * enlace (US-07.01). Misma respuesta y mismo 404 de siempre.
+   */
   @Get()
   async ver(
     @Headers(CABECERA_ENLACE_CITA) token: string | undefined,

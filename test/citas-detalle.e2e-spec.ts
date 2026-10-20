@@ -552,10 +552,12 @@ describe('GET /api/citas/:id — voucher (e2e sin BD, US-02.08)', () => {
       );
 
       // Act: la ruta de escritura que ya existia (no se crea ninguna nueva).
+      // A una hora FUTURA (diciembre: UTC-3 en Chile): desde US-07.01 una
+      // pendiente cuya hora ya llegó también ofrece asistencia e inasistencia.
       await request(server())
         .patch(`/api/citas/${CITA_A}/reagendar`)
         .set('Authorization', `Bearer ${tokenA}`)
-        .send({ inicio: '2026-09-30T10:00:00-03:00' })
+        .send({ inicio: '2030-12-10T10:00:00-03:00' })
         .expect(200);
 
       // Assert: el frontend vuelve a pedir el detalle y ve el estado nuevo.

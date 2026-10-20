@@ -106,7 +106,9 @@ const PLAN_CITAS: PlanCita[] = [
     estado: EstadoCita.CONFIRMADA,
   },
   {
-    offsetMin: 150,
+    // En el pasado: desde US-07.01 la inasistencia solo se marca desde la
+    // hora de inicio (el dominio lo exige).
+    offsetMin: -120,
     duracionMin: 30,
     tipoConsulta: 'Seguimiento',
     pacienteIdx: 1,
@@ -149,8 +151,13 @@ const PACIENTES = [
 ];
 
 // Aplica las transiciones necesarias para llevar una cita nueva (PENDIENTE) al
-// estado objetivo, usando SOLO los métodos de dominio.
-function llevarAEstado(cita: Cita, objetivo: EstadoObjetivo): void {
+// estado objetivo, usando SOLO los métodos de dominio. `ahora` es el reloj de
+// las marcas de asistencia e inasistencia (solo desde la hora de inicio).
+function llevarAEstado(
+  cita: Cita,
+  objetivo: EstadoObjetivo,
+  ahora: Date,
+): void {
   switch (objetivo) {
     case EstadoCita.PENDIENTE:
       break;
@@ -159,11 +166,11 @@ function llevarAEstado(cita: Cita, objetivo: EstadoObjetivo): void {
       break;
     case EstadoCita.ASISTIO:
       cita.confirmar();
-      cita.marcarAsistencia();
+      cita.marcarAsistencia(ahora);
       break;
     case EstadoCita.NO_ASISTIO:
       cita.confirmar();
-      cita.marcarInasistencia();
+      cita.marcarInasistencia(ahora);
       break;
     case EstadoCita.CANCELADA:
       cita.cancelar();
@@ -248,7 +255,7 @@ async function seed(): Promise<void> {
         // Las citas demo las "crea a mano" el profesional (US-07.01).
         origen: OrigenCita.MANUAL,
       });
-      llevarAEstado(cita, plan.estado);
+      llevarAEstado(cita, plan.estado, new Date(ahora));
       await citaRepository.guardar(cita);
     }
     console.log(`[seed] ${PLAN_CITAS.length} citas creadas para hoy.`);

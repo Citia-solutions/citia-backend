@@ -8,7 +8,15 @@ import {
   OrigenCita,
   ReconstituirCitaProps,
 } from './cita.entity';
+import { CitaAunNoComienzaError } from './exceptions/cita-aun-no-comienza.error';
 import { TransicionEstadoInvalidaError } from './exceptions/transicion-estado-invalida.error';
+
+/**
+ * Reloj posterior a TODAS las citas de este archivo: las pruebas de estado no
+ * dependen de la guarda de la hora (US-07.01), que tiene sus propias pruebas
+ * en "guarda de la hora".
+ */
+const TRAS_TODO = new Date('2027-01-01T00:00:00Z');
 
 describe('Cita (dominio)', () => {
   const baseProps: CrearCitaProps = {
@@ -109,7 +117,7 @@ describe('Cita (dominio)', () => {
       cita.confirmar();
 
       // Act
-      cita.marcarAsistencia();
+      cita.marcarAsistencia(TRAS_TODO);
 
       // Assert
       expect(cita.estado).toBe(EstadoCita.ASISTIO);
@@ -121,7 +129,7 @@ describe('Cita (dominio)', () => {
       cita.confirmar();
 
       // Act
-      cita.marcarInasistencia();
+      cita.marcarInasistencia(TRAS_TODO);
 
       // Assert
       expect(cita.estado).toBe(EstadoCita.NO_ASISTIO);
@@ -139,15 +147,123 @@ describe('Cita (dominio)', () => {
       expect(cita.estado).toBe(EstadoCita.CANCELADA);
     });
 
-    it('debería pasar de pendiente a ghosting cuando llega el día sin confirmar', () => {
+    it('debería pasar de pendiente a ghosting cuando el job G1 la cierra', () => {
       // Arrange
       const cita = Cita.crear(baseProps);
 
       // Act
-      cita.marcarGhosting();
+      cita.marcarGhosting(TRAS_TODO);
 
       // Assert
       expect(cita.estado).toBe(EstadoCita.GHOSTING);
+    });
+
+    it('debería pasar de pendiente a asistio directo, sin confirmar antes (US-07.01)', () => {
+      // Arrange
+      const cita = Cita.crear(baseProps);
+
+      // Act
+      cita.marcarAsistencia(TRAS_TODO);
+
+      // Assert
+      expect(cita.estado).toBe(EstadoCita.ASISTIO);
+    });
+
+    it('debería dejar en ghosting una pendiente cuando el profesional marca inasistencia (US-07.01)', () => {
+      // Arrange
+      const cita = Cita.crear(baseProps);
+
+      // Act
+      const destino = cita.marcarInasistencia(TRAS_TODO);
+
+      // Assert — nunca confirmó y no llegó (ADR-04 §2)
+      expect(destino).toBe(EstadoCita.GHOSTING);
+      expect(cita.estado).toBe(EstadoCita.GHOSTING);
+    });
+
+    it('debería devolver no_asistio al marcar inasistencia sobre una confirmada', () => {
+      // Arrange
+      const cita = Cita.crear(baseProps);
+      cita.confirmar();
+
+      // Act & Assert
+      expect(cita.marcarInasistencia(TRAS_TODO)).toBe(EstadoCita.NO_ASISTIO);
+    });
+  });
+
+  describe('guarda de la hora (US-07.01, H2)', () => {
+    const INICIO = baseProps.inicio;
+    const UN_MS_ANTES = new Date(INICIO.getTime() - 1);
+    const confirmada = (): Cita => {
+      const c = Cita.crear(baseProps);
+      c.confirmar();
+      return c;
+    };
+
+    it.each<[string, () => Cita]>([
+      ['pendiente', () => Cita.crear(baseProps)],
+      ['confirmada', confirmada],
+    ])(
+      'desde %s, a la hora EXACTA de inicio ya se puede marcar',
+      (_estado, fabrica) => {
+        expect(() =>
+          fabrica().marcarAsistencia(new Date(INICIO.getTime())),
+        ).not.toThrow();
+        expect(() =>
+          fabrica().marcarInasistencia(new Date(INICIO.getTime())),
+        ).not.toThrow();
+      },
+    );
+
+    it.each<[string, () => Cita]>([
+      ['pendiente', () => Cita.crear(baseProps)],
+      ['confirmada', confirmada],
+    ])(
+      'desde %s, un milisegundo antes lanza CitaAunNoComienzaError sin cambiar el estado',
+      (_estado, fabrica) => {
+        const cita = fabrica();
+        const estado = cita.estado;
+
+        expect(() => cita.marcarAsistencia(UN_MS_ANTES)).toThrow(
+          CitaAunNoComienzaError,
+        );
+        expect(() => cita.marcarInasistencia(UN_MS_ANTES)).toThrow(
+          CitaAunNoComienzaError,
+        );
+        expect(cita.estado).toBe(estado);
+      },
+    );
+
+    it('marcarGhosting exige la hora y el estado pendiente', () => {
+      expect(() => Cita.crear(baseProps).marcarGhosting(UN_MS_ANTES)).toThrow(
+        CitaAunNoComienzaError,
+      );
+      expect(() => confirmada().marcarGhosting(TRAS_TODO)).toThrow(
+        TransicionEstadoInvalidaError,
+      );
+    });
+
+    it('una terminal responde TransicionEstadoInvalidaError aunque sea antes de su hora (primero el estado)', () => {
+      // Arrange
+      const cita = Cita.crear(baseProps);
+      cita.cancelar();
+
+      // Act & Assert
+      expect(() => cita.marcarAsistencia(UN_MS_ANTES)).toThrow(
+        TransicionEstadoInvalidaError,
+      );
+      expect(() => cita.marcarInasistencia(UN_MS_ANTES)).toThrow(
+        TransicionEstadoInvalidaError,
+      );
+      expect(() => cita.marcarGhosting(UN_MS_ANTES)).toThrow(
+        TransicionEstadoInvalidaError,
+      );
+    });
+
+    it('el error tiene un mensaje fijo, sin ids ni horas', () => {
+      expect(() => Cita.crear(baseProps).marcarAsistencia(UN_MS_ANTES)).toThrow(
+        'La cita todavía no comienza: la asistencia y la inasistencia se marcan desde su hora de inicio',
+      );
     });
   });
 
@@ -159,26 +275,6 @@ describe('Cita (dominio)', () => {
 
       // Act & Assert
       expect(() => cita.confirmar()).toThrow(TransicionEstadoInvalidaError);
-    });
-
-    it('debería lanzar TransicionEstadoInvalidaError al marcar asistencia sobre una cita pendiente (sin confirmar)', () => {
-      // Arrange
-      const cita = Cita.crear(baseProps);
-
-      // Act & Assert
-      expect(() => cita.marcarAsistencia()).toThrow(
-        TransicionEstadoInvalidaError,
-      );
-    });
-
-    it('debería lanzar TransicionEstadoInvalidaError al marcar inasistencia sobre una cita pendiente', () => {
-      // Arrange
-      const cita = Cita.crear(baseProps);
-
-      // Act & Assert
-      expect(() => cita.marcarInasistencia()).toThrow(
-        TransicionEstadoInvalidaError,
-      );
     });
 
     it('debería lanzar TransicionEstadoInvalidaError al confirmar dos veces (confirmar una ya confirmada)', () => {
@@ -196,7 +292,7 @@ describe('Cita (dominio)', () => {
       cita.confirmar();
 
       // Act & Assert
-      expect(() => cita.marcarGhosting()).toThrow(
+      expect(() => cita.marcarGhosting(TRAS_TODO)).toThrow(
         TransicionEstadoInvalidaError,
       );
     });
@@ -206,13 +302,13 @@ describe('Cita (dominio)', () => {
       const enAsistio = (): Cita => {
         const c = Cita.crear(baseProps);
         c.confirmar();
-        c.marcarAsistencia();
+        c.marcarAsistencia(TRAS_TODO);
         return c;
       };
       const enNoAsistio = (): Cita => {
         const c = Cita.crear(baseProps);
         c.confirmar();
-        c.marcarInasistencia();
+        c.marcarInasistencia(TRAS_TODO);
         return c;
       };
       const enCancelada = (): Cita => {
@@ -222,7 +318,7 @@ describe('Cita (dominio)', () => {
       };
       const enGhosting = (): Cita => {
         const c = Cita.crear(baseProps);
-        c.marcarGhosting();
+        c.marcarGhosting(TRAS_TODO);
         return c;
       };
 
@@ -250,30 +346,30 @@ describe('Cita (dominio)', () => {
       );
 
       it.each(terminales)(
-        'una cita en estado "%s" debe rechazar marcarAsistencia()',
+        'una cita en estado "%s" debe rechazar marcarAsistencia(TRAS_TODO)',
         (_estado, fabrica) => {
           const cita = fabrica();
-          expect(() => cita.marcarAsistencia()).toThrow(
+          expect(() => cita.marcarAsistencia(TRAS_TODO)).toThrow(
             TransicionEstadoInvalidaError,
           );
         },
       );
 
       it.each(terminales)(
-        'una cita en estado "%s" debe rechazar marcarInasistencia()',
+        'una cita en estado "%s" debe rechazar marcarInasistencia(TRAS_TODO)',
         (_estado, fabrica) => {
           const cita = fabrica();
-          expect(() => cita.marcarInasistencia()).toThrow(
+          expect(() => cita.marcarInasistencia(TRAS_TODO)).toThrow(
             TransicionEstadoInvalidaError,
           );
         },
       );
 
       it.each(terminales)(
-        'una cita en estado "%s" debe rechazar marcarGhosting()',
+        'una cita en estado "%s" debe rechazar marcarGhosting(TRAS_TODO)',
         (_estado, fabrica) => {
           const cita = fabrica();
-          expect(() => cita.marcarGhosting()).toThrow(
+          expect(() => cita.marcarGhosting(TRAS_TODO)).toThrow(
             TransicionEstadoInvalidaError,
           );
         },
@@ -311,14 +407,14 @@ describe('Cita (dominio)', () => {
 
       const asistio = Cita.crear(baseProps);
       asistio.confirmar();
-      asistio.marcarAsistencia();
+      asistio.marcarAsistencia(TRAS_TODO);
 
       const noAsistio = Cita.crear(baseProps);
       noAsistio.confirmar();
-      noAsistio.marcarInasistencia();
+      noAsistio.marcarInasistencia(TRAS_TODO);
 
       const ghosting = Cita.crear(baseProps);
-      ghosting.marcarGhosting();
+      ghosting.marcarGhosting(TRAS_TODO);
 
       // Assert
       expect(cancelada.esTerminal()).toBe(true);
@@ -377,17 +473,17 @@ describe('Cita.reagendar', () => {
       'asistio',
       (c: Cita) => {
         c.confirmar();
-        c.marcarAsistencia();
+        c.marcarAsistencia(TRAS_TODO);
       },
     ],
     [
       'no_asistio',
       (c: Cita) => {
         c.confirmar();
-        c.marcarInasistencia();
+        c.marcarInasistencia(TRAS_TODO);
       },
     ],
-    ['ghosting', (c: Cita) => c.marcarGhosting()],
+    ['ghosting', (c: Cita) => c.marcarGhosting(TRAS_TODO)],
   ])('rechaza reagendar desde el estado terminal %s', (_estado, llevarA) => {
     const cita = Cita.crear(props);
     llevarA(cita);
@@ -449,11 +545,16 @@ describe('Cita.editar', () => {
   });
 });
 
-describe('Cita.accionesPermitidas (US-02.08)', () => {
+describe('Cita.accionesPermitidas(ahora) (US-02.08, US-07.01)', () => {
+  const INICIO = new Date('2026-09-25T13:00:00Z');
+  // Un milisegundo antes del inicio y a la hora exacta (ya se puede marcar).
+  const ANTES = new Date(INICIO.getTime() - 1);
+  const DESDE = new Date(INICIO.getTime());
+
   const enEstado = (estado: EstadoCita): Cita =>
     Cita.reconstituir({
       id: 'cita-1',
-      inicio: new Date('2026-09-25T13:00:00Z'),
+      inicio: INICIO,
       duracionMin: 30,
       tipoConsulta: 'Control',
       estado,
@@ -465,45 +566,81 @@ describe('Cita.accionesPermitidas (US-02.08)', () => {
       actualizadoEn: new Date(),
     });
 
-  it.each<[EstadoCita, AccionCita[]]>([
-    [EstadoCita.PENDIENTE, ['confirmar', 'cancelar', 'reagendar', 'editar']],
+  it.each<[EstadoCita, AccionCita[], AccionCita[]]>([
+    [
+      EstadoCita.PENDIENTE,
+      ['confirmar', 'cancelar', 'reagendar', 'editar'],
+      [
+        'confirmar',
+        'cancelar',
+        'reagendar',
+        'asistencia',
+        'inasistencia',
+        'editar',
+      ],
+    ],
     [
       EstadoCita.CONFIRMADA,
+      ['cancelar', 'reagendar', 'editar'],
       ['cancelar', 'reagendar', 'asistencia', 'inasistencia', 'editar'],
     ],
-    [EstadoCita.CANCELADA, []],
-    [EstadoCita.ASISTIO, []],
-    [EstadoCita.NO_ASISTIO, []],
-    [EstadoCita.GHOSTING, []],
-  ])('desde %s permite exactamente %j', (estado, esperadas) => {
-    expect(enEstado(estado).accionesPermitidas()).toEqual(esperadas);
-  });
+    [EstadoCita.CANCELADA, [], []],
+    [EstadoCita.ASISTIO, [], []],
+    [EstadoCita.NO_ASISTIO, [], []],
+    [EstadoCita.GHOSTING, [], []],
+  ])(
+    'desde %s permite %j antes del inicio y %j desde el inicio',
+    (estado, antes, desde) => {
+      expect(enEstado(estado).accionesPermitidas(ANTES)).toEqual(antes);
+      expect(enEstado(estado).accionesPermitidas(DESDE)).toEqual(desde);
+    },
+  );
 
   // Coherencia pregunta/transicion: lo que se anuncia como permitido NO lanza,
-  // y lo que no se anuncia SI lanza. Protege contra que ambas reglas diverjan.
-  const ejecutar: Record<AccionCita, (c: Cita) => void> = {
+  // y lo que no se anuncia SI lanza (por el estado o por la hora). Protege
+  // contra que ambas reglas diverjan, con el reloj antes y desde el inicio.
+  const ejecutar = (ahora: Date): Record<AccionCita, (c: Cita) => unknown> => ({
     confirmar: (c) => c.confirmar(),
     cancelar: (c) => c.cancelar(),
     reagendar: (c) => c.reagendar(new Date('2026-09-26T13:00:00Z')),
-    asistencia: (c) => c.marcarAsistencia(),
-    inasistencia: (c) => c.marcarInasistencia(),
+    asistencia: (c) => c.marcarAsistencia(ahora),
+    inasistencia: (c) => c.marcarInasistencia(ahora),
     editar: (c) => c.editar({ duracionMin: 45 }),
-  };
-  const todas = Object.keys(ejecutar) as AccionCita[];
+  });
+  const todas: AccionCita[] = [
+    'confirmar',
+    'cancelar',
+    'reagendar',
+    'asistencia',
+    'inasistencia',
+    'editar',
+  ];
+  const casos = Object.values(EstadoCita).flatMap((estado) => [
+    [estado, 'antes del inicio', ANTES] as const,
+    [estado, 'desde el inicio', DESDE] as const,
+  ]);
 
-  it.each(Object.values(EstadoCita))(
-    'en %s, accionesPermitidas coincide con las transiciones que no lanzan',
-    (estado) => {
-      const permitidas = enEstado(estado).accionesPermitidas();
+  it.each(casos)(
+    'en %s y %s, accionesPermitidas coincide con las transiciones que no lanzan',
+    (estado, _momento, ahora) => {
+      const permitidas = enEstado(estado).accionesPermitidas(ahora);
+      const operaciones = ejecutar(ahora);
 
       for (const accion of todas) {
         const cita = enEstado(estado);
         if (permitidas.includes(accion)) {
-          expect(() => ejecutar[accion](cita)).not.toThrow();
+          expect(() => operaciones[accion](cita)).not.toThrow();
         } else {
-          expect(() => ejecutar[accion](cita)).toThrow(
-            TransicionEstadoInvalidaError,
-          );
+          let error: unknown;
+          try {
+            operaciones[accion](cita);
+          } catch (e) {
+            error = e;
+          }
+          expect(
+            error instanceof TransicionEstadoInvalidaError ||
+              error instanceof CitaAunNoComienzaError,
+          ).toBe(true);
         }
       }
     },
@@ -511,31 +648,31 @@ describe('Cita.accionesPermitidas (US-02.08)', () => {
 
   it('nunca anuncia ghosting', () => {
     for (const estado of Object.values(EstadoCita)) {
-      expect(enEstado(estado).accionesPermitidas()).not.toContain('ghosting');
+      expect(enEstado(estado).accionesPermitidas(DESDE)).not.toContain(
+        'ghosting',
+      );
     }
   });
 
   // Las pruebas de arriba parten de `reconstituir`. Estas recorren transiciones
   // reales: la respuesta debe seguir al estado vivo, no a una foto inicial.
   describe('sigue al estado tras cada transición', () => {
-    const accionesDePendiente = enEstado(
-      EstadoCita.PENDIENTE,
-    ).accionesPermitidas();
-
     it('debería volver a las acciones de pendiente cuando se reagenda una cita confirmada', () => {
-      // Arrange
+      // Arrange — ya empezó: se puede marcar asistencia
       const cita = enEstado(EstadoCita.CONFIRMADA);
-      expect(cita.accionesPermitidas()).toContain('asistencia');
+      expect(cita.accionesPermitidas(DESDE)).toContain('asistencia');
 
-      // Act
+      // Act — se mueve al día siguiente
       cita.reagendar(new Date('2026-09-26T13:00:00Z'));
 
       // Assert: la confirmación era para otra hora; se puede volver a confirmar
-      // y ya no se puede marcar asistencia.
-      expect(cita.accionesPermitidas()).toEqual(accionesDePendiente);
-      expect(cita.accionesPermitidas()).toContain('confirmar');
-      expect(cita.accionesPermitidas()).not.toContain('asistencia');
-      expect(cita.accionesPermitidas()).not.toContain('inasistencia');
+      // y, como la hora VIGENTE todavía no llega, no se marca asistencia.
+      expect(cita.accionesPermitidas(DESDE)).toEqual([
+        'confirmar',
+        'cancelar',
+        'reagendar',
+        'editar',
+      ]);
     });
 
     it('debería quedar sin acciones cuando se cancela desde el voucher', () => {
@@ -546,19 +683,24 @@ describe('Cita.accionesPermitidas (US-02.08)', () => {
       cita.cancelar();
 
       // Assert
-      expect(cita.accionesPermitidas()).toEqual([]);
+      expect(cita.accionesPermitidas(DESDE)).toEqual([]);
     });
 
     it('debería devolver un arreglo nuevo en cada llamada cuando el llamador lo muta', () => {
       // Arrange
       const cita = enEstado(EstadoCita.PENDIENTE);
-      const primera = cita.accionesPermitidas();
+      const primera = cita.accionesPermitidas(ANTES);
 
       // Act: un consumidor descuidado altera lo que recibió.
       primera.push('asistencia');
 
       // Assert: la entidad no comparte estado con el llamador.
-      expect(cita.accionesPermitidas()).toEqual(accionesDePendiente);
+      expect(cita.accionesPermitidas(ANTES)).toEqual([
+        'confirmar',
+        'cancelar',
+        'reagendar',
+        'editar',
+      ]);
     });
   });
 });

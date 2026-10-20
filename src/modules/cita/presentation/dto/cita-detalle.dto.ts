@@ -36,15 +36,19 @@ export class CitaDetalleDto {
   duracionMin: number;
   tipoConsulta: string;
   paciente: CitaDetallePacienteDto;
-  // Calculado por la entidad con las mismas guardas que las transiciones. Es
-  // una pista para la interfaz: el 409 de la transicion sigue siendo el
-  // guardian real si el estado cambio entre la lectura y el clic.
+  // Calculado por la entidad con las mismas guardas que las transiciones y el
+  // reloj del servidor: `asistencia` e `inasistencia` solo aparecen desde la
+  // hora de inicio (US-07.01). Es una pista para la interfaz: el 409 de la
+  // transicion sigue siendo el guardian real si el estado (o la hora) cambio
+  // entre la lectura y el clic.
   accionesPermitidas: AccionCita[];
   // Fase 3 (G3), aditivo: quien hizo la ultima confirmacion / cancelacion
-  // segun la bitacora (`'paciente' | 'profesional' | 'sistema'`). `confirmadaPor`
-  // solo con estado confirmada, asistio o no_asistio (tras reagendar la cita
-  // vuelve a pendiente y una confirmacion vieja no cuenta); `canceladaPor`
-  // solo con estado cancelada. En otro caso, `null`.
+  // segun la bitacora (`'paciente' | 'profesional' | 'sistema'`).
+  // `confirmadaPor` (H9, US-07.01): solo con estado confirmada, asistio o
+  // no_asistio, y solo si la ultima confirmacion es POSTERIOR al ultimo
+  // reagendamiento (una confirmacion de otra hora no cuenta, tampoco cuando la
+  // cita paso de pendiente a asistio). `canceladaPor` solo con estado
+  // cancelada. En otro caso, `null`.
   confirmadaPor: ActorCambio | null;
   canceladaPor: ActorCambio | null;
 

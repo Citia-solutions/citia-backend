@@ -147,6 +147,11 @@ no toca la fila, corta el lote, alerta e `informarFallo` · `posible_duplicado`
   y `inicio_cita` = el `inicio` vigente de la cita. Usa `idx_recordatorio_cita`.
   Cambiar esas columnas, esos valores (también el nombre del adaptador
   `registro`) o el significado de `inicio_cita` obliga a revisar ese archivo.
+- **`CitaNoAsistida` llega también con `estado = ghosting`** (US-07.01): la
+  inasistencia que el profesional marca sobre una `pendiente` y el cierre del
+  job G1 (actor `sistema`). `SuscriptorRecordatorios` no distingue: reconcilia
+  por el estado actual y anula lo `programado` (`cita_terminal`). Sin cambios
+  de código.
 
 ## Variables de entorno (ADR-13 §18; validadas en `shared/infrastructure/config/entorno.ts`)
 

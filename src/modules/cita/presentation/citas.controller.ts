@@ -27,6 +27,7 @@ import { RangoFechasInvalidoError } from '../application/rango-fechas-invalido.e
 import { CitasService } from '../application/citas.service';
 import { EnlacesCitaService } from '../application/enlaces-cita.service';
 import { CambioCita } from '../domain/cambio-cita.entity';
+import { CitaAunNoComienzaError } from '../domain/exceptions/cita-aun-no-comienza.error';
 import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-estado-invalida.error';
 import { CitaDashboardDto } from './dto/cita-dashboard.dto';
 import { CitaDetalleDto } from './dto/cita-detalle.dto';
@@ -101,6 +102,7 @@ export class CitasController {
     return this.ejecutar(() => this.citasService.confirmar(id, user));
   }
 
+  // Cuerpo `{ motivo?, pedidoPor? }` (US-07.01: quién pidió la cancelación).
   @Patch(':id/cancelar')
   async cancelar(
     @Param('id', ParseUUIDPipe) id: string,
@@ -108,10 +110,12 @@ export class CitasController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<CitaResponseDto> {
     return this.ejecutar(() =>
-      this.citasService.cancelar(id, user, dto.motivo),
+      this.citasService.cancelar(id, user, dto.motivo, dto.pedidoPor),
     );
   }
 
+  // Desde `pendiente` o `confirmada`, y solo desde la hora de inicio (antes,
+  // 409 con el mensaje de `CitaAunNoComienzaError`). US-07.01.
   @Patch(':id/asistencia')
   async marcarAsistencia(
     @Param('id', ParseUUIDPipe) id: string,
@@ -120,6 +124,8 @@ export class CitasController {
     return this.ejecutar(() => this.citasService.marcarAsistencia(id, user));
   }
 
+  // `confirmada → no_asistio` o `pendiente → ghosting` (lo decide el dominio);
+  // la respuesta trae el estado real de destino. Misma guarda de la hora.
   @Patch(':id/inasistencia')
   async marcarInasistencia(
     @Param('id', ParseUUIDPipe) id: string,
@@ -128,13 +134,15 @@ export class CitasController {
     return this.ejecutar(() => this.citasService.marcarInasistencia(id, user));
   }
 
-  // `ghosting` no se expone: no lo dispara una persona, lo materializa el job
-  // que cierra las citas vencidas (ADR-04 §4, DT-11).
+  // No hay ruta `ghosting` (US-07.01, ADR-14 §9): `…/inasistencia` sobre una
+  // `pendiente` la deja en `ghosting` (lo decide el dominio) y el job G1 cierra,
+  // como sistema, las que nadie marcó (DT-11).
 
   // -------------------------------------------------------------------
   // Reagendar y editar (ADR-09 §5)
   // -------------------------------------------------------------------
 
+  // Cuerpo `{ inicio, motivo?, pedidoPor? }` (US-07.01: quién pidió el cambio).
   @Patch(':id/reagendar')
   async reagendar(
     @Param('id', ParseUUIDPipe) id: string,
@@ -191,6 +199,12 @@ export class CitasController {
       }
       // Transicion de estado ilegal -> 409 Conflict.
       if (error instanceof TransicionEstadoInvalidaError) {
+        throw new ConflictException(error.message);
+      }
+      // Asistencia o inasistencia antes de la hora de inicio -> 409, con su
+      // mensaje (US-07.01): la cita existe y la peticion esta bien formada,
+      // pero en este momento no admite la operacion.
+      if (error instanceof CitaAunNoComienzaError) {
         throw new ConflictException(error.message);
       }
       // Paciente inexistente o de otro tenant -> 400 Bad Request.

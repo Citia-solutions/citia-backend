@@ -1186,14 +1186,22 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
       ['marcar inasistencia', 'inasistencia', true, 'CitaNoAsistida'],
     ])(
       '%s → la petición queda descartada; repetir el hecho no cambia nada (idempotente)',
-      async (_caso, accion, confirmarAntes, hecho) => {
+      async (_caso, accion, marca, hecho) => {
         // Arrange — petición abierta (sobre una cita confirmada si hace falta)
         const cita = await crearCita(a);
         const token = await tokenDe(cita, a);
-        if (confirmarAntes) await post('confirmar', token).expect(200);
+        if (marca) await post('confirmar', token).expect(200);
         await post('otra-hora', token, {
           preferencia: 'cuando se pueda',
         }).expect(201);
+        if (marca) {
+          // US-07.01 (H2): asistencia e inasistencia solo desde la hora de
+          // inicio. El paciente ya actuó (antes del inicio); ahora llega la hora.
+          await datos.query(
+            `UPDATE citas SET inicio = now() - interval '1 hour' WHERE id = $1`,
+            [cita.id],
+          );
+        }
 
         // Act
         await desdeVoucher(cita, accion).expect(200);

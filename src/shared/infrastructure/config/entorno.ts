@@ -25,7 +25,8 @@ import { OrigenCorsInvalidoError, normalizarOrigen } from './origenes-cors';
  *
  * Fuentes: ADR-13 §18 (recordatorios, Resend, Better Stack), ADR-12 §3 y §5
  * (outbox y planificador), US-03 paso 4 (CORS), ADR-07 (`APP_TZ`), contrato
- * de la Fase 3 §1 (E2) y §6 (enlace del paciente y límite de tasa).
+ * de la Fase 3 §1 (E2) y §6 (enlace del paciente y límite de tasa), plan
+ * US-07.01 (`CIERRE_GHOSTING_ACTIVO`, el job G1).
  */
 
 export const ENTORNOS_EJECUCION = [
@@ -92,6 +93,12 @@ export interface Entorno {
 
   // Outbox y planificador (ADR-12)
   PLANIFICADOR_ACTIVO: boolean;
+  /**
+   * Job G1 de cierre de citas (US-07.01, DT-11). `false` (defecto en TODOS los
+   * entornos, también en producción): el job solo cuenta y lo deja en el log;
+   * `true`: cierra como `ghosting` las citas `pendiente` que nadie marcó.
+   */
+  CIERRE_GHOSTING_ACTIVO: boolean;
   EVENTOS_SALIDA_INTERVALO_SEG: number;
   EVENTOS_SALIDA_LOTE: number;
   EVENTOS_SALIDA_MAX_INTENTOS: number;
@@ -489,6 +496,10 @@ export function validarEntorno(
 
   // Outbox y planificador (ADR-12 §3 y §5). En los tests, apagado por defecto.
   const PLANIFICADOR_ACTIVO = l.booleano('PLANIFICADOR_ACTIVO', !test);
+  // Job G1 (US-07.01): apagado por defecto en todos los entornos, también en
+  // producción. Si falta o está vacía, `false` y la app arranca; un valor
+  // inválido detiene el arranque, como cualquier booleano del entorno.
+  const CIERRE_GHOSTING_ACTIVO = l.booleano('CIERRE_GHOSTING_ACTIVO', false);
   const EVENTOS_SALIDA_INTERVALO_SEG = l.entero(
     'EVENTOS_SALIDA_INTERVALO_SEG',
     {
@@ -673,6 +684,7 @@ export function validarEntorno(
     BETTERSTACK_HEARTBEAT_SALIDA_URL,
     BETTERSTACK_HEARTBEAT_RECORDATORIOS_URL,
     PLANIFICADOR_ACTIVO,
+    CIERRE_GHOSTING_ACTIVO,
     EVENTOS_SALIDA_INTERVALO_SEG,
     EVENTOS_SALIDA_LOTE,
     EVENTOS_SALIDA_MAX_INTENTOS,

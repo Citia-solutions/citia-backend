@@ -13,7 +13,9 @@ import { Cita, ESTADOS_VIGENTES } from './cita.entity';
  *    parcial. Invalidar (S1) revoca el actual; el siguiente es `max(version) + 1`.
  *  - El `id` es el `actor_id` del paciente en la bitácora de la cita.
  *  - Una fila nunca cambia su versión ni su hash: lo único mutable es la
- *    revocación.
+ *    revocación y la primera apertura (US-07.01, H5). Cada una va por su
+ *    propio método del puerto (`guardar` y `registrarPrimeraApertura`), y
+ *    ninguno pisa la columna del otro.
  */
 export enum MotivoRevocacionEnlace {
   /** El profesional lo invalidó desde el voucher (S1). */

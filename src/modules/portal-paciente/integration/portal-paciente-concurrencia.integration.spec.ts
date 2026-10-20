@@ -14,6 +14,7 @@ import { EnlacesCitaService } from '../../cita/application/enlaces-cita.service'
 import { CitaModule } from '../../cita/cita.module';
 import { CitaRepository } from '../../cita/domain/cita.repository';
 import { EnlaceCitaRepository } from '../../cita/domain/enlace-cita.repository';
+import { PedidoPor } from '../../cita/domain/cambio-cita.entity';
 import { TransicionEstadoInvalidaError } from '../../cita/domain/exceptions/transicion-estado-invalida.error';
 import { BandejaSolicitudesService } from '../../solicitud/application/bandeja-solicitudes.service';
 import { SolicitudModule } from '../../solicitud/solicitud.module';
@@ -342,6 +343,7 @@ describe('Portal del paciente: concurrencia contra PostgreSQL (integration)', ()
         nuevoInicio,
         profesional,
         delProfesional.manager,
+        PedidoPor.PACIENTE,
       );
 
       // Act — el paciente cancela por el portal (otra conexión)
@@ -550,6 +552,7 @@ describe('Portal del paciente: concurrencia contra PostgreSQL (integration)', ()
         enDias(8),
         profesional,
         delProfesional.manager,
+        PedidoPor.PACIENTE,
       );
       const envio = await abrirTx();
       // Si tuviera que esperar el candado, fallaría con 55P03 en vez de colgarse.
@@ -585,6 +588,7 @@ describe('Portal del paciente: concurrencia contra PostgreSQL (integration)', ()
         nuevoInicio,
         profesional,
         delProfesional.manager,
+        PedidoPor.PACIENTE,
       );
       await delProfesional.commitTransaction();
 

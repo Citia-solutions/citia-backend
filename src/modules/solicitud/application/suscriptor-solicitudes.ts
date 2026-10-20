@@ -9,6 +9,10 @@ import { EventoSolicitudInvalidoError } from './evento-solicitud-invalido.error'
 /**
  * Hechos de cita que dejan sin objeto una petición de otra hora: la cita de
  * origen llegó a un estado terminal y ya no hay nada que mover.
+ *
+ * `CitaNoAsistida` llega también con `estado = ghosting` (US-07.01, H8): la
+ * inasistencia que el profesional marca sobre una `pendiente` y el cierre del
+ * job G1 (actor `sistema`). El efecto es el mismo: se descarta.
  */
 export const HECHOS_CITA_TERMINADA: readonly string[] = [
   'CitaCancelada',
@@ -26,7 +30,7 @@ export const CITA_REAGENDADA = 'CitaReagendada';
  *
  * | Hecho | Efecto sobre la de reagendamiento `recibida` de esa cita |
  * |---|---|
- * | `CitaCancelada`, `CitaAsistida`, `CitaNoAsistida` | `descartada` (la pone el sistema) |
+ * | `CitaCancelada`, `CitaAsistida`, `CitaNoAsistida` (también con `estado = ghosting`, del profesional o del job G1) | `descartada` (la pone el sistema) |
  * | `CitaReagendada` con `actor.tipo = 'profesional'` | `aceptada` = **atendida** (`usuarioId` = quien reagendó, `citaId` = la cita) |
  * | `CitaReagendada` de otro actor o sin actor | nada |
  *

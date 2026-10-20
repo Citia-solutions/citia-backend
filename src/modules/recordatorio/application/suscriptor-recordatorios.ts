@@ -13,7 +13,7 @@ import { ReconciliarRecordatoriosService } from './reconciliar-recordatorios.ser
  * |------------------------------------------------|----------------------------|
  * | `CitaCreada` (también al aceptar una solicitud) | programa                  |
  * | `CitaReagendada`                               | anula los del inicio anterior y programa los del nuevo |
- * | `CitaCancelada`, `CitaAsistida`, `CitaNoAsistida` | anula los `programado` (`cita_terminal`) |
+ * | `CitaCancelada`, `CitaAsistida`, `CitaNoAsistida` (también con `estado = ghosting`, del profesional o del job G1) | anula los `programado` (`cita_terminal`) |
  * | `CitaConfirmada`, `CitaEditada`                | nada (ADR-09 §4: no mueven la hora) |
  *
  * Todos hacen LO MISMO (reconciliar); el efecto sale del estado actual de la

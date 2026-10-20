@@ -55,7 +55,9 @@ src/modules/solicitud/
     `cita` = respuesta de `POST /citas` (con `paciente` y `avisos`). La cita nace con
     `origen = solicitud_publica` (US-07.01: `agendar(…, OrigenCita.SOLICITUD_PUBLICA)`; no se expone).
   - `reagendamiento`: solo `inicio` (lo demás se ignora). MUEVE la cita de origen con
-    `CitasService.reagendarEnTx` (mismo id, vuelve a `pendiente`, `CitaReagendada`);
+    `CitasService.reagendarEnTx(…, PedidoPor.PACIENTE)` (mismo id, vuelve a `pendiente`,
+    `CitaReagendada`; la bitácora anota `pedido_por = paciente` sin preguntar, US-07.01 H3: el
+    paciente lo pidió por su enlace. El parámetro es obligatorio en `reagendarEnTx`);
     `cita` = respuesta de `PATCH /citas/:id/reagendar` (con `avisos`, sin `paciente`);
     `solicitud.citaId = citaOrigenId`. Cita de origen terminal → 409; inexistente → 404.
 - Errores: `SolicitudNoEncontradaError`/`CitaNoEncontradaError` → 404,
@@ -127,7 +129,7 @@ src/modules/solicitud/
 
 | Hecho | Efecto sobre la de reagendamiento `recibida` de esa cita |
 |---|---|
-| `CitaCancelada`, `CitaAsistida`, `CitaNoAsistida` | `descartada` (`resueltaEn` = ahora) |
+| `CitaCancelada`, `CitaAsistida`, `CitaNoAsistida` (también con `estado = ghosting`: la inasistencia del profesional sobre una `pendiente` o el job G1 de `cita`, US-07.01) | `descartada` (`resueltaEn` = ahora) |
 | `CitaReagendada` con `actor.tipo = 'profesional'` | **atendida** = `aceptada` con `usuarioId` = `actor.id` y `citaId` = la cita |
 | `CitaReagendada` del paciente / sistema / sin actor | nada |
 

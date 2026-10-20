@@ -4,6 +4,7 @@ import {
   CitasService,
   ResumenCita,
 } from '../../cita/application/citas.service';
+import { PedidoPor } from '../../cita/domain/cambio-cita.entity';
 import { EstadoCita, OrigenCita } from '../../cita/domain/cita.entity';
 import { TransicionEstadoInvalidaError } from '../../cita/domain/exceptions/transicion-estado-invalida.error';
 import { AvisosCitaDto } from '../../cita/presentation/dto/avisos-cita.dto';
@@ -695,6 +696,8 @@ describe('BandejaSolicitudesService', () => {
         soloInicio.inicio,
         usuario,
         'tx',
+        // US-07.01 (H3): lo pidió el paciente desde su enlace.
+        PedidoPor.PACIENTE,
       );
       expect(mockCitasService.agendar).not.toHaveBeenCalled();
     });
@@ -709,6 +712,7 @@ describe('BandejaSolicitudesService', () => {
         dto.inicio,
         usuario,
         'tx',
+        PedidoPor.PACIENTE,
       );
       expect(mockCitasService.agendar).not.toHaveBeenCalled();
     });

@@ -15,6 +15,7 @@ import {
   rangoDeFechasEnZona,
 } from '../../../shared/domain/timezone';
 import {
+  ACTOR_SISTEMA,
   Actor,
   actorCambioDe,
   actorDelHecho,
@@ -26,9 +27,13 @@ import {
   ActorCambio,
   CambioCita,
   CrearCambioCitaProps,
+  PedidoPor,
   TipoCambio,
 } from '../domain/cambio-cita.entity';
-import { CambioCitaRepository } from '../domain/cambio-cita.repository';
+import {
+  CambioCitaRepository,
+  UltimoCambio,
+} from '../domain/cambio-cita.repository';
 import {
   Cita,
   DURACION_MAXIMA_MIN,
@@ -79,15 +84,21 @@ const confirmarCita: OperacionCita = (cita) => {
   return { tipo: TipoCambio.CONFIRMADA };
 };
 
+// `pedidoPor` (US-07.01, H3): quién pidió el cambio. Sin dato (`undefined` o
+// `null`) queda `null` en la bitácora = cuenta como del profesional.
 const cancelarCita =
-  (motivo?: string): OperacionCita =>
+  (motivo?: string, pedidoPor?: PedidoPor | null): OperacionCita =>
   (cita) => {
     cita.cancelar();
-    return { tipo: TipoCambio.CANCELADA, motivo };
+    return { tipo: TipoCambio.CANCELADA, motivo, pedidoPor: pedidoPor ?? null };
   };
 
 const reagendarCita =
-  (nuevoInicio: Date, motivo?: string): OperacionCita =>
+  (
+    nuevoInicio: Date,
+    motivo?: string,
+    pedidoPor?: PedidoPor | null,
+  ): OperacionCita =>
   (cita) => {
     const inicioAnterior = cita.inicio;
     cita.reagendar(nuevoInicio);
@@ -96,6 +107,7 @@ const reagendarCita =
       inicioAnterior,
       inicioNuevo: nuevoInicio,
       motivo,
+      pedidoPor: pedidoPor ?? null,
     };
   };
 
@@ -118,9 +130,11 @@ interface OpcionesMutacion {
 }
 
 /**
- * Estados en los que una confirmacion SIGUE contando para `confirmadaPor`
- * (G3). Tras reagendar, la cita vuelve a `pendiente`: una confirmacion vieja
- * era para otra hora y no se muestra.
+ * Estados en los que puede haber una confirmacion VIGENTE para
+ * `confirmadaPor` (G3). Tras reagendar, la cita vuelve a `pendiente`: una
+ * confirmacion vieja era para otra hora y no se muestra. Desde US-07.01 una
+ * `pendiente` puede ir directo a `asistio`, asi que en estos estados ademas se
+ * exige que la confirmacion sea posterior al ultimo reagendamiento (H9).
  */
 const ESTADOS_CON_CONFIRMACION: readonly EstadoCita[] = [
   EstadoCita.CONFIRMADA,
@@ -139,7 +153,10 @@ export class CitasService {
     // Zona horaria de la clínica (ej. 'America/Santiago'). El "día" y la "hora"
     // se calculan en esta zona, no en la del servidor (contenedor en UTC).
     private readonly tz: string,
-    // Reloj de las acciones del paciente (validez del enlace: `ahora < inicio`).
+    // Reloj del dominio: la validez del enlace en las acciones del paciente
+    // (`ahora < inicio`) y, desde US-07.01, la hora de las marcas del
+    // profesional y del job G1 (`ahora ≥ inicio`) y las `accionesPermitidas`
+    // del voucher.
     private readonly reloj: () => Date = () => new Date(),
   ) {}
 
@@ -239,19 +256,30 @@ export class CitasService {
     );
   }
 
+  /**
+   * `pendiente | confirmada → cancelada` por el profesional. `pedidoPor`
+   * (US-07.01, H3) es quién lo pidió: opcional en la API, sin dato = `null` en
+   * la bitácora (cuenta como del profesional). No viaja en el hecho.
+   */
   async cancelar(
     citaId: string,
     usuario: AuthenticatedUser,
     motivo?: string,
+    pedidoPor?: PedidoPor | null,
   ): Promise<CitaResponseDto> {
     return this.mutarComoProfesional(
       citaId,
       usuario,
       'CitaCancelada',
-      cancelarCita(motivo),
+      cancelarCita(motivo, pedidoPor),
     );
   }
 
+  /**
+   * `pendiente | confirmada → asistio` (US-07.01, ADR-14 §9), desde la hora
+   * de inicio con el reloj del servicio. Antes de la hora →
+   * `CitaAunNoComienzaError` (409). Publica `CitaAsistida` (H8).
+   */
   async marcarAsistencia(
     citaId: string,
     usuario: AuthenticatedUser,
@@ -261,12 +289,21 @@ export class CitasService {
       usuario,
       'CitaAsistida',
       (cita) => {
-        cita.marcarAsistencia();
+        cita.marcarAsistencia(this.reloj());
         return { tipo: TipoCambio.ASISTIO };
       },
     );
   }
 
+  /**
+   * Inasistencia (US-07.01, ADR-14 §9): el destino lo decide el dominio,
+   * `confirmada → no_asistio` o `pendiente → ghosting`. La bitácora anota el
+   * tipo del destino (`no_asistio` o `ghosting`, actor `profesional`) y el
+   * hecho es SIEMPRE `CitaNoAsistida` (H8): los suscriptores anulan los
+   * recordatorios y descartan la petición de otra hora sin distinguir; el
+   * `estado` del payload dice cómo se materializó. La respuesta trae el
+   * estado real de destino.
+   */
   async marcarInasistencia(
     citaId: string,
     usuario: AuthenticatedUser,
@@ -276,8 +313,13 @@ export class CitasService {
       usuario,
       'CitaNoAsistida',
       (cita) => {
-        cita.marcarInasistencia();
-        return { tipo: TipoCambio.NO_ASISTIO };
+        const destino = cita.marcarInasistencia(this.reloj());
+        return {
+          tipo:
+            destino === EstadoCita.GHOSTING
+              ? TipoCambio.GHOSTING
+              : TipoCambio.NO_ASISTIO,
+        };
       },
     );
   }
@@ -289,7 +331,8 @@ export class CitasService {
   /**
    * Mueve la cita conservando su identidad y la devuelve a `pendiente`: la
    * confirmacion anterior era para otra hora. Deja el antes/despues en la
-   * bitacora, que es lo que RF-08 necesita para contar reagendamientos.
+   * bitacora, que es lo que RF-08 necesita para contar reagendamientos, y
+   * quién lo pidió (`dto.pedidoPor`, US-07.01; sin dato = `null`).
    */
   async reagendar(
     citaId: string,
@@ -300,7 +343,7 @@ export class CitasService {
       citaId,
       usuario,
       'CitaReagendada',
-      reagendarCita(new Date(dto.inicio), dto.motivo),
+      reagendarCita(new Date(dto.inicio), dto.motivo, dto.pedidoPor),
       { conAvisos: true },
     );
   }
@@ -316,18 +359,23 @@ export class CitasService {
    * `CitaNoEncontradaError`; cita terminal → `TransicionEstadoInvalidaError`.
    *
    * `nuevoInicio` admite el texto ISO del DTO (con zona) o un `Date`.
+   *
+   * `pedidoPor` es OBLIGATORIO a propósito (US-07.01, H3): su único llamador,
+   * la bandeja al aceptar una petición de otra hora, anota `PACIENTE` de forma
+   * explícita (el paciente la pidió por su enlace).
    */
   async reagendarEnTx(
     citaId: string,
     nuevoInicio: Date | string,
     usuario: AuthenticatedUser,
     tx: TransactionContext,
+    pedidoPor: PedidoPor,
   ): Promise<CitaResponseDto> {
     return this.responderComoProfesional(
       citaId,
       usuario,
       'CitaReagendada',
-      reagendarCita(new Date(nuevoInicio)),
+      reagendarCita(new Date(nuevoInicio), undefined, pedidoPor),
       { conAvisos: true },
       tx,
     );
@@ -392,7 +440,8 @@ export class CitasService {
   /**
    * `pendiente | confirmada → cancelada` por el paciente, con `motivo`
    * opcional (≤ 300, lo valida el DTO del portal). Mismos errores que
-   * `confirmarComoPaciente`.
+   * `confirmarComoPaciente`. La bitácora anota `pedido_por = paciente`
+   * (US-07.01, H3): lo pidió quien lo hizo, sin preguntar.
    */
   async cancelarComoPaciente(
     cita: Cita,
@@ -405,7 +454,40 @@ export class CitasService {
       cita,
       actorPaciente(enlace.id),
       'CitaCancelada',
-      cancelarCita(motivo),
+      cancelarCita(motivo, PedidoPor.PACIENTE),
+      tx,
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Cierre por el sistema (US-07.01, job G1, DT-11)
+  // ---------------------------------------------------------------------
+
+  /**
+   * `pendiente → ghosting` por el SISTEMA: lo llama solo el job G1
+   * (`CierreGhostingService`), DENTRO de su transacción y con la cita YA
+   * bloqueada por el reclamo (`FOR NO KEY UPDATE … SKIP LOCKED`): no la
+   * recarga. Mismo esqueleto que el resto (`aplicar`): bitácora `ghosting` con
+   * `actor_tipo = sistema` y `actor_id` nulo, y hecho `CitaNoAsistida` (H8) con
+   * `actor: { tipo: 'sistema', id: null }`. Sin respuesta HTTP ni avisos.
+   *
+   * @throws TransicionEstadoInvalidaError si la cita ya no está `pendiente`
+   *   (una lectura vieja: de un terminal no se sale).
+   * @throws CitaAunNoComienzaError si todavía no llega su hora (defensa: el
+   *   job solo reclama citas de días ya terminados).
+   */
+  async cerrarPorGhostingEnTx(
+    cita: Cita,
+    tx: TransactionContext,
+  ): Promise<Cita> {
+    return this.aplicar(
+      cita,
+      ACTOR_SISTEMA,
+      'CitaNoAsistida',
+      (c) => {
+        c.marcarGhosting(this.reloj());
+        return { tipo: TipoCambio.GHOSTING };
+      },
       tx,
     );
   }
@@ -512,7 +594,9 @@ export class CitasService {
         correo: datosPaciente.correo,
       }),
       // La regla vive en la entidad (ADR-04 §1); el service solo la transporta.
-      accionesPermitidas: cita.accionesPermitidas(),
+      // Con el reloj del servicio: `asistencia` e `inasistencia` solo desde la
+      // hora de inicio (US-07.01).
+      accionesPermitidas: cita.accionesPermitidas(this.reloj()),
       confirmadaPor,
       canceladaPor,
     });
@@ -644,7 +728,7 @@ export class CitasService {
 
   /**
    * UNICO esqueleto de toda mutacion de una cita ya existente, sea quien sea
-   * el actor (profesional, paciente o, en el futuro, el sistema):
+   * el actor (profesional, paciente o el sistema, `cerrarPorGhostingEnTx`):
    * aplicar la regla de dominio -> guardar -> registrar en la bitacora ->
    * publicar el hecho, todo en `tx`. La cita debe llegar ya bloqueada.
    *
@@ -763,9 +847,15 @@ export class CitasService {
 
   /**
    * G3: quien provoco la confirmacion y la cancelacion VIGENTES, segun la
-   * bitacora. `confirmadaPor` solo cuenta si la cita esta confirmada o ya
-   * se cerro desde ahi (asistio / no_asistio); `canceladaPor`, solo si esta
-   * cancelada. Sin consulta si el estado no lo necesita.
+   * bitacora. Sin consulta si el estado no lo necesita.
+   *
+   *  - `confirmadaPor` (H9, US-07.01): solo con estado `confirmada`,
+   *    `asistio` o `no_asistio`, y solo si la ultima confirmacion es
+   *    POSTERIOR al ultimo reagendamiento (o no hubo reagendamiento). Desde
+   *    US-07.01 una `pendiente` puede pasar directo a `asistio`: sin esta
+   *    regla, una cita confirmada, despues reagendada y por ultimo marcada
+   *    `asistio` diria "Confirmada por ti" con una confirmacion de otra hora.
+   *  - `canceladaPor`: solo con estado `cancelada`.
    */
   private async quienConfirmoYCancelo(
     cita: Cita,
@@ -774,11 +864,14 @@ export class CitasService {
     confirmadaPor: ActorCambio | null;
     canceladaPor: ActorCambio | null;
   }> {
+    const conConfirmacion = ESTADOS_CON_CONFIRMACION.includes(cita.estado);
+    const cancelada = cita.estado === EstadoCita.CANCELADA;
+
     const tipos: TipoCambio[] = [];
-    if (ESTADOS_CON_CONFIRMACION.includes(cita.estado)) {
-      tipos.push(TipoCambio.CONFIRMADA);
+    if (conConfirmacion) {
+      tipos.push(TipoCambio.CONFIRMADA, TipoCambio.REAGENDADA);
     }
-    if (cita.estado === EstadoCita.CANCELADA) {
+    if (cancelada) {
       tipos.push(TipoCambio.CANCELADA);
     }
     if (tipos.length === 0) {
@@ -791,13 +884,35 @@ export class CitasService {
       tipos,
     );
     return {
-      confirmadaPor: tipos.includes(TipoCambio.CONFIRMADA)
-        ? (ultimos[TipoCambio.CONFIRMADA]?.actor ?? null)
+      confirmadaPor: conConfirmacion
+        ? CitasService.confirmacionVigente(
+            ultimos[TipoCambio.CONFIRMADA],
+            ultimos[TipoCambio.REAGENDADA],
+          )
         : null,
-      canceladaPor: tipos.includes(TipoCambio.CANCELADA)
+      canceladaPor: cancelada
         ? (ultimos[TipoCambio.CANCELADA]?.actor ?? null)
         : null,
     };
+  }
+
+  /**
+   * H9: el actor de la ultima confirmacion si es ESTRICTAMENTE posterior al
+   * ultimo reagendamiento; si no, `null`. A igual instante no cuenta (a favor
+   * de no mostrar una confirmacion que podria ser de la hora anterior).
+   */
+  private static confirmacionVigente(
+    confirmacion: UltimoCambio | undefined,
+    reagendamiento: UltimoCambio | undefined,
+  ): ActorCambio | null {
+    if (!confirmacion) return null;
+    if (
+      reagendamiento &&
+      reagendamiento.ocurridoEn.getTime() >= confirmacion.ocurridoEn.getTime()
+    ) {
+      return null;
+    }
+    return confirmacion.actor;
   }
 
   /**
