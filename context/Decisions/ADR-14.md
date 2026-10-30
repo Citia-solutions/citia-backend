@@ -515,7 +515,7 @@ pueden reconstruir**: cada día sin ellos es un día que la calificación no pod
 
 ### 11. Datos entre clínicas
 
-> **Confirmada por el usuario el 2026-10-30:** nada compartido entre clínicas (opción G1). Era el "punto 4" que
+> **Confirmada por el usuario el 2026-10-30:** nada compartido entre clínicas (la opción G1 de *Opciones evaluadas*, que no es el job G1). Era el "punto 4" que
 > seguía en investigación, y queda en su opción A, no compartir.
 
 - **En esta versión no se comparte nada.** Cada clínica calcula con sus propios hechos: el mismo RUT en dos
@@ -691,7 +691,7 @@ src/modules/calificacion/
 | ~~Qué cuenta como "recordatorio no enviado"~~ (decisión 5.b) | ✅ **resuelta (2026-10-30)**: suman +3 las fallas del contacto del paciente (sin correo, correo suprimido, rebote, correo inválido) **y las del sistema** (cuota de Resend agotada, fusible del tenant); no suman los recordatorios apagados por el profesional ni la cita creada con menos de 60 min (`creada_tarde`). *Antes: a precisar, con la inclinación "solo lo que se debe al contacto del paciente", que el usuario cambió por el punto 2* | usuario |
 | ~~Si los reagendamientos que pidió el profesional cuentan para "se reagendó 2 o más veces"~~ (decisión 5.b) | ✅ **resuelta (2026-10-30): no**, solo los que pidió el paciente (vacío = profesional). *Antes: a precisar, con esa inclinación* | usuario |
 | ~~Cómo se corrige un cierre equivocado~~ (decisión 9) | ✅ **resuelta (2026-10-30)**: el profesional corrige entre Asistió y No asistió **dentro de 7 días**, también los cierres de G1; las canceladas no; queda en la bitácora con actor `profesional` y la calificación usa el último desenlace. Excepción a "de un terminal no se sale" ([ADR-04](ADR-04.md)); sin margen extra para G1. Se construye en US-07.02 ([DT-48](../Deudas/DT-48.md)). *Antes: a decidir en US-07.02; US-07.01 se protegía con el interruptor del job* | usuario |
-| ~~Datos entre clínicas~~ (decisión 11) | ✅ **confirmada (2026-10-30)**: nada compartido (opción G1; el "punto 4" de la investigación, en su opción A) | usuario |
+| ~~Datos entre clínicas~~ (decisión 11) | ✅ **confirmada (2026-10-30)**: nada compartido (la opción G1 de *Opciones evaluadas*, no el job; el "punto 4" de la investigación, en su opción A) | usuario |
 | ~~El estado de la inasistencia desde `pendiente`~~ (decisión 9) | ✅ **resuelta (2026-10-19): `ghosting`** con actor `profesional`, por la misma ruta `…/inasistencia`; desde `confirmada` sigue `no_asistio`. *Antes: propuesta, con `no_asistio` como alternativa* | usuario |
 | ~~Exigir en el dominio `ahora ≥ inicio` para marcar asistencia o inasistencia~~ (decisión 9) | ✅ **resuelta (2026-10-19): sí**, desde cualquier estado de origen; antes de la hora, 409 | usuario |
 | ~~"Quién lo pidió": obligatorio u opcional~~ (decisión 10.c) | ✅ **resuelta (2026-10-19)**: opcional en la API, obligatorio en la pantalla; `paciente` automático por el enlace y al aceptar una petición de otra hora | usuario |
