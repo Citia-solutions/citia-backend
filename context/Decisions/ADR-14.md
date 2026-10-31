@@ -1,30 +1,41 @@
 # ADR-14: Calificación de asistencia del paciente y riesgo de cada cita (RF-08) — puntos fijos sobre los hechos de los últimos 12 meses, cuatro etiquetas, un riesgo por cita que solo informa y ayuda, y nunca datos de quién es la persona
 
-> **Fase:** [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) · **Feature:** — · **Plan:** [US-07.01](../US/07.01-registro-hechos.md) (registro de hechos); US-07.02 y US-07.03, sin plan · **Relacionado:** [ADR-04](../Decisions/ADR-04.md), [ADR-10](../Decisions/ADR-10.md), [ADR-11](../Decisions/ADR-11.md), [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-11](../Deudas/DT-11.md), [DT-13](../Deudas/DT-13.md), [DT-16](../Deudas/DT-16.md), [DT-23](../Deudas/DT-23.md), [DT-30](../Deudas/DT-30.md), [DT-44](../Deudas/DT-44.md), [DT-47](../Deudas/DT-47.md), [DT-48](../Deudas/DT-48.md), [DT-49](../Deudas/DT-49.md), [DT-50](../Deudas/DT-50.md), [Q6](../PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1), [Q17](../PREGUNTAS-ABIERTAS.md#q17--manejo-de-datos-de-salud)
+> **Fase:** [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) · **Feature:** — · **Plan:** [US-07.01](../US/07.01-registro-hechos.md) (registro de hechos); US-07.02 y US-07.03, sin plan (🚧 bloqueadas desde el 2026-10-30, plan incluido) · **Relacionado:** [ADR-04](../Decisions/ADR-04.md), [ADR-10](../Decisions/ADR-10.md), [ADR-11](../Decisions/ADR-11.md), [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-11](../Deudas/DT-11.md), [DT-13](../Deudas/DT-13.md), [DT-16](../Deudas/DT-16.md), [DT-23](../Deudas/DT-23.md), [DT-30](../Deudas/DT-30.md), [DT-44](../Deudas/DT-44.md), [DT-47](../Deudas/DT-47.md), [DT-48](../Deudas/DT-48.md), [DT-49](../Deudas/DT-49.md), [DT-50](../Deudas/DT-50.md), [Q6](../PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1), [Q17](../PREGUNTAS-ABIERTAS.md#q17--manejo-de-datos-de-salud)
 
-**Fecha:** 2026-10-19 · decisiones de producto de US-07.02 aprobadas el 2026-10-30
-**Estado:** **Aceptado en lo que toca a US-07.01 (2026-10-19)** · US-07.02 y US-07.03: **sus decisiones de
-producto quedaron aprobadas por el usuario el 2026-10-30** (decisiones 3, 5.b, 5.d, 8, 9, 11 y la pregunta 2 de
-Q6; detalle en [Preguntas abiertas](#preguntas-abiertas-y-lo-que-queda-a-confirmar)), pero siguen
-**propuestas**: la [revisión legal](#contexto-legal-a-validar-por-un-abogado) sigue pendiente (al 2026-10-30 el
-usuario no tiene abogado) y **bloquea su implementación, no su plan** · las decisiones de producto las tomó el
-usuario (arquitecto y dueño del producto) el 2026-10-19 y el 2026-10-30 ·
+**Fecha:** 2026-10-19 · decisiones de producto de US-07.02 aprobadas el 2026-10-30 · US-07.02 y US-07.03
+bloqueadas el 2026-10-30
+**Estado:** **Aceptado en lo que toca a US-07.01 (2026-10-19)** · US-07.02 y US-07.03: **🚧 bloqueadas desde el
+2026-10-30, plan incluido** (decisión del usuario: *"vamos a bloquear esta fase del scoring"*), hasta que un
+abogado revise el [Contexto legal](#contexto-legal-a-validar-por-un-abogado) o el usuario decida otra cosa. Al
+2026-10-30 el usuario no tiene abogado, y un pre-análisis legal hecho con una IA ese mismo día (**no es un abogado
+ni una opinión legal**) recomienda no habilitar el perfilamiento mientras no haya fundamento jurídico (arts. 16 bis,
+inciso 1, y 8 bis de la Ley 21.719; detalle en el [Contexto legal](#contexto-legal-a-validar-por-un-abogado)).
+Siguen **propuestas**, con sus **decisiones de producto aprobadas por el usuario el 2026-10-30** (decisiones 3,
+5.b, 5.d, 8, 9, 11 y la pregunta 2 de Q6; detalle en
+[Preguntas abiertas](#preguntas-abiertas-y-lo-que-queda-a-confirmar)): el bloqueo **no las revierte**, siguen
+vigentes y quedan listas para cuando se desbloqueen · las decisiones de producto las tomó el usuario (arquitecto
+y dueño del producto) el 2026-10-19 y el 2026-10-30 ·
 [US-07.01](#10-us-0701-los-datos-que-hoy-se-pierden-va-primero) (registro de hechos: decisiones 9 y 10) está
 **en producción desde el 2026-10-20**, con el **job G1 prendido desde el 2026-10-27**
 ([DT-11](../Deudas/DT-11.md) cerrada) y sus pruebas manuales en curso; su contrato está en el plan
-[US-07.01](../US/07.01-registro-hechos.md) · US-07.02 (calificación y riesgo) y US-07.03 (acciones) siguen en la
-v2 ([ROADMAP](../ROADMAP.md#fase-5--us-07-calificación-de-asistencia-scoring)); **el siguiente paso es el plan
-de US-07.02** ([Plan de ejecución](#plan-de-ejecución), paso 4) · lo que queda abierto está en
+[US-07.01](../US/07.01-registro-hechos.md). **El bloqueo no la toca** · US-07.02 (calificación y riesgo) y US-07.03
+(acciones) siguen además fuera del MVP, en la v2
+([ROADMAP](../ROADMAP.md#fase-5--us-07-calificación-de-asistencia-scoring)) · **el siguiente paso de la Fase 5 es
+cerrar US-07.01** (las pruebas manuales que faltan y su documentación de cierre; [Plan de
+ejecución](#plan-de-ejecución)) · lo que queda abierto está en
 [Preguntas abiertas y lo que queda a confirmar](#preguntas-abiertas-y-lo-que-queda-a-confirmar)
 *(Antes, en la mañana del 2026-10-19: **Propuesto**, sin implementar; US-07.01 se llamaba "Etapa 0". Del
 2026-10-19 al 2026-10-30: US-07.01 en construcción y luego en producción con el job G1 apagado; las preguntas de
-US-07.02 —peso de `nuevo`, recordatorio no entregado, decisión 8, corrección de cierres, Q6 p2— abiertas.)*
+US-07.02 —peso de `nuevo`, recordatorio no entregado, decisión 8, corrección de cierres, Q6 p2— abiertas. El
+2026-10-30, hasta el bloqueo: US-07.02 y US-07.03 "siguen en la v2"; la revisión legal "bloquea su
+implementación, no su plan", y "el siguiente paso es el plan de US-07.02" (paso 4 del Plan de ejecución).)*
 **Commits:** US-07.01: `3e64472` (este ADR y el plan), `1545ad7` (esquema), `f123617` (dominio, API y job G1),
 `8a7953b` y `d4aa920` (tests), `bb90815` (DT-47); merge `715c3f3` a `develop` y release `313a506` a `main`
-(2026-10-20) · decisiones del 2026-10-30: en la rama `docs/fase5-decisiones-us0702`
+(2026-10-20) · decisiones y bloqueo del 2026-10-30: en la rama `docs/fase5-decisiones-us0702`
 **Historia:** US-07, repartida en tres subtareas con la convención de US-02.07 / US-02.08:
 **US-07.01** · registro de hechos ([plan](../US/07.01-registro-hechos.md)) · **US-07.02** · calificación y
-riesgo (sin plan) · **US-07.03** · acciones (sin plan). La calibración es una tarea posterior, sin US propia.
+riesgo (sin plan; 🚧 bloqueada desde el 2026-10-30) · **US-07.03** · acciones (sin plan; 🚧 bloqueada desde el
+2026-10-30). La calibración es una tarea posterior, sin US propia.
 No confundir US-07.01 con la subtarea US-02.07.
 **Relación:** **extiende** [ADR-04](ADR-04.md) §2 con dos transiciones desde `pendiente` y la guarda de la hora de inicio (decisión 9) ·
 **usa** el outbox y el planificador de [ADR-12](ADR-12.md) (el job G1 y los dos controles del riesgo son
@@ -572,14 +583,27 @@ src/modules/calificacion/
 > **Esto no es asesoría legal.** Es el resumen de lo que el usuario recogió el 2026-10-19, ordenado para
 > llevárselo a un abogado. Ninguna fila de esta tabla se da por cierta hasta esa revisión.
 
-> **Estado de la revisión (2026-10-30): pendiente.** Al 2026-10-30 el usuario **no tiene abogado**. La revisión
-> sigue sin fecha y **sigue bloqueando la implementación de US-07.02 y US-07.03**; no bloquea su plan (el plan de
-> US-07.02 se puede escribir ya) ni a US-07.01, que solo registra hechos de la agenda. Las decisiones de producto
-> del 2026-10-30 no cambian ninguna fila de esta tabla.
+> **Estado de la revisión (2026-10-30): pendiente, y US-07.02 y US-07.03 quedan 🚧 bloqueadas, plan incluido.**
+> Al 2026-10-30 el usuario **no tiene abogado** y la revisión sigue sin fecha. Ese día el usuario decidió bloquear
+> las dos subtareas, **también su plan**, hasta que un abogado revise este contexto (o hasta que el usuario decida otra
+> cosa). No bloquea a US-07.01, que solo registra hechos de la agenda. Las decisiones de producto del 2026-10-30
+> no cambian ninguna fila de esta tabla. *Antes (2026-10-30, hasta el bloqueo): la revisión "sigue bloqueando la
+> implementación de US-07.02 y US-07.03; no bloquea su plan (el plan de US-07.02 se puede escribir ya)".*
+
+> **Pre-análisis con una IA (2026-10-30). No es un abogado ni una opinión legal.** Ese día el usuario hizo un
+> pre-análisis legal con una IA, y es el motivo del bloqueo; no reemplaza la revisión del abogado. Recomienda **no
+> habilitar el perfilamiento mientras no haya fundamento jurídico**: el art. 16 bis, inciso 1, limita los datos de
+> salud a los fines de las leyes sanitarias, y el art. 8 bis exige que la intervención humana sea real. También
+> confirmó lo que este ADR ya decía: nunca restringir (decisión 6), nada compartido entre clínicas (decisión 11) y
+> que el consentimiento de [DT-16](../Deudas/DT-16.md) no sirve de base. **Dos hechos verificados ese día:** (1) el
+> Senado aprobó el 2026-10-29 (33 votos a 6) postergar la vigencia de la ley al **2027-10-15**, y el proyecto
+> (boletín 18.623-07) pasó a la Cámara; mientras no se publique, la fecha vigente sigue siendo el **2026-12-01**.
+> La fila *Vigencia* y la pregunta 5 se actualizaron con esa fecha. (2) El **Decreto 662** (Hacienda, publicado el 2026-09-09) regula la certificación voluntaria de los modelos de
+> prevención de infracciones.
 
 | Tema | Lo que se entiende hoy |
 |---|---|
-| **Vigencia** | La **Ley 21.719** rige desde el **2026-12-01** (artículo 1.º transitorio). Hay un proyecto de postergación a 2027-12-01 (boletín 18.623-07) en trámite. |
+| **Vigencia** | La **Ley 21.719** rige desde el **2026-12-01** (artículo 1.º transitorio). El proyecto de postergación (boletín 18.623-07) pasó el Senado el 2026-10-29 con la fecha **2027-10-15** y sigue en la Cámara; mientras no se publique, rige el 2026-12-01. *Antes (2026-10-19): "Hay un proyecto de postergación a 2027-12-01 en trámite" (la fecha que proponía el Ejecutivo).* |
 | **Perfilamiento** | Calificar la "fiabilidad" del paciente es **perfilamiento** (art. 2, letra w). |
 | **Oposición** | El art. 8 bis da derecho de oposición a las decisiones basadas en tratamiento automatizado, y **no dice "únicamente"**: que el sistema solo sugiera y el profesional decida podría no bastar para quedar fuera. |
 | **Transparencia** | La clínica debe informar la lógica aplicada (art. 14 ter, letra l). Las reglas explicables de este ADR ayudan: se pueden contar en un párrafo. |
@@ -594,7 +618,7 @@ src/modules/calificacion/
 2. ¿Cuál es el alcance del art. 16 bis? ¿Calificar la asistencia cabe en los fines que permite?
 3. ¿Corresponde hacer la evaluación de impacto (art. 15 ter) antes de activar la calificación?
 4. ¿Qué debe decir el contrato de encargo entre la clínica y Citia para cubrir este tratamiento?
-5. ¿Qué cambia si se aprueba la postergación a 2027-12-01?
+5. ¿Qué cambia si se aprueba la postergación al 2027-10-15? *(Antes: "a 2027-12-01", la fecha del Ejecutivo.)*
 6. *(Se desprende de la decisión 3.)* El paciente nunca ve su etiqueta en la interfaz. ¿Qué hay que entregarle
    si la pide ejerciendo su derecho de acceso?
 
@@ -606,9 +630,11 @@ src/modules/calificacion/
   desde el 2026-10-30, la corrección de un cierre equivocado dentro de 7 días (decisión 9), **única excepción**
   a "de un terminal no se sale", que sigue vigente para todo lo demás (las canceladas no se corrigen).
   *Antes (2026-10-19): "De un terminal no se sale" sigue vigente, sin excepción.*
-- **Lo que sigue propuesto (US-07.02 y US-07.03) no tiene código ni contrato.** El único contrato nuevo es el
-  de US-07.01, en su [plan](../US/07.01-registro-hechos.md). *(Antes del 2026-10-19: "mientras este ADR siga
-  Propuesto, nada".)*
+- **Lo que sigue propuesto (US-07.02 y US-07.03) no tiene código ni contrato**, y desde el 2026-10-30 tampoco se
+  planifica: está 🚧 bloqueado, plan incluido. El único contrato nuevo es el de US-07.01, en su
+  [plan](../US/07.01-registro-hechos.md). *(Antes del 2026-10-19: "mientras este ADR siga Propuesto, nada".)*
+- **Las decisiones de producto del 2026-10-30.** El bloqueo de ese mismo día no las revierte: siguen vigentes y
+  quedan listas para cuando US-07.02 y US-07.03 se desbloqueen.
 - **El dashboard** (`GET /api/citas/hoy`, `CitaDashboardDto`) y el **portal del paciente**
   (`VistaCitaPacienteDto`): el paciente no ve nada nuevo.
 - **La vía pública de [ADR-09](ADR-09.md) y el enlace de [ADR-10](ADR-10.md)**: el puntaje no los frena
@@ -617,8 +643,10 @@ src/modules/calificacion/
   idempotencia se mantienen.
 - **El aislamiento por tenant**: la calificación es por clínica. Los dos controles del planificador barren todos
   los tenants a la vista, como manda [ADR-12 §6](ADR-12.md).
-- **US-07.02 y US-07.03 siguen ⏸ en la v2.** La Fase 5 pasó a 🔶 el 2026-10-19 solo por US-07.01
-  ([ROADMAP](../ROADMAP.md#fase-5--us-07-calificación-de-asistencia-scoring)).
+- **US-07.02 y US-07.03 quedan 🚧 bloqueadas desde el 2026-10-30**, plan incluido, y siguen fuera del MVP, en la
+  v2. La Fase 5 pasó a 🔶 el 2026-10-19 solo por US-07.01, y sigue así: el bloqueo no toca a US-07.01
+  ([ROADMAP](../ROADMAP.md#fase-5--us-07-calificación-de-asistencia-scoring)). *Antes (2026-10-19 → 2026-10-30):
+  "US-07.02 y US-07.03 siguen ⏸ en la v2".*
 
 ---
 
@@ -653,7 +681,10 @@ src/modules/calificacion/
   de 7 días (decisión 9), que se construye en US-07.02, antes de que la calificación exista; sin margen extra
   para G1. La lista de citas pasadas sin cerrar (pregunta 2 de Q6) ayuda además a que G1 no cierre a quien sí
   llegó. *Antes (2026-10-19): tres salidas posibles a decidir en US-07.02 —el aviso de
-  [DT-30](../Deudas/DT-30.md), un margen antes de G1 o una corrección en la bitácora—.*
+  [DT-30](../Deudas/DT-30.md), un margen antes de G1 o una corrección en la bitácora—.* Desde el 2026-10-30 la
+  corrección espera con US-07.02 (🚧 bloqueada); la salida decidida no cambia. *Observación, sin decidir:* ni la
+  corrección ni la lista perfilan al paciente, así que **podrían separarse de US-07.02** si el usuario lo quiere
+  (la lista ya figura como candidata).
 - **Suplantación** ([DT-23](../Deudas/DT-23.md)): dentro de una clínica, alguien con el RUT de otra persona puede
   ensuciar su calificación. Que no haya restricciones automáticas (decisión 6) acota el daño, pero no lo evita.
 - **"Abrió el enlace" no es infalible** ([DT-49](../Deudas/DT-49.md)). Un escáner que **ejecuta** la página sí
@@ -675,14 +706,18 @@ src/modules/calificacion/
 
 ## Preguntas abiertas y lo que queda a confirmar
 
-> **2026-10-30:** el usuario respondió todas las preguntas de producto que quedaban para US-07.02. **Ya no
-> bloquean el plan de US-07.02**, que es el siguiente paso ([Plan de ejecución](#plan-de-ejecución), paso 4).
-> Lo que sigue abierto es la revisión legal (bloquea la implementación de US-07.02 y US-07.03, no el plan), la
-> calibración y los detalles que el plan debe precisar (al final de la tabla).
+> **2026-10-30:** el usuario respondió todas las preguntas de producto que quedaban para US-07.02, y ese mismo día
+> **bloqueó US-07.02 y US-07.03, plan incluido** (🚧), hasta que un abogado revise el
+> [Contexto legal](#contexto-legal-a-validar-por-un-abogado) o el usuario decida otra cosa. Las respuestas **siguen
+> vigentes** y quedan listas para entonces; las filas "a precisar en el plan de US-07.02" (al final de la tabla)
+> quedan igual, **en espera**. Lo que sigue abierto es la revisión legal, la calibración y esos detalles.
+> *Antes (2026-10-30, hasta el bloqueo): "Ya no bloquean el plan de US-07.02, que es el siguiente paso (Plan de
+> ejecución, paso 4). Lo que sigue abierto es la revisión legal (bloquea la implementación de US-07.02 y US-07.03,
+> no el plan), la calibración y los detalles que el plan debe precisar".*
 
 | Tema | Estado | Decide |
 |---|---|---|
-| **La revisión legal** | **pendiente**; preguntas en el [Contexto legal](#contexto-legal-a-validar-por-un-abogado). Al 2026-10-30 el usuario **no tiene abogado**. Bloquea la **implementación** de US-07.02 y US-07.03 (no su plan) y no bloquea US-07.01 | abogado |
+| **La revisión legal** | **pendiente**; preguntas en el [Contexto legal](#contexto-legal-a-validar-por-un-abogado). Al 2026-10-30 el usuario **no tiene abogado**. Desde el 2026-10-30 **US-07.02 y US-07.03 están 🚧 bloqueadas hasta esta revisión, plan incluido** (decisión del usuario, apoyada en un pre-análisis con IA que no es una opinión legal); no bloquea US-07.01. *Antes (hasta el bloqueo): bloqueaba la implementación de US-07.02 y US-07.03, no su plan* | abogado (o el usuario, si decide otra cosa) |
 | **La calibración tras el primer mes** | **pendiente**; meta: ~1 de cada 10 citas en `alto` | usuario, con los datos |
 | ~~**Q6, pregunta 2: las `confirmada` que nadie cierra**~~ | ✅ **resuelta (2026-10-30)**: siguen **neutras** para la calificación y aparecen en una **lista de "citas pasadas sin cerrar"** para que el profesional las marque; no se adivina la asistencia. La misma lista ayuda a que G1 no cierre por error a quien sí llegó. Como no perfila a nadie, **no depende de la revisión legal y podría adelantarse**: queda como **candidata**, sin US ni número (lo decide el usuario). *Antes: abierta; neutras mientras tanto* | usuario |
 | ~~**El peso de `nuevo` en el riesgo de la cita: +1 o 0**~~ (decisión 5.b) | ✅ **resuelta (2026-10-30): 0**. *Antes: abierta para US-07.02; con +1, casi todas las citas del piloto salían `medio`* | usuario |
@@ -700,7 +735,7 @@ src/modules/calificacion/
 | **Corrección de un cierre: desde cuándo corren los 7 días, el tipo en la bitácora y el hecho del outbox** (decisión 9) | **a precisar en el plan de US-07.02**. Inclinación: desde el (primer) cierre; el `tipo` del desenlace nuevo con `estado_anterior` terminal, sin valor nuevo en el enum; ningún tipo de hecho nuevo, como H8 | `architecture-agent` en el plan; el usuario lo revisa |
 | **Los motivos de recordatorio que la decisión del 2026-10-30 no nombra** (`vencido`, `rechazado`, `fusionado`, `sin_consentimiento`) **y si suma el +3 cuando falla uno de varios recordatorios de la cita** (decisión 5.b) | **a precisar en el plan de US-07.02**. Inclinación: `vencido` y `rechazado` suman (son fallas del envío, como las del sistema); `fusionado` no (otro recordatorio de la cita salió); `sin_consentimiento` hoy no ocurre (política apagada, [DT-16](../Deudas/DT-16.md)) y se decide si se prende; el +3 solo si **ningún** recordatorio para la hora vigente llegó al paciente | `architecture-agent` en el plan; el usuario lo revisa |
 | **Qué es "una hora comprometida"** (decisión 8) cuando la cita se reagendó a pedido del paciente: si la petición tardía y una falta a la hora nueva son un hecho o dos | **a precisar en el plan de US-07.02**, revisándolo contra el principio rector | usuario |
-| **Corregir [DT-47](../Deudas/DT-47.md) antes de implementar US-07.02** (orden de la bitácora) | **pendiente**; la calificación, el último desenlace y el plazo de la corrección leen ese orden | usuario elige la salida; `database-agent` |
+| **Corregir [DT-47](../Deudas/DT-47.md) antes de implementar US-07.02** (orden de la bitácora) | **pendiente**; la calificación, el último desenlace y el plazo de la corrección leen ese orden. Sigue abierta, pero desde el bloqueo del 2026-10-30 **ya no es un paso inmediato**: se corrige antes de implementar US-07.02, cuando se desbloquee | usuario elige la salida; `database-agent` |
 
 ---
 
@@ -716,15 +751,22 @@ de Terminado. La de US-07.01 está en [`US/07.01-registro-hechos.md`](../US/07.0
 | **US-07.01** | 2 | `api-agent` | ✅ transiciones desde `pendiente` y guarda de la hora (decisión 9); marca de la primera apertura en el portal; origen al crear (alta manual y bandeja); "quién lo pidió" en cancelar y reagendar; job G1 con actor `sistema` y `CIERRE_GHOSTING_ACTIVO` |
 | **US-07.01** | 3 | `testing-agent` | ✅ el grafo nuevo; la apertura no cambia la cita ni se escribe dos veces; G1 con su corte y sus tres condiciones; el contrato de cancelar y reagendar |
 | **US-07.01** | — | frontend | ✅ botones del voucher sobre citas `pendiente`; "¿quién lo pidió?" al cancelar y al reagendar |
-| **US-07.01** | — | usuario | ✅ release a producción (2026-10-20) · ✅ job G1 prendido (2026-10-27) · 🔶 pruebas manuales, feature y TRAZABILIDAD, en curso |
-| **US-07.02** · calificación y riesgo | 4 | `architecture-agent` | ⬜ **siguiente paso**: plan de US-07.02 con el contrato, incluida la corrección de cierres de la decisión 9. **Las preguntas de producto ya no lo bloquean** (respondidas el 2026-10-30); la revisión legal bloquea la implementación (pasos 5 a 8), no el plan. *Antes (2026-10-19), inclinación: escribir el plan después de la revisión legal* |
-| **US-07.02** | 4.b | `database-agent` | **antes de implementar US-07.02:** corregir [DT-47](../Deudas/DT-47.md) (orden de la bitácora), con la salida que elija el usuario |
-| **US-07.02** | 5 | `database-agent` | lector SQL de solo lectura con columnas explícitas; tabla de evaluaciones del riesgo |
-| **US-07.02** | 6 | `api-agent` | módulo `calificacion`: funciones puras, suscriptor del outbox, los dos controles del planificador y las rutas del profesional; en `cita`, la corrección de un cierre dentro de 7 días (decisión 9) |
-| **US-07.02** | 7 | `testing-agent` | los ejemplos y las situaciones típicas de este ADR como tests de tabla; el test de arquitectura de la decisión 7 |
-| **US-07.03** · acciones | 8 | `api-agent` | las acciones: insistir (recordatorio extra por las políticas de ADR-13), la marca de `alto` para el profesional y, si el recordatorio no se pudo entregar, la acción directa al profesional (decisión 5.b) |
+| **US-07.01** | — | usuario | ✅ release a producción (2026-10-20) · ✅ job G1 prendido (2026-10-27) · 🔶 pruebas manuales, feature y TRAZABILIDAD, en curso · **siguiente paso de la Fase 5** (2026-10-30): cerrarla |
+| **US-07.02** · calificación y riesgo | 4 | `architecture-agent` | 🚧 **bloqueado (2026-10-30)** hasta que un abogado revise el [Contexto legal](#contexto-legal-a-validar-por-un-abogado) o el usuario decida otra cosa: plan de US-07.02 con el contrato, incluida la corrección de cierres de la decisión 9. Las preguntas de producto ya están respondidas (2026-10-30) y quedan listas para entonces. *Antes (2026-10-30, hasta el bloqueo): ⬜ **siguiente paso**; "las preguntas de producto ya no lo bloquean; la revisión legal bloquea la implementación (pasos 5 a 8), no el plan". Antes (2026-10-19), inclinación: escribir el plan después de la revisión legal* |
+| **US-07.02** | 4.b | `database-agent` | 🚧 **antes de implementar US-07.02, cuando se desbloquee:** corregir [DT-47](../Deudas/DT-47.md) (orden de la bitácora), con la salida que elija el usuario. *Antes (hasta el bloqueo): paso previo de la implementación, sin bloqueo del plan* |
+| **US-07.02** | 5 | `database-agent` | 🚧 lector SQL de solo lectura con columnas explícitas; tabla de evaluaciones del riesgo |
+| **US-07.02** | 6 | `api-agent` | 🚧 módulo `calificacion`: funciones puras, suscriptor del outbox, los dos controles del planificador y las rutas del profesional; en `cita`, la corrección de un cierre dentro de 7 días (decisión 9) |
+| **US-07.02** | 7 | `testing-agent` | 🚧 los ejemplos y las situaciones típicas de este ADR como tests de tabla; el test de arquitectura de la decisión 7 |
+| **US-07.03** · acciones | 8 | `api-agent` | 🚧 las acciones: insistir (recordatorio extra por las políticas de ADR-13), la marca de `alto` para el profesional y, si el recordatorio no se pudo entregar, la acción directa al profesional (decisión 5.b) |
 | candidata, sin US ni número | — | lo decide el usuario | **lista de "citas pasadas sin cerrar"** (pregunta 2 de Q6, 2026-10-30; punto 3 de *Cómo se cierra* de [DT-30](../Deudas/DT-30.md)). No perfila a nadie: no depende de la revisión legal y **podría adelantarse** a US-07.02 |
 | calibración (sin US propia) | — | usuario | calibración con los datos del primer mes |
+
+> **Bloqueo (2026-10-30).** Los pasos 4 a 8 (US-07.02 y US-07.03) quedan 🚧 bloqueados, **plan incluido**, hasta
+> que un abogado revise el [Contexto legal](#contexto-legal-a-validar-por-un-abogado) o el usuario decida otra
+> cosa. **El siguiente paso de la Fase 5 es cerrar US-07.01**: las pruebas manuales que faltan y su documentación
+> de cierre (la feature y la TRAZABILIDAD). *Observación, sin decidir:* dos piezas no perfilan al paciente —la
+> corrección de un cierre dentro de 7 días (decisión 9, [DT-48](../Deudas/DT-48.md), hoy dentro del paso 6) y la
+> lista de "citas pasadas sin cerrar" (ya candidata)— y **podrían separarse de US-07.02** si el usuario lo quiere.
 
 ---
 
@@ -761,9 +803,9 @@ production (`CIERRE_GHOSTING_ACTIVO=true`). Su criterio era ese, no el despliegu
 
 **Contraídas o detectadas con US-07.01** (fichadas el 2026-10-30, salvo DT-47):
 [DT-47](../Deudas/DT-47.md) — la bitácora puede quedar en orden invertido (detectada el 2026-10-19); **se corrige
-antes de implementar US-07.02** ·
+antes de implementar US-07.02**, cuando se desbloquee ·
 [DT-48](../Deudas/DT-48.md) — un cierre equivocado no se corrige (prevista 1); salida decidida el 2026-10-30, se
-construye en US-07.02 ·
+construye en US-07.02 (🚧 bloqueada desde el 2026-10-30) ·
 [DT-49](../Deudas/DT-49.md) — la primera apertura la puede disparar un escáner que ejecuta la página (prevista 4) ·
 [DT-50](../Deudas/DT-50.md) — `cita` lee con SQL el esquema de `recordatorios` y `solicitudes_cita` (nueva,
 riesgo 9 del plan de US-07.01).

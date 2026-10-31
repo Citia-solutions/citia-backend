@@ -3,7 +3,7 @@
 Hoja de ruta de las historias de usuario (US-02 a US-10). Sirve para tener el orden, las
 dependencias y el estado real de cada pieza en un solo lugar.
 
-**Última revisión:** 2026-10-30 (**decisiones de producto de US-07.02 aprobadas** por el usuario —peso de `nuevo` = 0, recordatorio no entregado → acción al profesional, un solo hecho por hora comprometida, corrección de un cierre dentro de 7 días, `confirmada` sin cerrar neutras y en una lista—, registradas en [ADR-14](Decisions/ADR-14.md); **siguiente paso: el plan de US-07.02**; la revisión legal sigue pendiente y bloquea su implementación, no su plan · **job G1 prendido** en production desde el 2026-10-27 y [DT-11](Deudas/DT-11.md) cerrada; US-07.01 en producción con sus pruebas manuales en curso) · antes: 2026-10-26 (**US-07.01 en producción** desde el release del 2026-10-20 —backend PR #13 y frontend PR #14—, con el **job G1 apagado** (`CIERRE_GHOSTING_ACTIVO=false`): solo cuenta en el log las citas que cerraría; [DT-11](Deudas/DT-11.md) se cierra al prenderlo) · antes: 2026-10-19 (**se reabre la Fase 5 por US-07.01**, registro de hechos: en construcción, adelantada a la Fase 4, de la que no depende; diseño en [ADR-14](Decisions/ADR-14.md), aceptado en lo que toca a US-07.01; plan en [US-07.01](US/07.01-registro-hechos.md); US-07.02 y US-07.03 siguen en la v2) · antes: 2026-10-18 (**Fase 3 en producción** desde el release del 2026-10-17, con un corte de ~9 minutos; cierre pendiente de las pruebas manuales; feature en [us04-respuesta-paciente](Features/us04-respuesta-paciente.md)) · antes: 2026-10-15 (Fase 3 mergeada a `develop`: backend PR #6 y frontend PR #7) · 2026-10-15, en la mañana (Fase 3 implementada y verificada en local, sin commits) · 2026-10-14 (Fase 3 en construcción: el arquitecto aprobó el diseño, ADR-10 aceptado con Q11 = B, plan en [US-04](US/04-respuesta-paciente.md)) · 2026-10-07 (**Fase 2 cerrada en producción**: release del 2026-10-06 en los dos repos y prueba de punta a punta con un correo real; el MVP completo está en producción) · 2026-10-04 (Fase 2 implementada en rama, pendiente de merge) · 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
+**Última revisión:** 2026-10-30 (**US-07.02 y US-07.03 🚧 bloqueadas, plan incluido**, por decisión del usuario: no tiene abogado, y un pre-análisis legal hecho con una IA, que no es una opinión legal, recomienda no habilitar el perfilamiento mientras no haya fundamento jurídico; se desbloquean cuando un abogado revise el [contexto legal de ADR-14](Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado) · sus **decisiones de producto**, aprobadas ese mismo día, siguen vigentes · **siguiente paso de la Fase 5: cerrar US-07.01** · **job G1 prendido** en production desde el 2026-10-27 y [DT-11](Deudas/DT-11.md) cerrada; US-07.01 en producción con sus pruebas manuales en curso) · antes: 2026-10-30, hasta el bloqueo (**decisiones de producto de US-07.02 aprobadas** por el usuario —peso de `nuevo` = 0, recordatorio no entregado → acción al profesional, un solo hecho por hora comprometida, corrección de un cierre dentro de 7 días, `confirmada` sin cerrar neutras y en una lista—, registradas en [ADR-14](Decisions/ADR-14.md); **siguiente paso: el plan de US-07.02**; la revisión legal sigue pendiente y bloquea su implementación, no su plan) · antes: 2026-10-26 (**US-07.01 en producción** desde el release del 2026-10-20 —backend PR #13 y frontend PR #14—, con el **job G1 apagado** (`CIERRE_GHOSTING_ACTIVO=false`): solo cuenta en el log las citas que cerraría; [DT-11](Deudas/DT-11.md) se cierra al prenderlo) · antes: 2026-10-19 (**se reabre la Fase 5 por US-07.01**, registro de hechos: en construcción, adelantada a la Fase 4, de la que no depende; diseño en [ADR-14](Decisions/ADR-14.md), aceptado en lo que toca a US-07.01; plan en [US-07.01](US/07.01-registro-hechos.md); US-07.02 y US-07.03 siguen en la v2) · antes: 2026-10-18 (**Fase 3 en producción** desde el release del 2026-10-17, con un corte de ~9 minutos; cierre pendiente de las pruebas manuales; feature en [us04-respuesta-paciente](Features/us04-respuesta-paciente.md)) · antes: 2026-10-15 (Fase 3 mergeada a `develop`: backend PR #6 y frontend PR #7) · 2026-10-15, en la mañana (Fase 3 implementada y verificada en local, sin commits) · 2026-10-14 (Fase 3 en construcción: el arquitecto aprobó el diseño, ADR-10 aceptado con Q11 = B, plan en [US-04](US/04-respuesta-paciente.md)) · 2026-10-07 (**Fase 2 cerrada en producción**: release del 2026-10-06 en los dos repos y prueba de punta a punta con un correo real; el MVP completo está en producción) · 2026-10-04 (Fase 2 implementada en rama, pendiente de merge) · 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
 
 **Por fases:** este documento es la fuente del **estado**. Para leer todo lo que toca a una fase
 (decisiones, deudas, commits, contraparte del frontend) en orden, entra por [`Fases/`](Fases/README.md).
@@ -396,13 +396,20 @@ y un primer suscriptor (recordatorios): las alertas se enchufan como otro suscri
 > Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-5-us07-scoring.md`](Fases/fase-5-us07-scoring.md).
 
 **Estado:** 🔶 **US-07.01 (registro de hechos) en producción desde el 2026-10-20, con el job G1 prendido desde el
-2026-10-27 y las pruebas manuales en curso; US-07.02 y US-07.03 siguen en la v2.** US-07.01 se adelantó a la
-[Fase 4](#fase-4--us-05-alertas-al-profesional) porque no depende de ella. **Las decisiones de producto de US-07.02
-quedaron aprobadas el 2026-10-30** ([ADR-14](Decisions/ADR-14.md#preguntas-abiertas-y-lo-que-queda-a-confirmar)) y
-**el siguiente paso es el plan de US-07.02**: las preguntas de producto ya no lo bloquean. La implementación de US-07.02 (calificación y
-riesgo) y US-07.03 (acciones) sigue esperando la revisión legal de
-[ADR-14](Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado): al 2026-10-30 el usuario no tiene abogado.
+2026-10-27 y las pruebas manuales en curso; US-07.02 y US-07.03 quedan 🚧 bloqueadas desde el 2026-10-30, plan
+incluido.** US-07.01 se adelantó a la [Fase 4](#fase-4--us-05-alertas-al-profesional) porque no depende de ella. El
+2026-10-30 el usuario decidió bloquear US-07.02 (calificación y riesgo) y US-07.03 (acciones) hasta que un abogado
+revise el [contexto legal de ADR-14](Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado) (o hasta que el usuario
+decida otra cosa): no tiene abogado, y un pre-análisis legal hecho con una IA ese día (no es un abogado ni una
+opinión legal) recomienda no habilitar el perfilamiento mientras no haya fundamento jurídico. **Las decisiones de
+producto de US-07.02, aprobadas ese mismo día, siguen vigentes**
+([ADR-14](Decisions/ADR-14.md#preguntas-abiertas-y-lo-que-queda-a-confirmar)) y quedan listas para entonces.
+**El siguiente paso de la fase es cerrar US-07.01** (abajo, *Para cerrar US-07.01*).
 
+> *Antes (2026-10-30, hasta el bloqueo):* US-07.02 y US-07.03 "siguen en la v2"; "las decisiones de producto de
+> US-07.02 quedaron aprobadas el 2026-10-30 y el siguiente paso es el plan de US-07.02: las preguntas de producto
+> ya no lo bloquean. La implementación de US-07.02 y US-07.03 sigue esperando la revisión legal".
+>
 > *Antes (2026-10-20 → 2026-10-27):* US-07.01 en producción con el **job G1 apagado**.
 >
 > *Antes (2026-10-19 → 2026-10-20):* 🔶 **en construcción**: US-07.01 desde el 2026-10-19.
@@ -447,7 +454,8 @@ Chile, otra de prueba. Una segunda revisión de solo lectura (2026-10-28) encont
    en el log `citas.cierre_ghosting.simulado`.)*
 6. ✅ Frontend: los dos botones sobre citas `pendiente` y *"¿Quién lo pidió?"* en cancelar y reagendar.
 
-**Para cerrar US-07.01** (al 2026-10-30, todavía abierta):
+**Para cerrar US-07.01** (al 2026-10-30, todavía abierta; desde el bloqueo de US-07.02 y US-07.03, **es el
+siguiente paso de la fase**):
 - 🔶 Pruebas manuales de la [verificación mínima](US/07.01-registro-hechos.md#verificación-manual-mínima):
   **en curso**. Faltan *No asistió* marcado por el profesional sobre una `pendiente` (`ghosting` con actor
   `profesional`) y *"¿Quién lo pidió?" = El paciente* elegido desde la app.
@@ -456,27 +464,38 @@ Chile, otra de prueba. Una segunda revisión de solo lectura (2026-10-28) encont
 - Pendiente menor de código (no es deuda): la línea de log `citas.cierre_ghosting` del modo activo no lleva `msg`
   y en Railway se ve sin mensaje (`planificador-cierre-citas.ts`).
 - Detectada durante la construcción: [DT-47](Deudas/DT-47.md) (orden de la bitácora con transacciones
-  concurrentes); no bloquea el cierre, pero **se corrige antes de implementar US-07.02**, que leerá ese orden.
+  concurrentes); no bloquea el cierre, pero **se corrige antes de implementar US-07.02**, que leerá ese orden
+  (cuando se desbloquee; desde el 2026-10-30 ya no es un paso inmediato).
 - Fichadas el 2026-10-30: [DT-48](Deudas/DT-48.md) (un cierre equivocado no se corrige; salida decidida para
-  US-07.02), [DT-49](Deudas/DT-49.md) (escáneres y primera apertura) y [DT-50](Deudas/DT-50.md) (`cita` lee el
-  esquema de otros módulos).
+  US-07.02, hoy 🚧 bloqueada), [DT-49](Deudas/DT-49.md) (escáneres y primera apertura) y
+  [DT-50](Deudas/DT-50.md) (`cita` lee el esquema de otros módulos).
 
-### US-07.02 — Calificación y riesgo (⏸ v2 · decisiones de producto aprobadas el 2026-10-30 · sin plan)
+### US-07.02 — Calificación y riesgo (🚧 bloqueada desde el 2026-10-30, plan incluido · decisiones de producto aprobadas el 2026-10-30 · sin plan)
 
-**Siguiente paso de la fase:** el plan de US-07.02 (paso 4 del
-[Plan de ejecución de ADR-14](Decisions/ADR-14.md#plan-de-ejecución)). Las preguntas de producto ya no lo
-bloquean: el usuario las respondió el 2026-10-30
+**🚧 Bloqueada desde el 2026-10-30, plan incluido, junto con US-07.03** (decisión del usuario): no se escribe su
+plan hasta que un abogado revise el
+[contexto legal de ADR-14](Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado) o el usuario decida otra
+cosa ([detalle](Fases/fase-5-us07-scoring.md#bloqueo-de-us-0702-y-us-0703-2026-10-30)). Las preguntas de producto
+quedaron respondidas el 2026-10-30
 ([resumen](Fases/fase-5-us07-scoring.md#decisiones-de-producto-de-us-0702-2026-10-30)), incluida la
-**corrección de un cierre dentro de 7 días**, que se construye aquí. Antes de **implementar** US-07.02 hacen
-falta la revisión legal (sin abogado al 2026-10-30) y corregir [DT-47](Deudas/DT-47.md).
+**corrección de un cierre dentro de 7 días**, que se construye aquí, y siguen vigentes. Cuando se desbloquee: el
+plan (paso 4 del [Plan de ejecución de ADR-14](Decisions/ADR-14.md#plan-de-ejecución)) y, antes de
+**implementar**, corregir [DT-47](Deudas/DT-47.md).
+
+> *Antes (2026-10-30, hasta el bloqueo; el título decía "⏸ v2"):* "**Siguiente paso de la fase:** el plan de
+> US-07.02 (paso 4 del Plan de ejecución de ADR-14). Las preguntas de producto ya no lo bloquean […]. Antes de
+> implementar US-07.02 hacen falta la revisión legal (sin abogado al 2026-10-30) y corregir DT-47."
+
+**Observación, sin decidir:** la corrección de un cierre ([DT-48](Deudas/DT-48.md)) y la lista de citas pasadas
+sin cerrar no perfilan al paciente; **podrían separarse de US-07.02** si el usuario lo quiere.
 
 **Candidata, sin US ni número** (lo decide el usuario): la **lista de citas pasadas sin cerrar** (pregunta 2 de
 [Q6](PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1)). No perfila a nadie,
 no depende de la revisión legal y podría adelantarse.
 
 ### Backend
-*(Lo que sigue es US-07.02 y US-07.03, sin plan. El punto 2 lo reemplaza [ADR-14](Decisions/ADR-14.md): cuatro
-etiquetas.)*
+*(Lo que sigue es US-07.02 y US-07.03, sin plan y 🚧 bloqueadas desde el 2026-10-30. El punto 2 lo reemplaza
+[ADR-14](Decisions/ADR-14.md): cuatro etiquetas.)*
 1. Cálculo del % de asistencia.
 2. Algoritmo de clasificación ("confiable" / "riesgo" / "nuevo").
 3. Regla estricta: sin historial = siempre "nuevo".
@@ -577,7 +596,7 @@ etiquetas.)*
 | 2 | US-03 Recordatorios | US-02, ADR-12 (outbox + planificador), subdominio verificado en Resend | ✅ **cerrada en producción (2026-10-07)** · release 2026-10-06 · **en el MVP** · [pendientes posteriores](#pendientes-posteriores-al-cierre) |
 | 3 | US-04 Respuesta paciente (+ US-02.07) | US-03 ✅, ADR-10 ✅ (aceptado 2026-10-14) | ✅ **en producción (2026-10-17)** · cierre pendiente de las pruebas manuales · fuera del MVP · [us04](Features/us04-respuesta-paciente.md) · [checklist](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción) |
 | 4 | US-05 Alertas | US-02/03/04 | ⬜ (el outbox ya existe) |
-| 5 | US-07 Scoring (US-07.01 · 07.02 · 07.03) | US-02/04, proceso de cierre (ADR-12), asistencia registrada (DT-30) · **US-07.01 adelanta a la Fase 4 sin depender de ella** | 🔶 **US-07.01 en producción (2026-10-20)**, job G1 prendido (2026-10-27), pruebas manuales en curso · [plan](US/07.01-registro-hechos.md) · US-07.02 y US-07.03 ⏸ v2 (fuera del MVP desde el 2026-09-30); decisiones de producto de US-07.02 aprobadas (2026-10-30), siguiente paso: su plan |
+| 5 | US-07 Scoring (US-07.01 · 07.02 · 07.03) | US-02/04, proceso de cierre (ADR-12), asistencia registrada (DT-30) · **US-07.01 adelanta a la Fase 4 sin depender de ella** | 🔶 **US-07.01 en producción (2026-10-20)**, job G1 prendido (2026-10-27), pruebas manuales en curso · [plan](US/07.01-registro-hechos.md) · US-07.02 y US-07.03 🚧 **bloqueadas, plan incluido** (2026-10-30), hasta la revisión de un abogado; fuera del MVP desde el 2026-09-30; decisiones de producto de US-07.02 aprobadas (2026-10-30) y vigentes · siguiente paso: cerrar US-07.01 · *antes: ⏸ v2; siguiente paso: el plan de US-07.02* |
 | 6 | US-08 Monitoreo | US-02/07 | 🔶 solo alta y `PATCH` de contacto |
 | 7 | US-10 Perfil/soporte | — | ⬜ |
 | — | US-09 | — | ⬜ pendiente |

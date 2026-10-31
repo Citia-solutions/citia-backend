@@ -57,8 +57,8 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-39](DT-39.md) | No hay herramienta para quitar una dirección suprimida | 🟡 baja | abierta (contraída en la Fase 2) | [ADR-13 §2](../Decisions/ADR-13.md) |
 | [DT-41](DT-41.md) | El subdominio de envío no tiene DMARC y la autenticación del correo no se inspeccionó | 🟡 baja | abierta (detectada en producción, 2026-10-07) | puesta en producción · [ADR-13 §12–§13](../Decisions/ADR-13.md) |
 | [DT-46](DT-46.md) | Columnas de fecha de varias entidades ORM sin `timestamptz`: con `synchronize` (tests) quedan sin zona | 🟡 baja | abierta (detectada al implementar la Fase 3, 2026-10-15) | entidades de `cita`, `paciente`, `tenant`, `usuario` |
-| [DT-47](DT-47.md) | `cambios_cita.ocurrido_en` usa `DEFAULT now()`: con transacciones concurrentes la bitácora puede quedar en orden invertido | 🟡 baja → 🟠 media con US-07.02 | abierta (detectada en US-07.01, confirmada 2026-10-20) · **se corrige antes de implementar US-07.02** (2026-10-30) | migración de `cambios_cita` (Fase 1) |
-| [DT-48](DT-48.md) | Un cierre equivocado no se corrige | 🟡 baja → 🟠 media con US-07.02 | abierta (contraída con US-07.01, fichada 2026-10-30) · **salida decidida**: corrección dentro de 7 días, en US-07.02 | [ADR-14](../Decisions/ADR-14.md#consecuencias) · [ADR-04 §2](../Decisions/ADR-04.md) |
+| [DT-47](DT-47.md) | `cambios_cita.ocurrido_en` usa `DEFAULT now()`: con transacciones concurrentes la bitácora puede quedar en orden invertido | 🟡 baja → 🟠 media con US-07.02 | abierta (detectada en US-07.01, confirmada 2026-10-20) · **se corrige antes de implementar US-07.02** (2026-10-30), cuando se desbloquee (🚧 desde el 2026-10-30) | migración de `cambios_cita` (Fase 1) |
+| [DT-48](DT-48.md) | Un cierre equivocado no se corrige | 🟡 baja → 🟠 media con US-07.02 | abierta (contraída con US-07.01, fichada 2026-10-30) · **salida decidida**: corrección dentro de 7 días, en US-07.02 (🚧 bloqueada desde el 2026-10-30; podría separarse, sin decidir) | [ADR-14](../Decisions/ADR-14.md#consecuencias) · [ADR-04 §2](../Decisions/ADR-04.md) |
 | [DT-49](DT-49.md) | La primera apertura del enlace la puede disparar un escáner que ejecuta la página | 🟡 baja (favorece al paciente) | abierta (contraída con US-07.01, fichada 2026-10-30) · propuesta para US-07.02 en el plan | [ADR-14 §10.a](../Decisions/ADR-14.md#10-us-0701-los-datos-que-hoy-se-pierden-va-primero) |
 | [DT-50](DT-50.md) | `cita` lee con SQL el esquema de `recordatorios` y `solicitudes_cita` | 🟡 baja | abierta (contraída con US-07.01, fichada 2026-10-30) · mitigada por la integración y los `CLAUDE.md` | plan [US-07.01](../US/07.01-registro-hechos.md#riesgos), riesgo 9 |
 
@@ -126,8 +126,8 @@ pocas visitas) son de US-07.02 y US-07.03: **siguen previstas** en
 | ID | Qué | Severidad | Cambio |
 |----|-----|-----------|--------|
 | [DT-11](DT-11.md) | El historial de comportamiento no se acumulaba: el job G1 no existía | 🟠 media | ✅ **cerrada** (2026-10-27): job G1 prendido en production |
-| [DT-47](DT-47.md) | La bitácora puede quedar en orden invertido con transacciones concurrentes | 🟡 baja → 🟠 media con US-07.02 | detectada (2026-10-19, confirmada el 2026-10-20) · **se corrige antes de implementar US-07.02** |
-| [DT-48](DT-48.md) | Un cierre equivocado no se corrige | 🟡 baja → 🟠 media con US-07.02 | **nueva** · prevista 1 de ADR-14 · salida decidida el 2026-10-30 (corrección dentro de 7 días, en US-07.02) |
+| [DT-47](DT-47.md) | La bitácora puede quedar en orden invertido con transacciones concurrentes | 🟡 baja → 🟠 media con US-07.02 | detectada (2026-10-19, confirmada el 2026-10-20) · **se corrige antes de implementar US-07.02**, cuando se desbloquee |
+| [DT-48](DT-48.md) | Un cierre equivocado no se corrige | 🟡 baja → 🟠 media con US-07.02 | **nueva** · prevista 1 de ADR-14 · salida decidida el 2026-10-30 (corrección dentro de 7 días, en US-07.02, 🚧 bloqueada desde el mismo día) |
 | [DT-49](DT-49.md) | La primera apertura la puede disparar un escáner que ejecuta la página | 🟡 baja | **nueva** · prevista 4 de ADR-14 |
 | [DT-50](DT-50.md) | `cita` lee con SQL el esquema de `recordatorios` y `solicitudes_cita` (job G1) | 🟡 baja | **nueva** · riesgo 9 del plan US-07.01 |
 
@@ -278,7 +278,11 @@ con fecha: [DT-16](DT-16.md), a revisar antes de que entre en vigor la Ley 21.71
 > [DT-50](DT-50.md). Antes de **implementar** US-07.02 (calificación y riesgo) hay que corregir
 > [DT-47](DT-47.md), porque la calificación lee el orden de la bitácora; y US-07.02 trae la salida ya decidida de
 > [DT-48](DT-48.md) (corrección de un cierre dentro de 7 días), que conviene que llegue antes o junto con la
-> calificación: es lo que impide que un cierre equivocado pese 12 meses.
+> calificación: es lo que impide que un cierre equivocado pese 12 meses. **Ese mismo día US-07.02 y US-07.03
+> quedaron 🚧 bloqueadas, plan incluido**, hasta que un abogado revise el
+> [contexto legal de ADR-14](../Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado): DT-47 y DT-48 siguen
+> abiertas y esperan con US-07.02; ya no son pasos inmediatos. *Observación, sin decidir:* la corrección de DT-48
+> no perfila al paciente y podría separarse de US-07.02 si el usuario lo quiere.
 
 **Cuatro deudas se resuelven en el mismo release que US-02** y conviene tratarlas como parte de su
 alcance, no como extras: DT-10 y DT-22 las cierra ADR-09; DT-15 la bloquea; DT-14 se agrava con

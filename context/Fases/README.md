@@ -55,10 +55,16 @@ en curso (al 2026-10-30, sin cerrar).
 **2026-10-30:** el usuario aprobó las **decisiones de producto de US-07.02** (peso de `nuevo` = 0, recordatorio no
 entregado → acción al profesional, un solo hecho por hora comprometida, corrección de un cierre dentro de 7 días,
 `confirmada` sin cerrar neutras y en una lista, nada compartido entre clínicas;
-[detalle](fase-5-us07-scoring.md#decisiones-de-producto-de-us-0702-2026-10-30)). **El siguiente paso de la
-Fase 5 es el plan de US-07.02.** La revisión legal (sin abogado al 2026-10-30) sigue bloqueando su
-implementación, no el plan. Se fichan [DT-48](../Deudas/DT-48.md), [DT-49](../Deudas/DT-49.md) y
-[DT-50](../Deudas/DT-50.md).
+[detalle](fase-5-us07-scoring.md#decisiones-de-producto-de-us-0702-2026-10-30)). Ese mismo día **bloqueó
+US-07.02 y US-07.03, plan incluido** (🚧): no tiene abogado, y un pre-análisis legal hecho con una IA (no es una
+opinión legal) recomienda no habilitar el perfilamiento mientras no haya fundamento jurídico. Se desbloquean
+cuando un abogado revise el contexto legal de [ADR-14](../Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado)
+(o el usuario decida otra cosa); las decisiones siguen vigentes
+([detalle](fase-5-us07-scoring.md#bloqueo-de-us-0702-y-us-0703-2026-10-30)). **El siguiente paso de la Fase 5 es
+cerrar US-07.01** (las pruebas manuales que faltan y su documentación de cierre). Se fichan
+[DT-48](../Deudas/DT-48.md), [DT-49](../Deudas/DT-49.md) y [DT-50](../Deudas/DT-50.md). *Antes (hasta el
+bloqueo): "El siguiente paso de la Fase 5 es el plan de US-07.02. La revisión legal (sin abogado al 2026-10-30)
+sigue bloqueando su implementación, no el plan".*
 
 ---
 
@@ -75,7 +81,7 @@ deudas que la fase cambió de estado sin crearlas ni cerrarlas.
 | [Fase 2](fase-2-us03-recordatorios.md) | US-03 recordatorios | ✅ **cerrada en producción (2026-10-07)** · **en el MVP** | diseño 2026-09-30 · implementación 2026-10-01 → 2026-10-04 · merge a `develop` 2026-10-04 · release 2026-10-06 · cierre 2026-10-07 | [us03](../Features/us03-recordatorios.md) (nueva) · [us02](../Features/us02-gestion-citas.md), [infra](../Features/infra-contenedores.md) (actualizadas) | 12, 13 · nota en 02 | **creadas:** DT-30, DT-31…DT-39 · DT-40, DT-41 (detectadas en producción) · **cerradas:** DT-21, DT-27 · **mitigada:** DT-30 (2026-10-05) · **verificada, abierta:** DT-19 (falta la fuente de logs) · **afectadas:** DT-11, DT-16, DT-17, DT-20, DT-23, DT-26, DT-29, DT-37 | — | [US-03](../US/03-recordatorios.md) | filas 59, 61–74, 76–84 y 93 (`ab30bb7` → `c057ade`, más el cierre `9fc1ddd` y su merge `72d117f`; la 60 y la 75 son transversales) | Fase 1 · subdominio verificado en Resend ✅ |
 | [Fase 3](fase-3-us04-respuesta-paciente.md) | US-04 respuesta del paciente (+ US-02.07, absorbida) | ✅ **en producción (2026-10-17)** · cierre pendiente de las pruebas manuales · fuera del MVP | diseño aprobado 2026-10-14 · implementación 2026-10-14 → 2026-10-15 · verificada en local y mergeada a `develop` 2026-10-15 · release 2026-10-17 | [us04](../Features/us04-respuesta-paciente.md) (nueva) | **10 (aceptado 2026-10-14; notas de implementación 2026-10-15)** · 13 (bloque `accion`, nota en §1) · notas en 04 §4 y 12 §8 (regla G1) | **creadas:** DT-42…DT-45 (previstas el 2026-10-14, abiertas desde el despliegue del 2026-10-17; DT-44 con su parte 2 resuelta; DT-45 con su corrección implementada) · **detectada:** DT-46 · **en producción, se cierra con la prueba de `trust proxy`:** DT-18 · **afectadas:** DT-04, DT-06, DT-11 (regla G1), DT-16, DT-23, DT-26, DT-33, DT-30 (ya mitigada) | FD-06 (resuelta en parte: "cambiar la hora" es una petición manual) | [US-04](../US/04-respuesta-paciente.md) · [US-02.07](../US/02.07-paciente-reagenda-cancela.md) (absorbida) | filas 85–92, 94 y 95 (`c757e0e` → `b93f2c0`, merge `ce0c533`, release `05bae58`) | Fase 2 ✅ · ADR-10 aceptado ✅ |
 | [Fase 4](fase-4-us05-alertas.md) | US-05 alertas | ⬜ nada propio (el outbox ya existe, desde la Fase 2) | — | — | 12 §4 (suscriptores) · 09 §7 | **afectada:** DT-28 | — | — | — | Fases 1, 2 y 3 |
-| [Fase 5](fase-5-us07-scoring.md) | US-07 scoring: US-07.01 registro de hechos · US-07.02 calificación y riesgo · US-07.03 acciones | 🔶 **US-07.01 en producción (2026-10-20)**, job G1 prendido (2026-10-27), pruebas manuales en curso · US-07.02 y US-07.03 ⏸ v2 (fuera del MVP), con sus decisiones de producto aprobadas (2026-10-30); siguiente: plan de US-07.02 | salida del MVP 2026-09-30 · diseño (ADR-14) y US-07.01 desde 2026-10-19 · merge a `develop` y release 2026-10-20 · G1 prendido 2026-10-27 · decisiones de US-07.02 2026-10-30 | — (la de US-07.01 se crea al cerrarla) | **14 (aceptado en lo que toca a US-07.01, 2026-10-19; el resto propuesto, con las decisiones de producto de US-07.02 aprobadas el 2026-10-30)** · 04 §2 (extendido por 14; excepción a "de un terminal no se sale", 2026-10-30) y §4 · 12 §8 | **cerrada:** DT-11 (2026-10-27, job G1 prendido) · **creadas:** DT-48, DT-49, DT-50 (contraídas con US-07.01, fichadas el 2026-10-30) · **detectada:** DT-47 (se corrige antes de implementar US-07.02) · **afectadas:** DT-13, DT-23, DT-30, DT-37, DT-40, DT-44 | — | [US-07.01](../US/07.01-registro-hechos.md) | sin filas todavía (`3e64472` → `bb90815`, merge `715c3f3`, release `313a506`) | Fases 1 y 3 · proceso de cierre (ADR-12) · DT-30 · *US-07.01 no depende de la Fase 4* |
+| [Fase 5](fase-5-us07-scoring.md) | US-07 scoring: US-07.01 registro de hechos · US-07.02 calificación y riesgo · US-07.03 acciones | 🔶 **US-07.01 en producción (2026-10-20)**, job G1 prendido (2026-10-27), pruebas manuales en curso · US-07.02 y US-07.03 🚧 **bloqueadas, plan incluido** (2026-10-30), hasta la revisión de un abogado; siguen fuera del MVP, con sus decisiones de producto aprobadas (2026-10-30) y vigentes · siguiente: cerrar US-07.01 · *antes: ⏸ v2; siguiente: plan de US-07.02* | salida del MVP 2026-09-30 · diseño (ADR-14) y US-07.01 desde 2026-10-19 · merge a `develop` y release 2026-10-20 · G1 prendido 2026-10-27 · decisiones de US-07.02 y bloqueo de 07.02 y 07.03 2026-10-30 | — (la de US-07.01 se crea al cerrarla) | **14 (aceptado en lo que toca a US-07.01, 2026-10-19; el resto propuesto, con las decisiones de producto de US-07.02 aprobadas el 2026-10-30)** · 04 §2 (extendido por 14; excepción a "de un terminal no se sale", 2026-10-30) y §4 · 12 §8 | **cerrada:** DT-11 (2026-10-27, job G1 prendido) · **creadas:** DT-48, DT-49, DT-50 (contraídas con US-07.01, fichadas el 2026-10-30) · **detectada:** DT-47 (se corrige antes de implementar US-07.02) · **afectadas:** DT-13, DT-23, DT-30, DT-37, DT-40, DT-44 | — | [US-07.01](../US/07.01-registro-hechos.md) | sin filas todavía (`3e64472` → `bb90815`, merge `715c3f3`, release `313a506`) | Fases 1 y 3 · proceso de cierre (ADR-12) · DT-30 · *US-07.01 no depende de la Fase 4* |
 | [Fase 6](fases-6-7-us09-sin-diseno.md#fase-6--us-08-monitoreo-y-seguimiento-del-paciente) | US-08 monitoreo | 🔶 solo `POST /pacientes` (+ `PATCH /pacientes/:id` en la Fase 2) | — | — | — | — | — | — | — | Fases 1 y 5 |
 | [Fase 7](fases-6-7-us09-sin-diseno.md#fase-7--us-10-perfil-suscripción-y-soporte) | US-10 perfil y soporte | ⬜ | — | — | — | — | — | — | — | — |
 | [US-09](fases-6-7-us09-sin-diseno.md#us-09--sin-definir) | sin definir | ⬜ | — | — | — | — | — | — | — | — |
@@ -102,7 +108,7 @@ flowchart LR
 
   F3["Fase 3 · US-04 + US-02.07<br/>respuesta del paciente<br/>(en producción,<br/>cierre pendiente)"]:::disenada
   F4["Fase 4 · US-05<br/>alertas"]:::pendiente
-  F5["Fase 5 · US-07<br/>scoring<br/>(US-07.01 en producción,<br/>job G1 prendido;<br/>US-07.02 y 07.03 · v2)"]:::disenada
+  F5["Fase 5 · US-07<br/>scoring<br/>(US-07.01 en producción,<br/>job G1 prendido;<br/>US-07.02 y 07.03 bloqueadas)"]:::disenada
   F6["Fase 6 · US-08<br/>monitoreo"]:::pendiente
   F7["Fase 7 · US-10<br/>perfil y soporte"]:::pendiente
   U9["US-09<br/>sin definir"]:::pendiente
@@ -138,7 +144,9 @@ en curso (la Fase 3: en construcción desde el 2026-10-14, con ADR-10 ya aceptad
 2026-10-15 y **en producción desde el 2026-10-17**, sin cerrar hasta sus pruebas manuales; y, desde el
 2026-10-19, la Fase 5 por US-07.01, que se construyó antes que la Fase 4 porque no depende de ella —no hay arista
 F4 → F5— y está **en producción desde el 2026-10-20**, con el job G1 prendido desde el 2026-10-27); gris = pendiente; lila = aplazada a la v2 (hasta el 2026-10-19 lo era la Fase 5 entera; desde
-entonces solo US-07.02 y US-07.03, que comparten su nodo). La Fase 0 depende de la Fase 1 aunque se construyó primero: su backend
+entonces solo US-07.02 y US-07.03, que comparten su nodo y desde el 2026-10-30 están 🚧 bloqueadas, plan
+incluido, hasta la revisión de un abogado; *antes del 2026-10-30, el nodo decía "US-07.02 y 07.03 · v2"*).
+La Fase 0 depende de la Fase 1 aunque se construyó primero: su backend
 (junio) creó `Cita`, `Paciente` y `POST /citas`, pero el dashboard solo quedó cerrado cuando la
 Fase 1 entregó la lista real, el voucher (US-02.08) y el refresco tras cada cambio (US-02.09). La
 Fase 7 y US-09 no dependen de nada según el ROADMAP. La Fase 6 depende de US-07 (la Fase 5), no de
