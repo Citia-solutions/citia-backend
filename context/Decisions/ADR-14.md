@@ -1,6 +1,6 @@
 # ADR-14: Calificación de asistencia del paciente y riesgo de cada cita (RF-08) — puntos fijos sobre los hechos de los últimos 12 meses, cuatro etiquetas, un riesgo por cita que solo informa y ayuda, y nunca datos de quién es la persona
 
-> **Fase:** [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) · **Feature:** — · **Plan:** [US-07.01](../US/07.01-registro-hechos.md) (registro de hechos); US-07.02 y US-07.03, sin plan (🚧 bloqueadas desde el 2026-10-30, plan incluido) · **Relacionado:** [ADR-04](../Decisions/ADR-04.md), [ADR-10](../Decisions/ADR-10.md), [ADR-11](../Decisions/ADR-11.md), [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-11](../Deudas/DT-11.md), [DT-13](../Deudas/DT-13.md), [DT-16](../Deudas/DT-16.md), [DT-23](../Deudas/DT-23.md), [DT-30](../Deudas/DT-30.md), [DT-44](../Deudas/DT-44.md), [DT-47](../Deudas/DT-47.md), [DT-48](../Deudas/DT-48.md), [DT-49](../Deudas/DT-49.md), [DT-50](../Deudas/DT-50.md), [Q6](../PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1), [Q17](../PREGUNTAS-ABIERTAS.md#q17--manejo-de-datos-de-salud)
+> **Fase:** [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) · **Feature:** — · **Plan:** [US-07.01](../US/07.01-registro-hechos.md) (registro de hechos); US-07.02 y US-07.03, sin plan (🚧 bloqueadas desde el 2026-10-30, plan incluido) · **Relacionado:** [ADR-04](../Decisions/ADR-04.md), [ADR-10](../Decisions/ADR-10.md), [ADR-11](../Decisions/ADR-11.md), [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-11](../Deudas/DT-11.md), [DT-13](../Deudas/DT-13.md), [DT-16](../Deudas/DT-16.md), [DT-23](../Deudas/DT-23.md), [DT-30](../Deudas/DT-30.md), [DT-44](../Deudas/DT-44.md), [DT-47](../Deudas/DT-47.md), [DT-48](../Deudas/DT-48.md), [DT-49](../Deudas/DT-49.md), [DT-50](../Deudas/DT-50.md), [Q6](../PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1), [Q17](../PREGUNTAS-ABIERTAS.md#q17--manejo-de-datos-de-salud), [Cumplimiento](../Cumplimiento/README.md)
 
 **Fecha:** 2026-10-19 · decisiones de producto de US-07.02 aprobadas el 2026-10-30 · US-07.02 y US-07.03
 bloqueadas el 2026-10-30
@@ -600,6 +600,13 @@ src/modules/calificacion/
 > (boletín 18.623-07) pasó a la Cámara; mientras no se publique, la fecha vigente sigue siendo el **2026-12-01**.
 > La fila *Vigencia* y la pregunta 5 se actualizaron con esa fecha. (2) El **Decreto 662** (Hacienda, publicado el 2026-09-09) regula la certificación voluntaria de los modelos de
 > prevención de infracciones.
+>
+> *(2026-10-31.)* **El pre-análisis completo** —las respuestas resumidas a sus 13 preguntas, las de la plataforma
+> incluidas, el dictamen general y las fuentes— está en
+> [`Cumplimiento/pre-analisis-ia-2026-10-30.md`](../Cumplimiento/pre-analisis-ia-2026-10-30.md), y el estado de lo
+> que falta, en [`Cumplimiento/`](../Cumplimiento/README.md). **Su numeración no coincide con la de las preguntas de
+> abajo**: la correspondencia está en ese mismo archivo
+> ([tabla](../Cumplimiento/pre-analisis-ia-2026-10-30.md#correspondencia-con-las-preguntas-de-adr-14)).
 
 | Tema | Lo que se entiende hoy |
 |---|---|

@@ -24,6 +24,9 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-03](DT-03.md) | Sin verificación de correo ni recuperación de contraseña | 🔴 alta | abierta | [us00a](../Features/us00a-registro-inicial.md) |
 | [DT-06](DT-06.md) | Registro público sin ningún freno | 🔴 alta | abierta | [us00a](../Features/us00a-registro-inicial.md) |
 | [DT-15](DT-15.md) | No se puede buscar un paciente | 🔴 alta | abierta · neutralizada para crear cita por el RUT (ver nota) | [us06](../Features/us06-dashboard-citas.md) |
+| [DT-51](DT-51.md) | No hay contrato de encargo entre la clínica y Citia | 🟠 media → 🔴 alta con la primera clínica con pacientes reales | abierta (fichada el 2026-10-31) · cumplimiento P1 | [pre-análisis legal con IA](../Cumplimiento/pre-analisis-ia-2026-10-30.md) (2026-10-30; no es un abogado) |
+| [DT-52](DT-52.md) | Proveedores y datos que salen de Chile, sin inventario ni garantías | 🟠 media → 🔴 alta con la primera clínica con pacientes reales | abierta (fichada el 2026-10-31) · cumplimiento P1 (y P2, el registro al día) | pre-análisis · [ADR-13 §12](../Decisions/ADR-13.md) |
+| [DT-53](DT-53.md) | No hay política de privacidad ni canal para los derechos del paciente | 🟠 media → 🔴 alta con la primera clínica con pacientes reales | abierta (fichada el 2026-10-31) · cumplimiento P1 | pre-análisis |
 | [DT-02](DT-02.md) | El rol se emite y nadie lo verifica | 🟠 media→alta | abierta | [ADR-01 §4](../Decisions/ADR-01.md) |
 | [DT-07](DT-07.md) | No existe alta de un segundo usuario | 🟠 media | abierta | [us00a](../Features/us00a-registro-inicial.md) |
 | [DT-35](DT-35.md) | El correo del paciente no se verifica | 🟠 media | abierta (contraída en la Fase 2, 2026-10-03) | [ADR-13 §14](../Decisions/ADR-13.md) |
@@ -31,15 +34,18 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | [DT-40](DT-40.md) | Con `MENSAJERIA_ADAPTADOR=registro` los recordatorios quedan "Enviado" sin haberse enviado | 🟠 media | abierta (detectada en producción, 2026-10-07) · la variable ya está en `resend` | puesta en producción · [ADR-13 §13](../Decisions/ADR-13.md) |
 | [DT-23](DT-23.md) | Nada verifica que el RUT pertenezca a quien lo escribe | 🟠 media | abierta (contraída con la vía pública, 2026-09-10) | [ADR-09 §3, §8](../Decisions/ADR-09.md) |
 | [DT-25](DT-25.md) | La apuesta del formulario no se puede medir | 🟠 media | abierta (contraída con la vía pública, 2026-09-10) | [ADR-09 §10](../Decisions/ADR-09.md) |
-| [DT-26](DT-26.md) | Sin política de retención para las solicitudes | 🟠 media | abierta (contraída con la vía pública, 2026-09-10) | [ADR-09 §1, §10](../Decisions/ADR-09.md) |
+| [DT-26](DT-26.md) | Sin política de conservación de los datos por finalidad (empezó por las solicitudes) *(título hasta el 2026-10-31: "Sin política de retención para las solicitudes")* | 🟠 media | abierta (contraída con la vía pública, 2026-09-10) · ampliada el 2026-10-31 a todos los datos · cumplimiento P2 | [ADR-09 §1, §10](../Decisions/ADR-09.md) · pre-análisis |
 | [DT-42](DT-42.md) | El enlace por cita no verifica identidad: reenviado o mal dirigido, transfiere la capacidad | 🟠 media (riesgo aceptado) | abierta (contraída al desplegar la Fase 3, 2026-10-17) | [ADR-10 §9](../Decisions/ADR-10.md) |
 | [DT-45](DT-45.md) | Cambiar `ENLACE_CITA_CLAVE` deja sin servir, en silencio, los enlaces de los correos siguientes | 🟠 media → 🟡 baja con la corrección | abierta (2026-10-17) · **corrección en producción**: cumple su criterio de cierre, falta confirmarlo | [ADR-10 §1](../Decisions/ADR-10.md) |
 | [DT-14](DT-14.md) | El instante de la cita se acepta sin zona horaria | 🟠 media | abierta · avance parcial: aceptar una solicitud ya exige zona (2026-09-28); crear y reagendar no | [ADR-07](../Decisions/ADR-07.md) |
 | [DT-19](DT-19.md) | Sin observabilidad | 🟠 media (era 🔴) | 🟢 **verificada en producción** (2026-10-07): uptime y heartbeats en Up · abierta solo por la fuente de logs (sin ella, las alertas por log no llegan) y la prueba de alerta forzada | RNF-08 |
 | [DT-20](DT-20.md) | Las pruebas e2e no corren solas: no hay pipeline *(título hasta el 2026-10-18: "nunca se han ejecutado")* | 🟠 media | abierta · avance: suites con BD en verde (2026-09-28; 2026-10-15: 287 e2e y 139 de integración) y concurrencia `SKIP LOCKED` automatizada; sin pipeline | [us06](../Features/us06-dashboard-citas.md) |
 | [DT-04](DT-04.md) | Login sin límite de intentos | 🟠 media | abierta | [us00b](../Features/us00b-login.md) |
+| [DT-55](DT-55.md) | No se sabe si Citia necesita acreditarse como plataforma de salud digital | 🟠 media, incierta | abierta (fichada el 2026-10-31) · cumplimiento P1 (saber el alcance) | pre-análisis |
 | [DT-16](DT-16.md) | El consentimiento se captura y nadie lo lee | 🔴 alta (RF-06 en el MVP) | 🟠 **riesgo aceptado** (2026-09-30) · política implementada y **apagada** (2026-10-03) · revisar antes del 2026-12-01 (Ley 21.719) | [us06](../Features/us06-dashboard-citas.md) |
 | [DT-13](DT-13.md) | Se aceptan citas en el pasado | 🟡 baja→media | abierta | [us06](../Features/us06-dashboard-citas.md) |
+| [DT-54](DT-54.md) | Citia no distingue a un paciente menor de edad ni registra a su representante | 🟡 baja → 🟠 media con la primera clínica real que atienda a menores | abierta (fichada el 2026-10-31) · cumplimiento P2 | pre-análisis |
+| [DT-56](DT-56.md) | Sin procedimiento ante incidentes de datos ni programa interno de cumplimiento | 🟡 baja → 🟠 media con la primera clínica con pacientes reales | abierta (fichada el 2026-10-31) · cumplimiento P2 | pre-análisis |
 | [DT-05](DT-05.md) | La respuesta de login no es uniforme en el tiempo | 🟡 baja | abierta | [ADR-03 §5](../Decisions/ADR-03.md) |
 | [DT-08](DT-08.md) | Colisión de identificador público bajo concurrencia | 🟡 baja | abierta | [ADR-03 §2](../Decisions/ADR-03.md) |
 | [DT-09](DT-09.md) | Comprobación de correo duplicado inalcanzable | 🟡 baja | abierta | [us00a](../Features/us00a-registro-inicial.md) |
@@ -89,7 +95,7 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 |----|-------|-----------|--------|--------|
 | [DT-23](DT-23.md) | Nada verifica que el RUT pertenezca a quien lo escribe | 🟠 media | abierta (antes ⚪ prevista) | [ADR-09 §3, §8](../Decisions/ADR-09.md) |
 | [DT-25](DT-25.md) | La apuesta del formulario no se puede medir | 🟠 media | abierta (antes ⚪ prevista) | [ADR-09 §10](../Decisions/ADR-09.md) |
-| [DT-26](DT-26.md) | Sin política de retención para las solicitudes | 🟠 media | abierta (antes ⚪ prevista) | [ADR-09 §1, §10](../Decisions/ADR-09.md) |
+| [DT-26](DT-26.md) | Sin política de retención para las solicitudes *(desde el 2026-10-31: "Sin política de conservación de los datos por finalidad (empezó por las solicitudes)")* | 🟠 media | abierta (antes ⚪ prevista) | [ADR-09 §1, §10](../Decisions/ADR-09.md) |
 | [DT-24](DT-24.md) | Sin taxonomía de tipos de consulta | 🟡 baja | 🔵 aplazada | [ADR-09 §10](../Decisions/ADR-09.md) |
 
 ## Contraídas al desplegar la Fase 3 ([ADR-10](../Decisions/ADR-10.md), 2026-10-17)
@@ -130,6 +136,26 @@ pocas visitas) son de US-07.02 y US-07.03: **siguen previstas** en
 | [DT-48](DT-48.md) | Un cierre equivocado no se corrige | 🟡 baja → 🟠 media con US-07.02 | **nueva** · prevista 1 de ADR-14 · salida decidida el 2026-10-30 (corrección dentro de 7 días, en US-07.02, 🚧 bloqueada desde el mismo día) |
 | [DT-49](DT-49.md) | La primera apertura la puede disparar un escáner que ejecuta la página | 🟡 baja | **nueva** · prevista 4 de ADR-14 |
 | [DT-50](DT-50.md) | `cita` lee con SQL el esquema de `recordatorios` y `solicitudes_cita` (job G1) | 🟡 baja | **nueva** · riesgo 9 del plan US-07.01 |
+
+## Fichadas con el pre-análisis legal ([Cumplimiento](../Cumplimiento/README.md), 2026-10-31)
+
+*(2026-10-31.)* Salen del [pre-análisis legal hecho con una IA el 2026-10-30](../Cumplimiento/pre-analisis-ia-2026-10-30.md),
+que **no es un abogado ni una opinión legal** (el usuario no tiene abogado). No son de ninguna fase: son
+transversales y su estado vive en [`Cumplimiento/`](../Cumplimiento/README.md). Casi todas se cierran con contratos,
+inventarios, políticas y procedimientos, no con código. Su escalón es **la primera clínica con pacientes reales**, no
+producción: Citia ya está en producción sin clínicas reales. Si P1 es condición para recibir a esa clínica, el
+usuario no lo ha decidido.
+
+| ID | Qué | Severidad | Prioridad | Cambio |
+|----|-----|-----------|-----------|--------|
+| [DT-51](DT-51.md) | No hay contrato de encargo entre la clínica y Citia | 🟠 media → 🔴 alta con la primera clínica con pacientes reales | P1 | **nueva** · preguntas B7 y B8 |
+| [DT-52](DT-52.md) | Proveedores y datos que salen de Chile, sin inventario ni garantías | 🟠 media → 🔴 alta con la primera clínica con pacientes reales | P1 · P2 (registro al día) | **nueva** · pregunta B9; lo que llegaría a Better Stack, leído del código |
+| [DT-53](DT-53.md) | No hay política de privacidad ni canal para los derechos del paciente | 🟠 media → 🔴 alta con la primera clínica con pacientes reales | P1 | **nueva** · P1 y preguntas A5 y B9 |
+| [DT-55](DT-55.md) | No se sabe si Citia necesita acreditarse como plataforma de salud digital | 🟠 media, incierta | P1 (saber el alcance) | **nueva** · pregunta B10 |
+| [DT-54](DT-54.md) | Citia no distingue a un paciente menor de edad ni registra a su representante | 🟡 baja → 🟠 media con la primera clínica real que atienda a menores | P2 | **nueva** · pregunta B11 |
+| [DT-56](DT-56.md) | Sin procedimiento ante incidentes de datos ni programa interno de cumplimiento | 🟡 baja → 🟠 media con la primera clínica con pacientes reales | P2 | **nueva** · pregunta B13 |
+| [DT-26](DT-26.md) | Sin política de conservación de los datos por finalidad *(antes: "… para las solicitudes")* | 🟠 media (sin cambio) | P2 | **ampliada**: de las solicitudes a todos los datos (pregunta B11) |
+| [DT-16](DT-16.md) | El consentimiento se captura y nadie lo lee | 🔴 alta (sin cambio) | P1 (recordatorios) · P3 (calificación) | **nota**: el pre-análisis confirma que la casilla no sirve de base (pregunta A6) |
 
 ## Detectada al implementar la Fase 3 (2026-10-15)
 
@@ -182,7 +208,9 @@ cambiaron el estado de otras dos. Detalle en el
 > escala con DT-07; DT-13 escala cuando exista el proceso de cierre de DT-11. **DT-16, DT-19 y DT-27
 > escalaron** el 2026-09-30, cuando RF-06 entró en el MVP. *(2026-10-18: desde entonces DT-27 se cerró
 > —2026-10-03— y DT-19 volvió a 🟠 media al verificarse en producción —2026-10-07—; solo DT-16 sigue en 🔴
-> alta.)*
+> alta.)* *(2026-10-31: [DT-51](DT-51.md), [DT-52](DT-52.md) y [DT-53](DT-53.md) escalan a 🔴, y
+> [DT-54](DT-54.md) y [DT-56](DT-56.md) a 🟠, con la primera clínica con pacientes reales; DT-54, solo si atiende a
+> menores.)*
 
 ---
 
@@ -204,6 +232,7 @@ cambiaron el estado de otras dos. Detalle en el
 | Decisión de producto 2026-09-30 (scoring a la v2, sin botones de asistencia) | DT-30 (mitigada el 2026-10-05 al revertir la decisión) |
 | Puesta en producción de la Fase 2 (2026-10-07) | DT-40 (`registro` en producción), DT-41 (DMARC) |
 | Implementación de la Fase 3 (2026-10-15) | DT-46 (entidades ORM sin `timestamptz`) |
+| [Pre-análisis legal con IA](../Cumplimiento/pre-analisis-ia-2026-10-30.md) (2026-10-30; **no es un abogado**) — [Cumplimiento](../Cumplimiento/README.md) | *crea* DT-51, DT-52, DT-53, DT-54, DT-55, DT-56 (fichadas el 2026-10-31) · *amplía* DT-26 (a todos los datos) · *anota* DT-16 (la casilla no sirve de base) |
 | [us00a](../Features/us00a-registro-inicial.md) — registro | DT-03, DT-06, DT-07, DT-09 |
 | [us00b](../Features/us00b-login.md) — login | DT-03, DT-04 |
 | [us06](../Features/us06-dashboard-citas.md) — dashboard | DT-12, DT-13, DT-15, DT-16, DT-20 |
@@ -214,7 +243,7 @@ cambiaron el estado de otras dos. Detalle en el
 
 ## Por fase del roadmap
 
-*(2026-09-30; Fase 2 actualizada el 2026-10-04 y el 2026-10-07; Fase 3, el 2026-10-15 y el 2026-10-17; Fase 5, el 2026-10-30.)* Qué deudas creó, cerró o movió cada fase. El detalle y el orden de lectura están en
+*(2026-09-30; Fase 2 actualizada el 2026-10-04 y el 2026-10-07; Fase 3, el 2026-10-15 y el 2026-10-17; Fase 5, el 2026-10-30; la fila transversal de Cumplimiento, el 2026-10-31.)* Qué deudas creó, cerró o movió cada fase. El detalle y el orden de lectura están en
 la guía de cada una, en [`../Fases/`](../Fases/README.md).
 
 | Fase | Creadas (origen) | Cerradas o mitigadas | Afectadas |
@@ -226,6 +255,7 @@ la guía de cada una, en [`../Fases/`](../Fases/README.md).
 | [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) | DT-42…DT-45 (previstas el 2026-10-14, abiertas desde el despliegue del 2026-10-17; las previstas 3 y 4 de la propuesta de ADR-10 desaparecieron) · DT-46 (detectada al implementar, 2026-10-15) | DT-18 **en producción** (2026-10-17), se cierra con la prueba de `trust proxy` · DT-44 parte 2 resuelta y DT-45 con su corrección, antes de contraerse | DT-30 (ya mitigada el 2026-10-05; la confirmación del paciente reduce las `pendiente` vencidas) · DT-11 (regla G1, corte = despliegue de la fase) · DT-04, DT-06 (límite por IP, no por cuenta ni captcha), DT-16 (sigue como deuda), DT-23, DT-26, DT-33 |
 | [Fase 4 — US-05](../Fases/fase-4-us05-alertas.md) | — | — | DT-28 (aviso al profesional) |
 | [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) | DT-47 (detectada en US-07.01, 2026-10-19) · DT-48, DT-49, DT-50 (contraídas con US-07.01, fichadas el 2026-10-30) | **cierra** DT-11 (2026-10-27, job G1 prendido en production) | depende de DT-30 (mitigada el 2026-10-05; lo anterior a esa fecha no se recupera; la lista de citas pasadas sin cerrar es su punto 3) · DT-13, DT-23, DT-37, DT-40 · DT-44 (la decisión 8 de ADR-14 neutraliza su efecto en la calificación) |
+| Transversal — [Cumplimiento](../Cumplimiento/README.md) (no es una fase) | DT-51…DT-56 (fichadas el 2026-10-31, del pre-análisis legal con IA del 2026-10-30) | — | DT-26 (ampliada a una política general de conservación) · DT-16 (nota) · la P3 es la condición del 🚧 de US-07.02 y US-07.03 (Fase 5) |
 
 > Las deudas de Fundaciones y de la Fase 0 se **ficharon** el 2026-08-24 (`f2a7dff`), cuando se creó
 > este registro; su origen es anterior.
@@ -283,6 +313,17 @@ con fecha: [DT-16](DT-16.md), a revisar antes de que entre en vigor la Ley 21.71
 > [contexto legal de ADR-14](../Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado): DT-47 y DT-48 siguen
 > abiertas y esperan con US-07.02; ya no son pasos inmediatos. *Observación, sin decidir:* la corrección de DT-48
 > no perfila al paciente y podría separarse de US-07.02 si el usuario lo quiere.
+
+> **Actualizado 2026-10-31 (cumplimiento legal):** con el
+> [pre-análisis legal hecho con una IA el 2026-10-30](../Cumplimiento/pre-analisis-ia-2026-10-30.md) (**no es un
+> abogado ni una opinión legal**) se fichan seis deudas de cumplimiento, [DT-51](DT-51.md) a [DT-56](DT-56.md), y
+> [DT-26](DT-26.md) pasa de las solicitudes a una política general de conservación por finalidad. Son de contratos,
+> inventarios, políticas y procedimientos más que de código. **Antes de la primera clínica con pacientes reales
+> conviene mirar las de P1:** [DT-51](DT-51.md) (contrato de encargo), [DT-52](DT-52.md) (proveedores y
+> transferencias) y [DT-53](DT-53.md) (política de privacidad y derechos), que escalan a 🔴 ese día, y
+> [DT-55](DT-55.md) (acreditación, incierta). Si P1 es condición para recibir a esa clínica, el usuario no lo ha
+> decidido. [DT-16](DT-16.md) sigue en 🔴, con su revisión antes del 2026-12-01. Estado y prioridades en
+> [Cumplimiento](../Cumplimiento/README.md).
 
 **Cuatro deudas se resuelven en el mismo release que US-02** y conviene tratarlas como parte de su
 alcance, no como extras: DT-10 y DT-22 las cierra ADR-09; DT-15 la bloquea; DT-14 se agrava con

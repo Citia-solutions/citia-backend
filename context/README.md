@@ -17,6 +17,7 @@ sin doc.**
 | **por qué está construido así** y qué se descartó | [`Decisions/`](Decisions/README.md) |
 | **qué está construido** y cómo funciona | [`Features/`](Features/README.md) |
 | **qué falta o está a medias**, y qué cuesta | [`Deudas/`](Deudas/README.md) |
+| **qué exige la ley de datos personales** y qué le falta a Citia antes de la primera clínica con pacientes reales (sin abogado: es un pre-análisis con IA, no una opinión legal) | [`Cumplimiento/`](Cumplimiento/README.md) |
 | **qué decidió el frontend** que afecta al backend | [`Frontend-Decisions/`](Frontend-Decisions/README.md) |
 | **qué falta decidir** y quién puede decidirlo | [`PREGUNTAS-ABIERTAS.md`](PREGUNTAS-ABIERTAS.md) |
 | qué commit corresponde a qué documento | [`TRAZABILIDAD.md`](TRAZABILIDAD.md) |
@@ -63,6 +64,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 | qué quedó al cerrar la gestión de citas | [Fase 1 § Cierre](Fases/fase-1-us02-gestion-citas.md#cierre-de-la-fase-resumen) |
 | por qué una pieza es como es | la feature → su ADR → las alternativas descartadas del ADR |
 | qué riesgo se está aceptando | [Deudas/README § Lo que hay que mirar primero](Deudas/README.md#lo-que-hay-que-mirar-primero) → la deuda |
+| qué falta, en lo legal, antes de la primera clínica con pacientes reales | [Cumplimiento § Lo que falta](Cumplimiento/README.md#lo-que-falta-por-prioridad) → la deuda |
 | qué hay que decidir antes de avanzar | [PREGUNTAS-ABIERTAS § Por fase](PREGUNTAS-ABIERTAS.md#por-fase-del-roadmap) |
 | de dónde salió un cambio | [TRAZABILIDAD](TRAZABILIDAD.md) (commit → documento, con su fase) |
 | qué hizo el frontend | la sección *Contraparte en el frontend* de cada fase |
@@ -88,6 +90,11 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
   endpoints, esquema y pendientes.
 - **[`Deudas/`](Deudas/README.md)** — deudas técnicas, cada una enlazada al párrafo del ADR o feature
   que la originó.
+- **[`Cumplimiento/`](Cumplimiento/README.md)** — *(2026-10-31)* el estado del cumplimiento legal (Ley 21.719,
+  Ley 19.628 y Ley 20.584): roles, vigencia, lo que Citia ya tiene, lo que falta por prioridad (P1, P2, P3) con sus
+  deudas ([DT-51](Deudas/DT-51.md) a [DT-56](Deudas/DT-56.md)) y las preguntas para el abogado. Transversal: no es
+  una fase. Sale de un pre-análisis hecho con una IA el 2026-10-30, que **no es un abogado ni una opinión legal**; el
+  usuario no tiene abogado.
 - **[`Frontend-Decisions/`](Frontend-Decisions/README.md)** — decisiones del frontend (FD-01 a FD-06)
   que afectan al backend.
 - **`US/`** — planes de historias de usuario previos a implementar: decisiones y orden de

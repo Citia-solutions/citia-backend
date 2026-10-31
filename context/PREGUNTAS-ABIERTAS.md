@@ -406,6 +406,17 @@ hay política de retención ([DT-26](Deudas/DT-26.md)).
 retención corresponde? Además: el RUT es un identificador nacional y no debe aparecer en URLs ni en
 logs — verificar que efectivamente no aparece.
 
+> **Nota (2026-10-31).** Un pre-análisis legal hecho con una IA el 2026-10-30 (**no es un abogado ni una opinión
+> legal**; el usuario no tiene abogado) responde en parte la primera mitad. Lo que exige la normativa, lo que Citia ya
+> tiene, lo que falta por prioridad y las preguntas para el abogado están en [`Cumplimiento/`](Cumplimiento/README.md),
+> con seis deudas nuevas ([DT-51](Deudas/DT-51.md) a [DT-56](Deudas/DT-56.md)). Sobre el plazo: **no hay uno único**;
+> la ficha clínica se guarda al menos 15 años (Ley 20.584, art. 13), pero eso no obliga a guardar igual cada registro
+> administrativo, así que hace falta un plazo por finalidad: [DT-26](Deudas/DT-26.md) pasó ese día de las solicitudes
+> a una política general de conservación. Sobre el RUT, lectura del código del backend (2026-10-31, sin ejecutar
+> tests): las rutas usan UUID, ninguna query lleva el RUT, y pino redacta `rut` por nombre de campo y no registra
+> cuerpos (`test/logs-redaccion.e2e-spec.ts`); faltan las URLs del frontend. Detalle de los logs en
+> [DT-52](Deudas/DT-52.md). **La pregunta sigue abierta** hasta la revisión de un abogado.
+
 ---
 
 ## Fase 2 — decisiones pendientes tras implementar (2026-10-04)

@@ -163,6 +163,7 @@ la subtarea US-02.07.
 | [`stack-tecnologico.md`](../stack-tecnologico.md) | stack y despliegue; la Fase 2 lo actualizó el 2026-09-30, el 2026-10-04 (dependencias instaladas) y el 2026-10-07 (infraestructura en producción y mapa de entornos) |
 | [`PREGUNTAS-ABIERTAS.md`](../PREGUNTAS-ABIERTAS.md) | Q2 (prepago), Q3 (agenda de la organización) y Q10 (validación) no son de ninguna fase |
 | [`Descripcion/`](../Descripcion/README.md) | etapas del producto (ver arriba) |
+| [`Cumplimiento/`](../Cumplimiento/README.md) | *(2026-10-31)* el cumplimiento legal (Ley 21.719) toca a todo el sistema; sus deudas, DT-51 a DT-56, no son de ninguna fase. Su P3 es la condición del 🚧 de US-07.02 y US-07.03 ([Fase 5](fase-5-us07-scoring.md)) |
 
 ---
 
