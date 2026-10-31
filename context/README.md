@@ -17,6 +17,7 @@ sin doc.**
 | **por qué está construido así** y qué se descartó | [`Decisions/`](Decisions/README.md) |
 | **qué está construido** y cómo funciona | [`Features/`](Features/README.md) |
 | **qué falta o está a medias**, y qué cuesta | [`Deudas/`](Deudas/README.md) |
+| **qué exige la ley de datos personales** y qué le falta a Citia antes de la primera clínica con pacientes reales (sin abogado: es un pre-análisis con IA, no una opinión legal) | [`Cumplimiento/`](Cumplimiento/README.md) |
 | **qué decidió el frontend** que afecta al backend | [`Frontend-Decisions/`](Frontend-Decisions/README.md) |
 | **qué falta decidir** y quién puede decidirlo | [`PREGUNTAS-ABIERTAS.md`](PREGUNTAS-ABIERTAS.md) |
 | qué commit corresponde a qué documento | [`TRAZABILIDAD.md`](TRAZABILIDAD.md) |
@@ -63,6 +64,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 | qué quedó al cerrar la gestión de citas | [Fase 1 § Cierre](Fases/fase-1-us02-gestion-citas.md#cierre-de-la-fase-resumen) |
 | por qué una pieza es como es | la feature → su ADR → las alternativas descartadas del ADR |
 | qué riesgo se está aceptando | [Deudas/README § Lo que hay que mirar primero](Deudas/README.md#lo-que-hay-que-mirar-primero) → la deuda |
+| qué falta, en lo legal, antes de la primera clínica con pacientes reales | [Cumplimiento § Lo que falta](Cumplimiento/README.md#lo-que-falta-por-prioridad) → la deuda |
 | qué hay que decidir antes de avanzar | [PREGUNTAS-ABIERTAS § Por fase](PREGUNTAS-ABIERTAS.md#por-fase-del-roadmap) |
 | de dónde salió un cambio | [TRAZABILIDAD](TRAZABILIDAD.md) (commit → documento, con su fase) |
 | qué hizo el frontend | la sección *Contraparte en el frontend* de cada fase |
@@ -88,6 +90,11 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
   endpoints, esquema y pendientes.
 - **[`Deudas/`](Deudas/README.md)** — deudas técnicas, cada una enlazada al párrafo del ADR o feature
   que la originó.
+- **[`Cumplimiento/`](Cumplimiento/README.md)** — *(2026-10-31)* el estado del cumplimiento legal (Ley 21.719,
+  Ley 19.628 y Ley 20.584): roles, vigencia, lo que Citia ya tiene, lo que falta por prioridad (P1, P2, P3) con sus
+  deudas ([DT-51](Deudas/DT-51.md) a [DT-56](Deudas/DT-56.md)) y las preguntas para el abogado. Transversal: no es
+  una fase. Sale de un pre-análisis hecho con una IA el 2026-10-30, que **no es un abogado ni una opinión legal**; el
+  usuario no tiene abogado.
 - **[`Frontend-Decisions/`](Frontend-Decisions/README.md)** — decisiones del frontend (FD-01 a FD-06)
   que afectan al backend.
 - **`US/`** — planes de historias de usuario previos a implementar: decisiones y orden de
@@ -96,8 +103,11 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
   [US-04](US/04-respuesta-paciente.md) respuesta del paciente desde el recordatorio (✅ en producción
   desde el 2026-10-17; [ADR-10](Decisions/ADR-10.md) aceptado).
   **Subtareas de US-07** (archivos `07.NN-*`): [US-07.01](US/07.01-registro-hechos.md) registro de hechos
-  (🔶 en construcción desde el 2026-10-19; [ADR-14](Decisions/ADR-14.md) aceptado en lo que le toca). US-07.02
-  (calificación y riesgo) y US-07.03 (acciones) aún sin plan.
+  (✅ en producción desde el 2026-10-20, job G1 prendido desde el 2026-10-27, pruebas manuales en curso;
+  [ADR-14](Decisions/ADR-14.md) aceptado en lo que le toca). US-07.02 (calificación y riesgo) y US-07.03
+  (acciones) aún sin plan y 🚧 **bloqueadas desde el 2026-10-30, plan incluido**, hasta que un abogado revise el
+  contexto legal de ADR-14; las decisiones de producto de US-07.02, aprobadas ese mismo día, siguen vigentes.
+  *Antes (hasta el bloqueo): "su plan es el siguiente paso".*
   **Subtareas de US-02** (archivos `02.NN-*`, no son historias propias):
   [US-02.07](US/02.07-paciente-reagenda-cancela.md) el paciente cancela o pide reagendar (⏸ aplazada
   fuera de la v1; 🔀 **absorbida por US-04** el 2026-10-14, en la
@@ -124,7 +134,8 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 
 ## Estado, de un vistazo
 
-*(Actualizado el 2026-10-07; la Fase 3, el 2026-10-18, tras su release del 2026-10-17. Fuente:
+*(Actualizado el 2026-10-07; la Fase 3, el 2026-10-18, tras su release del 2026-10-17; la fila de la Fase 5, el
+2026-10-30. Fuente:
 [ROADMAP § Resumen](ROADMAP.md#resumen).)*
 
 **El MVP está en producción.** Alcance: dashboard de citas (Fase 0) · gestión de citas (Fase 1) ·
@@ -142,7 +153,7 @@ está en producción desde el 2026-10-17.
 | [Fase 2](Fases/fase-2-us03-recordatorios.md) — US-03 recordatorios | ✅ **cerrada en producción (2026-10-07)** · [pendientes posteriores](Fases/fase-2-us03-recordatorios.md#pendientes-posteriores) |
 | [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) — US-04 respuesta del paciente | ✅ **en producción (2026-10-17)** · cierre pendiente de las pruebas manuales · [us04](Features/us04-respuesta-paciente.md) · fuera del MVP |
 | [Fase 4](Fases/fase-4-us05-alertas.md) — US-05 alertas | ⬜ fuera del MVP |
-| [Fase 5](Fases/fase-5-us07-scoring.md) — US-07 scoring | 🔶 US-07.01 (registro de hechos) en construcción desde el 2026-10-19, antes que la Fase 4 · US-07.02 y US-07.03 ⏸ v2 |
+| [Fase 5](Fases/fase-5-us07-scoring.md) — US-07 scoring | 🔶 US-07.01 (registro de hechos) en producción desde el 2026-10-20, antes que la Fase 4; job G1 prendido el 2026-10-27; pruebas manuales en curso · US-07.02 y US-07.03 🚧 bloqueadas desde el 2026-10-30, plan incluido (siguen en la v2), con las decisiones de producto de US-07.02 aprobadas ese día y vigentes · siguiente: cerrar US-07.01 · *antes: ⏸ v2 (siguiente: el plan de US-07.02)* |
 | [Fases 6, 7 y US-09](Fases/fases-6-7-us09-sin-diseno.md) | ⬜ sin diseño |
 
 **Entornos** ([mapa](stack-tecnologico.md#mapa-de-entornos)): `develop` → **staging** (Railway +

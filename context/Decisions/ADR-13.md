@@ -529,6 +529,12 @@ Detalle de costos en [stack-tecnologico.md](../stack-tecnologico.md#modo-prueba)
 - **Encargado de tratamiento:** Resend (EE. UU.) recibe el correo del paciente, el nombre del
   profesional y la fecha. Es una transferencia internacional de datos personales, a revisar junto con
   el consentimiento ([DT-16](../Deudas/DT-16.md)).
+  *(2026-10-31: con el modelo del pre-análisis legal con IA del 2026-10-30, que no es una opinión legal —la clínica
+  responsable, Citia encargado—, Resend sería un **subencargado**, que el contrato con la clínica tiene que
+  autorizar por escrito ([DT-51](../Deudas/DT-51.md)). El inventario de proveedores, países y DPA está en
+  [DT-52](../Deudas/DT-52.md); ahí también queda a aclarar que el dominio está en la región São Paulo de Resend y que
+  Resend recibe además el nombre de la organización, el teléfono de contacto y el enlace con el token.
+  [Cumplimiento](../Cumplimiento/README.md).)*
 
 ### 13. Remitente, dominio y desarrollo
 

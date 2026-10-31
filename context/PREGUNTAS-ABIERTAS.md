@@ -25,6 +25,11 @@ reformuladas **en el lenguaje de quien puede responderlas**, con el entregable q
 > construcción. La regla de `ghosting` G1 responde además la **pregunta 1 de Q6**.
 >
 > **2026-10-17:** la Fase 3 llegó a producción con el enlace y el límite de tasa que pedían Q11 y Q16.
+>
+> **2026-10-30:** **Q6 queda respondida entera**: el usuario decidió su **pregunta 2** (las `confirmada` que
+> nadie cerró siguen neutras y van a una lista de citas pasadas sin cerrar, [abajo](#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1)).
+> El job G1 que responde la pregunta 1 está prendido en production desde el 2026-10-27
+> ([DT-11](Deudas/DT-11.md), cerrada).
 
 **Equipo:** 1 I+D · 2 desarrolladores · el arquitecto decide el diseño y los requisitos de seguridad.
 
@@ -45,7 +50,7 @@ se compromete, y los desarrolladores eligen el mecanismo que cumpla ese requisit
 | 3 | ¿La agenda es del profesional o de la organización? | **I+D** | si "clínica" es cliente viable |
 | 5 | ¿Registro abierto, por invitación o lista de espera? | **I+D** + **arquitecto** (defensas contra abuso) | DT-06 |
 | 4 | Solapamiento: ¿avisar o rechazar? | **I+D** decide, **dev** ejecuta | nada; es barato |
-| 6 | Planificador del proceso de cierre | **desarrolladores** | ✅ **mecanismo decidido (2026-09-30)** en [ADR-12](Decisions/ADR-12.md); el job de cierre se aplaza con el scoring (DT-11) · pregunta 1 ✅ por la regla G1 (2026-10-14) |
+| 6 | Planificador del proceso de cierre | **desarrolladores** | ✅ **mecanismo decidido (2026-09-30)** en [ADR-12](Decisions/ADR-12.md) · pregunta 1 ✅ por la regla G1 (2026-10-14), con el job prendido en production desde el 2026-10-27 (DT-11 cerrada) · **pregunta 2 ✅ (2026-10-30)**: las `confirmada` sin cerrar siguen neutras y van a una lista de citas pasadas sin cerrar ([ADR-14](Decisions/ADR-14.md)) |
 | 7 | Renovación y revocación de sesión | **arquitecto** define requisito, **dev** elige mecanismo | DT-01 |
 | 8 | ADR-08 — tenant en la URL | **desarrolladores** | el login · *(antes: "toda la vía pública"; la ruta pública ya lleva el slug en la URL desde el 2026-09-10, [ADR-09 §11.b](Decisions/ADR-09.md))* |
 | 9 | Modelo de disponibilidad | **desarrolladores** (solo evaluar riesgo) | nada hoy |
@@ -69,7 +74,7 @@ tienen fase son de producto o de modelo de negocio.
 | [Fase 1 — US-02](Fases/fase-1-us02-gestion-citas.md) | Q4 ✅ · Q11 ✅ C (en la Fase 1; en la Fase 3 pasó a B) · Q8 (la ruta pública ya usa el slug; falta el login) · Q9 (disponibilidad) · Q16 · Q17 |
 | [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | Q1 ✅ A · Q6 ✅ (mecanismo) · Q12, Q13, Q14, Q15 (2026-10-04) |
 | [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | Q11 ✅ **B** (2026-10-14), con la seguridad del enlace (S1–S3 y límite de tasa) · Q6 pregunta 1 ✅ (regla G1) · en producción desde el 2026-10-17 |
-| [Fase 5 — US-07](Fases/fase-5-us07-scoring.md) | Q6 (pregunta 2 del job de cierre; la 1 la resolvió G1) |
+| [Fase 5 — US-07](Fases/fase-5-us07-scoring.md) | Q6 ✅ (pregunta 2 del job de cierre, respondida el 2026-10-30; la 1 la resolvió G1) |
 | sin fase | Q2 (prepago) · Q3 (agenda de la organización) · Q10 (validación, [etapa 1 del producto](Descripcion/fase-1-validacion.md)) |
 
 ---
@@ -270,6 +275,18 @@ Sugerencia de reparto entre los dos, porque las dos mitades no se bloquean entre
 > `ghosting`; sus botones esperan a la Fase 3 (decisión del 2026-09-30). *(Revertida el 2026-10-05: los
 > botones Confirmar, Asistió y No asistió están en el voucher y DT-30 quedó mitigada. La fecha de corte de G1
 > es el 2026-10-17.)*
+>
+> **2026-10-27:** el job G1 se construyó en [US-07.01](US/07.01-registro-hechos.md) y quedó **prendido en
+> production** ([DT-11](Deudas/DT-11.md), cerrada).
+>
+> ✅ **2026-10-30: la pregunta 2 queda respondida** (decisión del usuario, en
+> [ADR-14](Decisions/ADR-14.md#preguntas-abiertas-y-lo-que-queda-a-confirmar)). Las `confirmada` que nadie
+> cerró **siguen neutras** para la calificación: **no se adivina la asistencia** y el job no las toca. En vez de
+> eso, aparecen en una **lista de "citas pasadas sin cerrar"** para que el profesional las marque. La misma
+> lista ayuda a que G1 no cierre por error a quien sí llegó (las `pendiente` pasadas también salen ahí antes de
+> que corra el job). Es el aviso que ya proponía el punto 3 de *Cómo se cierra* de [DT-30](Deudas/DT-30.md).
+> Como no perfila a nadie, **no depende de la revisión legal y podría adelantarse** a US-07.02: queda como
+> **candidata**, sin US ni número todavía (lo decide el usuario). **Con esto Q6 queda respondida entera.**
 
 **Por qué es lo más urgente del tablero:** el historial de comportamiento del paciente
 —[DT-11](Deudas/DT-11.md), el diferenciador del producto y un pilar del MVP— **no se está
@@ -285,13 +302,15 @@ igual cuando entren recordatorios, así que la pregunta real es **si conviene pa
 1. **¿Cuándo está vencida una cita?** ¿Al pasar `inicio`, o al pasar `inicio + duración`, más margen?
 2. **¿Qué pasa con las `confirmada` que el profesional nunca cerró?** ADR-04 no lo cubre. Quedan en
    limbo permanente — y son justamente las que más importan para RF-08, porque son de alguien que sí
-   se comprometió. ¿El job las toca, o solo avisa?
+   se comprometió. ¿El job las toca, o solo avisa? → ✅ **(2026-10-30) no las toca: siguen neutras y se
+   muestran en la lista de citas pasadas sin cerrar** (arriba).
 3. **"Ya pasó" según el reloj de la clínica**, no el del servidor. `timezone.ts` ya lo resuelve.
 4. **Idempotencia:** correr dos veces no debe duplicar nada.
 5. **Rompe un patrón a propósito:** todas las consultas del sistema están acotadas a un tenant; esta
    barre todas las organizaciones. Que sea explícito, no accidental.
 
-**Entregable:** ~~ADR corto + el job + tests.~~ ADR-12 escrito; el job y sus tests, aplazados. *(El número 10 lo tomó [ADR-10](Decisions/ADR-10.md),
+**Entregable:** ~~ADR corto + el job + tests.~~ ADR-12 escrito; el job y sus tests, aplazados *(2026-10-20: en
+producción con US-07.01; prendido el 2026-10-27)*. *(El número 10 lo tomó [ADR-10](Decisions/ADR-10.md),
 enlace por cita de US-02.07, y el 11 [ADR-11](Decisions/ADR-11.md), solapamiento; este ADR usa el
 siguiente número libre: **ADR-12**.)* Debe recoger además la regla
 que ADR-10 §5 le deja anotada: **una petición de reagendamiento sin atender no debería terminar en
@@ -386,6 +405,17 @@ hay política de retención ([DT-26](Deudas/DT-26.md)).
 **Pregunta:** ¿qué exige la normativa chilena de datos personales aplicable a salud, y qué plazo de
 retención corresponde? Además: el RUT es un identificador nacional y no debe aparecer en URLs ni en
 logs — verificar que efectivamente no aparece.
+
+> **Nota (2026-10-31).** Un pre-análisis legal hecho con una IA el 2026-10-30 (**no es un abogado ni una opinión
+> legal**; el usuario no tiene abogado) responde en parte la primera mitad. Lo que exige la normativa, lo que Citia ya
+> tiene, lo que falta por prioridad y las preguntas para el abogado están en [`Cumplimiento/`](Cumplimiento/README.md),
+> con seis deudas nuevas ([DT-51](Deudas/DT-51.md) a [DT-56](Deudas/DT-56.md)). Sobre el plazo: **no hay uno único**;
+> la ficha clínica se guarda al menos 15 años (Ley 20.584, art. 13), pero eso no obliga a guardar igual cada registro
+> administrativo, así que hace falta un plazo por finalidad: [DT-26](Deudas/DT-26.md) pasó ese día de las solicitudes
+> a una política general de conservación. Sobre el RUT, lectura del código del backend (2026-10-31, sin ejecutar
+> tests): las rutas usan UUID, ninguna query lleva el RUT, y pino redacta `rut` por nombre de campo y no registra
+> cuerpos (`test/logs-redaccion.e2e-spec.ts`); faltan las URLs del frontend. Detalle de los logs en
+> [DT-52](Deudas/DT-52.md). **La pregunta sigue abierta** hasta la revisión de un abogado.
 
 ---
 

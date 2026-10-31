@@ -223,7 +223,7 @@ regla 1; si algún día molesta, se pasa a registrar la entrega por suscriptor s
 | Envío de recordatorios ([ADR-13 §7](ADR-13.md)) | 60 s | `SKIP LOCKED` | todos los tenants |
 | Reconciliación de respaldo de recordatorios ([ADR-13 §6](ADR-13.md)) | 1 h | candado consultivo | todos los tenants |
 | Purga de `eventos_salida` entregados | diario, 04:00 hora de la clínica | candado consultivo | todos los tenants |
-| **Cierre de citas vencidas ([DT-11](../Deudas/DT-11.md))** | — | — | ⏸ **aplazado** (decisión 8) |
+| **Cierre de citas vencidas ([DT-11](../Deudas/DT-11.md))** · job G1 | cada hora, minuto 40 (`APP_TZ`) | `FOR NO KEY UPDATE SKIP LOCKED` por cita | todos los tenants · ✅ prendido desde el 2026-10-27 ([ADR-14](ADR-14.md) §10.d) · *antes: ⏸ aplazado (decisión 8)* |
 
 ### 6. El barrido sobre todos los tenants rompe un patrón, y a propósito
 
@@ -251,6 +251,13 @@ Este diseño supone un proceso que corre aunque nadie haga peticiones. En Railwa
 > casos de uso**. Los puertos y las tablas no cambian; cambia quién llama.
 
 ### 8. El proceso de cierre queda aplazado, con el mecanismo listo
+
+> **Nota (2026-10-30).** El aplazamiento terminó: el job se construyó en
+> [US-07.01](../US/07.01-registro-hechos.md) con este mecanismo ([ADR-14](ADR-14.md) §10.d), salió a producción
+> el 2026-10-20 apagado y está **prendido desde el 2026-10-27** ([DT-11](../Deudas/DT-11.md) cerrada). La
+> pregunta 2 de Q6 se respondió el 2026-10-30 ([ADR-14](ADR-14.md#preguntas-abiertas-y-lo-que-queda-a-confirmar)):
+> las `confirmada` que nadie cerró siguen neutras y van a una lista de citas pasadas sin cerrar. El texto de
+> abajo queda como registro.
 
 El 2026-09-30 el scoring (RF-08) salió del MVP y pasó a la v2, así que el job que marca `ghosting` las
 citas vencidas deja de ser prioridad. Cuando se retome, usará este mecanismo tal cual (un job más en

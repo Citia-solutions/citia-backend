@@ -1,11 +1,22 @@
 # ADR-04: Modelo de Cita — máquina de estados en el dominio y estado materializado
 
-> **Fase:** [Fase 0 — US-06](../Fases/fase-0-us06-dashboard.md) (origen), [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md), [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) (regla del `ghosting`), [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) · **Feature:** [us06](../Features/us06-dashboard-citas.md), [us02](../Features/us02-gestion-citas.md) · **Plan:** [US-06](../US/06-epic.md) · **Relacionado:** [ADR-09](../Decisions/ADR-09.md), [ADR-10](../Decisions/ADR-10.md), [ADR-12](../Decisions/ADR-12.md), [DT-10](../Deudas/DT-10.md), [DT-11](../Deudas/DT-11.md), [DT-22](../Deudas/DT-22.md), [DT-30](../Deudas/DT-30.md), [Q6](../PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1)
+> **Fase:** [Fase 0 — US-06](../Fases/fase-0-us06-dashboard.md) (origen), [Fase 1 — US-02](../Fases/fase-1-us02-gestion-citas.md), [Fase 2 — US-03](../Fases/fase-2-us03-recordatorios.md), [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) (regla del `ghosting`), [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) · **Feature:** [us06](../Features/us06-dashboard-citas.md), [us02](../Features/us02-gestion-citas.md) · **Plan:** [US-06](../US/06-epic.md) · **Relacionado:** [ADR-09](../Decisions/ADR-09.md), [ADR-10](../Decisions/ADR-10.md), [ADR-12](../Decisions/ADR-12.md), [ADR-14](../Decisions/ADR-14.md), [DT-10](../Deudas/DT-10.md), [DT-11](../Deudas/DT-11.md), [DT-22](../Deudas/DT-22.md), [DT-30](../Deudas/DT-30.md), [DT-48](../Deudas/DT-48.md), [Q6](../PREGUNTAS-ABIERTAS.md#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1)
 
 **Fecha:** 2026-06-30
 **Estado:** Aceptado · ➕ **extendido por [ADR-09](ADR-09.md)** (propuesto) · 🔁 **mecanismo del §4
-reemplazado por [ADR-12](ADR-12.md)** (2026-09-30)
+reemplazado por [ADR-12](ADR-12.md)** (2026-09-30) · ➕ **§2 extendido por [ADR-14](ADR-14.md)** (2026-10-19; con una
+excepción a "de un terminal no se sale" aprobada el 2026-10-30)
 *(Nota del 2026-09-30: ADR-09 ya no está "propuesto": está aceptado e implementado.)*
+
+> **Nota (2026-10-30) — una excepción a "de un terminal no se sale".** El usuario aprobó en
+> [ADR-14 §9](ADR-14.md#9-cambio-en-la-máquina-de-estados-extiende-adr-04) la **corrección de un cierre
+> equivocado dentro de 7 días**: el profesional cambia el desenlace entre Asistió y No asistió (también sobre
+> los cierres del job G1), y el estado exacto de la inasistencia lo decide el dominio como hoy (`ghosting` si la
+> cita no estaba confirmada, `no_asistio` si lo estaba). Queda en la bitácora con actor `profesional`. **Las
+> canceladas no se corrigen.** Es la **única excepción** a la regla de la decisión 2; todo lo demás sigue sin
+> salida. Se construye en US-07.02; hasta entonces el código no la permite ([DT-48](../Deudas/DT-48.md)). De paso:
+> las transiciones de la nota del 2026-10-19 están en producción desde el 2026-10-20, y el job de la decisión 4
+> (G1) está prendido en production desde el 2026-10-27 ([DT-11](../Deudas/DT-11.md), cerrada).
 
 > **Nota (2026-10-19).** [ADR-14](ADR-14.md) **extiende** el grafo de la decisión 2 con dos transiciones desde
 > `pendiente`, que marca el profesional, **aceptadas por el usuario el 2026-10-19** (ADR-14 aceptado en lo que
@@ -70,7 +81,8 @@ estados inconsistentes si otro caso de uso la olvida, y no protege el invariante
 ### 2. Grafo de estados cerrado con distinción `ghosting` vs `no_asistio`
 
 Enum `EstadoCita`: `pendiente · confirmada · cancelada · asistio · no_asistio · ghosting`.
-Terminales: `cancelada`, `asistio`, `no_asistio`, `ghosting` — de un terminal no se sale.
+Terminales: `cancelada`, `asistio`, `no_asistio`, `ghosting` — de un terminal no se sale. *(Excepción desde el
+2026-10-30: la corrección de un cierre dentro de 7 días de ADR-14 §9; ver la nota de arriba.)*
 
 | Desde      | Evento                        | Hacia      |
 |------------|-------------------------------|------------|
@@ -144,8 +156,9 @@ fuente de verdad estable.
 ## Deudas técnicas asociadas
 
 - [DT-10](../Deudas/DT-10.md) — la máquina de estados de la decisión 1 no tiene ningún endpoint que la ejerza. 🟢 resuelta en diseño por ADR-09.
-- [DT-11](../Deudas/DT-11.md) — el job de la decisión 4 no existe, así que el historial de RF-08 no se acumula. 🔵 aplazada (2026-09-30): el `ghosting` se puede reconstruir después, con una fecha de corte. Regla G1 fijada el 2026-10-14; fecha de corte = despliegue de la Fase 3.
-- [DT-30](../Deudas/DT-30.md) — la asistencia real de las citas pasadas no se registra y no se puede reconstruir. **⏳ es la deuda que se encarece sola.** Salida elegida (2026-09-30): esperar a la Fase 3; **el grafo de la decisión 2 no se toca**.
+- [DT-11](../Deudas/DT-11.md) — el job de la decisión 4 no existía, así que el historial de RF-08 no se acumulaba. ✅ **cerrada el 2026-10-27**: el job G1 (US-07.01) está prendido en production. *Antes:* 🔵 aplazada (2026-09-30); regla G1 fijada el 2026-10-14; fecha de corte = despliegue de la Fase 3.
+- [DT-30](../Deudas/DT-30.md) — la asistencia real de las citas pasadas no se registra y no se puede reconstruir. **⏳ es la deuda que se encarece sola.** Salida elegida (2026-09-30): esperar a la Fase 3; **el grafo de la decisión 2 no se toca**. *(2026-10-05: mitigada con los botones del voucher. 2026-10-19: ADR-14 §9 toma la salida B y extiende el grafo.)*
+- [DT-48](../Deudas/DT-48.md) — por "de un terminal no se sale", un cierre equivocado no se corrige. Abierta (2026-10-30), con la salida decidida: la corrección dentro de 7 días de ADR-14 §9, en US-07.02.
 - [DT-22](../Deudas/DT-22.md) — la regla "de un terminal no se sale" de la decisión 2 dejaba las citas reagendadas sin vínculo entre sí. 🟢 resuelta en diseño por ADR-09.
 
 Índice completo: [`../Deudas/README.md`](../Deudas/README.md).
