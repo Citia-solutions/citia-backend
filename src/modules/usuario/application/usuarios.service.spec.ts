@@ -14,6 +14,10 @@ describe('UsuariosService', () => {
   let mockUsuarioRepository: {
     findByEmailAndTenant: jest.Mock;
     guardar: jest.Mock;
+    findById: jest.Mock;
+    actualizarPerfil: jest.Mock;
+    cambiarContrasena: jest.Mock;
+    estadoSesion: jest.Mock;
   };
   let mockTenantRepository: {
     guardar: jest.Mock;
@@ -30,6 +34,10 @@ describe('UsuariosService', () => {
     mockUsuarioRepository = {
       findByEmailAndTenant: jest.fn(),
       guardar: jest.fn(),
+      findById: jest.fn(),
+      actualizarPerfil: jest.fn(),
+      cambiarContrasena: jest.fn(),
+      estadoSesion: jest.fn(),
     };
 
     mockTenantRepository = {

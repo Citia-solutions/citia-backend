@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule, JwtSignOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
 import { ITenantRepository } from '../tenant/domain/tenant.repository';
@@ -8,52 +6,44 @@ import { TenantModule } from '../tenant/tenant.module';
 import { IUsuarioRepository } from '../usuario/domain/usuario.repository';
 import { UsuariosModule } from '../usuario/usuarios.module';
 import { AuthService } from './application/auth.service';
+import { VerificarSesionService } from './application/verificar-sesion.service';
 import { ITokenSigner } from './domain/token-signer';
-import { JwtTokenSigner } from './infrastructure/jwt-token-signer';
+import { FirmaJwtModule } from './firma-jwt.module';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { JwtStrategy } from './jwt.strategy';
 import { AuthController } from './presentation/auth.controller';
 
 /**
- * Modulo de infraestructura de autenticacion (plataforma transversal).
+ * Autenticacion: login (`POST /api/auth/login`) y la plataforma JWT.
  *
- * Provee y exporta la plataforma JWT lista para usar:
- *   - JwtModule configurado (JWT_SECRET + expiresIn desde ConfigService).
- *   - JwtStrategy (passport-jwt) ya registrada.
- *   - JwtAuthGuard reutilizable.
+ *   - `FirmaJwtModule` (importado y REEXPORTADO): el `JwtModule` configurado
+ *     (`JWT_SECRET` + `JWT_EXPIRES_IN`), `ITokenSigner` y `EmisorSesion`. Es el
+ *     unico lugar donde se registra el `JwtModule` (ADR-15 §6); quien
+ *     importaba `AuthModule` por el `JwtService` lo sigue recibiendo.
+ *   - `JwtStrategy` (passport-jwt), registrada una sola vez aqui, y
+ *     `JwtAuthGuard` reutilizable en cualquier modulo.
+ *   - Corte de sesiones (US-10, ADR-15 §5): la estrategia consulta
+ *     `VerificarSesionService` en cada peticion autenticada; un usuario
+ *     inexistente o un token anterior a `usuarios.sesiones_validas_desde`
+ *     (cambio de contraseña) recibe 401.
  *
- * FRONTERA con api-agent:
- *   - api-agent debe IMPORTAR este AuthModule en su modulo de login
- *     (p.ej. en un futuro modulo de login o ampliando este mismo).
- *   - Al importar AuthModule, `JwtService` queda disponible para inyectar
- *     en el auth.service y firmar el token en el login.
- *   - NO redefinir JwtModule en otro lado: reusar este (config centralizada).
+ * Dependencias, sin ciclo: `AuthModule → UsuariosModule → FirmaJwtModule` y
+ * `AuthModule → FirmaJwtModule`. `FirmaJwtModule` no importa ningun modulo de
+ * negocio, y `UsuariosModule` nunca importa `AuthModule`: para firmar el token
+ * nuevo del cambio de contraseña usa el puerto `EmisorSesion`.
  *
- * Este modulo NO contiene controller ni logica de login a proposito.
+ * NO redefinir `JwtModule` en otro lado: importar `FirmaJwtModule` (o este).
  */
 @Module({
-  imports: [
-    PassportModule,
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.getOrThrow<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRES_IN') ?? '1d',
-        } as JwtSignOptions,
-      }),
-    }),
-    TenantModule,
-    UsuariosModule,
-  ],
+  imports: [PassportModule, FirmaJwtModule, TenantModule, UsuariosModule],
   controllers: [AuthController],
   providers: [
     JwtStrategy,
     JwtAuthGuard,
     {
-      provide: ITokenSigner,
-      useClass: JwtTokenSigner,
+      provide: VerificarSesionService,
+      useFactory: (ur: IUsuarioRepository) => new VerificarSesionService(ur),
+      inject: [IUsuarioRepository],
     },
     {
       provide: AuthService,
@@ -65,6 +55,6 @@ import { AuthController } from './presentation/auth.controller';
       inject: [IUsuarioRepository, ITenantRepository, ITokenSigner],
     },
   ],
-  exports: [JwtModule, PassportModule, JwtAuthGuard],
+  exports: [FirmaJwtModule, PassportModule, JwtAuthGuard],
 })
 export class AuthModule {}

@@ -170,6 +170,8 @@ describe('opciones-limite-tasa', () => {
         'solicitudPublica',
         'portalPorIp',
         'portalPorEnlace',
+        'cambioContrasena',
+        'soporte',
       ]);
       expect(throttler(true, 'login')).toMatchObject({
         limit: 5,
@@ -188,6 +190,27 @@ describe('opciones-limite-tasa', () => {
         blockDuration: 3_600_000,
         getTracker: rastrearPorEnlace,
       });
+    });
+
+    it.each(['cambioContrasena', 'soporte'])(
+      'US-10: el cubo %s es de 5 por hora por IP, bloqueado una hora al pasarse (ADR-15 §8)',
+      (nombre) => {
+        expect(throttler(true, nombre)).toMatchObject({
+          name: nombre,
+          limit: 5,
+          ttl: 3_600_000,
+          blockDuration: 3_600_000,
+          getTracker: rastrearPorIp,
+        });
+      },
+    );
+
+    it('US-10: los cubos nuevos son opt-in (no tocan las rutas que no los piden)', () => {
+      const confirmar = contexto(PortalDePrueba, 'confirmar');
+      expect(throttler(true, 'cambioContrasena').skipIf?.(confirmar)).toBe(
+        true,
+      );
+      expect(throttler(true, 'soporte').skipIf?.(confirmar)).toBe(true);
     });
 
     it('429 genérico y sin cabeceras de límite', () => {

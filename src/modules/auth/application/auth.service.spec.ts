@@ -13,6 +13,10 @@ describe('AuthService', () => {
   let mockUsuarioRepository: {
     findByEmailAndTenant: jest.Mock;
     guardar: jest.Mock;
+    findById: jest.Mock;
+    actualizarPerfil: jest.Mock;
+    cambiarContrasena: jest.Mock;
+    estadoSesion: jest.Mock;
   };
   let mockTenantRepository: {
     findBySlug: jest.Mock;
@@ -55,6 +59,10 @@ describe('AuthService', () => {
     mockUsuarioRepository = {
       findByEmailAndTenant: jest.fn(),
       guardar: jest.fn(),
+      findById: jest.fn(),
+      actualizarPerfil: jest.fn(),
+      cambiarContrasena: jest.fn(),
+      estadoSesion: jest.fn(),
     };
     mockTenantRepository = {
       findBySlug: jest.fn(),
@@ -154,6 +162,11 @@ describe('AuthService', () => {
         tenantId: usuario.tenantId,
         rol: usuario.rol,
       });
+      // crearPayloadJwt sin emitidoEn: el iat lo pone jsonwebtoken al firmar
+      // (US-10), y nunca un exp (lo calcula con JWT_EXPIRES_IN).
+      const [payloadFirmado] = mockTokenSigner.sign.mock.calls[0] as [object];
+      expect(payloadFirmado).not.toHaveProperty('iat');
+      expect(payloadFirmado).not.toHaveProperty('exp');
 
       // Assert — respuesta
       expect(result.accessToken).toBe('signed.jwt.token');

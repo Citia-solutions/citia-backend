@@ -4,7 +4,7 @@ import { ITenantRepository } from '../../tenant/domain/tenant.repository';
 import { IUsuarioRepository } from '../../usuario/domain/usuario.repository';
 import { CredencialesInvalidasError } from '../domain/exceptions/credenciales-invalidas.error';
 import { ITokenSigner } from '../domain/token-signer';
-import { JwtPayload } from '../jwt-payload.interface';
+import { crearPayloadJwt } from '../jwt-payload.interface';
 import { LoginDto } from '../presentation/dto/login.dto';
 import { LoginResponseDto } from '../presentation/dto/login-response.dto';
 
@@ -37,14 +37,8 @@ export class AuthService {
       throw new CredencialesInvalidasError();
     }
 
-    const payload: JwtPayload = {
-      sub: usuario.id,
-      email: usuario.email,
-      tenantId: usuario.tenantId,
-      rol: usuario.rol,
-    };
-
-    const accessToken = this.tokenSigner.sign(payload);
+    // Sin `emitidoEn`: el `iat` lo pone jsonwebtoken con la hora de la firma.
+    const accessToken = this.tokenSigner.sign(crearPayloadJwt(usuario));
 
     return new LoginResponseDto({
       accessToken,

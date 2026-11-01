@@ -106,7 +106,9 @@ describe('opciones-logger', () => {
             paciente: { rut: RUT, telefono: TELEFONO, correo: CORREO },
             solicitud: { paciente: { email: CORREO } },
             body: { correo: CORREO, password: PASSWORD },
-            mensaje: {
+            // Un MensajeSaliente bajo otra clave: `mensaje` se redacta entero
+            // (US-10), y aquí se prueban sus campos anidados.
+            saliente: {
               destinatario: CORREO,
               html: CUERPO_CORREO,
               texto: CUERPO_CORREO,
@@ -150,7 +152,7 @@ describe('opciones-logger', () => {
         solicitud: { paciente: { email: CENSURA } },
       });
       expect(logApp.body).toBe(CENSURA);
-      expect(logApp.mensaje).toEqual({
+      expect(logApp.saliente).toEqual({
         destinatario: CENSURA,
         html: CENSURA,
         texto: CENSURA,
@@ -232,6 +234,54 @@ describe('opciones-logger', () => {
       expect(Object.keys(logRespuesta.req?.headers ?? {})).not.toContain(
         'x-enlace-cita',
       );
+    });
+  });
+
+  describe('US-10: cambio de contraseña y mensajes a soporte', () => {
+    it('redacta contrasenaActual, contrasenaNueva y mensaje en cualquier nivel de anidación', async () => {
+      // Arrange
+      const ACTUAL = 'contrasena-actual-secreta';
+      const NUEVA = 'contrasena-nueva-secreta';
+      const TEXTO_SOPORTE =
+        'Mi paciente Juan Pérez, RUT 12.345.678-5, no puede entrar';
+      const { stream, lineas, texto } = memoria();
+      const app = servidor(stream, (req, res) => {
+        // Lo que podría registrar por descuido el código de US-10.
+        req.log.info(
+          {
+            contrasenaActual: ACTUAL,
+            contrasenaNueva: NUEVA,
+            dto: { contrasenaActual: ACTUAL, contrasenaNueva: NUEVA },
+            mensaje: TEXTO_SOPORTE,
+            soporte: { mensaje: TEXTO_SOPORTE, categoria: 'problema' },
+            peticion: { cuerpo: { mensaje: TEXTO_SOPORTE } },
+            mensajeId: 'mensaje-1',
+          },
+          'procesando',
+        );
+        res.statusCode = 200;
+        res.end();
+      });
+
+      // Act
+      await request(app).post('/api/soporte/mensajes').expect(200);
+
+      // Assert — nada del texto ni de las contraseñas, en ningún lado
+      const salida = texto();
+      for (const secreto of [ACTUAL, NUEVA, TEXTO_SOPORTE]) {
+        expect(salida).not.toContain(secreto);
+      }
+      const [logApp] = lineas();
+      expect(logApp).toMatchObject({
+        contrasenaActual: CENSURA,
+        contrasenaNueva: CENSURA,
+        dto: { contrasenaActual: CENSURA, contrasenaNueva: CENSURA },
+        mensaje: CENSURA,
+        soporte: { mensaje: CENSURA, categoria: 'problema' },
+        peticion: { cuerpo: CENSURA },
+        // Los ids sí quedan (y `mensajeId` no es `mensaje`).
+        mensajeId: 'mensaje-1',
+      });
     });
   });
 
