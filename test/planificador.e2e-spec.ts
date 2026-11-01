@@ -17,6 +17,11 @@ import {
 import { ReconciliacionRespaldoService } from '../src/modules/recordatorio/application/reconciliacion-respaldo.service';
 import { SuscriptorRecordatorios } from '../src/modules/recordatorio/application/suscriptor-recordatorios';
 import { PlanificadorRecordatorios } from '../src/modules/recordatorio/infrastructure/planificacion/planificador-recordatorios';
+import { EnviarMensajesSoporteService } from '../src/modules/soporte/application/enviar-mensajes-soporte.service';
+import {
+  CRON_SOPORTE_ENVIO,
+  PlanificadorSoporte,
+} from '../src/modules/soporte/infrastructure/planificacion/planificador-soporte';
 import { validarEntorno } from '../src/shared/infrastructure/config/entorno';
 import {
   CRON_PURGA_SALIDA,
@@ -49,6 +54,7 @@ describe('Planificador (e2e)', () => {
     let purgar: jest.SpyInstance;
     let respaldo: jest.SpyInstance;
     let cierreGhosting: jest.SpyInstance;
+    let envioSoporte: jest.SpyInstance;
 
     beforeAll(async () => {
       despachar = jest.spyOn(DespachadorEventosSalida.prototype, 'despachar');
@@ -59,6 +65,11 @@ describe('Planificador (e2e)', () => {
       );
       // US-07.01: el job G1. Con el planificador apagado no se llama nunca.
       cierreGhosting = jest.spyOn(CierreGhostingService.prototype, 'ejecutar');
+      // US-10: el job soporte.envio. Tampoco se llama con el planificador apagado.
+      envioSoporte = jest.spyOn(
+        EnviarMensajesSoporteService.prototype,
+        'ejecutar',
+      );
 
       const moduleFixture = await Test.createTestingModule({
         imports: [AppModule],
@@ -110,6 +121,17 @@ describe('Planificador (e2e)', () => {
       );
       expect(scheduler.doesExist('cron', CRON_CIERRE_GHOSTING)).toBe(false);
       expect(cierreGhosting).not.toHaveBeenCalled();
+    });
+
+    it('debería tener el job de soporte cargado sin registrar soporte.envio ni llamar a EnviarMensajesSoporteService.ejecutar (US-10)', () => {
+      const scheduler = app.get(SchedulerRegistry);
+
+      expect(app.get(PlanificadorSoporte)).toBeInstanceOf(PlanificadorSoporte);
+      expect(app.get(EnviarMensajesSoporteService)).toBeInstanceOf(
+        EnviarMensajesSoporteService,
+      );
+      expect(scheduler.doesExist('cron', CRON_SOPORTE_ENVIO)).toBe(false);
+      expect(envioSoporte).not.toHaveBeenCalled();
     });
 
     it('debería registrar SuscriptorRecordatorios en el outbox al iniciar', () => {

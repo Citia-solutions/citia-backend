@@ -10,6 +10,8 @@ import { PortalPacienteModule } from './modules/portal-paciente/portal-paciente.
 import { RecordatorioPlanificacionModule } from './modules/recordatorio/recordatorio-planificacion.module';
 import { RecordatorioModule } from './modules/recordatorio/recordatorio.module';
 import { SolicitudModule } from './modules/solicitud/solicitud.module';
+import { SoportePlanificacionModule } from './modules/soporte/soporte-planificacion.module';
+import { SoporteModule } from './modules/soporte/soporte.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { UsuariosModule } from './modules/usuario/usuarios.module';
 import {
@@ -64,6 +66,10 @@ import { PlanificacionModule } from './shared/planificacion.module';
     //Recordatorios (ADR-13): persistencia y suscriptor del outbox que
     //reconcilia cada cita. Ningun otro modulo lo importa (ADR-13 §1).
     RecordatorioModule,
+    //Mensajes a soporte (US-10, ADR-15 §7): POST /api/soporte/mensajes guarda
+    //la fila pendiente; el correo lo envia el job de SoportePlanificacionModule.
+    //Usa el canal de correo de recordatorio por archivo, sin importarlo (DT-59).
+    SoporteModule,
     //Planificador en proceso (ADR-12 §5): despachador del outbox y purga.
     //Solo aqui, para que las e2e parciales no levanten jobs. Con
     //PLANIFICADOR_ACTIVO=false (default en tests) no programa nada.
@@ -75,6 +81,10 @@ import { PlanificacionModule } from './shared/planificacion.module';
     //pendiente que nadie marco. Mismo criterio que PlanificacionModule; ademas
     //CIERRE_GHOSTING_ACTIVO=false (default) solo cuenta y no escribe nada.
     CitaPlanificacionModule,
+    //Job soporte.envio (US-10): cada minuto envia los mensajes a soporte
+    //pendientes. Mismo criterio que PlanificacionModule; ademas, sin
+    //SOPORTE_CORREO_DESTINO (opcional) no se registra y deja un warn.
+    SoportePlanificacionModule,
   ],
 })
 export class AppModule {}
