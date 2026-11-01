@@ -3,7 +3,7 @@
 Hoja de ruta de las historias de usuario (US-02 a US-10). Sirve para tener el orden, las
 dependencias y el estado real de cada pieza en un solo lugar.
 
-**Última revisión:** 2026-10-31 (nueva sección transversal **[Cumplimiento (Ley 21.719)](#cumplimiento-ley-21719--transversal)**: el estado legal de Citia documentado en [`Cumplimiento/`](Cumplimiento/README.md) a partir de un pre-análisis hecho con una IA el 2026-10-30, que no es un abogado ni una opinión legal; prioridades P1, P2 y P3 con sus deudas, [DT-51](Deudas/DT-51.md) a [DT-56](Deudas/DT-56.md), y [DT-26](Deudas/DT-26.md) ampliada; el límite es la primera clínica con pacientes reales, y si P1 es condición para recibirla, el usuario no lo ha decidido) · antes: 2026-10-30 (**US-07.02 y US-07.03 🚧 bloqueadas, plan incluido**, por decisión del usuario: no tiene abogado, y un pre-análisis legal hecho con una IA, que no es una opinión legal, recomienda no habilitar el perfilamiento mientras no haya fundamento jurídico; se desbloquean cuando un abogado revise el [contexto legal de ADR-14](Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado) · sus **decisiones de producto**, aprobadas ese mismo día, siguen vigentes · **siguiente paso de la Fase 5: cerrar US-07.01** · **job G1 prendido** en production desde el 2026-10-27 y [DT-11](Deudas/DT-11.md) cerrada; US-07.01 en producción con sus pruebas manuales en curso) · antes: 2026-10-30, hasta el bloqueo (**decisiones de producto de US-07.02 aprobadas** por el usuario —peso de `nuevo` = 0, recordatorio no entregado → acción al profesional, un solo hecho por hora comprometida, corrección de un cierre dentro de 7 días, `confirmada` sin cerrar neutras y en una lista—, registradas en [ADR-14](Decisions/ADR-14.md); **siguiente paso: el plan de US-07.02**; la revisión legal sigue pendiente y bloquea su implementación, no su plan) · antes: 2026-10-26 (**US-07.01 en producción** desde el release del 2026-10-20 —backend PR #13 y frontend PR #14—, con el **job G1 apagado** (`CIERRE_GHOSTING_ACTIVO=false`): solo cuenta en el log las citas que cerraría; [DT-11](Deudas/DT-11.md) se cierra al prenderlo) · antes: 2026-10-19 (**se reabre la Fase 5 por US-07.01**, registro de hechos: en construcción, adelantada a la Fase 4, de la que no depende; diseño en [ADR-14](Decisions/ADR-14.md), aceptado en lo que toca a US-07.01; plan en [US-07.01](US/07.01-registro-hechos.md); US-07.02 y US-07.03 siguen en la v2) · antes: 2026-10-18 (**Fase 3 en producción** desde el release del 2026-10-17, con un corte de ~9 minutos; cierre pendiente de las pruebas manuales; feature en [us04-respuesta-paciente](Features/us04-respuesta-paciente.md)) · antes: 2026-10-15 (Fase 3 mergeada a `develop`: backend PR #6 y frontend PR #7) · 2026-10-15, en la mañana (Fase 3 implementada y verificada en local, sin commits) · 2026-10-14 (Fase 3 en construcción: el arquitecto aprobó el diseño, ADR-10 aceptado con Q11 = B, plan en [US-04](US/04-respuesta-paciente.md)) · 2026-10-07 (**Fase 2 cerrada en producción**: release del 2026-10-06 en los dos repos y prueba de punta a punta con un correo real; el MVP completo está en producción) · 2026-10-04 (Fase 2 implementada en rama, pendiente de merge) · 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
+**Última revisión:** 2026-11-01 (**Fase 7 🔶 implementada** —backend—, **en `develop`** (staging) con el **release a `main` abierto**; cierre pendiente de las pruebas manuales y de [Q18](PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free) y [Q19](PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte), sin respuesta (el código usa los provisionales); integración y e2e en curso; [ADR-15](Decisions/ADR-15.md) aceptado (2026-10-31) con sus [notas de implementación](Decisions/ADR-15.md#notas-de-implementación-2026-11-01); [DT-01](Deudas/DT-01.md) cierra su parte de revocación al cambiar la contraseña, [DT-59](Deudas/DT-59.md) pasa a abierta y se fichan [DT-60](Deudas/DT-60.md) y [DT-61](Deudas/DT-61.md)) · antes: 2026-10-31 (**Fase 7 🔶 en diseño**: decisiones de producto P1 a P8 del usuario, [ADR-15](Decisions/ADR-15.md) propuesto y plan [US-10](US/10-perfil-cuenta.md); se fichan [DT-57](Deudas/DT-57.md) a [DT-59](Deudas/DT-59.md) y la guía de la fase se separa en [`Fases/fase-7-us10-perfil.md`](Fases/fase-7-us10-perfil.md)) · antes: 2026-10-31 (nueva sección transversal **[Cumplimiento (Ley 21.719)](#cumplimiento-ley-21719--transversal)**: el estado legal de Citia documentado en [`Cumplimiento/`](Cumplimiento/README.md) a partir de un pre-análisis hecho con una IA el 2026-10-30, que no es un abogado ni una opinión legal; prioridades P1, P2 y P3 con sus deudas, [DT-51](Deudas/DT-51.md) a [DT-56](Deudas/DT-56.md), y [DT-26](Deudas/DT-26.md) ampliada; el límite es la primera clínica con pacientes reales, y si P1 es condición para recibirla, el usuario no lo ha decidido) · antes: 2026-10-30 (**US-07.02 y US-07.03 🚧 bloqueadas, plan incluido**, por decisión del usuario: no tiene abogado, y un pre-análisis legal hecho con una IA, que no es una opinión legal, recomienda no habilitar el perfilamiento mientras no haya fundamento jurídico; se desbloquean cuando un abogado revise el [contexto legal de ADR-14](Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado) · sus **decisiones de producto**, aprobadas ese mismo día, siguen vigentes · **siguiente paso de la Fase 5: cerrar US-07.01** · **job G1 prendido** en production desde el 2026-10-27 y [DT-11](Deudas/DT-11.md) cerrada; US-07.01 en producción con sus pruebas manuales en curso) · antes: 2026-10-30, hasta el bloqueo (**decisiones de producto de US-07.02 aprobadas** por el usuario —peso de `nuevo` = 0, recordatorio no entregado → acción al profesional, un solo hecho por hora comprometida, corrección de un cierre dentro de 7 días, `confirmada` sin cerrar neutras y en una lista—, registradas en [ADR-14](Decisions/ADR-14.md); **siguiente paso: el plan de US-07.02**; la revisión legal sigue pendiente y bloquea su implementación, no su plan) · antes: 2026-10-26 (**US-07.01 en producción** desde el release del 2026-10-20 —backend PR #13 y frontend PR #14—, con el **job G1 apagado** (`CIERRE_GHOSTING_ACTIVO=false`): solo cuenta en el log las citas que cerraría; [DT-11](Deudas/DT-11.md) se cierra al prenderlo) · antes: 2026-10-19 (**se reabre la Fase 5 por US-07.01**, registro de hechos: en construcción, adelantada a la Fase 4, de la que no depende; diseño en [ADR-14](Decisions/ADR-14.md), aceptado en lo que toca a US-07.01; plan en [US-07.01](US/07.01-registro-hechos.md); US-07.02 y US-07.03 siguen en la v2) · antes: 2026-10-18 (**Fase 3 en producción** desde el release del 2026-10-17, con un corte de ~9 minutos; cierre pendiente de las pruebas manuales; feature en [us04-respuesta-paciente](Features/us04-respuesta-paciente.md)) · antes: 2026-10-15 (Fase 3 mergeada a `develop`: backend PR #6 y frontend PR #7) · 2026-10-15, en la mañana (Fase 3 implementada y verificada en local, sin commits) · 2026-10-14 (Fase 3 en construcción: el arquitecto aprobó el diseño, ADR-10 aceptado con Q11 = B, plan en [US-04](US/04-respuesta-paciente.md)) · 2026-10-07 (**Fase 2 cerrada en producción**: release del 2026-10-06 en los dos repos y prueba de punta a punta con un correo real; el MVP completo está en producción) · 2026-10-04 (Fase 2 implementada en rama, pendiente de merge) · 2026-09-30 (Q1 → A: recordatorios en el MVP; scoring a la v2; diseño de la Fase 2 en ADR-12 y ADR-13)
 
 **Por fases:** este documento es la fuente del **estado**. Para leer todo lo que toca a una fase
 (decisiones, deudas, commits, contraparte del frontend) en orden, entra por [`Fases/`](Fases/README.md).
@@ -524,7 +524,7 @@ no depende de la revisión legal y podría adelantarse.
 
 ## Fase 6 — US-08: Monitoreo y seguimiento del paciente
 
-> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fases-6-7-us09-sin-diseno.md`](Fases/fases-6-7-us09-sin-diseno.md#fase-6--us-08-monitoreo-y-seguimiento-del-paciente).
+> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fases-6-us09-sin-diseno.md`](Fases/fases-6-us09-sin-diseno.md#fase-6--us-08-monitoreo-y-seguimiento-del-paciente).
 
 **Estado:** 🔶 solo `POST /pacientes` y, desde la Fase 2 (en producción), `PATCH /pacientes/:id` (teléfono y correo).
 
@@ -551,35 +551,83 @@ no depende de la revisión legal y podría adelantarse.
 
 ## Fase 7 — US-10: Perfil, suscripción y soporte
 
-> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fases-6-7-us09-sin-diseno.md`](Fases/fases-6-7-us09-sin-diseno.md#fase-7--us-10-perfil-suscripción-y-soporte).
+> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fase-7-us10-perfil.md`](Fases/fase-7-us10-perfil.md).
 
-**Estado:** ⬜ nada.
+**Estado:** 🔶 **implementada el 2026-11-01, en `develop` (staging) con el release a `main` abierto; cierre pendiente
+de las pruebas manuales y de [Q18](PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free) y
+[Q19](PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte).** El diseño técnico está en [ADR-15](Decisions/ADR-15.md)
+(**aceptado** el 2026-10-31; [notas de implementación](Decisions/ADR-15.md#notas-de-implementación-2026-11-01)) y el
+contrato, en el plan [US-10](US/10-perfil-cuenta.md). `npm test` en verde (130 suites, 2383 tests); integración y e2e,
+autorizadas por el usuario, en curso. Las preguntas abiertas del plan **siguen sin respuesta**: el código usa los
+valores provisionales y, sin `SOPORTE_CORREO_DESTINO`, los mensajes a soporte se guardan y esperan en `pendiente`
+(staging y production). Rama del backend: `feature/fase7-perfil-cuenta` (sale de `docs/fase5-decisiones-us0702`, cuyo
+PR #14 se mergeó directo a `main`); llega a `develop` por fast-forward. No depende de ninguna otra fase.
+
+> *Antes:* 🔶 en diseño (2026-10-31), ADR-15 propuesto, sin implementar · *antes (hasta el 2026-10-31):* ⬜ nada.
+
+### Decisiones (usuario, 2026-10-31)
+
+| # | Tema | Decisión |
+|---|---|---|
+| P1 | Datos del perfil | `especialidad` texto libre opcional (≤ 100). **Sin foto**: avatar con iniciales ([DT-57](Deudas/DT-57.md)) |
+| P2 | Correo | **solo lectura** (es la credencial del login y no está verificado, [DT-03](Deudas/DT-03.md)); se editan el nombre y la especialidad |
+| P3 | Organización | nombre y enlace público **en lectura**; el slug nunca se edita; el nombre editable, después ([DT-58](Deudas/DT-58.md)) |
+| P4 | Suscripción | lectura de lo que hay, **solo el administrador** (un profesional, 403): plan legible, alta, renovación y método de pago vacíos, *"Sin cobro durante el piloto"*. Sin tabla nueva |
+| P5 | Contraseña | exige la actual; nueva ≥ 8 y distinta; **corta las demás sesiones** (`usuarios.sesiones_validas_desde`) y la actual recibe un token nuevo; límite de tasa; sin correo de aviso |
+| P6 | Contraseña olvidada | **fuera** de la fase ([DT-03](Deudas/DT-03.md)), a decidir con el P1 de [Cumplimiento](#cumplimiento-ley-21719--transversal) |
+| P7 | Soporte | se guarda en `mensajes_soporte` y se envía por correo a una casilla configurable; ≤ 2000 caracteres; límite de tasa; aviso de no incluir datos de pacientes |
+| P8 | Módulos | `usuario` (`/usuarios/me`), `tenant` (suscripción) y un módulo nuevo `soporte` |
 
 ### Backend
-1. API obtener perfil (nombre, correo, especialidad, foto).
-2. API actualizar perfil.
-3. API consultar suscripción (plan, renovación, método de pago).
-4. API cambio de contraseña (valida contraseña actual).
-5. Endpoint de soporte (recibir/registrar mensajes).
+*(Diseño en [ADR-15](Decisions/ADR-15.md); contrato, orden por agente y Definición de Terminado en
+[US-10](US/10-perfil-cuenta.md#orden-de-construcción). 2026-11-01: piezas 1 a 6 implementadas; desvíos en el
+[plan](US/10-perfil-cuenta.md#desvíos-de-la-implementación-2026-11-01). Antes, todo ⬜.)*
+
+| # | Pieza | Decisión | Agente | Estado |
+|---|---|---|---|---|
+| 1 | Obtener perfil: `GET /api/usuarios/me` | nombre, correo, especialidad, rol y la organización (nombre y slug: el frontend arma el enlace); los mismos campos que el login. *Sin foto* (P1) | api | ✅ 2026-11-01 |
+| 2 | Actualizar perfil: `PATCH /api/usuarios/me` | solo nombre (1 a 120) y especialidad (≤ 100) (P2); migración `1750000019000` | database → api | ✅ 2026-11-01 |
+| 3 | Consultar suscripción: `GET /api/organizacion/suscripcion` | plan legible ([Q18](PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free); provisional *Plan piloto*), alta, *renovación y método de pago en `null`*; 403 si no es administrador (P4) | api | ✅ 2026-11-01 |
+| 4 | Cambio de contraseña: `PUT /api/usuarios/me/contrasena` | valida la actual (400 si no coincide, nunca 401); corta las demás sesiones con la estrategia JWT consultando la base en cada petición y devuelve un token nuevo (P5, cierra la parte de revocación de [DT-01](Deudas/DT-01.md)) | database → backend → api | ✅ 2026-11-01 |
+| 5 | Soporte: `POST /api/soporte/mensajes` | tabla `mensajes_soporte` (migración `1750000020000`) y un job que envía cada minuto a `SOPORTE_CORREO_DESTINO` ([Q19](PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte); sin ella, los mensajes esperan en `pendiente`), *Responder a* = el profesional; tope de 5 por organización en 24 h (P7) | database → backend → api | ✅ 2026-11-01 |
+| 6 | Límite de tasa | cubos `cambioContrasena` y `soporte`, 5 por hora por IP | backend | ✅ 2026-11-01 |
+| 7 | Tests | la [Definición de Terminado](US/10-perfil-cuenta.md#definición-de-terminado) | testing | 🔶 unitarios ✅ (130 suites, 2383 tests); integración y e2e ⏳ en curso |
 
 ### Frontend
-1. Menú "Mi Perfil".
-2. Vista central con pestañas (info personal / suscripción / seguridad).
-3. Formulario info personal (editar).
+*(Detalle en el [plan § Frontend](US/10-perfil-cuenta.md#frontend-citia-frontend-en-vue). Su estado no se registra en
+este repo; al 2026-10-31, todo ⬜.)*
+
+1. Menú "Mi Perfil" (ruta `/perfil`).
+2. Vista central con pestañas (info personal / suscripción, **solo el administrador** / seguridad).
+3. Formulario info personal: nombre y especialidad; correo, organización y enlace en lectura; avatar con iniciales.
 4. Sección suscripción (lectura).
-5. Formulario cambio de contraseña.
-6. Botón "Contactar soporte" + modal.
+5. Formulario cambio de contraseña: reemplaza el token y avisa que se cerraron las demás sesiones.
+6. Botón "Contactar soporte" + modal, con el aviso de no incluir datos de pacientes.
 
 ### Integración
-- Conectar todo con sus APIs.
+- Conectar todo con sus APIs; el perfil refresca la sesión guardada (`citia.user`).
+- Se despliega **primero el backend** y después el frontend.
+- Antes del release a `main`: responder [Q19](PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) y cargar
+  `SOPORTE_CORREO_DESTINO` (es opcional: sin ella los mensajes esperan guardados). *(2026-11-01: el release se abrió
+  **sin** respuesta a Q19; en production los mensajes esperarán en `pendiente` y el arranque dejará el `warn`
+  `soporte.sin_destino` hasta cargar la variable.)*
+- *(2026-11-01)* El frontend debe aceptar el `message` de un 400 como texto (errores de dominio, en español) **o** como
+  lista (validación, en inglés) ([ADR-15, nota 6](Decisions/ADR-15.md#lo-que-toca-una-decisión-de-este-adr)).
 
 **Entregable:** el profesional gestiona su cuenta y contacta soporte.
+
+> **Deudas** ([guía de la fase](Fases/fase-7-us10-perfil.md#deudas)): nuevas [DT-57](Deudas/DT-57.md) y
+> [DT-58](Deudas/DT-58.md) (aplazadas) y [DT-59](Deudas/DT-59.md) (prevista; **abierta** desde la implementación del
+> 2026-11-01); [DT-01](Deudas/DT-01.md) se cierra en parte (implementado); detectadas al implementar:
+> [DT-60](Deudas/DT-60.md) y [DT-61](Deudas/DT-61.md), 🟡 bajas; [DT-46](Deudas/DT-46.md) sigue abierta; notas en DT-02,
+> DT-03, DT-26, DT-36, DT-52, DT-53 y DT-56. **Contradicciones** con lo pedido, en el
+> [plan](US/10-perfil-cuenta.md#contradicciones-con-lo-pedido) (el envío "vía outbox" sale por un job; dos migraciones).
 
 ---
 
 ## US-09 — (pendiente de definir)
 
-> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fases-6-7-us09-sin-diseno.md`](Fases/fases-6-7-us09-sin-diseno.md#us-09--sin-definir).
+> Guía de lectura de la fase (ADRs, deudas, FDs, commits): [`Fases/fases-6-us09-sin-diseno.md`](Fases/fases-6-us09-sin-diseno.md#us-09--sin-definir).
 
 **Estado:** ⬜ pendiente.
 
@@ -628,7 +676,7 @@ contrato ([detalle](Cumplimiento/README.md#lo-que-el-usuario-no-ha-decidido)).
 | 4 | US-05 Alertas | US-02/03/04 | ⬜ (el outbox ya existe) |
 | 5 | US-07 Scoring (US-07.01 · 07.02 · 07.03) | US-02/04, proceso de cierre (ADR-12), asistencia registrada (DT-30) · **US-07.01 adelanta a la Fase 4 sin depender de ella** | 🔶 **US-07.01 en producción (2026-10-20)**, job G1 prendido (2026-10-27), pruebas manuales en curso · [plan](US/07.01-registro-hechos.md) · US-07.02 y US-07.03 🚧 **bloqueadas, plan incluido** (2026-10-30), hasta la revisión de un abogado; fuera del MVP desde el 2026-09-30; decisiones de producto de US-07.02 aprobadas (2026-10-30) y vigentes · siguiente paso: cerrar US-07.01 · *antes: ⏸ v2; siguiente paso: el plan de US-07.02* |
 | 6 | US-08 Monitoreo | US-02/07 | 🔶 solo alta y `PATCH` de contacto |
-| 7 | US-10 Perfil/soporte | — | ⬜ |
+| 7 | US-10 Perfil/soporte | — | 🔶 **implementada (2026-11-01)**, en `develop` (staging) con el release a `main` abierto · cierre pendiente de las pruebas manuales y de Q18/Q19 · integración y e2e en curso · [ADR-15](Decisions/ADR-15.md) aceptado · [plan](US/10-perfil-cuenta.md) · *antes: 🔶 en diseño (2026-10-31); antes: ⬜* |
 | — | US-09 | — | ⬜ pendiente |
 
 > **Transversal (2026-10-31):** [Cumplimiento (Ley 21.719)](#cumplimiento-ley-21719--transversal) — ⬜ documentado,

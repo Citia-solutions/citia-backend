@@ -77,10 +77,10 @@ Los `*.spec.ts` unitarios van junto a cada archivo. `domain/` y `application/` n
 TypeORM ni `class-validator` (lo comprueba `src/arquitectura.spec.ts`); los servicios se instancian en el
 módulo con `useFactory` + `inject`, y los puertos son el token de inyección.
 
-> Estado actual (2026-10-18): módulos `auth`, `cita`, `paciente`, `portal-paciente`, `recordatorio`,
-> `solicitud`, `tenant` y `usuario`, más `src/shared/` (configuración y validación del entorno, logs,
-> límite de tasa, outbox y planificador) y 15 migraciones. En producción hasta la Fase 3; el estado de
-> cada fase está en `context/ROADMAP.md`.
+> Estado actual (2026-11-01): módulos `auth`, `cita`, `paciente`, `portal-paciente`, `recordatorio`,
+> `solicitud`, `soporte`, `tenant` y `usuario`, más `src/shared/` (configuración y validación del entorno,
+> logs, límite de tasa, outbox y planificador) y 21 migraciones. En producción hasta la Fase 3 y US-07.01;
+> la Fase 7 (US-10) está en `develop`. El estado de cada fase está en `context/ROADMAP.md`.
 
 ### Convención: contexto por módulo (CLAUDE.md local)
 
@@ -89,7 +89,7 @@ Cuando un módulo crezca y tenga reglas/estructura/endpoints propios, **crea un
 existentes, convenciones locales y notas importantes. Claude lo carga
 automáticamente al trabajar en esa carpeta, dando contexto aislado y reduciendo
 tokens. No crees un CLAUDE.md para carpetas sin reglas especiales. Hoy lo tienen
-`cita`, `portal-paciente`, `recordatorio`, `solicitud` y `usuario`.
+`cita`, `portal-paciente`, `recordatorio`, `solicitud`, `soporte` y `usuario`.
 
 ## Sub-Agentes Disponibles
 

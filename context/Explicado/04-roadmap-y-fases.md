@@ -500,20 +500,24 @@ la guía de fases lo interpreta como US-02 y **US-07** (el scoring), no la subta
 **El problema.** Que el profesional edite su perfil, vea su suscripción, cambie su contraseña y
 contacte a soporte ([RF-04](../rf.md)).
 
-**Estado:** pendiente, nada construido. **No depende de nada:** puede entrar en cualquier momento.
+**Estado:** en diseño desde el 2026-10-31, nada construido. **No depende de nada:** puede entrar en cualquier
+momento. El diseño está en [ADR-15](../Decisions/ADR-15.md) (propuesto) y el plan en
+[US-10](../US/10-perfil-cuenta.md); su guía es [`fase-7-us10-perfil.md`](../Fases/fase-7-us10-perfil.md).
 
-**Lo que conviene saber antes de empezarla:** mientras siga [DT-01](../Deudas/DT-01.md), cambiar la
-contraseña **no invalida** las sesiones abiertas; tampoco hay recuperación de contraseña
-([DT-03](../Deudas/DT-03.md)). La suscripción sería de solo lectura: cobrar está fuera de la v1, y el
-prepago es la pregunta [Q2](../PREGUNTAS-ABIERTAS.md#q2--el-prepago-entra-alguna-vez).
+**Lo que decidió el usuario (2026-10-31), en simple:** el perfil deja cambiar el nombre y una especialidad, pero no el
+correo ni el nombre de la clínica, y no tiene foto (un círculo con las iniciales). La suscripción solo se mira, y solo
+la ve el administrador: no se cobra nada durante el piloto. Cambiar la contraseña pide la actual y **cierra las demás
+sesiones** abiertas (hasta ahora no había forma de hacerlo: [DT-01](../Deudas/DT-01.md)). Recuperar una contraseña
+olvidada sigue sin existir ([DT-03](../Deudas/DT-03.md)). Y el botón de soporte guarda el mensaje y lo manda por
+correo a una casilla del equipo, con un aviso de no escribir datos de pacientes.
 
 ## US-09 — sin definir
 
 No tiene título ni tareas. No la confundas con **US-02.09** (el dashboard se refresca tras cada cambio),
 que es una subtarea de la Fase 1 y está hecha.
 
-Las Fases 6, 7 y US-09 comparten una sola guía,
-[`fases-6-7-us09-sin-diseno.md`](../Fases/fases-6-7-us09-sin-diseno.md), porque no tienen ADR, plan,
+La Fase 6 y US-09 comparten una sola guía,
+[`fases-6-us09-sin-diseno.md`](../Fases/fases-6-us09-sin-diseno.md) (hasta el 2026-10-31 también la Fase 7), porque no tienen ADR, plan,
 feature ni commits. Cuando alguna los tenga, se separa en su propio archivo.
 
 ---
@@ -604,7 +608,7 @@ ninguna conocida.
   [Fase 0](../Fases/fase-0-us06-dashboard.md) · [Fase 1](../Fases/fase-1-us02-gestion-citas.md) ·
   [Fase 2](../Fases/fase-2-us03-recordatorios.md) · [Fase 3](../Fases/fase-3-us04-respuesta-paciente.md) ·
   [Fase 4](../Fases/fase-4-us05-alertas.md) · [Fase 5](../Fases/fase-5-us07-scoring.md) ·
-  [Fases 6, 7 y US-09](../Fases/fases-6-7-us09-sin-diseno.md).
+  [Fase 6 y US-09](../Fases/fases-6-us09-sin-diseno.md) · [Fase 7](../Fases/fase-7-us10-perfil.md).
 - [`TRAZABILIDAD.md`](../TRAZABILIDAD.md) — commit → documento, con la fase de cada commit.
 - [`context/README.md`](../README.md) — mapa de la documentación y "camino según lo que buscas".
 - [`Descripcion/`](../Descripcion/README.md) — las etapas del producto (no confundir con las fases).

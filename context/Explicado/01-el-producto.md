@@ -178,7 +178,7 @@ Estado al 2026-10-18.
 | **RF-01** Monitoreo del paciente | Ver la ficha de cada paciente, su historial y notas de seguimiento | Fase 6 (US-08) | 🔶 solo crear un paciente y editar su contacto |
 | **RF-02** Calendarios externos | Sincronizar con el calendario que ya usa el profesional (Google, Outlook) | ninguna fase lo cubre todavía | ⬜ |
 | **RF-03** Dashboard del día | Una pantalla con las citas de hoy: paciente, hora, fecha | Fase 0 (US-06) | ✅ en producción |
-| **RF-04** Perfil | Configurar la cuenta, la suscripción, pedir soporte | Fase 7 (US-10) | ⬜ |
+| **RF-04** Perfil | Configurar la cuenta, la suscripción, pedir soporte | Fase 7 (US-10) | 🔶 en diseño (2026-10-31) |
 | **RF-05** Alertas al profesional | Avisarle cuando un paciente reagenda, cancela o pide hora | Fase 4 (US-05) | ⬜ (la "tubería" de eventos ya existe; falta quien la escuche) |
 | **RF-06** Recordatorios al paciente | Enviarle recordatorios automáticos en momentos configurables | Fase 2 (US-03) | ✅ en producción, por correo |
 | **RF-07** Respuesta del paciente | Que el paciente confirme, cancele o pida otra hora desde el recordatorio | Fase 3 (US-04) | ✅ en producción desde el 2026-10-17 |

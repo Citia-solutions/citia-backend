@@ -1,9 +1,13 @@
-# Fases 6, 7 y US-09 — sin diseño todavía
+# Fase 6 y US-09 — sin diseño todavía
 
 > **Fases del roadmap** (construcción). Índice: [Fases](README.md). Comparten documento porque ninguna
 > tiene ADR, FD, plan, feature ni commit propios: su único contenido es el desglose de tareas del
 > [ROADMAP](../ROADMAP.md), que no se copia aquí. Cuando alguna tenga diseño, se separa en su propio
 > archivo `fase-<n>-<us>-<tema>.md`.
+>
+> *Antes (hasta el 2026-10-31):* el archivo se llamaba `fases-6-7-us09-sin-diseno.md` y también tenía a la **Fase 7**
+> (US-10). Ese día la Fase 7 entró en diseño y pasó a su propia guía,
+> [`fase-7-us10-perfil.md`](fase-7-us10-perfil.md).
 
 ---
 
@@ -28,23 +32,7 @@
 
 ## Fase 7 — US-10: Perfil, suscripción y soporte
 
-| | |
-|---|---|
-| **Objetivo** | Que el profesional gestione su cuenta (perfil, suscripción, contraseña) y contacte a soporte (RF-04). |
-| **Estado** | ⬜ nada. |
-| **Tareas** | [ROADMAP § Fase 7](../ROADMAP.md#fase-7--us-10-perfil-suscripción-y-soporte) |
-| **Depende de** | nada (ROADMAP: puede entrar en cualquier momento). |
-
-**Relacionado por tema** (ningún documento enlaza todavía a esta fase):
-
-- [DT-01](../Deudas/DT-01.md) — sesión sin renovación ni revocación: mientras siga así, cambiar la
-  contraseña no invalida los tokens ya emitidos.
-- [DT-03](../Deudas/DT-03.md) — sin verificación de correo ni recuperación de contraseña.
-- [DTF-02](../../../citia-frontend/context/Deudas/DTF-02.md) — el front tiene un `fetchCurrentUser()`
-  que apunta a un endpoint inexistente (hoy nadie lo llama); "obtener perfil" es el candidato natural.
-- **Dinero:** la suscripción es lectura; cobrar queda fuera de la v1
-  ([etapa 3 del producto §2](../Descripcion/fase-3-mvp.md#2-qué-queda-fuera-de-la-v1)) y el prepago es
-  [Q2](../PREGUNTAS-ABIERTAS.md#q2--el-prepago-entra-alguna-vez).
+**Se mudó** a su propia guía el 2026-10-31, al entrar en diseño: [`fase-7-us10-perfil.md`](fase-7-us10-perfil.md).
 
 ---
 
