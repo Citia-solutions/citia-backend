@@ -5,7 +5,7 @@
 > **Estado (2026-11-01):** 🔶 **implementada el 2026-11-01, en `develop` (staging) con el release a `main` abierto;
 > cierre pendiente de las pruebas manuales y de [Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free) y
 > [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte).** [ADR-15](../Decisions/ADR-15.md) **aceptado** (2026-10-31).
-> Pasos 1 a 4 hechos; el 5 (integración y e2e) en curso; el 6 (docs) a medias: falta la feature y TRAZABILIDAD, que van
+> Pasos 1 a 4 hechos; el 5 (integración y e2e) en verde; el 6 (docs) a medias: falta la feature y TRAZABILIDAD, que van
 > con los hashes. Las [preguntas abiertas](#preguntas-abiertas) **siguen sin respuesta**: el código usa los valores
 > provisionales. Lo que el código hizo distinto de este contrato: [Desvíos de la implementación](#desvíos-de-la-implementación-2026-11-01)
 > y [ADR-15 § Notas de implementación](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01).
@@ -716,7 +716,7 @@ a `develop` por fast-forward desde `feature/fase7-perfil-cuenta`, junto con los 
 | 2 | `backend-agent` | corte de sesiones en `auth`, `FirmaJwtModule`, cubos, `SOPORTE_CORREO_DESTINO`, campos sensibles y los dobles de la estrategia en los cuatro e2e | 1 | ✅ 2026-11-01 |
 | 3 | `api-agent` | perfil y cambio de contraseña (`usuario`), suscripción (`tenant`) | 1, 2 | ✅ 2026-11-01 |
 | 4 | `api-agent` | módulo `soporte`: registro, envío, plantilla, controller, planificador | 1, 2 | ✅ 2026-11-01 |
-| 5 | `testing-agent` | la [Definición de Terminado](#definición-de-terminado) | 1–4 | 🔶 en curso: unitarios en verde; integración y e2e corriendo, con la autorización del usuario |
+| 5 | `testing-agent` | la [Definición de Terminado](#definición-de-terminado) | 1–4 | ✅ (2026-11-01) unitarios, integración y e2e en verde, con la autorización del usuario |
 | 6 | `architecture-agent` | cierre de docs: feature nueva, notas de implementación de ADR-15 (y aceptado), DT-01 y DT-59 al día, ROADMAP, Fases, Cumplimiento y TRAZABILIDAD con los commits | 5 | 🔶 2026-11-01: notas de ADR-15, deudas (DT-01, DT-02, DT-46, DT-59; nuevas DT-60 y DT-61), ROADMAP, Fases y Cumplimiento hechos · **faltan** la feature y TRAZABILIDAD (con los hashes) |
 | F | frontend | la sección [Frontend](#frontend-citia-frontend-en-vue) | 0 (en paralelo a 2–4) | sin registrar en este repo |
 
@@ -815,13 +815,11 @@ Cada punto con su test (rutas relativas a `src/` salvo las de `test/`). Unitario
 `npm run test:integration` y e2e con `npm run test:e2e` (con autorización del usuario; los marcados *con BD* necesitan
 Postgres).
 
-> **Estado (2026-11-01):** unitarios ✅ — `tsc`, ESLint, Prettier y `npm test` en verde (**130 suites, 2383 tests**),
-> con más specs de los que pide esta lista (`firma-jwt.module`, `jwt-payload.interface`, `usuarios.module`, los
-> repositorios y entidades ORM, `crear-mensaje-soporte.dto`, `limitar-tasa.decorator`). **Integración y e2e: ⏳ en
-> curso** (autorizadas por el usuario; las corre el `testing-agent`).
->
-> **⏳ CONTEOS PENDIENTES — integración: ___ suites / ___ tests · e2e: ___ suites / ___ tests** *(los completa el
-> orquestador cuando termine el `testing-agent`; después se marcan los puntos de integración y e2e de abajo).*
+> **Estado (2026-11-01):** todo en verde. Unitarios: `tsc`, ESLint, Prettier y `npm test` (**131 suites, 2385
+> tests**), con más specs de los que pide esta lista (`firma-jwt.module`, `jwt-payload.interface`, `usuarios.module`,
+> los repositorios y entidades ORM, `crear-mensaje-soporte.dto`, `limitar-tasa.decorator`, y `app.module.spec.ts`, que
+> arma el contenedor completo para cazar ciclos de módulos). Contra Postgres 16 local (autorizadas por el usuario):
+> **integración 13 suites / 253 tests** y **e2e 18 suites / 379 tests**.
 
 **Dominio (unitarios)**
 
@@ -880,49 +878,47 @@ Postgres).
       `mensaje` se redactan.
 - [x] `arquitectura.spec.ts` en verde, con `modules/soporte/domain` y `modules/soporte/application` en la lista esperada.
 
-**Integración (Postgres)** — *los tres archivos existen (2026-11-01); ⏳ resultado pendiente.*
+**Integración (Postgres)** — *✅ 2026-11-01, dentro de las 13 suites / 253 tests.*
 
-- [ ] `database/integration/migraciones-us10.integration.spec.ts` (nuevo, mismo patrón que `migraciones-fase3`): todo
+- [x] `database/integration/migraciones-us10.integration.spec.ts` (nuevo, mismo patrón que `migraciones-fase3`): todo
       el historial sube en **un** lote; esquema (columnas, nulabilidad, los CHECK, los dos índices, el parcial con su
       predicado); un usuario creado antes de la migración queda con las dos columnas en `NULL`; el `down` de cada una
       revierte y vuelven a subir.
-- [ ] `modules/usuario/integration/sesiones-usuario.integration.spec.ts` (nuevo): `estadoSesion` (con y sin corte, otro
+- [x] `modules/usuario/integration/sesiones-usuario.integration.spec.ts` (nuevo): `estadoSesion` (con y sin corte, otro
       tenant → `null`); `cambiarContrasena` condicional: **dos a la vez con el mismo hash anterior → una `true` y otra
       `false`**; `actualizarPerfil` cambia `actualizado_en` y no toca lo ausente; el CHECK rechaza una especialidad en
       blanco.
-- [ ] `modules/soporte/integration/envio-soporte.integration.spec.ts` (nuevo): **dos `reclamarSiguientePendiente` en dos
+- [x] `modules/soporte/integration/envio-soporte.integration.spec.ts` (nuevo): **dos `reclamarSiguientePendiente` en dos
       transacciones a la vez → filas distintas** (`SKIP LOCKED`); **dos `ejecutar` en paralelo** con un canal falso →
       cada mensaje enviado una vez; `contarCreadosDesde` cuenta solo su organización; los CHECK rechazan 2001
       caracteres, un texto en blanco y `enviado` sin `enviado_en`.
 
-**E2e (`test/`)** — *⏳ en curso (2026-11-01). Al escribir esta nota existían `test/soporte.e2e-spec.ts`, el doble de
-los cuatro e2e (`test/support/sesion-vigente-falsa.ts`) y el cambio de `test/planificador.e2e-spec.ts`; **todavía no**
-`test/perfil-usuario.e2e-spec.ts`, `test/cambio-contrasena.e2e-spec.ts` ni los dos cubos en `test/limite-tasa.e2e-spec.ts`.
-Si el `testing-agent` no los agrega, son faltantes de esta Definición, no opcionales.*
+**E2e (`test/`)** — *✅ 2026-11-01, dentro de las 18 suites / 379 tests; los tres archivos nuevos y los dos cubos de
+`limite-tasa` están.*
 
-- [ ] `test/perfil-usuario.e2e-spec.ts` (nuevo, con BD): registro y login → `GET /api/usuarios/me` 200 con
+- [x] `test/perfil-usuario.e2e-spec.ts` (nuevo, con BD): registro y login → `GET /api/usuarios/me` 200 con
       `tenantSlug`, `tenantNombre` y `especialidad: null`; `PATCH` con nombre y especialidad → 200 y el `GET` siguiente
       los trae; `email` en el cuerpo → ignorado; nombre `'   '` → 400; especialidad de 101 → 400; especialidad `''` →
       `null`; sin token → 401. `GET /api/organizacion/suscripcion` → 200 (`plan: 'free'`, `renovacionEn` y `metodoPago`
       `null`); con un usuario pasado a `PROFESIONAL` por SQL y un login nuevo → 403.
-- [ ] `test/cambio-contrasena.e2e-spec.ts` (nuevo, con BD): dos logins (A y B) **al menos un segundo antes** del cambio;
+- [x] `test/cambio-contrasena.e2e-spec.ts` (nuevo, con BD): dos logins (A y B) **al menos un segundo antes** del cambio;
       `PUT` con A → 200 y token nuevo; **B → 401** en `GET /api/usuarios/me`; A (viejo) → 401; el nuevo → 200; login con
       la contraseña vieja → 401 y con la nueva → 200; actual incorrecta → **400 y el token sigue sirviendo**; nueva =
       actual → 400; nueva de 7 → 400; un usuario borrado por SQL → su token da 401.
-- [ ] `test/soporte.e2e-spec.ts` (nuevo, con BD): `POST` → 201 y fila `pendiente`; el sexto en 24 h → 429 con su
+- [x] `test/soporte.e2e-spec.ts` (nuevo, con BD): `POST` → 201 y fila `pendiente`; el sexto en 24 h → 429 con su
       mensaje; 2001 caracteres → 400; en blanco → 400; categoría inválida → 400; `ejecutarEnvio()` con
       `test/support/mensajeria-falsa.ts` → `enviado`, con destinatario = la variable, `responderA` = correo del
       profesional y la clave `soporte/<id>`; los logs capturados no contienen el texto del mensaje.
-- [ ] Los cuatro e2e con `JwtStrategy` directa, en verde con el doble; `test/auth-login.e2e-spec.ts` y las e2e con
+- [x] Los cuatro e2e con `JwtStrategy` directa, en verde con el doble; `test/auth-login.e2e-spec.ts` y las e2e con
       `AuthModule` sin cambios en sus aserciones.
-- [ ] `test/planificador.e2e-spec.ts` (con BD): con `PLANIFICADOR_ACTIVO=false`, `soporte.envio` no está registrado.
-- [ ] `test/limite-tasa.e2e-spec.ts`: el sexto `PUT /api/usuarios/me/contrasena` y el sexto `POST /api/soporte/mensajes`
+- [x] `test/planificador.e2e-spec.ts` (con BD): con `PLANIFICADOR_ACTIVO=false`, `soporte.envio` no está registrado.
+- [x] `test/limite-tasa.e2e-spec.ts`: el sexto `PUT /api/usuarios/me/contrasena` y el sexto `POST /api/soporte/mensajes`
       desde la misma IP en una hora → 429 (si la suite prueba cubo por cubo).
 
 **Calidad**
 
-- [ ] `npm run lint`, `npm test` y `npm run test:integration` en verde; `npm run test:e2e` en verde **con la
-      autorización del usuario**. *(2026-11-01: lint y `npm test` ✅; integración y e2e ⏳.)*
+- [x] `npm run lint`, `npm test` y `npm run test:integration` en verde; `npm run test:e2e` en verde **con la
+      autorización del usuario**. *(2026-11-01: los cuatro ✅.)*
 - [ ] Frontend: `npm run build` en verde. *(Sin registrar en este repo.)*
 
 ### Verificación manual mínima

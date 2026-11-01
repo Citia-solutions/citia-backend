@@ -44,8 +44,8 @@
 ## Implementación (2026-11-01)
 
 **El backend está implementado** tal como se diseñó (pasos 1 a 4 del [plan](../US/10-perfil-cuenta.md#orden-de-construcción)):
-`tsc`, ESLint, Prettier y `npm test` en verde (130 suites, 2383 tests); integración y e2e, autorizadas por el usuario,
-**⏳ en curso** (conteos pendientes). Subido a `develop` (staging) con el release a `main` abierto. Ningún desvío
+`tsc`, ESLint, Prettier y `npm test` en verde (131 suites, 2385 tests); integración (13 suites, 253 tests) y
+e2e (18 suites, 379 tests), autorizadas por el usuario, en verde contra Postgres 16 local. Subido a `develop` (staging) con el release a `main` abierto. Ningún desvío
 rediseña; los que tocan una decisión están en las
 [notas de ADR-15](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01) y el resto, en los
 [desvíos del plan](../US/10-perfil-cuenta.md#desvíos-de-la-implementación-2026-11-01). Lo que más conviene saber:

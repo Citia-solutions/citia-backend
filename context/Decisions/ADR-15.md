@@ -354,7 +354,7 @@ Sin ciclos. `RecordatorioModule` sigue sin que nadie lo importe ([ADR-13 §1](AD
 | 1 | `database-agent` | ✅ (2026-11-01) migraciones `1750000019000` (usuarios) y `1750000020000` (`mensajes_soporte`), entidades ORM, campos de dominio, puertos y adaptadores |
 | 2 | `backend-agent` | ✅ (2026-11-01) `FirmaJwtModule`, `JwtEmisorSesion`, `crearPayloadJwt`, `VerificarSesionService` y la `JwtStrategy` asíncrona; los dos cubos; `SOPORTE_CORREO_DESTINO`; campos sensibles; dobles de la estrategia en los cuatro e2e |
 | 3 | `api-agent` | ✅ (2026-11-01) perfil, cambio de contraseña, suscripción y el módulo `soporte` con su job |
-| 4 | `testing-agent` | 🔶 (2026-11-01) unitarios en verde; integración y e2e en curso, con la autorización del usuario. Estado por punto en la [Definición de Terminado](../US/10-perfil-cuenta.md#definición-de-terminado) |
+| 4 | `testing-agent` | ✅ (2026-11-01) unitarios, integración y e2e en verde, con la autorización del usuario. Estado por punto en la [Definición de Terminado](../US/10-perfil-cuenta.md#definición-de-terminado) |
 | 5 | `architecture-agent` | 🔶 (2026-11-01) [notas de implementación](#notas-de-implementación-2026-11-01), deudas, ROADMAP y Fases al día; **faltan** la feature y TRAZABILIDAD, que van con los hashes de los commits |
 | F | frontend | la sección *Frontend* del plan, en paralelo a 2 y 3; se despliega **después** del backend. Su estado no se registra en este repo |
 
@@ -421,9 +421,9 @@ Sin ciclos. `RecordatorioModule` sigue sin que nadie lo importe ([ADR-13 §1](AD
 
 ### Verificación (2026-11-01)
 
-- `tsc`, ESLint, Prettier y `npm test` en verde: **130 suites, 2383 tests**.
-- Integración y e2e, con la autorización del usuario: **⏳ en curso** — *conteos pendientes; se completan aquí y en la
-  [Definición de Terminado](../US/10-perfil-cuenta.md#definición-de-terminado)*.
+- `tsc`, ESLint, Prettier y `npm test` en verde: **131 suites, 2385 tests**.
+- Contra Postgres 16 local, con la autorización del usuario: **integración 13 suites / 253 tests** y **e2e 18 suites /
+  379 tests**, en verde ([Definición de Terminado](../US/10-perfil-cuenta.md#definición-de-terminado)).
 - Pruebas manuales en staging y production: pendientes ([verificación manual](../US/10-perfil-cuenta.md#verificación-manual-mínima)).
 
 ### Lo que conviene que el usuario mire
