@@ -497,10 +497,11 @@ para cada una. Las otras seis preguntas de la fase (categoría del mensaje, cons
 todas mis sesiones", tope de soporte y la casilla en el login) están, con opciones e inclinación, en el
 [plan US-10](US/10-perfil-cuenta.md#preguntas-abiertas).
 
-> **2026-11-01:** la Fase 7 está **implementada** y en `develop`, con el release a `main` abierto, y **ninguna de las
-> ocho tiene respuesta**. El código usa los provisionales: *Plan piloto* (Q18 = A) y, sin Q19, **ninguna casilla**: en
-> staging y en production los mensajes a soporte se guardan y esperan en `pendiente`, y el arranque deja el `warn`
-> `soporte.sin_destino`. Siguen abiertas.
+> **2026-11-01:** la Fase 7 está **implementada** y, desde ese mismo día, **en producción** (release `cd659c1`; *al
+> escribir esto: en `develop`, con el release a `main` abierto*), y **ninguna de las ocho tiene respuesta**. El código
+> usa los provisionales: *Plan piloto* (Q18 = A) y, sin Q19, **ninguna casilla**: en staging y en production los
+> mensajes a soporte se guardan y esperan en `pendiente`, y el arranque deja el `warn` `soporte.sin_destino`. Siguen
+> abiertas.
 
 ### Q18 — Nombre legible del plan `free`
 

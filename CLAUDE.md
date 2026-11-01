@@ -79,8 +79,9 @@ módulo con `useFactory` + `inject`, y los puertos son el token de inyección.
 
 > Estado actual (2026-11-01): módulos `auth`, `cita`, `paciente`, `portal-paciente`, `recordatorio`,
 > `solicitud`, `soporte`, `tenant` y `usuario`, más `src/shared/` (configuración y validación del entorno,
-> logs, límite de tasa, outbox y planificador) y 21 migraciones. En producción hasta la Fase 3 y US-07.01;
-> la Fase 7 (US-10) está en `develop`. El estado de cada fase está en `context/ROADMAP.md`.
+> logs, límite de tasa, outbox y planificador) y 21 migraciones. En producción hasta la Fase 3, US-07.01 y la
+> Fase 7 (US-10, desde el 2026-11-01; cierre pendiente de las pruebas manuales y de Q18/Q19). El estado de cada fase
+> está en `context/ROADMAP.md`.
 
 ### Convención: contexto por módulo (CLAUDE.md local)
 

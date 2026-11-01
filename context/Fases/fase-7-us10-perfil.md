@@ -10,16 +10,78 @@
 |---|---|
 | **Objetivo** | Que el profesional gestione su cuenta —ver y corregir su perfil, ver su suscripción, cambiar su contraseña— y contacte a soporte desde la aplicación (RF-04). |
 | **Entregable** | El profesional gestiona su cuenta y contacta soporte (ROADMAP). |
-| **Estado** | 🔶 **implementada el 2026-11-01, en `develop` (staging) con el release a `main` abierto; cierre pendiente de las pruebas manuales y de [Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free) y [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte).** Diseño en [ADR-15](../Decisions/ADR-15.md), **aceptado** (2026-10-31), con sus [notas de implementación](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01); contrato en el plan [US-10](../US/10-perfil-cuenta.md). No depende de ninguna otra fase. *Antes:* 🔶 en diseño (2026-10-31), ADR-15 propuesto, sin implementar. |
-| **Fechas** | decisiones del usuario, diseño y aceptación de ADR-15 2026-10-31 · implementación (backend) 2026-11-01 · a `develop` y release a `main` abierto 2026-11-01. |
+| **Estado** | ✅ **en producción desde el 2026-11-01** ([PR #15](https://github.com/Citia-solutions/citia-backend/pull/15), `cd659c1`) · **cierre pendiente** de las pruebas manuales y de [Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free) y [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) ([abajo](#release-a-producción-2026-11-01)). Diseño en [ADR-15](../Decisions/ADR-15.md), **aceptado** (2026-10-31), con sus [notas de implementación](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01); contrato en el plan [US-10](../US/10-perfil-cuenta.md); lo construido, en la feature [us10-perfil-cuenta](../Features/us10-perfil-cuenta.md). No depende de ninguna otra fase. *Antes:* 🔶 implementada (2026-11-01), en `develop` (staging) con el release a `main` abierto · *antes:* 🔶 en diseño (2026-10-31), ADR-15 propuesto, sin implementar. |
+| **Fechas** | decisiones del usuario, diseño y aceptación de ADR-15 2026-10-31 · implementación (backend) 2026-11-01 · a `develop` por fast-forward 2026-11-01 (12:36, hora de Chile) · **release a producción 2026-11-01** (14:09, hora de Chile). |
 | **Historia** | US-10, con plan propio en [US/10-perfil-cuenta.md](../US/10-perfil-cuenta.md). |
-| **Rama** | `feature/fase7-perfil-cuenta` (backend), que sale de `docs/fase5-decisiones-us0702`. Ese PR (#14) se mergeó directo a `main`, no a `develop`: esta rama trae también sus commits de docs y llega a `develop` por **fast-forward**. El release es un PR `develop` → `main`. |
-| **Commits** | ⏳ se anotan con sus hashes (y sus filas de [TRAZABILIDAD](../TRAZABILIDAD.md)) al cerrar esta pasada de docs. |
-| **Feature** | — (se crea con los hashes de los commits) |
+| **Rama** | `feature/fase7-perfil-cuenta` (backend), que sale de `docs/fase5-decisiones-us0702`. Ese PR (#14) se mergeó directo a `main`, no a `develop`: esta rama trajo también sus commits de docs y llegó a `develop` por **fast-forward**, sin PR ni commit de merge (Git Flow pide PR). Quedó en origin. El release fue el PR #15, `develop` → `main`. |
+| **Commits** | filas 118–124 de la [TRAZABILIDAD](../TRAZABILIDAD.md): seis commits, `6e597be` → `aeab86d`, sin merge a `develop` (fast-forward), y el release `cd659c1` (PR #15) a `main`. El mismo fast-forward llevó a `develop` las filas 113–116 (Fase 5 y Cumplimiento), del PR #14. [Cronología](#features-planes-y-commits). |
+| **Feature** | [Features/us10-perfil-cuenta.md](../Features/us10-perfil-cuenta.md) (nueva, 2026-11-01, después del release) |
+
+---
+
+## Release a producción (2026-11-01)
+
+La Fase 7 está **en producción** desde la tarde del 2026-11-01. Queda abierta hasta las pruebas manuales de la
+[verificación manual mínima](../US/10-perfil-cuenta.md#verificación-manual-mínima) y las respuestas a Q18 y Q19, como la
+[Fase 3](fase-3-us04-respuesta-paciente.md#release-a-producción-2026-10-17) queda abierta hasta las suyas. **Sin
+verificar en los entornos:** nadie revisó todavía los Deploy Logs de staging ni de production.
+
+### Cómo salió
+
+| Hora (UTC) | Hora (Chile) | Qué |
+|---|---|---|
+| 03:43 | 00:43 | los commits `6e597be` → `c090105` en `feature/fase7-perfil-cuenta` (implementación ya terminada) |
+| 15:35 | 12:35 | `aeab86d`: los resultados de integración y e2e |
+| 15:36 | 12:36 | push por **fast-forward** de `develop` (`715c3f3..aeab86d`), **sin PR ni commit de merge**; trae también los cuatro commits de docs del PR #14. Staging (Railway) se despliega desde `develop`: sus Deploy Logs, **sin revisar** |
+| 17:09 | 14:09 | el usuario crea y mergea desde GitHub el [PR #15](https://github.com/Citia-solutions/citia-backend/pull/15) `develop` → `main` (`cd659c1`): el token de `gh` estaba vencido y no se pudo desde la terminal. Production (Railway, desde `main`) corre al arrancar las migraciones `1750000019000-AddPerfilYSesionesAUsuarios` y `1750000020000-CreateMensajesSoporte`: sus Deploy Logs, **sin revisar** |
+
+El frontend (`citia-frontend`) no está registrado en este repo: si salió, cuándo y en qué orden, sin registrar. El plan
+pide desplegarlo **después** del backend.
+
+### Cómo se verificó
+
+| Nivel | Qué | Resultado |
+|---|---|---|
+| Código (2026-11-01, antes del release) | `tsc`, ESLint, Prettier y `npm test`; integración y e2e contra Postgres 16 local, con la autorización del usuario | ✅ 131 suites / 2385 unitarios · 13 / 253 de integración · 18 / 379 e2e |
+| Staging (desde `develop`) | arranque, `soporte.sin_destino` en los Deploy Logs, pasos 1 a 6 de la verificación manual | ⬜ sin verificar |
+| Production, backend | arranque, migraciones `1750000019000` y `1750000020000` aplicadas, `soporte.sin_destino`, `/api/health` | ⬜ sin verificar (nadie revisó los Deploy Logs) |
+| Production, pasos 7 a 9 | un mensaje que llegue a la casilla y la consulta de solo lectura | ⬜ esperan a [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) (el 9 se puede hacer ya) |
+| Frontend | build y despliegue | sin registrar en este repo |
+
+### En production, sin `SOPORTE_CORREO_DESTINO`
+
+[Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) sigue sin respuesta, así que la variable **no está cargada en
+production**: el job `soporte.envio` no se registra, el arranque avisa `soporte.sin_destino` (`warn`) y los mensajes a
+soporte se guardan y **esperan en `pendiente`** (es lo que hace el código sin la variable; el `warn`, todavía sin verlo
+en los Deploy Logs). No se pierden: salen con el primer tick después de cargar la variable
+(20 por minuto). [Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free) también sigue abierta: la suscripción
+muestra el provisional *Plan piloto*.
+
+### Desvíos del proceso
+
+1. **A `develop` sin PR.** La rama llegó por fast-forward (`715c3f3..aeab86d`), sin PR ni commit de merge: Git Flow pide
+   un PR hacia `develop`. Por eso la Fase 7 no tiene fila de merge a `develop` en la TRAZABILIDAD.
+2. **El PR #14 de docs entró directo a `main`** (`33fc74c`, 2026-10-31) y sus cuatro commits llegaron a `develop` recién
+   con ese fast-forward (filas 113–116; el merge `33fc74c`, fila 117, sigue solo en `main`).
+3. **El PR #15 se creó y se mergeó desde GitHub**, no desde la terminal, porque el token de `gh` estaba vencido.
+
+### Para cerrar la fase
+
+1. Revisar los **Deploy Logs** de staging y production: arranque sin error, las dos migraciones aplicadas y
+   `soporte.sin_destino` (la [lección de la Fase 3](fase-3-us04-respuesta-paciente.md#lecciones-aprendidas): un
+   arranque se confirma en los Deploy Logs, no en el estado del despliegue).
+2. La [verificación manual mínima](../US/10-perfil-cuenta.md#verificación-manual-mínima) en staging y production.
+3. Responder Q19 y cargar `SOPORTE_CORREO_DESTINO` (la casilla entra antes a [DT-52](../Deudas/DT-52.md)); responder
+   Q18.
+4. El frontend, desplegado después del backend (sin registrar en este repo).
+5. Revisar la severidad de [DT-01](../Deudas/DT-01.md), que se revisa al cerrar la fase.
 
 ---
 
 ## Orden de lectura del diseño (2026-10-31; implementación, 2026-11-01)
+
+Para saber **qué existe en el código**, empieza por la feature [us10-perfil-cuenta](../Features/us10-perfil-cuenta.md)
+(2026-11-01). Para el porqué y el contrato:
 
 1. **[US-10](../US/10-perfil-cuenta.md)** — el plan y el **contrato**: decisiones (P1 a P8 del usuario, T1 a T14 del
    `architecture-agent`), las dos migraciones, el dominio, las cinco rutas con sus DTO, el orden por agente (con su
@@ -45,7 +107,8 @@
 
 **El backend está implementado** tal como se diseñó (pasos 1 a 4 del [plan](../US/10-perfil-cuenta.md#orden-de-construcción)):
 `tsc`, ESLint, Prettier y `npm test` en verde (131 suites, 2385 tests); integración (13 suites, 253 tests) y
-e2e (18 suites, 379 tests), autorizadas por el usuario, en verde contra Postgres 16 local. Subido a `develop` (staging) con el release a `main` abierto. Ningún desvío
+e2e (18 suites, 379 tests), autorizadas por el usuario, en verde contra Postgres 16 local. Llegó a `develop` (staging)
+por fast-forward y a producción el mismo 2026-11-01 ([arriba](#release-a-producción-2026-11-01)). Ningún desvío
 rediseña; los que tocan una decisión están en las
 [notas de ADR-15](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01) y el resto, en los
 [desvíos del plan](../US/10-perfil-cuenta.md#desvíos-de-la-implementación-2026-11-01). Lo que más conviene saber:
@@ -62,17 +125,18 @@ rediseña; los que tocan una decisión están en las
   validación salen en inglés (el frontend debe aceptar `message` como texto o como lista) y el registro no aplica la
   política de contraseña del cambio ([DT-61](../Deudas/DT-61.md)).
 
-**Para cerrar la fase:** los conteos de integración y e2e; las pruebas manuales en staging y production
-([verificación manual](../US/10-perfil-cuenta.md#verificación-manual-mínima)); Q18 y Q19 (y, con Q19, cargar
-`SOPORTE_CORREO_DESTINO`); el frontend desplegado **después** del backend; la feature y las filas de TRAZABILIDAD con
-los hashes.
+**Para cerrar la fase:** la lista está en [Release a producción § Para cerrar la fase](#para-cerrar-la-fase). Ya
+hechos: los conteos de integración y e2e, el release, la feature y las filas de la TRAZABILIDAD con los hashes.
+*Antes (2026-11-01, antes del release):* "los conteos de integración y e2e; las pruebas manuales en staging y
+production; Q18 y Q19 (y, con Q19, cargar `SOPORTE_CORREO_DESTINO`); el frontend desplegado **después** del backend; la
+feature y las filas de TRAZABILIDAD con los hashes".
 
 ---
 
 ## Qué hay diseñado (y qué no)
 
 **Propuesto el 2026-10-31** ([ADR-15](../Decisions/ADR-15.md), contrato en [US-10](../US/10-perfil-cuenta.md)) y
-**aceptado ese mismo día**; **implementado el 2026-11-01** (arriba):
+**aceptado ese mismo día**; **implementado el 2026-11-01** (arriba) y **en producción desde ese día**:
 
 - **Perfil** (`GET` y `PATCH /api/usuarios/me`): devuelve lo mismo que el login más la especialidad; se editan el
   nombre y la especialidad (texto libre, ≤ 100). El correo, la organización y su enlace público, en lectura. Sin foto:
@@ -107,8 +171,8 @@ la casilla de soporte ([Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)) 
 
 | Documento | En una línea | Estado |
 |---|---|---|
-| [ADR-15](../Decisions/ADR-15.md) | Perfil editable, corte de sesiones al cambiar la contraseña, suscripción en lectura y soporte con su propio envío | **Aceptado** (2026-10-31) · **implementado** (2026-11-01), en `develop`; [notas](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01) · *antes: propuesto* |
-| [ADR-01](../Decisions/ADR-01.md) | El JWT sin renovación ni revocación; ADR-15 lo extiende con la consulta del corte (implementada el 2026-11-01) | Aceptado · implementado |
+| [ADR-15](../Decisions/ADR-15.md) | Perfil editable, corte de sesiones al cambiar la contraseña, suscripción en lectura y soporte con su propio envío | **Aceptado** (2026-10-31) · **implementado y en producción** (2026-11-01); [notas](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01) · *antes: implementado, en `develop`; antes: propuesto* |
+| [ADR-01](../Decisions/ADR-01.md) | El JWT sin renovación ni revocación; ADR-15 lo extiende con la consulta del corte (implementada el 2026-11-01) | Aceptado · implementado · la extensión, en producción desde el 2026-11-01 |
 | [ADR-12](../Decisions/ADR-12.md) §4, §5 y §6 | La regla 4 de los suscriptores, el planificador y los barridos globales que usa el job de soporte | Aceptado · en producción |
 | [ADR-13](../Decisions/ADR-13.md) §1 y §8 | El puerto `CanalMensajeria` que soporte reutiliza sin importar `RecordatorioModule` | Aceptado · en producción |
 | [ADR-03](../Decisions/ADR-03.md) | El slug no se edita | Aceptado |
@@ -119,10 +183,23 @@ la casilla de soporte ([Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)) 
 
 ## Features, planes y commits
 
-- **Plan:** [US-10](../US/10-perfil-cuenta.md) — 🔶 implementado (2026-11-01), en `develop` con el release a `main`
-  abierto · *antes: 🔶 en diseño (2026-10-31)*.
-- **Feature:** ninguna todavía (se crea con los hashes de los commits).
-- **Commits:** ⏳ se anotan con sus hashes y sus filas de [TRAZABILIDAD](../TRAZABILIDAD.md).
+- **Plan:** [US-10](../US/10-perfil-cuenta.md) — ✅ implementado y en producción (2026-11-01), cierre pendiente de las
+  pruebas manuales y de Q18/Q19 · *antes: 🔶 implementado, en `develop` con el release a `main` abierto; antes: 🔶 en
+  diseño (2026-10-31)*.
+- **Feature:** [us10-perfil-cuenta](../Features/us10-perfil-cuenta.md) (nueva, 2026-11-01): perfil, cambio de
+  contraseña con corte de sesiones, suscripción y soporte; incluye lo que la fase cambió en `auth` y `tenant`.
+- **Commits** (filas 118–124 de la [TRAZABILIDAD](../TRAZABILIDAD.md)):
+
+| Fila | Commit | Fecha | Qué | Documento |
+|---|---|---|---|---|
+| 118 | `6e597be` | 2026-11-01 | ADR-15 aceptado (con sus notas de implementación), plan, esta guía, DT-57 a DT-61, Q18 y Q19, notas en deudas y Cumplimiento | [ADR-15](../Decisions/ADR-15.md) · [US-10](../US/10-perfil-cuenta.md) · [DT-57](../Deudas/DT-57.md)…[DT-61](../Deudas/DT-61.md) |
+| 119 | `a2058aa` | 2026-11-01 | Perfil, cambio de contraseña y corte de sesiones (migración `1750000019000`, `FirmaJwtModule`, estrategia JWT asíncrona, dos cubos, `SOPORTE_CORREO_DESTINO`) | [us10 § Perfil](../Features/us10-perfil-cuenta.md#perfil) · [§ Corte de sesiones](../Features/us10-perfil-cuenta.md#corte-de-sesiones) · [DT-01](../Deudas/DT-01.md) · `CLAUDE.md` de `usuario` |
+| 120 | `35aec28` | 2026-11-01 | Suscripción en lectura, solo el administrador | [us10 § Suscripción](../Features/us10-perfil-cuenta.md#suscripción) · [DT-02](../Deudas/DT-02.md) |
+| 121 | `fcfeac3` | 2026-11-01 | Módulo `soporte`: tabla (migración `1750000020000`), ruta y job | [us10 § Soporte](../Features/us10-perfil-cuenta.md#soporte) · [DT-59](../Deudas/DT-59.md) · `CLAUDE.md` de `soporte` (nuevo) |
+| 122 | `c090105` | 2026-11-01 | Definición de Terminado: e2e, integración de las migraciones y `app.module.spec.ts` | [US-10 § Definición de Terminado](../US/10-perfil-cuenta.md#definición-de-terminado) |
+| 123 | `aeab86d` | 2026-11-01 | Resultados de integración y e2e | [ADR-15 § Verificación](../Decisions/ADR-15.md#verificación-2026-11-01) |
+| — | — | 2026-11-01 | A `develop` por fast-forward (`715c3f3..aeab86d`), sin PR ni merge | — |
+| 124 | `cd659c1` | 2026-11-01 | **Release a producción** (PR #15 a `main`) | [§ Release a producción](#release-a-producción-2026-11-01) |
 
 ---
 
@@ -130,7 +207,7 @@ la casilla de soporte ([Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)) 
 
 | Deuda | Por qué pesa en esta fase |
 |---|---|
-| [DT-01](../Deudas/DT-01.md) | **se cierra en parte**: cambiar la contraseña corta las demás sesiones y un usuario borrado deja de entrar (**implementado el 2026-11-01**, en producción con el release); la renovación sigue abierta |
+| [DT-01](../Deudas/DT-01.md) | **se cierra en parte**: cambiar la contraseña corta las demás sesiones y un usuario borrado deja de entrar (**implementado el 2026-11-01** y **en producción desde ese día**); la renovación sigue abierta; la severidad se revisa al cerrar la fase |
 | [DT-57](../Deudas/DT-57.md) | **nueva**, 🔵 aplazada: sin foto de perfil (P1) |
 | [DT-58](../Deudas/DT-58.md) | **nueva**, 🔵 aplazada: el nombre de la organización no se puede corregir, y va en cada recordatorio (P3) |
 | [DT-59](../Deudas/DT-59.md) | **nueva**, ⚪ prevista el 2026-10-31 → **abierta** desde la implementación (2026-11-01): `soporte` usa el canal de correo de `recordatorio` por archivo, con su propia instancia |

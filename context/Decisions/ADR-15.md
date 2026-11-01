@@ -1,20 +1,23 @@
 # ADR-15: Cuenta del profesional (US-10, RF-04) — perfil editable, corte de sesiones al cambiar la contraseña, suscripción en lectura y mensajes a soporte con su propio envío
 
-> **Fase:** [Fase 7 — US-10](../Fases/fase-7-us10-perfil.md) · **Feature:** — (se crea al cerrar) · **Plan:** [US-10](../US/10-perfil-cuenta.md) · **Relacionado:** [ADR-01](../Decisions/ADR-01.md), [ADR-02](../Decisions/ADR-02.md), [ADR-03](../Decisions/ADR-03.md), [ADR-06](../Decisions/ADR-06.md), [ADR-08](../Decisions/ADR-08.md), [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-01](../Deudas/DT-01.md), [DT-02](../Deudas/DT-02.md), [DT-03](../Deudas/DT-03.md), [DT-26](../Deudas/DT-26.md), [DT-36](../Deudas/DT-36.md), [DT-46](../Deudas/DT-46.md), [DT-52](../Deudas/DT-52.md), [DT-57](../Deudas/DT-57.md), [DT-58](../Deudas/DT-58.md), [DT-59](../Deudas/DT-59.md), [DT-60](../Deudas/DT-60.md), [DT-61](../Deudas/DT-61.md), [Q7](../PREGUNTAS-ABIERTAS.md#q7--renovación-y-revocación-de-sesión-bloqueado-hasta-que-el-arquitecto-defina-el-requisito), [Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free), [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte), [Cumplimiento](../Cumplimiento/README.md)
+> **Fase:** [Fase 7 — US-10](../Fases/fase-7-us10-perfil.md) · **Feature:** [us10-perfil-cuenta](../Features/us10-perfil-cuenta.md) · **Plan:** [US-10](../US/10-perfil-cuenta.md) · **Relacionado:** [ADR-01](../Decisions/ADR-01.md), [ADR-02](../Decisions/ADR-02.md), [ADR-03](../Decisions/ADR-03.md), [ADR-06](../Decisions/ADR-06.md), [ADR-08](../Decisions/ADR-08.md), [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-01](../Deudas/DT-01.md), [DT-02](../Deudas/DT-02.md), [DT-03](../Deudas/DT-03.md), [DT-26](../Deudas/DT-26.md), [DT-36](../Deudas/DT-36.md), [DT-46](../Deudas/DT-46.md), [DT-52](../Deudas/DT-52.md), [DT-57](../Deudas/DT-57.md), [DT-58](../Deudas/DT-58.md), [DT-59](../Deudas/DT-59.md), [DT-60](../Deudas/DT-60.md), [DT-61](../Deudas/DT-61.md), [Q7](../PREGUNTAS-ABIERTAS.md#q7--renovación-y-revocación-de-sesión-bloqueado-hasta-que-el-arquitecto-defina-el-requisito), [Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free), [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte), [Cumplimiento](../Cumplimiento/README.md)
 
-**Fecha:** 2026-10-31 (propuesto y aceptado) · 2026-11-01 (implementado)
-**Estado:** **Aceptado** (2026-10-31) · **implementado (2026-11-01)**, en `develop` (staging) con el release a `main`
-abierto; el cierre queda pendiente de las pruebas manuales y de [Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free)
-y [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte). Cómo quedó:
-[Notas de implementación](#notas-de-implementación-2026-11-01). Las decisiones de producto (P1 a P8) las tomó el
+**Fecha:** 2026-10-31 (propuesto y aceptado) · 2026-11-01 (implementado y en producción)
+**Estado:** **Aceptado** (2026-10-31) · **implementado y en producción (2026-11-01)**: release a `main` con el
+[PR #15](https://github.com/Citia-solutions/citia-backend/pull/15) (`cd659c1`); a `develop` llegó por fast-forward, sin PR.
+El cierre queda pendiente de las pruebas manuales y de [Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free)
+y [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) ([guía de la fase](../Fases/fase-7-us10-perfil.md#release-a-producción-2026-11-01)).
+Cómo quedó: [Notas de implementación](#notas-de-implementación-2026-11-01) y la feature
+[us10-perfil-cuenta](../Features/us10-perfil-cuenta.md). Las decisiones de producto (P1 a P8) las tomó el
 usuario (arquitecto y dueño del producto) el 2026-10-31 y **no se reabren**; el diseño técnico de este ADR lo aprobó
 ese mismo día. Lo que queda por decidir está en [Preguntas abiertas](#preguntas-abiertas): **sin respuesta al
 2026-11-01**, el código usa sus valores provisionales.
-*Antes:* **Aceptado** (2026-10-31) · en construcción · *antes:* **Propuesto** (2026-10-31).
+*Antes:* **Aceptado** · implementado (2026-11-01), en `develop` (staging) con el release a `main` abierto · *antes:*
+**Aceptado** (2026-10-31) · en construcción · *antes:* **Propuesto** (2026-10-31).
 **Historia:** US-10 — plan y contrato en [US/10-perfil-cuenta.md](../US/10-perfil-cuenta.md)
 **Relación:** **cierra la parte de revocación** de [DT-01](../Deudas/DT-01.md) que corta las demás sesiones al
-cambiar la contraseña y deja fuera a un usuario borrado (en diseño el 2026-10-31; **implementada el 2026-11-01**, en
-producción con el release); la renovación sigue abierta · **extiende**
+cambiar la contraseña y deja fuera a un usuario borrado (en diseño el 2026-10-31; **implementada y en producción el
+2026-11-01**); la renovación sigue abierta · **extiende**
 [ADR-01](ADR-01.md): la estrategia JWT pasa a consultar la base en cada petición autenticada · **usa** el planificador
 de [ADR-12](ADR-12.md) y su patrón "fila de trabajo + job" (§4, regla 4) para el correo a soporte, **sin** un
 suscriptor del outbox · **reutiliza** el puerto `CanalMensajeria` de [ADR-13 §8](ADR-13.md) sin importar
@@ -355,7 +358,7 @@ Sin ciclos. `RecordatorioModule` sigue sin que nadie lo importe ([ADR-13 §1](AD
 | 2 | `backend-agent` | ✅ (2026-11-01) `FirmaJwtModule`, `JwtEmisorSesion`, `crearPayloadJwt`, `VerificarSesionService` y la `JwtStrategy` asíncrona; los dos cubos; `SOPORTE_CORREO_DESTINO`; campos sensibles; dobles de la estrategia en los cuatro e2e |
 | 3 | `api-agent` | ✅ (2026-11-01) perfil, cambio de contraseña, suscripción y el módulo `soporte` con su job |
 | 4 | `testing-agent` | ✅ (2026-11-01) unitarios, integración y e2e en verde, con la autorización del usuario. Estado por punto en la [Definición de Terminado](../US/10-perfil-cuenta.md#definición-de-terminado) |
-| 5 | `architecture-agent` | 🔶 (2026-11-01) [notas de implementación](#notas-de-implementación-2026-11-01), deudas, ROADMAP y Fases al día; **faltan** la feature y TRAZABILIDAD, que van con los hashes de los commits |
+| 5 | `architecture-agent` | ✅ (2026-11-01) [notas de implementación](#notas-de-implementación-2026-11-01), deudas, ROADMAP y Fases al día; después del release, la feature [us10-perfil-cuenta](../Features/us10-perfil-cuenta.md) y las filas 118–124 de la [TRAZABILIDAD](../TRAZABILIDAD.md) · *antes: 🔶, faltaban la feature y TRAZABILIDAD* |
 | F | frontend | la sección *Frontend* del plan, en paralelo a 2 y 3; se despliega **después** del backend. Su estado no se registra en este repo |
 
 ---
@@ -363,7 +366,8 @@ Sin ciclos. `RecordatorioModule` sigue sin que nadie lo importe ([ADR-13 §1](AD
 ## Notas de implementación (2026-11-01)
 
 > Las decisiones de arriba **no cambian**: ninguna nota rediseña. El backend está **implementado** (pasos 1 a 4 del
-> [plan](../US/10-perfil-cuenta.md#orden-de-construcción)), en `develop` (staging) con el release a `main` abierto. Las
+> [plan](../US/10-perfil-cuenta.md#orden-de-construcción)) y **en producción desde el 2026-11-01** (*antes: en `develop`
+> (staging) con el release a `main` abierto*). Las
 > preguntas abiertas siguen **sin respuesta**: el código usa los provisionales (*Plan piloto*, categoría cerrada, tope
 > de 5 en 24 h, especialidad solo en el perfil, sin "cerrar todas mis sesiones"). Sin `SOPORTE_CORREO_DESTINO`
 > ([Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)), en staging y en production los mensajes quedan
@@ -425,6 +429,7 @@ Sin ciclos. `RecordatorioModule` sigue sin que nadie lo importe ([ADR-13 §1](AD
 - Contra Postgres 16 local, con la autorización del usuario: **integración 13 suites / 253 tests** y **e2e 18 suites /
   379 tests**, en verde ([Definición de Terminado](../US/10-perfil-cuenta.md#definición-de-terminado)).
 - Pruebas manuales en staging y production: pendientes ([verificación manual](../US/10-perfil-cuenta.md#verificación-manual-mínima)).
+  Después del release (2026-11-01), los Deploy Logs de staging y production, **sin revisar**.
 
 ### Lo que conviene que el usuario mire
 
@@ -471,8 +476,8 @@ release, también en [PREGUNTAS-ABIERTAS](../PREGUNTAS-ABIERTAS.md#fase-7--decis
 ## Deudas técnicas asociadas
 
 **Cierra en parte:** [DT-01](../Deudas/DT-01.md) — el corte de las demás sesiones al cambiar la contraseña y la salida
-de un usuario borrado (en diseño el 2026-10-31; **implementado el 2026-11-01**, en producción con el release). La
-renovación y el cierre de sesión real siguen abiertos.
+de un usuario borrado (en diseño el 2026-10-31; **implementado y en producción el 2026-11-01**). La renovación y el
+cierre de sesión real siguen abiertos.
 
 **Toca:** [DT-02](../Deudas/DT-02.md) (primera ruta que mira el rol, sin guard general; implementada el 2026-11-01) ·
 [DT-46](../Deudas/DT-46.md) (las fechas nuevas declaran `timestamptz`; `usuarios.creado_en` y `tenants.creado_en`, que

@@ -20,7 +20,7 @@ implementar un ADR ya decidido) · 🟢 `resuelta en diseño` (hay ADR que la ci
 | ID | Deuda | Severidad | Estado | Origen |
 |----|-------|-----------|--------|--------|
 | [DT-30](DT-30.md) | La asistencia real de las citas pasadas no se registra y no se puede reconstruir | 🟡 baja (era 🔴) | 🟢 mitigada (2026-10-05): botones de asistencia en el voucher | decisión de producto · [ADR-04 §2](../Decisions/ADR-04.md) |
-| [DT-01](DT-01.md) | Sin renovación ni revocación de sesión | 🔴 alta (se revisa al cerrar la Fase 7) | abierta · avance **implementado** (Fase 7, 2026-11-01; en `develop`, a producción con el release): corte de las demás sesiones al cambiar la contraseña y salida de un usuario borrado ([ADR-15 §5](../Decisions/ADR-15.md)); la renovación sigue igual · *antes: en diseño (2026-10-31)* | [ADR-01](../Decisions/ADR-01.md) |
+| [DT-01](DT-01.md) | Sin renovación ni revocación de sesión | 🔴 alta (se revisa al cerrar la Fase 7) | abierta · avance **en producción** desde el 2026-11-01 (Fase 7): corte de las demás sesiones al cambiar la contraseña y salida de un usuario borrado ([ADR-15 §5](../Decisions/ADR-15.md)); la renovación sigue igual · *antes: implementado, en `develop` (2026-11-01); en diseño (2026-10-31)* | [ADR-01](../Decisions/ADR-01.md) |
 | [DT-03](DT-03.md) | Sin verificación de correo ni recuperación de contraseña | 🔴 alta | abierta | [us00a](../Features/us00a-registro-inicial.md) |
 | [DT-06](DT-06.md) | Registro público sin ningún freno | 🔴 alta | abierta | [us00a](../Features/us00a-registro-inicial.md) |
 | [DT-15](DT-15.md) | No se puede buscar un paciente | 🔴 alta | abierta · neutralizada para crear cita por el RUT (ver nota) | [us06](../Features/us06-dashboard-citas.md) |
@@ -182,7 +182,8 @@ depende de verificarlo y vive como nota en [DT-03](DT-03.md).
 
 ### Al implementar la Fase 7 (2026-11-01)
 
-*(2026-11-01.)* El backend de la Fase 7 está implementado y en `develop`, con el release a `main` abierto
+*(2026-11-01.)* El backend de la Fase 7 está implementado y, desde ese mismo día, **en producción** (release
+`cd659c1`; *al escribir esto: en `develop`, con el release a `main` abierto*)
 ([notas de ADR-15](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01)). La prevista se contrae, DT-01 avanza en
 el código y se detectan dos menores. Las notas del flujo de soporte (DT-26, DT-36, DT-52, DT-53, DT-56) siguen como
 estaban: se implementó lo que describían.
@@ -296,7 +297,7 @@ la guía de cada una, en [`../Fases/`](../Fases/README.md).
 | [Fase 3 — US-04](../Fases/fase-3-us04-respuesta-paciente.md) | DT-42…DT-45 (previstas el 2026-10-14, abiertas desde el despliegue del 2026-10-17; las previstas 3 y 4 de la propuesta de ADR-10 desaparecieron) · DT-46 (detectada al implementar, 2026-10-15) | DT-18 **en producción** (2026-10-17), se cierra con la prueba de `trust proxy` · DT-44 parte 2 resuelta y DT-45 con su corrección, antes de contraerse | DT-30 (ya mitigada el 2026-10-05; la confirmación del paciente reduce las `pendiente` vencidas) · DT-11 (regla G1, corte = despliegue de la fase) · DT-04, DT-06 (límite por IP, no por cuenta ni captcha), DT-16 (sigue como deuda), DT-23, DT-26, DT-33 |
 | [Fase 4 — US-05](../Fases/fase-4-us05-alertas.md) | — | — | DT-28 (aviso al profesional) |
 | [Fase 5 — US-07](../Fases/fase-5-us07-scoring.md) | DT-47 (detectada en US-07.01, 2026-10-19) · DT-48, DT-49, DT-50 (contraídas con US-07.01, fichadas el 2026-10-30) | **cierra** DT-11 (2026-10-27, job G1 prendido en production) | depende de DT-30 (mitigada el 2026-10-05; lo anterior a esa fecha no se recupera; la lista de citas pasadas sin cerrar es su punto 3) · DT-13, DT-23, DT-37, DT-40 · DT-44 (la decisión 8 de ADR-14 neutraliza su efecto en la calificación) |
-| [Fase 7 — US-10](../Fases/fase-7-us10-perfil.md) (implementada el 2026-11-01, en `develop`; *antes: en diseño*) | DT-57, DT-58 (aplazadas) · DT-59 (prevista el 2026-10-31, abierta desde el 2026-11-01) · DT-60, DT-61 (detectadas al implementar, 2026-11-01) | DT-01 en parte (implementado el 2026-11-01; cuenta como cerrada esa parte al llegar a producción) | DT-01, DT-02 (primera comprobación de rol), DT-46 (sigue abierta), DT-03, DT-04, DT-26, DT-36, DT-52, DT-53, DT-56 (notas) |
+| [Fase 7 — US-10](../Fases/fase-7-us10-perfil.md) (en producción desde el 2026-11-01; *antes: implementada, en `develop`; en diseño*) | DT-57, DT-58 (aplazadas) · DT-59 (prevista el 2026-10-31, abierta desde el 2026-11-01) · DT-60, DT-61 (detectadas al implementar, 2026-11-01) | DT-01 en parte (en producción desde el 2026-11-01: esa parte cuenta como cerrada; la severidad se revisa al cerrar la fase) | DT-01, DT-02 (primera comprobación de rol), DT-46 (sigue abierta), DT-03, DT-04, DT-26, DT-36, DT-52, DT-53, DT-56 (notas) |
 | Transversal — [Cumplimiento](../Cumplimiento/README.md) (no es una fase) | DT-51…DT-56 (fichadas el 2026-10-31, del pre-análisis legal con IA del 2026-10-30) | — | DT-26 (ampliada a una política general de conservación) · DT-16 (nota) · la P3 es la condición del 🚧 de US-07.02 y US-07.03 (Fase 5) |
 
 > Las deudas de Fundaciones y de la Fase 0 se **ficharon** el 2026-08-24 (`f2a7dff`), cuando se creó
@@ -374,7 +375,8 @@ con fecha: [DT-16](DT-16.md), a revisar antes de que entre en vigor la Ley 21.71
 > a [DT-26](DT-26.md), [DT-52](DT-52.md), [DT-53](DT-53.md) y [DT-56](DT-56.md). La casilla de soporte es un proveedor
 > nuevo que entra a DT-52 **antes** de usarse.
 
-> **Actualizado 2026-11-01 (Fase 7 implementada, en `develop` con el release a `main` abierto):** la parte de
+> **Actualizado 2026-11-01 (Fase 7 implementada, en `develop` con el release a `main` abierto; en producción ese
+> mismo día, release `cd659c1`):** la parte de
 > revocación de [DT-01](DT-01.md) está en el código (corte al cambiar la contraseña y 401 para un usuario borrado); la
 > severidad se revisa al cerrar la fase. [DT-59](DT-59.md) pasa a `abierta`. Dos menores detectadas al implementar:
 > [DT-60](DT-60.md) (`Recortar` copiado) y [DT-61](DT-61.md) (el registro no tiene el tope de 72 bytes del cambio de

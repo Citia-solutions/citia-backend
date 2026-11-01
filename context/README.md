@@ -58,7 +58,8 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 | Buscas… | Camino |
 |---|---|
 | ponerte al día con el proyecto | este README → [ROADMAP § Resumen](ROADMAP.md#resumen) → [Fases/](Fases/README.md) → la guía de la fase en curso |
-| entender la respuesta del paciente (lo último en producción, desde el 2026-10-17) | [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) —estado, guía de lectura de la implementación y [checklist de salida a producción](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción)— y la feature [us04-respuesta-paciente](Features/us04-respuesta-paciente.md) |
+| entender el perfil, la suscripción y el soporte (lo último en producción, desde el 2026-11-01) | [Fase 7](Fases/fase-7-us10-perfil.md) —estado, [release a producción](Fases/fase-7-us10-perfil.md#release-a-producción-2026-11-01) y lo que falta para cerrarla— y la feature [us10-perfil-cuenta](Features/us10-perfil-cuenta.md) |
+| entender la respuesta del paciente (en producción desde el 2026-10-17) | [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) —estado, guía de lectura de la implementación y [checklist de salida a producción](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción)— y la feature [us04-respuesta-paciente](Features/us04-respuesta-paciente.md) |
 | entender los recordatorios (lo último en producción) | [Fase 2](Fases/fase-2-us03-recordatorios.md) —guía de lectura del diseño y de la implementación, checklist de salida a producción y [cierre](Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07)— y la feature [us03-recordatorios](Features/us03-recordatorios.md) |
 | qué está desplegado y dónde (staging y production) | [stack § Mapa de entornos](stack-tecnologico.md#mapa-de-entornos) e [Infraestructura en producción](stack-tecnologico.md#infraestructura-en-producción-2026-10-07) |
 | qué quedó al cerrar la gestión de citas | [Fase 1 § Cierre](Fases/fase-1-us02-gestion-citas.md#cierre-de-la-fase-resumen) |
@@ -108,8 +109,10 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
   (acciones) aún sin plan y 🚧 **bloqueadas desde el 2026-10-30, plan incluido**, hasta que un abogado revise el
   contexto legal de ADR-14; las decisiones de producto de US-07.02, aprobadas ese mismo día, siguen vigentes.
   *Antes (hasta el bloqueo): "su plan es el siguiente paso".*
-  [US-10](US/10-perfil-cuenta.md) perfil, suscripción y soporte (🔶 implementada el 2026-11-01, en `develop` con el release a `main` abierto; *antes: en diseño desde el 2026-10-31*;
-  [ADR-15](Decisions/ADR-15.md) aceptado).
+  [US-10](US/10-perfil-cuenta.md) perfil, suscripción y soporte (✅ en producción desde el 2026-11-01, cierre pendiente
+  de las pruebas manuales y de Q18/Q19; [ADR-15](Decisions/ADR-15.md) aceptado; feature
+  [us10-perfil-cuenta](Features/us10-perfil-cuenta.md); *antes: implementada, en `develop` con el release a `main`
+  abierto (2026-11-01); en diseño desde el 2026-10-31*).
   **Subtareas de US-02** (archivos `02.NN-*`, no son historias propias):
   [US-02.07](US/02.07-paciente-reagenda-cancela.md) el paciente cancela o pide reagendar (⏸ aplazada
   fuera de la v1; 🔀 **absorbida por US-04** el 2026-10-14, en la
@@ -138,7 +141,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 ## Estado, de un vistazo
 
 *(Actualizado el 2026-10-07; la Fase 3, el 2026-10-18, tras su release del 2026-10-17; la fila de la Fase 5, el
-2026-10-30; la de la Fase 7, el 2026-10-31 y el 2026-11-01. Fuente:
+2026-10-30; la de la Fase 7, el 2026-10-31 y el 2026-11-01, también después de su release. Fuente:
 [ROADMAP § Resumen](ROADMAP.md#resumen).)*
 
 **El MVP está en producción.** Alcance: dashboard de citas (Fase 0) · gestión de citas (Fase 1) ·
@@ -158,7 +161,7 @@ está en producción desde el 2026-10-17.
 | [Fase 4](Fases/fase-4-us05-alertas.md) — US-05 alertas | ⬜ fuera del MVP |
 | [Fase 5](Fases/fase-5-us07-scoring.md) — US-07 scoring | 🔶 US-07.01 (registro de hechos) en producción desde el 2026-10-20, antes que la Fase 4; job G1 prendido el 2026-10-27; pruebas manuales en curso · US-07.02 y US-07.03 🚧 bloqueadas desde el 2026-10-30, plan incluido (siguen en la v2), con las decisiones de producto de US-07.02 aprobadas ese día y vigentes · siguiente: cerrar US-07.01 · *antes: ⏸ v2 (siguiente: el plan de US-07.02)* |
 | [Fase 6 y US-09](Fases/fases-6-us09-sin-diseno.md) | ⬜ sin diseño |
-| [Fase 7](Fases/fase-7-us10-perfil.md) — US-10 perfil, suscripción y soporte | 🔶 **implementada (2026-11-01)**, en `develop` (staging) con el release a `main` abierto · cierre pendiente de las pruebas manuales y de Q18/Q19 · [ADR-15](Decisions/ADR-15.md) aceptado · [plan](US/10-perfil-cuenta.md) · *antes: 🔶 en diseño (2026-10-31); antes: ⬜ sin diseño* |
+| [Fase 7](Fases/fase-7-us10-perfil.md) — US-10 perfil, suscripción y soporte | ✅ **en producción (2026-11-01)** · cierre pendiente de las pruebas manuales y de Q18/Q19 · [us10](Features/us10-perfil-cuenta.md) · [ADR-15](Decisions/ADR-15.md) aceptado · [plan](US/10-perfil-cuenta.md) · *antes: 🔶 implementada, en `develop` con el release a `main` abierto (2026-11-01); 🔶 en diseño (2026-10-31); ⬜ sin diseño* |
 
 **Entornos** ([mapa](stack-tecnologico.md#mapa-de-entornos)): `develop` → **staging** (Railway +
 `citia-staging.netlify.app`, correo simulado con `registro`) · `main` → **production** (Railway +
@@ -175,7 +178,10 @@ cita en el voucher y configuración por profesional · correo del paciente oblig
 paciente **confirma, cancela o pide otra hora** desde el enlace de su recordatorio (página `/cita`), el
 profesional ve quién confirmó o canceló e invalida el enlace desde el voucher, la bandeja recibe las peticiones
 de otra hora, y hay **límite de tasa** en el login, el registro, la solicitud pública y el portal. Ver
-[us04-respuesta-paciente](Features/us04-respuesta-paciente.md).
+[us04-respuesta-paciente](Features/us04-respuesta-paciente.md). **Desde el 2026-11-01:** el profesional ve y corrige
+su perfil, cambia su contraseña (lo que **corta sus demás sesiones**), el administrador ve la suscripción en lectura y
+cualquier usuario con sesión escribe a soporte; sin `SOPORTE_CORREO_DESTINO` en production, esos mensajes se guardan y esperan en
+`pendiente`. Ver [us10-perfil-cuenta](Features/us10-perfil-cuenta.md).
 
 **Lo siguiente:**
 
