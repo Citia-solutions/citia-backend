@@ -9,7 +9,9 @@
 > [contexto legal de ADR-14](../Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado). Sirve para llegar
 > ordenado a un abogado, no para reemplazarlo. **Ninguna fila se da por cierta hasta esa revisión.**
 
-**Creada:** 2026-10-31, cuando el usuario eligió *"documentar cumplimiento"* · **Última revisión:** 2026-10-31
+**Creada:** 2026-10-31, cuando el usuario eligió *"documentar cumplimiento"* · **Última revisión:** 2026-11-01 (el
+flujo de soporte de la Fase 7, **implementado** y en `develop`: [abajo](#lo-que-trae-la-fase-7-diseño-2026-10-31-implementación-2026-11-01))
+· *antes:* 2026-10-31 (el mismo flujo, en diseño)
 
 ---
 
@@ -93,7 +95,7 @@ baste: eso lo dice el abogado.)*
 |---|---|---|
 | **Correo mínimo.** El recordatorio no lleva nombre, RUT, teléfono ni correo del paciente en el cuerpo, ni tipo de consulta, motivo, estado o historial; el asunto es neutro, sin el nombre del profesional ni de la organización | [ADR-13 §12](../Decisions/ADR-13.md#12-contenido-y-privacidad) · `recordatorio/application/plantilla-recordatorio.ts` | Resend recibe igual el **correo del paciente** (destinatario), el nombre del profesional y de la organización (que puede delatar la especialidad), la fecha y hora, el teléfono de contacto de la clínica y el **enlace con el token** de la Fase 3. El seguimiento de aperturas y clics está apagado por diseño, **sin confirmar en el panel** ([stack](../stack-tecnologico.md#infraestructura-en-producción-2026-10-07), [DT-52](../Deudas/DT-52.md)) |
 | **Recordatorios sin destinatario ni contenido guardados**: solo estado, fechas e id del proveedor | [ADR-13 §2](../Decisions/ADR-13.md#2-tablas) | sin plazo de conservación ([DT-26](../Deudas/DT-26.md)) |
-| **Logs sin datos del paciente.** Nunca el destinatario ni el cuerpo; redacción por nombre de campo (`correo`, `rut`, `telefono`, `nombreCompleto`, `destinatario`, `cuerpo`, `body`, credenciales y tokens); de cada petición solo método, ruta, query y cabeceras inocuas, **sin la IP** | [ADR-13 §12 y §16](../Decisions/ADR-13.md#16-observabilidad-avanza-dt-19) · `shared/infrastructure/observabilidad/opciones-logger.ts` · `test/logs-redaccion.e2e-spec.ts` | sí llevan **ids** (UUID de cita, tenant, recordatorio y hecho; el del paciente en la ruta de `PATCH /api/pacientes/:id`), que son seudónimos (❓ siguen siendo datos personales). La redacción no cubre lo que se escriba dentro del texto del mensaje: es una convención del código, no un control. Hoy los logs solo llegan a Railway ([DT-52](../Deudas/DT-52.md)) |
+| **Logs sin datos del paciente.** Nunca el destinatario ni el cuerpo; redacción por nombre de campo (`correo`, `rut`, `telefono`, `nombreCompleto`, `destinatario`, `cuerpo`, `body`, credenciales y tokens; desde la Fase 7, también `contrasenaActual`, `contrasenaNueva` y `mensaje`); de cada petición solo método, ruta, query y cabeceras inocuas, **sin la IP** | [ADR-13 §12 y §16](../Decisions/ADR-13.md#16-observabilidad-avanza-dt-19) · `shared/infrastructure/observabilidad/opciones-logger.ts` · `test/logs-redaccion.e2e-spec.ts` | sí llevan **ids** (UUID de cita, tenant, recordatorio y hecho; el del paciente en la ruta de `PATCH /api/pacientes/:id`), que son seudónimos (❓ siguen siendo datos personales). La redacción no cubre lo que se escriba dentro del texto del mensaje: es una convención del código, no un control. Hoy los logs solo llegan a Railway ([DT-52](../Deudas/DT-52.md)) |
 | **Aislamiento por clínica.** `tenant_id` obligatorio en `pacientes`, `citas`, `cambios_cita`, `solicitudes_cita`, `enlaces_cita` y `recordatorios`; un paciente es único por clínica y RUT (`uq_paciente_tenant_rut`): el mismo RUT en dos clínicas son dos pacientes sin relación. Los lectores SQL que cruzan módulos también filtran por tenant ([DT-50](../Deudas/DT-50.md)) | migraciones de `src/database/migrations/` | la excepción deliberada de `supresiones_correo` ([arriba](#roles-según-el-pre-análisis-sin-confirmar)). Los jobs del planificador barren todas las clínicas a la vez, a propósito ([ADR-12 §6](../Decisions/ADR-12.md)), pero cada fila conserva su tenant |
 | **Nada compartido entre clínicas** para la calificación, y solo con lo que el paciente hizo en esa clínica: nunca edad, sexo, comuna, previsión ni tipo de consulta | [ADR-14, decisiones 7 y 11](../Decisions/ADR-14.md#11-datos-entre-clínicas) (confirmada el 2026-10-30) | — |
 | **Nunca restringir**: la calificación solo informaría, ayudaría al paciente a llegar y sugeriría; no libera horas, no bloquea ni exige condiciones | [ADR-14, decisión 6](../Decisions/ADR-14.md#6-acciones-permitidas-informar-ayudar-a-llegar-sugerir-nunca-restringir) | — |
@@ -143,6 +145,47 @@ No hay deuda nueva: es la condición del bloqueo y vive en
 
 ---
 
+## Lo que trae la Fase 7 (diseño 2026-10-31, implementación 2026-11-01)
+
+*(Implementado el 2026-11-01, en `develop` (staging) con el release a `main` abierto: [ADR-15](../Decisions/ADR-15.md)
+y sus [notas de implementación](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01), plan
+[US-10](../US/10-perfil-cuenta.md). Antes: "en diseño, sin implementar".)* La Fase 7 no toca los datos de los pacientes,
+pero suma un **flujo de datos nuevo** y dos datos de las cuentas:
+
+| Qué | Qué datos | Adónde van | Deuda |
+|---|---|---|---|
+| **Mensajes a soporte** | el texto que escribe el profesional (hasta 2000 caracteres), una categoría, su nombre, correo y rol, y el nombre y el slug de su organización | la base (`mensajes_soporte`, Railway), **Resend** (por primera vez con texto libre en el cuerpo) y **la casilla de soporte**, un proveedor nuevo sin decidir ([Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)). **Nunca a los logs** | [DT-52](../Deudas/DT-52.md) (inventario: la casilla entra **antes** de usarse), [DT-26](../Deudas/DT-26.md) (sin plazo), [DT-56](../Deudas/DT-56.md) (la casilla en los incidentes) |
+| **Especialidad del profesional** | texto libre opcional | solo la base; se muestra solo en su perfil, nunca al paciente (podría delatar su condición) | — (dato de la cuenta) |
+| **Corte de sesiones** | la fecha del último cambio de contraseña | solo la base | — |
+
+- **El riesgo del texto libre.** Aunque el formulario avisa *"No incluyas datos de tus pacientes"*, un profesional
+  puede escribir un nombre, un RUT o un diagnóstico. Esos datos **saldrían del encargo** (Citia los recibiría para
+  darle soporte al profesional, no para la clínica) y quedarían en Resend y en la casilla. El backend no los filtra:
+  detectar un RUT en texto libre daría falsos positivos y una falsa seguridad. Lo que queda es el aviso, la política
+  ([DT-53](../Deudas/DT-53.md)) y un plazo de conservación ([DT-26](../Deudas/DT-26.md)).
+- **El rol de Citia** con los mensajes de los profesionales sería el de **responsable** (❓, la observación 1 de
+  [Roles](#roles-según-el-pre-análisis-sin-confirmar)).
+
+**Cómo quedó en el código (2026-11-01)** — lectura del código, sin las pruebas de integración y e2e, que estaban en
+curso:
+
+- **Los logs nunca llevan el texto.** Los eventos de soporte registran solo ids, la categoría, estados y códigos. Además,
+  la clave `mensaje` está en la lista de campos que se redactan **en cualquier log**: si alguien registrara un objeto
+  con el texto bajo esa clave, saldría tachado. Es un control por nombre de campo, no por contenido: el texto bajo otra
+  clave no se tacharía. El e2e de soporte comprueba que los logs capturados no contienen el texto.
+- **`ultimo_error` guarda solo un código** (el nombre del error o el código del proveedor), nunca un mensaje de error
+  que pudiera repetir el texto. Los errores de validación tampoco repiten el texto recibido.
+- **Mientras no se cargue `SOPORTE_CORREO_DESTINO`** ([Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte), sin
+  respuesta), el texto **se queda en la base** (Railway) y no llega a Resend ni a ninguna casilla: los mensajes esperan
+  en `pendiente`. Al cargarla, salen todos los acumulados (20 por minuto). **La casilla tiene que estar en el inventario
+  de [DT-52](../Deudas/DT-52.md) antes de cargar la variable**, no después.
+- **En staging** (`MENSAJERIA_ADAPTADOR=registro`), un mensaje queda `enviado` sin haber salido ([DT-40](../Deudas/DT-40.md)).
+- **La contraseña** nunca va a los logs (`contrasenaActual` y `contrasenaNueva` se redactan) y el corte de sesiones solo
+  registra ids y un motivo (`auth.sesion_cortada`).
+- **Conservación:** sin plazo, como estaba previsto ([DT-26](../Deudas/DT-26.md), [pregunta 5 del plan](../US/10-perfil-cuenta.md#preguntas-abiertas)
+  sin respuesta). El `down` de la migración `1750000020000` borra todos los mensajes: no es una herramienta de
+  conservación.
+
 ## Preguntas para el abogado
 
 ### Bloque A — la calificación (US-07.02 y US-07.03)
@@ -178,6 +221,8 @@ su A6, la base de licitud, que en ADR-14 son filas de la tabla y no preguntas). 
 - *(Observaciones de esta documentación, 2026-10-31, sin pre-análisis.)* ¿Es Citia responsable de los datos de las
   cuentas de los profesionales? ¿La lista global de supresiones de correo es un fin propio de Citia o parte del
   encargo, y debe nombrarla el contrato?
+- *(Del diseño de la Fase 7, 2026-10-31; implementado el 2026-11-01.)* Si un profesional escribe datos de un paciente en un mensaje a soporte,
+  ¿qué rol tiene Citia sobre ellos, cuánto puede guardarlos y basta el aviso del formulario?
 - *(De la investigación del 2026-10-19 que el pre-análisis no cubrió.)* El secreto profesional (Código Penal, Código
   Sanitario, ética profesional) y qué cambió la Ley 21.806.
 - **Bloque C (datos entre clínicas): retirado.** Lo resolvió

@@ -26,6 +26,7 @@ import {
   InMemoryPacienteRepository,
   PublicadorEnMemoria,
 } from './support/in-memory-repositories';
+import { SESION_VIGENTE_FALSA } from './support/sesion-vigente-falsa';
 
 /**
  * E2E de la agenda por rango (`GET /api/citas?desde&hasta`) y de los avisos de
@@ -203,6 +204,9 @@ describe('Agenda por rango y avisos de solapamiento (e2e sin BD)', () => {
       controllers: [CitasController],
       providers: [
         JwtStrategy,
+        // US-10: la estrategia verifica la sesion en cada peticion; los
+        // usuarios de esta suite no existen en ninguna base (ver el doble).
+        SESION_VIGENTE_FALSA,
         JwtAuthGuard,
         {
           provide: CitasService,

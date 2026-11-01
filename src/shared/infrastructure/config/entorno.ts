@@ -22,11 +22,16 @@ import { OrigenCorsInvalidoError, normalizarOrigen } from './origenes-cors';
  *    que nunca quede en `registro` por omisión.
  *  - Las variables de Resend solo se exigen con `MENSAJERIA_ADAPTADOR=resend`.
  *  - Un valor vacío (`VAR=`) cuenta como no definido.
+ *  - Una variable NUEVA entra opcional (o con default) también en producción,
+ *    salvo decisión explícita: una obligatoria nueva tumbó production ~9
+ *    minutos en el release de la Fase 3. Si viene mal escrita, sí detiene el
+ *    arranque.
  *
  * Fuentes: ADR-13 §18 (recordatorios, Resend, Better Stack), ADR-12 §3 y §5
  * (outbox y planificador), US-03 paso 4 (CORS), ADR-07 (`APP_TZ`), contrato
  * de la Fase 3 §1 (E2) y §6 (enlace del paciente y límite de tasa), plan
- * US-07.01 (`CIERRE_GHOSTING_ACTIVO`, el job G1).
+ * US-07.01 (`CIERRE_GHOSTING_ACTIVO`, el job G1), ADR-15 §7 y plan US-10
+ * (`SOPORTE_CORREO_DESTINO`).
  */
 
 export const ENTORNOS_EJECUCION = [
@@ -114,6 +119,14 @@ export interface Entorno {
   RESEND_CUOTA_MENSUAL: number;
   CUOTA_UMBRAL_AVISO: number;
 
+  /**
+   * Casilla que recibe los mensajes a soporte (US-10, ADR-15 §7): una
+   * dirección simple (`soporte@dominio.tld`). OPCIONAL en todos los entornos,
+   * también en producción: sin ella el job de envío no se registra y los
+   * mensajes se guardan y esperan en `pendiente` (no se pierden).
+   */
+  SOPORTE_CORREO_DESTINO?: string;
+
   // Recordatorios (ADR-13 §3, §5, §7, §11, §15, §16)
   RECORDATORIO_ANTELACIONES_MIN: readonly number[];
   RECORDATORIO_SILENCIO_DESDE: string;
@@ -165,6 +178,8 @@ const DOMINIO =
   /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 const CORREO = '[^\\s@<>]+@[^\\s@<>]+\\.[^\\s@<>]+';
 const REMITENTE = new RegExp(`^(?:[^<>]+ <${CORREO}>|${CORREO})$`);
+// Una sola dirección, sin nombre visible, `<>` ni listas (`,` o `;`).
+const CORREO_SIMPLE = /^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/;
 // Formato de `ms`/jsonwebtoken: "3600", "15m", "12h", "1d", "7 days"…
 const DURACION_JWT =
   /^\d+(\.\d+)?\s*(ms|msecs?|milliseconds?|s|secs?|seconds?|m|mins?|minutes?|h|hrs?|hours?|d|days?|w|weeks?|y|yrs?|years?)?$/i;
@@ -594,6 +609,20 @@ export function validarEntorno(
     max: 1,
   });
 
+  // Soporte (US-10, ADR-15 §7). OPCIONAL a propósito, también en producción:
+  // sin ella la app arranca y los mensajes esperan en `pendiente`. Si viene,
+  // debe ser una dirección simple; mal escrita, detiene el arranque.
+  const SOPORTE_CORREO_DESTINO = l.valor('SOPORTE_CORREO_DESTINO');
+  if (
+    SOPORTE_CORREO_DESTINO !== undefined &&
+    !CORREO_SIMPLE.test(SOPORTE_CORREO_DESTINO)
+  ) {
+    l.error(
+      'SOPORTE_CORREO_DESTINO',
+      `debe ser una sola dirección de correo, sin nombre ni <>, p. ej. soporte@citiahealth.cl (recibido "${SOPORTE_CORREO_DESTINO}").`,
+    );
+  }
+
   // Recordatorios (ADR-13 §3, §5, §7, §11, §15, §16).
   const RECORDATORIO_ANTELACIONES_MIN = l.listaAntelaciones(
     'RECORDATORIO_ANTELACIONES_MIN',
@@ -697,6 +726,7 @@ export function validarEntorno(
     RESEND_CUOTA_DIARIA,
     RESEND_CUOTA_MENSUAL,
     CUOTA_UMBRAL_AVISO,
+    SOPORTE_CORREO_DESTINO,
     RECORDATORIO_ANTELACIONES_MIN,
     RECORDATORIO_SILENCIO_DESDE,
     RECORDATORIO_SILENCIO_HASTA,

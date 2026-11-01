@@ -245,5 +245,5 @@ Detalle en el [plan § Frontend](../US/07.01-registro-hechos.md#frontend-citia-f
   dependen además de la revisión legal** (🚧 bloqueadas desde el 2026-10-30), y la implementación de US-07.02,
   de corregir antes [DT-47](../Deudas/DT-47.md). *Antes (hasta el bloqueo): "La implementación de US-07.02 y
   US-07.03 depende además de la revisión legal (su plan, no)".*
-- **Desbloquea:** la [Fase 6](fases-6-7-us09-sin-diseno.md#fase-6--us-08-monitoreo-y-seguimiento-del-paciente)
+- **Desbloquea:** la [Fase 6](fases-6-us09-sin-diseno.md#fase-6--us-08-monitoreo-y-seguimiento-del-paciente)
   (el ROADMAP la hace depender de US-07).

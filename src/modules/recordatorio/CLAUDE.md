@@ -140,6 +140,13 @@ no toca la fila, corta el lote, alerta e `informarFallo` · `posible_duplicado`
   la carga.
 - Si cambian estados o motivos: migración nueva para los CHECK
   (`database-agent`).
+- **`soporte` usa el canal de este módulo POR ARCHIVO (US-10, DT-59):**
+  `domain/canal-mensajeria.ts` (puerto y resultados) y
+  `infrastructure/mensajeria/crear-canal-mensajeria.ts` (su propia instancia,
+  en `soporte.module.ts`), sin importar `RecordatorioModule`. Cambiar el
+  puerto, los resultados o la fábrica obliga a revisar `soporte`. Sus correos
+  no los cuenta la cuota local (DT-36) y sus eventos llegan al webhook como
+  desconocidos.
 - **`cita` lee esta tabla con SQL (US-07.01), sin importar el módulo:** el job
   G1 (`cita/infrastructure/persistence/sql-candidatas-ghosting.ts`) solo
   cierra como `ghosting` una cita con un recordatorio `estado IN ('enviado',

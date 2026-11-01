@@ -46,7 +46,7 @@ describe('LimitarTasa', () => {
     ]);
   });
 
-  it('la tabla es la del contrato de la Fase 3 §6', () => {
+  it('la tabla es la del contrato de la Fase 3 §6 más los dos cubos de US-10 (ADR-15 §8)', () => {
     const MINUTO = 60_000;
     const HORA = 60 * MINUTO;
     expect(LIMITES_TASA).toEqual({
@@ -55,6 +55,8 @@ describe('LimitarTasa', () => {
       solicitudPublica: { limite: 5, ventanaMs: HORA, clave: 'ip' },
       portalPorIp: { limite: 30, ventanaMs: MINUTO, clave: 'ip' },
       portalPorEnlace: { limite: 5, ventanaMs: HORA, clave: 'enlace' },
+      cambioContrasena: { limite: 5, ventanaMs: HORA, clave: 'ip' },
+      soporte: { limite: 5, ventanaMs: HORA, clave: 'ip' },
     });
   });
 });

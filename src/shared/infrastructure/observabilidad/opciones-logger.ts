@@ -68,7 +68,9 @@ export const CABECERAS_SENSIBLES = [
  * Campos que se redactan en cualquier objeto registrado, hasta dos niveles de
  * anidación (`campo`, `*.campo`, `*.*.campo`). Cubre los de ADR-13 §12 y §16
  * (correo, RUT, teléfono, destinatario, cuerpo del mensaje), las credenciales
- * y los cuerpos de petición y respuesta (`body`).
+ * (también las del cambio de contraseña de US-10), el texto de un mensaje a
+ * soporte (`mensaje`, ADR-15 §7) y los cuerpos de petición y respuesta
+ * (`body`).
  *
  * `nombre` NO está: lo usan los hechos de dominio (`CitaCreada`). El nombre
  * del paciente nunca debe registrarse; los cuerpos ya se redactan enteros.
@@ -88,6 +90,9 @@ export const CAMPOS_SENSIBLES = [
   'password',
   'passwordHash',
   'contrasena',
+  // Cambio de contraseña (US-10, `PUT /api/usuarios/me/contrasena`).
+  'contrasenaActual',
+  'contrasenaNueva',
   'token',
   // Hash del token del enlace del paciente (Fase 3): tampoco se registra.
   'tokenHash',
@@ -105,6 +110,10 @@ export const CAMPOS_SENSIBLES = [
   'html',
   'texto',
   'cuerpo',
+  // Texto libre de un mensaje a soporte (US-10, ADR-15 §7): puede traer datos
+  // de pacientes. Ojo: redacta la clave `mensaje` ENTERA en cualquier objeto
+  // registrado; para registrar un `MensajeSaliente`, usar otra clave.
+  'mensaje',
   // Cuerpos HTTP
   'body',
 ] as const;

@@ -79,6 +79,7 @@ describe('validarEntorno', () => {
       expect(e.BETTERSTACK_SOURCE_TOKEN).toBeUndefined();
       expect(e.BETTERSTACK_HEARTBEAT_SALIDA_URL).toBeUndefined();
       expect(e.RESEND_API_KEY).toBeUndefined();
+      expect(e.SOPORTE_CORREO_DESTINO).toBeUndefined();
     });
 
     it('ENLACE_CITA_CLAVE tiene un default propio, distinto de JWT_SECRET', () => {
@@ -455,6 +456,72 @@ describe('validarEntorno', () => {
         validarEntorno({ ...PRODUCCION, CIERRE_GHOSTING_ACTIVO: '' })
           .CIERRE_GHOSTING_ACTIVO,
       ).toBe(false);
+    });
+  });
+
+  describe('SOPORTE_CORREO_DESTINO (US-10, ADR-15 §7)', () => {
+    it.each(['development', 'test'])(
+      'en %s, ausente → undefined y la app arranca',
+      (env) => {
+        expect(
+          validarEntorno({ NODE_ENV: env, JWT_SECRET: 'dev' })
+            .SOPORTE_CORREO_DESTINO,
+        ).toBeUndefined();
+      },
+    );
+
+    it('NO es obligatoria en producción: ausente o vacía, la app arranca con todo lo demás obligatorio', () => {
+      // Arrange — lo mínimo de producción, sin la variable
+      expect(PRODUCCION).not.toHaveProperty('SOPORTE_CORREO_DESTINO');
+
+      // Act & Assert
+      expect(validarEntorno(PRODUCCION).SOPORTE_CORREO_DESTINO).toBeUndefined();
+      expect(
+        validarEntorno({ ...PRODUCCION, SOPORTE_CORREO_DESTINO: '' })
+          .SOPORTE_CORREO_DESTINO,
+      ).toBeUndefined();
+      expect(
+        validarEntorno({ ...PRODUCCION, SOPORTE_CORREO_DESTINO: '   ' })
+          .SOPORTE_CORREO_DESTINO,
+      ).toBeUndefined();
+    });
+
+    it('una dirección válida → su valor (recortado), también en producción', () => {
+      expect(
+        validarEntorno({
+          JWT_SECRET: 'dev',
+          SOPORTE_CORREO_DESTINO: ' soporte@citiahealth.cl ',
+        }).SOPORTE_CORREO_DESTINO,
+      ).toBe('soporte@citiahealth.cl');
+      expect(
+        validarEntorno({
+          ...PRODUCCION,
+          SOPORTE_CORREO_DESTINO: 'soporte+citia@mail.citiahealth.cl',
+        }).SOPORTE_CORREO_DESTINO,
+      ).toBe('soporte+citia@mail.citiahealth.cl');
+    });
+
+    it.each([
+      ['con nombre visible', 'Soporte <a@b.cl>'],
+      ['sin dominio de primer nivel', 'a@b'],
+      ['sin @', 'soporte.citiahealth.cl'],
+      ['una lista', 'a@b.cl,c@d.cl'],
+      ['con espacios', 'soporte @citiahealth.cl'],
+    ])(
+      'mal escrita (%s) detiene el arranque con el mensaje de siempre',
+      (_caso, valor) => {
+        expect(
+          erroresDe({ JWT_SECRET: 'dev', SOPORTE_CORREO_DESTINO: valor }),
+        ).toEqual([
+          `SOPORTE_CORREO_DESTINO: debe ser una sola dirección de correo, sin nombre ni <>, p. ej. soporte@citiahealth.cl (recibido "${valor}").`,
+        ]);
+      },
+    );
+
+    it('mal escrita también detiene el arranque en producción', () => {
+      expect(
+        erroresDe({ ...PRODUCCION, SOPORTE_CORREO_DESTINO: 'a@b' }),
+      ).toHaveLength(1);
     });
   });
 

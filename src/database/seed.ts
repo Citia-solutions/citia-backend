@@ -195,6 +195,11 @@ async function limpiarDatosDemo(
     await m.delete(SolicitudCitaOrmEntity, { tenantId });
     await m.delete(CitaOrmEntity, { tenantId });
     await m.delete(PacienteOrmEntity, { tenantId });
+    // mensajes_soporte → usuarios/tenants (US-10, migración 1750000020000).
+    // SQL directo: no depende de que la entidad esté registrada en AppModule.
+    await m.query('DELETE FROM "mensajes_soporte" WHERE "tenant_id" = $1', [
+      tenantId,
+    ]);
     await m.delete(UsuarioOrmEntity, { tenantId });
     await m.delete(TenantOrmEntity, { id: tenantId });
   });

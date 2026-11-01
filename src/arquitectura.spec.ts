@@ -88,6 +88,9 @@ describe('ADR-02: dependencias de domain/ y application/', () => {
         'modules/cita/application',
         'modules/recordatorio/domain',
         'modules/recordatorio/application',
+        // US-10 (ADR-15 §9): módulo nuevo.
+        'modules/soporte/domain',
+        'modules/soporte/application',
         'shared/domain',
         'shared/application',
       ]),

@@ -7,8 +7,8 @@ import { JwtPayload } from '../jwt-payload.interface';
 /**
  * Adaptador del puerto ITokenSigner basado en el JwtService de NestJS.
  *
- * Reusa el JwtModule ya configurado por AuthModule (secret + expiresIn desde env);
- * NO reconfigura nada.
+ * Reusa el JwtModule ya configurado por FirmaJwtModule (secret + expiresIn
+ * desde env); NO reconfigura nada.
  */
 @Injectable()
 export class JwtTokenSigner extends ITokenSigner {

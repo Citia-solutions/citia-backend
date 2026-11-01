@@ -1,7 +1,8 @@
 # Preguntas abiertas — reparto por rol
 
-Diecisiete preguntas: las **once que bloqueaban el MVP** (Q1–Q11) y seis que aparecieron después —cuatro
-de la implementación de la Fase 2 (Q12–Q15) y dos de seguridad para el arquitecto (Q16 y Q17)—. Aquí están
+Diecinueve preguntas: las **once que bloqueaban el MVP** (Q1–Q11) y ocho que aparecieron después —cuatro
+de la implementación de la Fase 2 (Q12–Q15), dos de seguridad para el arquitecto (Q16 y Q17) y dos del diseño de
+la Fase 7 (Q18 y Q19)—. Aquí están
 reformuladas **en el lenguaje de quien puede responderlas**, con el entregable que se espera de cada una.
 
 > **Estado (2026-10-18):** respondidas **Q1** (A), **Q4**, **Q11** (**B**, 2026-10-14; antes C) y **Q6** en
@@ -30,6 +31,11 @@ reformuladas **en el lenguaje de quien puede responderlas**, con el entregable q
 > nadie cerró siguen neutras y van a una lista de citas pasadas sin cerrar, [abajo](#q6--planificador-para-el-proceso-de-cierre-dev-a--prioridad-1)).
 > El job G1 que responde la pregunta 1 está prendido en production desde el 2026-10-27
 > ([DT-11](Deudas/DT-11.md), cerrada).
+>
+> **2026-10-31:** el diseño de la [Fase 7](Fases/fase-7-us10-perfil.md) deja **dos preguntas nuevas para el usuario,
+> Q18 y Q19** ([sección propia](#fase-7--decisiones-pendientes-del-diseño-2026-10-31)); ninguna bloquea la
+> construcción. Y fija, para el cambio de contraseña, la parte de revocación de **Q7**
+> ([nota](#q7--renovación-y-revocación-de-sesión-bloqueado-hasta-que-el-arquitecto-defina-el-requisito)).
 
 **Equipo:** 1 I+D · 2 desarrolladores · el arquitecto decide el diseño y los requisitos de seguridad.
 
@@ -61,10 +67,12 @@ se compromete, y los desarrolladores eligen el mecanismo que cumpla ese requisit
 | 15 | ¿Cuándo reinicia Resend la cuota mensual del plan gratis? | **desarrolladores** (verificar con el proveedor) | nada hoy; afina el contador ([DT-36](Deudas/DT-36.md)) |
 | 16 | Modelo de amenazas de la vía pública | **arquitecto** | nada hoy (la vía pública ya está construida); afina DT-18, DT-23 y DT-28 · el límite de tasa de la ruta pública ya quedó fijado en la Fase 3 (2026-10-14) y está en producción (2026-10-17) |
 | 17 | Manejo de datos de salud y retención | **arquitecto** | DT-26 |
+| 18 | Nombre legible del plan `free` | **usuario** (producto) | nada; el código usa *"Plan piloto"* mientras tanto |
+| 19 | Casilla de soporte y su proveedor | **usuario** | que los mensajes a soporte salgan en production (sin la casilla, esperan guardados) |
 
 ### Por fase del roadmap
 
-*(2026-09-30; Q12–Q15 el 2026-10-04; Q16 y Q17 el 2026-10-11; Q11 y Q6 el 2026-10-14; Q8 el 2026-10-18.)* A qué fase de construcción ([`Fases/`](Fases/README.md)) toca cada pregunta. Las que no
+*(2026-09-30; Q12–Q15 el 2026-10-04; Q16 y Q17 el 2026-10-11; Q11 y Q6 el 2026-10-14; Q8 el 2026-10-18; Q18 y Q19 el 2026-10-31.)* A qué fase de construcción ([`Fases/`](Fases/README.md)) toca cada pregunta. Las que no
 tienen fase son de producto o de modelo de negocio.
 
 | Fase | Preguntas |
@@ -75,6 +83,7 @@ tienen fase son de producto o de modelo de negocio.
 | [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | Q1 ✅ A · Q6 ✅ (mecanismo) · Q12, Q13, Q14, Q15 (2026-10-04) |
 | [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | Q11 ✅ **B** (2026-10-14), con la seguridad del enlace (S1–S3 y límite de tasa) · Q6 pregunta 1 ✅ (regla G1) · en producción desde el 2026-10-17 |
 | [Fase 5 — US-07](Fases/fase-5-us07-scoring.md) | Q6 ✅ (pregunta 2 del job de cierre, respondida el 2026-10-30; la 1 la resolvió G1) |
+| [Fase 7 — US-10](Fases/fase-7-us10-perfil.md) | Q18 y Q19 (2026-10-31) · Q7 (la revocación al cambiar la contraseña, fijada en el diseño) · Q2 (por eso la suscripción es de lectura) |
 | sin fase | Q2 (prepago) · Q3 (agenda de la organización) · Q10 (validación, [etapa 1 del producto](Descripcion/fase-1-validacion.md)) |
 
 ---
@@ -351,6 +360,15 @@ rotación de credenciales o lista de revocación se elige casi solo.
 Lo que sí pueden adelantar: **el orden importa.** Bajar la caducidad antes de que exista la
 renovación expulsa usuarios a mitad de consulta.
 
+> **Nota (2026-10-31, Fase 7 en diseño).** Para un caso, el requisito quedó fijado por el usuario (decisión P5 = b de
+> la [Fase 7](Fases/fase-7-us10-perfil.md)): **al cambiar la contraseña, las demás sesiones se cortan en su siguiente
+> petición** y la sesión que hizo el cambio sigue con un token nuevo. Mecanismo: una columna
+> `usuarios.sesiones_validas_desde` que la estrategia JWT consulta en cada petición
+> ([ADR-15 §5](Decisions/ADR-15.md#5-corte-de-sesiones-usuariossesiones_validas_desde-p5)); de paso, un usuario
+> borrado deja de entrar. **Sigue abierto** lo demás de esta pregunta: la ventana máxima con una credencial robada
+> (sin renovación, `JWT_EXPIRES_IN` sigue en `1d`), el cierre de sesión real y un "cerrar todas mis sesiones"
+> ([DT-01](Deudas/DT-01.md)).
+
 ### Q9 — Modelo de disponibilidad *(no construir · solo evaluar)*
 
 Aplazado a fase 2 conscientemente *(la segunda fase de ADR-09, no la Fase 2 del roadmap, que son
@@ -468,6 +486,53 @@ llamar al proveedor unos días antes o después de lo debido; el 429 del proveed
 
 **Entregable:** el dato (soporte de Resend o la página de la cuenta) y, si no es mes calendario, el
 ajuste de `periodoMesUtc` en `recordatorio/domain/periodos-conteo.ts`.
+
+---
+
+## Fase 7 — decisiones pendientes del diseño (2026-10-31)
+
+Salieron al diseñar la [Fase 7](Fases/fase-7-us10-perfil.md) (US-10, perfil, suscripción y soporte;
+[ADR-15](Decisions/ADR-15.md) propuesto). **Ninguna bloquea la construcción**: el código tiene un valor provisional
+para cada una. Las otras seis preguntas de la fase (categoría del mensaje, conservación, especialidad pública, "cerrar
+todas mis sesiones", tope de soporte y la casilla en el login) están, con opciones e inclinación, en el
+[plan US-10](US/10-perfil-cuenta.md#preguntas-abiertas).
+
+> **2026-11-01:** la Fase 7 está **implementada** y en `develop`, con el release a `main` abierto, y **ninguna de las
+> ocho tiene respuesta**. El código usa los provisionales: *Plan piloto* (Q18 = A) y, sin Q19, **ninguna casilla**: en
+> staging y en production los mensajes a soporte se guardan y esperan en `pendiente`, y el arranque deja el `warn`
+> `soporte.sin_destino`. Siguen abiertas.
+
+### Q18 — Nombre legible del plan `free`
+
+Todas las organizaciones tienen `tenants.plan = 'free'` (el valor por defecto desde la primera migración). La pestaña
+*Suscripción* muestra un nombre legible y debajo *"Sin cobro durante el piloto"* (decisión P4).
+
+- **A.** *Plan piloto*.
+- **B.** *Gratis*.
+- **C.** *Plan inicial*.
+
+*Inclinación del diseño:* **A**: va con *"Sin cobro durante el piloto"* y no promete un plan gratis para siempre, que
+chocaría con el modelo de precios. El código usa A mientras tanto; cambiarlo es una línea (`tenant/domain/plan.ts`).
+
+**Entregable:** el nombre.
+
+### Q19 — Casilla de soporte
+
+El botón *Contactar soporte* guarda el mensaje y un job lo manda por correo a la dirección de
+`SOPORTE_CORREO_DESTINO`, con *Responder a* = el correo del profesional (decisión P7). Falta la dirección. Sin ella,
+los mensajes **esperan guardados** y no se pierden (la variable es opcional a propósito).
+
+- **A.** `soporte@citiahealth.cl` con el reenvío de correo de Cloudflare (gratis; el DNS ya está ahí) hacia una
+  casilla del usuario.
+- **B.** Una casilla de Google Workspace u otro proveedor pagado.
+- **C.** Directamente el correo personal del usuario.
+
+*Inclinación del diseño:* **A** por ahora. Cualquiera de las tres es un **proveedor nuevo que recibe el texto de los
+mensajes** —que puede traer datos de pacientes aunque se pida no incluirlos— y entra al inventario de
+[DT-52](Deudas/DT-52.md) **antes** de cargar la variable en production; la casilla también entra en el procedimiento
+de incidentes ([DT-56](Deudas/DT-56.md)).
+
+**Entregable:** la dirección y el proveedor; con eso, `SOPORTE_CORREO_DESTINO` en production y la fila en DT-52.
 
 ---
 

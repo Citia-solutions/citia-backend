@@ -36,6 +36,7 @@ import {
   SupresionCorreoRepositoryEnMemoria,
   citaLeida,
 } from './support/recordatorios-en-memoria';
+import { SESION_VIGENTE_FALSA } from './support/sesion-vigente-falsa';
 
 /**
  * Rutas de recordatorios (ADR-13 §17) SIN base de datos: pila HTTP real
@@ -111,6 +112,9 @@ describe('Recordatorios: rutas HTTP (e2e sin BD)', () => {
       ],
       providers: [
         JwtStrategy,
+        // US-10: la estrategia verifica la sesion en cada peticion; los
+        // usuarios de esta suite no existen en ninguna base (ver el doble).
+        SESION_VIGENTE_FALSA,
         JwtAuthGuard,
         {
           provide: ConfiguracionRecordatoriosService,

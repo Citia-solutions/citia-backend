@@ -91,8 +91,9 @@ notas fechadas ("*Estado (2026-10-14): …*") en vez de reescribirse. Si un plan
 
 - **US-02 (gestión de citas)** no tiene un `US/02-*.md`: su contrato se escribió directamente en la feature
   [us02-gestion-citas](../Features/us02-gestion-citas.md). Solo sus subtareas más delicadas tuvieron plan.
-- **US-05, US-07, US-08, US-09 y US-10** no tienen plan porque todavía no se diseñan. Escribir los criterios
-  ahora sería adivinar.
+- **US-05, US-08 y US-09** no tienen plan porque todavía no se diseñan. Escribir los criterios ahora sería adivinar.
+  *(US-07 tiene el de su primera subtarea, [US-07.01](../US/07.01-registro-hechos.md); US-10 tiene el suyo,
+  [US-10](../US/10-perfil-cuenta.md), desde el 2026-10-31, en diseño.)*
 - Los planes del **frontend** viven en el otro repo, en `citia-frontend/context/us/` (por ejemplo
   [02.09](../../../citia-frontend/context/us/02.09-dashboard-refleja-cambios.md), que es solo de frontend).
 
@@ -138,7 +139,7 @@ Estado al 2026-10-18. El RF solo aparece donde los documentos lo nombran.
 | US-07 | Calificación de asistencia (*scoring*) | RF-08 | Fase 5 | — | ⏸ aplazada a la v2 |
 | US-08 | Monitoreo y seguimiento del paciente | RF-01 | Fase 6 | — | 🔶 solo el alta del paciente y la edición de su contacto |
 | US-09 | (sin definir) | — | — | — | ⬜ pendiente de definir |
-| US-10 | Perfil, suscripción y soporte | RF-04 | Fase 7 | — | ⬜ sin empezar |
+| US-10 | Perfil, suscripción y soporte | RF-04 | Fase 7 | [US-10](../US/10-perfil-cuenta.md) | 🔶 en diseño (2026-10-31): [ADR-15](../Decisions/ADR-15.md) propuesto, sin implementar |
 
 ---
 

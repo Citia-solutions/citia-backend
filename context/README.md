@@ -108,6 +108,8 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
   (acciones) aún sin plan y 🚧 **bloqueadas desde el 2026-10-30, plan incluido**, hasta que un abogado revise el
   contexto legal de ADR-14; las decisiones de producto de US-07.02, aprobadas ese mismo día, siguen vigentes.
   *Antes (hasta el bloqueo): "su plan es el siguiente paso".*
+  [US-10](US/10-perfil-cuenta.md) perfil, suscripción y soporte (🔶 implementada el 2026-11-01, en `develop` con el release a `main` abierto; *antes: en diseño desde el 2026-10-31*;
+  [ADR-15](Decisions/ADR-15.md) aceptado).
   **Subtareas de US-02** (archivos `02.NN-*`, no son historias propias):
   [US-02.07](US/02.07-paciente-reagenda-cancela.md) el paciente cancela o pide reagendar (⏸ aplazada
   fuera de la v1; 🔀 **absorbida por US-04** el 2026-10-14, en la
@@ -124,10 +126,11 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 - **[`rules.md`](rules.md)** — reglas transversales de código.
 - **[`stack-tecnologico.md`](stack-tecnologico.md)** — stack, despliegue, mapa de entornos (staging y
   production) e infraestructura en producción.
-- **[`PREGUNTAS-ABIERTAS.md`](PREGUNTAS-ABIERTAS.md)** — diecisiete preguntas repartidas por rol (I+D,
+- **[`PREGUNTAS-ABIERTAS.md`](PREGUNTAS-ABIERTAS.md)** — diecinueve preguntas repartidas por rol (I+D,
   desarrollo, arquitecto) con el entregable esperado de cada una: las once que bloqueaban el MVP (Q1, Q4,
   Q6 en su mecanismo y Q11 ya respondidas), cuatro que dejó la implementación de la Fase 2 (Q12–Q15, no
-  bloquean) y dos de seguridad para el arquitecto (Q16 y Q17).
+  bloquean), dos de seguridad para el arquitecto (Q16 y Q17) y dos del diseño de la Fase 7 (Q18 y Q19,
+  2026-10-31).
 - **[`TRAZABILIDAD.md`](TRAZABILIDAD.md)** — matriz commit ↔ documentación, con la fase de cada commit.
 
 ---
@@ -135,7 +138,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 ## Estado, de un vistazo
 
 *(Actualizado el 2026-10-07; la Fase 3, el 2026-10-18, tras su release del 2026-10-17; la fila de la Fase 5, el
-2026-10-30. Fuente:
+2026-10-30; la de la Fase 7, el 2026-10-31 y el 2026-11-01. Fuente:
 [ROADMAP § Resumen](ROADMAP.md#resumen).)*
 
 **El MVP está en producción.** Alcance: dashboard de citas (Fase 0) · gestión de citas (Fase 1) ·
@@ -154,7 +157,8 @@ está en producción desde el 2026-10-17.
 | [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) — US-04 respuesta del paciente | ✅ **en producción (2026-10-17)** · cierre pendiente de las pruebas manuales · [us04](Features/us04-respuesta-paciente.md) · fuera del MVP |
 | [Fase 4](Fases/fase-4-us05-alertas.md) — US-05 alertas | ⬜ fuera del MVP |
 | [Fase 5](Fases/fase-5-us07-scoring.md) — US-07 scoring | 🔶 US-07.01 (registro de hechos) en producción desde el 2026-10-20, antes que la Fase 4; job G1 prendido el 2026-10-27; pruebas manuales en curso · US-07.02 y US-07.03 🚧 bloqueadas desde el 2026-10-30, plan incluido (siguen en la v2), con las decisiones de producto de US-07.02 aprobadas ese día y vigentes · siguiente: cerrar US-07.01 · *antes: ⏸ v2 (siguiente: el plan de US-07.02)* |
-| [Fases 6, 7 y US-09](Fases/fases-6-7-us09-sin-diseno.md) | ⬜ sin diseño |
+| [Fase 6 y US-09](Fases/fases-6-us09-sin-diseno.md) | ⬜ sin diseño |
+| [Fase 7](Fases/fase-7-us10-perfil.md) — US-10 perfil, suscripción y soporte | 🔶 **implementada (2026-11-01)**, en `develop` (staging) con el release a `main` abierto · cierre pendiente de las pruebas manuales y de Q18/Q19 · [ADR-15](Decisions/ADR-15.md) aceptado · [plan](US/10-perfil-cuenta.md) · *antes: 🔶 en diseño (2026-10-31); antes: ⬜ sin diseño* |
 
 **Entornos** ([mapa](stack-tecnologico.md#mapa-de-entornos)): `develop` → **staging** (Railway +
 `citia-staging.netlify.app`, correo simulado con `registro`) · `main` → **production** (Railway +

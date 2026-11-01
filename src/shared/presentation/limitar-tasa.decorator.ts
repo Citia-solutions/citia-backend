@@ -49,7 +49,10 @@ export interface DefinicionLimiteTasa {
   readonly clave: ClaveLimiteTasa;
 }
 
-/** Tabla del contrato de la Fase 3 §6. Es la única fuente de los límites. */
+/**
+ * Tabla del contrato de la Fase 3 §6 (más los dos cubos de US-10, ADR-15 §8).
+ * Es la única fuente de los límites.
+ */
 export const LIMITES_TASA = {
   /** `POST /api/auth/login`. */
   login: { limite: 5, ventanaMs: MINUTO_MS, clave: 'ip' },
@@ -61,6 +64,16 @@ export const LIMITES_TASA = {
   portalPorIp: { limite: 30, ventanaMs: MINUTO_MS, clave: 'ip' },
   /** Los POST de `/api/publico/cita/*`: ponerlo en CADA método POST. */
   portalPorEnlace: { limite: 5, ventanaMs: HORA_MS, clave: 'enlace' },
+  /**
+   * `PUT /api/usuarios/me/contrasena` (US-10, ADR-15 §8). Por IP y no por
+   * usuario: este guard corre antes que `JwtAuthGuard` (no hay `req.user`).
+   */
+  cambioContrasena: { limite: 5, ventanaMs: HORA_MS, clave: 'ip' },
+  /**
+   * `POST /api/soporte/mensajes` (US-10, ADR-15 §8). Además, 5 por
+   * organización en 24 h en el caso de uso (eso no es un cubo: cuenta filas).
+   */
+  soporte: { limite: 5, ventanaMs: HORA_MS, clave: 'ip' },
 } as const satisfies Record<string, DefinicionLimiteTasa>;
 
 export type NombreLimiteTasa = keyof typeof LIMITES_TASA;

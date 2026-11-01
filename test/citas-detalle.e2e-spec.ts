@@ -33,6 +33,7 @@ import { RolUsuario } from '../src/modules/usuario/domain/usuario.entity';
 import { rangoDelDiaEnZona } from '../src/shared/domain/timezone';
 import { DerivadorTokenEnlaceDePrueba } from './support/derivador-token-enlace-de-prueba';
 import { InMemoryEnlaceCitaRepository } from './support/in-memory-repositories';
+import { SESION_VIGENTE_FALSA } from './support/sesion-vigente-falsa';
 
 /**
  * E2E de GET /api/citas/:id (US-02.08) SIN base de datos.
@@ -363,6 +364,9 @@ describe('GET /api/citas/:id — voucher (e2e sin BD, US-02.08)', () => {
       controllers: [CitasController],
       providers: [
         JwtStrategy,
+        // US-10: la estrategia verifica la sesion en cada peticion; los
+        // usuarios de esta suite no existen en ninguna base (ver el doble).
+        SESION_VIGENTE_FALSA,
         JwtAuthGuard,
         {
           provide: CitasService,

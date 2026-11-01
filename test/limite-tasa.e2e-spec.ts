@@ -6,6 +6,8 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { JwtModule, JwtService } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -13,6 +15,8 @@ import { App } from 'supertest/types';
 
 import { AuthService } from '../src/modules/auth/application/auth.service';
 import { CredencialesInvalidasError } from '../src/modules/auth/domain/exceptions/credenciales-invalidas.error';
+import { JwtAuthGuard } from '../src/modules/auth/jwt-auth.guard';
+import { JwtStrategy } from '../src/modules/auth/jwt.strategy';
 import { AuthController } from '../src/modules/auth/presentation/auth.controller';
 import { EnlaceCitaNoValidoError } from '../src/modules/cita/application/enlace-cita-no-valido.error';
 import { EstadoCita } from '../src/modules/cita/domain/cita.entity';
@@ -22,7 +26,18 @@ import { VistaCitaPacienteDto } from '../src/modules/portal-paciente/presentatio
 import { PortalPacienteController } from '../src/modules/portal-paciente/presentation/portal-paciente.controller';
 import { SolicitudesService } from '../src/modules/solicitud/application/solicitudes.service';
 import { SolicitudesPublicasController } from '../src/modules/solicitud/presentation/solicitudes-publicas.controller';
+import { RegistrarMensajeSoporteService } from '../src/modules/soporte/application/registrar-mensaje-soporte.service';
+import {
+  CategoriaSoporte,
+  EstadoEnvioSoporte,
+  MensajeSoporte,
+} from '../src/modules/soporte/domain/mensaje-soporte.entity';
+import { SoporteController } from '../src/modules/soporte/presentation/soporte.controller';
+import { CambiarContrasenaService } from '../src/modules/usuario/application/cambiar-contrasena.service';
+import { PerfilService } from '../src/modules/usuario/application/perfil.service';
 import { UsuariosService } from '../src/modules/usuario/application/usuarios.service';
+import { RolUsuario } from '../src/modules/usuario/domain/usuario.entity';
+import { PerfilController } from '../src/modules/usuario/presentation/perfil.controller';
 import { UsuariosController } from '../src/modules/usuario/presentation/usuarios.controller';
 import { validarEntorno } from '../src/shared/infrastructure/config/entorno';
 import {
@@ -31,6 +46,7 @@ import {
 } from '../src/shared/infrastructure/config/origenes-cors';
 import { MENSAJE_LIMITE_TASA } from '../src/shared/infrastructure/limite-tasa/opciones-limite-tasa';
 import { LimiteTasaModule } from '../src/shared/limite-tasa.module';
+import { SESION_VIGENTE_FALSA } from './support/sesion-vigente-falsa';
 
 /**
  * Límite de tasa (contrato de la Fase 3 §6), cabeceras de las respuestas
@@ -44,12 +60,18 @@ import { LimiteTasaModule } from '../src/shared/limite-tasa.module';
  * caracteres base64url o sin cabecera, 409 (`AccionNoDisponibleError`) para
  * `TOKEN_CONFLICTO` al confirmar, y la vista en lo demás.
  *
+ * US-10 (ADR-15 §8): también `PerfilController` (cubo `cambioContrasena`) y
+ * `SoporteController` (cubo `soporte`), que exigen sesión: van con la
+ * `JwtStrategy` REAL y el doble `SESION_VIGENTE_FALSA` (sin él, el guard
+ * respondería 500 y no 401), y con tokens firmados con el secreto de prueba.
+ *
  * `LIMITE_TASA_ACTIVO=true` explícito (en `NODE_ENV=test` viene apagado). Las
  * IP de cada caso son distintas (`X-Forwarded-For` + `trust proxy`, como en
  * `main.ts`), así cada caso tiene sus contadores.
  */
 
 const ORIGEN_FRONTEND = 'https://app.citia.cl';
+const JWT_SECRET_PRUEBA = 'test-secret-e2e';
 const TOKEN_VALIDO = 'v'.repeat(43);
 const TOKEN_CONFLICTO = 'c'.repeat(43);
 const token = (n: number): string => `${n}`.padStart(43, 't');
@@ -87,13 +109,39 @@ const portalFalso = (): Pick<
   };
 };
 
+/** El usuario de los tokens de prueba (no existe en ninguna base). */
+const SESION = {
+  sub: '11111111-1111-4111-8111-111111111111',
+  email: 'profesional@clinica.cl',
+  tenantId: '22222222-2222-4222-8222-222222222222',
+  rol: RolUsuario.ADMINISTRADOR,
+};
+
+/** Lo que devolvería el registro real de un mensaje a soporte. */
+const mensajeSoporte = (): MensajeSoporte =>
+  MensajeSoporte.reconstituir({
+    id: '33333333-3333-4333-8333-333333333333',
+    tenantId: SESION.tenantId,
+    usuarioId: SESION.sub,
+    categoria: CategoriaSoporte.OTRO,
+    mensaje: 'Hola',
+    estadoEnvio: EstadoEnvioSoporte.PENDIENTE,
+    intentos: 0,
+    proximoIntentoEn: new Date('2026-11-01T12:00:00Z'),
+    ultimoError: null,
+    proveedor: null,
+    proveedorMensajeId: null,
+    enviadoEn: null,
+    creadoEn: new Date('2026-11-01T12:00:00Z'),
+  });
+
 /** `ConfigService` con el entorno validado, sin `.env` ni `process.env`. */
 @Module({})
 class ConfiguracionDePrueba {
   static con(limiteTasaActivo: boolean): DynamicModule {
     const entorno = validarEntorno({
       NODE_ENV: 'test',
-      JWT_SECRET: 'test-secret-e2e',
+      JWT_SECRET: JWT_SECRET_PRUEBA,
       LIMITE_TASA_ACTIVO: String(limiteTasaActivo),
     });
     return {
@@ -120,15 +168,42 @@ async function crearApp(
   limiteTasaActivo: boolean,
 ): Promise<NestExpressApplication> {
   const modulo = await Test.createTestingModule({
-    imports: [ConfiguracionDePrueba.con(limiteTasaActivo), LimiteTasaModule],
+    imports: [
+      ConfiguracionDePrueba.con(limiteTasaActivo),
+      LimiteTasaModule,
+      // US-10: rutas con sesión (JwtStrategy real; firma de los tokens).
+      PassportModule,
+      JwtModule.register({ secret: JWT_SECRET_PRUEBA }),
+    ],
     controllers: [
       AuthController,
       UsuariosController,
       SolicitudesPublicasController,
       PortalPacienteController,
+      PerfilController,
+      SoporteController,
       LibreController,
     ],
     providers: [
+      JwtStrategy,
+      // La estrategia pregunta si la sesión sigue vigente: este doble dice que
+      // sí (el usuario del token no existe en ninguna base).
+      SESION_VIGENTE_FALSA,
+      JwtAuthGuard,
+      {
+        provide: PerfilService,
+        useValue: { obtener: () => Promise.resolve({ id: SESION.sub }) },
+      },
+      {
+        provide: CambiarContrasenaService,
+        useValue: {
+          cambiar: () => Promise.resolve({ accessToken: 'token-nuevo' }),
+        },
+      },
+      {
+        provide: RegistrarMensajeSoporteService,
+        useValue: { registrar: () => Promise.resolve(mensajeSoporte()) },
+      },
       { provide: PortalPacienteService, useValue: portalFalso() },
       {
         provide: AuthService,
@@ -469,6 +544,100 @@ describe('Límite de tasa, cabeceras públicas y CORS (e2e sin BD)', () => {
           .set('Origin', ORIGEN_FRONTEND)
           .set('X-Enlace-Cita', token(400))
           .expect(200);
+      });
+    });
+
+    describe('rutas con sesión de US-10 (JwtStrategy real con SESION_VIGENTE_FALSA)', () => {
+      const CAMBIO = {
+        contrasenaActual: 'clave-actual-123',
+        contrasenaNueva: 'clave-nueva-456',
+      };
+      let token: string;
+
+      beforeAll(async () => {
+        token = await app.get(JwtService).signAsync(SESION);
+      });
+
+      const conSesion = (ip: string) => ({
+        cambiarContrasena: () =>
+          request(server())
+            .put('/api/usuarios/me/contrasena')
+            .set('X-Forwarded-For', ip)
+            .set('Authorization', `Bearer ${token}`)
+            .send(CAMBIO),
+        escribirSoporte: () =>
+          request(server())
+            .post('/api/soporte/mensajes')
+            .set('X-Forwarded-For', ip)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ mensaje: 'Hola' }),
+      });
+
+      it('PUT /api/usuarios/me/contrasena: 5 por hora por IP; el 6.º recibe 429 genérico (cubo cambioContrasena)', async () => {
+        // Arrange
+        const cliente = conSesion('203.0.113.30');
+
+        // Act — 5 llegan al controller (200)…
+        for (let i = 0; i < 5; i++) {
+          await cliente.cambiarContrasena().expect(200);
+        }
+        // …y el 6.º no
+        const bloqueado = await cliente.cambiarContrasena().expect(429);
+
+        // Assert
+        expect(bloqueado.body).toEqual({
+          statusCode: 429,
+          message: MENSAJE_LIMITE_TASA,
+        });
+        expect(cabecerasDeLimite(bloqueado)).toEqual([]);
+        // Otra IP, su propio contador
+        await conSesion('203.0.113.31').cambiarContrasena().expect(200);
+      });
+
+      it('POST /api/soporte/mensajes: 5 por hora por IP; el 6.º recibe 429 genérico (cubo soporte, distinto de cambioContrasena)', async () => {
+        // Arrange
+        const cliente = conSesion('203.0.113.40');
+
+        // Act
+        for (let i = 0; i < 5; i++) {
+          await cliente.escribirSoporte().expect(201);
+        }
+        const bloqueado = await cliente.escribirSoporte().expect(429);
+
+        // Assert — el genérico del límite (no el del tope por organización)
+        expect(bloqueado.body).toEqual({
+          statusCode: 429,
+          message: MENSAJE_LIMITE_TASA,
+        });
+        expect(cabecerasDeLimite(bloqueado)).toEqual([]);
+        // Cubos separados: la misma IP todavía puede cambiar su contraseña
+        await cliente.cambiarContrasena().expect(200);
+      });
+
+      it('sin token: 401 de JwtAuthGuard mientras quede cupo y 429 ANTES que el 401 al pasarse (el guard global corre primero)', async () => {
+        // Arrange
+        const ip = '203.0.113.50';
+        const sinSesion = () =>
+          request(server())
+            .post('/api/soporte/mensajes')
+            .set('X-Forwarded-For', ip)
+            .send({ mensaje: 'Hola' });
+
+        // Act / Assert — 401 (y no 500: la estrategia está bien armada)
+        for (let i = 0; i < 5; i++) {
+          await sinSesion().expect(401);
+        }
+        await sinSesion().expect(429);
+      });
+
+      it('GET /api/usuarios/me no lleva cubo', async () => {
+        const cliente = desde('203.0.113.60');
+        for (let i = 0; i < 8; i++) {
+          await cliente
+            .get('/api/usuarios/me')
+            .set('Authorization', `Bearer ${token}`)
+            .expect(200);
+        }
       });
     });
 
