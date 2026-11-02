@@ -10,7 +10,7 @@
 | **Estado** | 🔶 **US-07.01 (registro de hechos) en producción desde el 2026-10-20, con el job G1 prendido desde el 2026-10-27 ([DT-11](../Deudas/DT-11.md) cerrada) y sus pruebas manuales en curso. US-07.02 y US-07.03 quedan 🚧 bloqueadas desde el 2026-10-30, plan incluido** ([abajo](#bloqueo-de-us-0702-y-us-0703-2026-10-30)): el usuario no tiene abogado, y un pre-análisis legal hecho con una IA (no es una opinión legal) recomienda no habilitar el perfilamiento mientras no haya fundamento jurídico. Se desbloquean cuando un abogado revise el contexto legal de ADR-14 (o el usuario decida otra cosa); siguen además fuera del MVP, en la v2. Sus **decisiones de producto, aprobadas el 2026-10-30**, siguen vigentes ([abajo](#decisiones-de-producto-de-us-0702-2026-10-30)). **El siguiente paso de la fase es cerrar US-07.01**, con sus pruebas manuales, su feature y la TRAZABILIDAD ([abajo](#release-a-producción-2026-10-20)). Se adelantó a la [Fase 4](fase-4-us05-alertas.md), de la que no depende. *Antes (2026-10-30, hasta el bloqueo): "US-07.02 y US-07.03 siguen en la v2"; "el siguiente paso es el plan de US-07.02, que ya no bloquean las preguntas de producto. La revisión legal (sin abogado al 2026-10-30) sigue bloqueando la implementación de US-07.02 y US-07.03, no su plan". Antes (2026-10-20 → 2026-10-27): en producción con el job G1 apagado. Antes (2026-10-19 → 2026-10-20): 🔶 en construcción. Antes (2026-09-30 → 2026-10-19): ⏸ fuera del MVP, pasa a la v2 (decisión del usuario); era la tercera pieza del MVP hasta el 2026-09-30.* |
 | **Fechas** | salida del MVP: 2026-09-30 · diseño ([ADR-14](../Decisions/ADR-14.md)) y arranque de US-07.01: 2026-10-19 · merge a `develop` y **release a producción de US-07.01: 2026-10-20** (04:43 UTC) · **job G1 prendido: 2026-10-27** (18:39 UTC) · **decisiones de producto de US-07.02 y bloqueo de US-07.02 y US-07.03: 2026-10-30**. |
 | **Historia** | US-07, en tres subtareas con la convención de US-02.07 / US-02.08: **US-07.01** · registro de hechos ([plan](../US/07.01-registro-hechos.md)) · **US-07.02** · calificación y riesgo (sin plan; 🚧 bloqueada desde el 2026-10-30, plan incluido · *antes: "es el siguiente paso"*) · **US-07.03** · acciones (sin plan; 🚧 bloqueada desde el 2026-10-30). La calibración es una tarea posterior, sin US propia. No confundir US-07.01 con la subtarea US-02.07. |
-| **Commits** | US-07.01, en la rama `feature/fase5-registro-hechos`: `3e64472` (ADR-14 y plan), `1545ad7` (esquema), `f123617` (dominio, API y job G1), `8a7953b` y `d4aa920` (tests), `bb90815` (DT-47); el merge `715c3f3` (PR #12) a `develop` y el release `313a506` (PR #13) a `main`. En el frontend, `9e3be69` y `af10f5e`, el merge `ef61077` (PR #13) y el release `69668ec` (PR #14). **Sin filas todavía** en la [TRAZABILIDAD](../TRAZABILIDAD.md). |
+| **Commits** | US-07.01, en la rama `feature/fase5-registro-hechos`: `3e64472` (ADR-14 y plan), `1545ad7` (esquema), `f123617` (dominio, API y job G1), `8a7953b` y `d4aa920` (tests), `bb90815` (DT-47); el merge `715c3f3` (PR #12) a `develop` y el release `313a506` (PR #13) a `main`. En el frontend, `9e3be69` y `af10f5e`, el merge `ef61077` (PR #13) y el release `69668ec` (PR #14). Filas 105–112 de la [TRAZABILIDAD](../TRAZABILIDAD.md); las decisiones y el bloqueo del 2026-10-30 (`c3e7b42`, `8c74f70`, `f6d0aa4`), filas 113–115, y su PR de docs directo a `main` (`33fc74c`), fila 117 *(registradas el 2026-11-01; antes: sin filas)*. |
 
 ---
 
@@ -50,8 +50,9 @@ fase**:
    2026-10-28 comprobó lo de arriba; **faltan** *No asistió* marcado por el profesional sobre una `pendiente`
    (`ghosting` con actor `profesional`) y *"¿Quién lo pidió?" = El paciente* elegido desde la app.
 2. ✅ **Prender el job G1** en production (2026-10-27). Con eso se cerró [DT-11](../Deudas/DT-11.md).
-3. ⬜ La feature de US-07.01 y sus filas en la [TRAZABILIDAD](../TRAZABILIDAD.md) (atrasada desde la fila 96; se
-   rellena en el PR de cierre).
+3. ⬜ La feature de US-07.01. *(Sus filas en la [TRAZABILIDAD](../TRAZABILIDAD.md), 105–115, se registraron el
+   2026-11-01, en la pasada de docs de la Fase 7. Antes: "y sus filas en la TRAZABILIDAD (atrasada desde la fila 96; se
+   rellena en el PR de cierre)".)*
 
 **Pendiente menor de código** (no es deuda): la línea `citas.cierre_ghosting` del modo activo no lleva `msg` y en
 Railway se ve sin mensaje (`src/modules/cita/infrastructure/planificacion/planificador-cierre-citas.ts`, el
@@ -186,7 +187,7 @@ El 2026-10-30 el usuario decidió: *"vamos a bloquear esta fase del scoring"*. Q
 | Plan | US-07.02 · calificación y riesgo | sin plan; **🚧 bloqueado, plan incluido (2026-10-30)**, hasta que un abogado revise el contexto legal de ADR-14 o el usuario decida otra cosa ([arriba](#bloqueo-de-us-0702-y-us-0703-2026-10-30)) · *antes (2026-10-30, hasta el bloqueo): "es el siguiente paso: las preguntas de producto ya no lo bloquean. La revisión legal bloquea su implementación, no el plan"; antes: "después de la revisión legal"* |
 | Plan | US-07.03 · acciones | sin plan; 🚧 bloqueado (2026-10-30) |
 | Feature | — | se crea al cerrar US-07.01 |
-| Commits | `3e64472` → `bb90815`, merge `715c3f3`, release `313a506` | detalle en la tabla de arriba; sin filas en la TRAZABILIDAD todavía |
+| Commits | `3e64472` → `bb90815`, merge `715c3f3`, release `313a506` · `c3e7b42` → `f6d0aa4` y su merge `33fc74c` | filas 105–115 y 117 de la [TRAZABILIDAD](../TRAZABILIDAD.md) (registradas el 2026-11-01; antes, sin filas) |
 
 ---
 

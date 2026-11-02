@@ -1,17 +1,26 @@
 # Plan US-10 — Perfil, suscripción y soporte (RF-04)
 
-> **Fase:** [Fase 7 — US-10](../Fases/fase-7-us10-perfil.md) · **Feature:** — (se crea al cerrar) · **Plan:** este documento · **Relacionado:** [ADR-15](../Decisions/ADR-15.md), [ADR-01](../Decisions/ADR-01.md), [ADR-02](../Decisions/ADR-02.md), [ADR-03](../Decisions/ADR-03.md), [ADR-06](../Decisions/ADR-06.md), [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-01](../Deudas/DT-01.md), [DT-02](../Deudas/DT-02.md), [DT-03](../Deudas/DT-03.md), [DT-04](../Deudas/DT-04.md), [DT-26](../Deudas/DT-26.md), [DT-36](../Deudas/DT-36.md), [DT-52](../Deudas/DT-52.md), [DT-57](../Deudas/DT-57.md), [DT-58](../Deudas/DT-58.md), [DT-59](../Deudas/DT-59.md), [DT-46](../Deudas/DT-46.md), [DT-60](../Deudas/DT-60.md), [DT-61](../Deudas/DT-61.md), [Q7](../PREGUNTAS-ABIERTAS.md#q7--renovación-y-revocación-de-sesión-bloqueado-hasta-que-el-arquitecto-defina-el-requisito), [Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free), [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte), [DTF-02](../../../citia-frontend/context/Deudas/DTF-02.md)
+> **Fase:** [Fase 7 — US-10](../Fases/fase-7-us10-perfil.md) · **Feature:** [us10-perfil-cuenta](../Features/us10-perfil-cuenta.md) · **Plan:** este documento · **Relacionado:** [ADR-15](../Decisions/ADR-15.md), [ADR-01](../Decisions/ADR-01.md), [ADR-02](../Decisions/ADR-02.md), [ADR-03](../Decisions/ADR-03.md), [ADR-06](../Decisions/ADR-06.md), [ADR-12](../Decisions/ADR-12.md), [ADR-13](../Decisions/ADR-13.md), [DT-01](../Deudas/DT-01.md), [DT-02](../Deudas/DT-02.md), [DT-03](../Deudas/DT-03.md), [DT-04](../Deudas/DT-04.md), [DT-26](../Deudas/DT-26.md), [DT-36](../Deudas/DT-36.md), [DT-52](../Deudas/DT-52.md), [DT-57](../Deudas/DT-57.md), [DT-58](../Deudas/DT-58.md), [DT-59](../Deudas/DT-59.md), [DT-46](../Deudas/DT-46.md), [DT-60](../Deudas/DT-60.md), [DT-61](../Deudas/DT-61.md), [Q7](../PREGUNTAS-ABIERTAS.md#q7--renovación-y-revocación-de-sesión-bloqueado-hasta-que-el-arquitecto-defina-el-requisito), [Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free), [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte), [DTF-02](../../../citia-frontend/context/Deudas/DTF-02.md)
 
-> **Estado (2026-11-01):** 🔶 **implementada el 2026-11-01, en `develop` (staging) con el release a `main` abierto;
-> cierre pendiente de las pruebas manuales y de [Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free) y
-> [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte).** [ADR-15](../Decisions/ADR-15.md) **aceptado** (2026-10-31).
-> Pasos 1 a 4 hechos; el 5 (integración y e2e) en verde; el 6 (docs) a medias: falta la feature y TRAZABILIDAD, que van
-> con los hashes. Las [preguntas abiertas](#preguntas-abiertas) **siguen sin respuesta**: el código usa los valores
-> provisionales. Lo que el código hizo distinto de este contrato: [Desvíos de la implementación](#desvíos-de-la-implementación-2026-11-01)
-> y [ADR-15 § Notas de implementación](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01).
+> **Estado (2026-11-01, después del release):** ✅ **en producción desde el 2026-11-01** (backend
+> [PR #15](https://github.com/Citia-solutions/citia-backend/pull/15), `cd659c1`) · **cierre pendiente** de las pruebas
+> manuales ([verificación manual mínima](#verificación-manual-mínima)) y de
+> [Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free) y [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte).
+> [ADR-15](../Decisions/ADR-15.md) **aceptado** (2026-10-31). Pasos 1 a 6 hechos: la feature es
+> [us10-perfil-cuenta](../Features/us10-perfil-cuenta.md) y los commits, las filas 118–124 de la
+> [TRAZABILIDAD](../TRAZABILIDAD.md). Las [preguntas abiertas](#preguntas-abiertas) **siguen sin respuesta**: el código
+> usa los valores provisionales y, sin `SOPORTE_CORREO_DESTINO` en production, los mensajes a soporte esperan en
+> `pendiente`. Los Deploy Logs de staging y production, **sin revisar**. Lo que el código hizo distinto de este
+> contrato: [Desvíos de la implementación](#desvíos-de-la-implementación-2026-11-01) y
+> [ADR-15 § Notas de implementación](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01).
 > **Rama:** `feature/fase7-perfil-cuenta`, que sale de `docs/fase5-decisiones-us0702`. Ese PR (#14) se mergeó
-> directo a `main`, no a `develop`; esta rama trae también sus commits y llega a `develop` por **fast-forward**. El
-> frontend usa una rama del mismo nombre en `citia-frontend` (su estado no se registra aquí).
+> directo a `main`, no a `develop`; esta rama trajo también sus commits y llegó a `develop` por **fast-forward**, sin PR
+> ni commit de merge (2026-11-01, 12:36 de Chile). El release a `main` fue el PR #15 (14:09 de Chile), que el usuario
+> creó y mergeó desde GitHub. El frontend usa una rama del mismo nombre en `citia-frontend` (su estado no se registra
+> aquí).
+>
+> *Antes:* **Estado (2026-11-01, antes del release):** 🔶 implementada, en `develop` (staging) con el release a `main`
+> abierto; el paso 6 (docs) a medias: faltaban la feature y TRAZABILIDAD.
 >
 > *Antes:* **Estado (2026-10-31):** 🔶 **en diseño.** Las decisiones de producto P1 a P8 son del usuario (2026-10-31) y
 > no se reabren; el contrato técnico lo fija este plan, con [ADR-15](../Decisions/ADR-15.md) **propuesto**. Rama del
@@ -705,9 +714,9 @@ backend nuevo funciona con el frontend viejo; al revés, las rutas nuevas daría
 
 ## Orden de construcción
 
-Un PR por repo hacia `develop`. Se despliega primero el backend y después el frontend. *(2026-11-01: el backend llega
-a `develop` por fast-forward desde `feature/fase7-perfil-cuenta`, junto con los commits de docs de
-`docs/fase5-decisiones-us0702`, y el release es un PR `develop` → `main`.)*
+Un PR por repo hacia `develop`. Se despliega primero el backend y después el frontend. *(2026-11-01: el backend llegó
+a `develop` por fast-forward desde `feature/fase7-perfil-cuenta`, sin PR, junto con los commits de docs de
+`docs/fase5-decisiones-us0702`, y el release fue el PR #15 `develop` → `main`, `cd659c1`.)*
 
 | # | Agente | Tarea | Depende de | Estado |
 |---|---|---|---|---|
@@ -717,7 +726,7 @@ a `develop` por fast-forward desde `feature/fase7-perfil-cuenta`, junto con los 
 | 3 | `api-agent` | perfil y cambio de contraseña (`usuario`), suscripción (`tenant`) | 1, 2 | ✅ 2026-11-01 |
 | 4 | `api-agent` | módulo `soporte`: registro, envío, plantilla, controller, planificador | 1, 2 | ✅ 2026-11-01 |
 | 5 | `testing-agent` | la [Definición de Terminado](#definición-de-terminado) | 1–4 | ✅ (2026-11-01) unitarios, integración y e2e en verde, con la autorización del usuario |
-| 6 | `architecture-agent` | cierre de docs: feature nueva, notas de implementación de ADR-15 (y aceptado), DT-01 y DT-59 al día, ROADMAP, Fases, Cumplimiento y TRAZABILIDAD con los commits | 5 | 🔶 2026-11-01: notas de ADR-15, deudas (DT-01, DT-02, DT-46, DT-59; nuevas DT-60 y DT-61), ROADMAP, Fases y Cumplimiento hechos · **faltan** la feature y TRAZABILIDAD (con los hashes) |
+| 6 | `architecture-agent` | cierre de docs: feature nueva, notas de implementación de ADR-15 (y aceptado), DT-01 y DT-59 al día, ROADMAP, Fases, Cumplimiento y TRAZABILIDAD con los commits | 5 | ✅ 2026-11-01: notas de ADR-15, deudas (DT-01, DT-02, DT-46, DT-59; nuevas DT-60 y DT-61), ROADMAP, Fases y Cumplimiento; después del release, la feature [us10-perfil-cuenta](../Features/us10-perfil-cuenta.md) y las filas 118–124 de la [TRAZABILIDAD](../TRAZABILIDAD.md) · *antes: 🔶, faltaban la feature y TRAZABILIDAD* |
 | F | frontend | la sección [Frontend](#frontend-citia-frontend-en-vue) | 0 (en paralelo a 2–4) | sin registrar en este repo |
 
 > **E2e solo con autorización del usuario.** Ningún agente corre `npm run test:e2e` sin su OK explícito; lint, unit e
