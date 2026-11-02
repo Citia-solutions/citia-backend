@@ -10,8 +10,9 @@
 > ordenado a un abogado, no para reemplazarlo. **Ninguna fila se da por cierta hasta esa revisión.**
 
 **Creada:** 2026-10-31, cuando el usuario eligió *"documentar cumplimiento"* · **Última revisión:** 2026-11-01 (el
-flujo de soporte de la Fase 7, **implementado** y en `develop`: [abajo](#lo-que-trae-la-fase-7-diseño-2026-10-31-implementación-2026-11-01))
-· *antes:* 2026-10-31 (el mismo flujo, en diseño)
+flujo de soporte de la Fase 7, **en producción** desde ese día, todavía sin casilla de destino:
+[abajo](#lo-que-trae-la-fase-7-diseño-2026-10-31-implementación-2026-11-01)) · *antes:* 2026-11-01 (implementado y en
+`develop`) · 2026-10-31 (el mismo flujo, en diseño)
 
 ---
 
@@ -147,9 +148,12 @@ No hay deuda nueva: es la condición del bloqueo y vive en
 
 ## Lo que trae la Fase 7 (diseño 2026-10-31, implementación 2026-11-01)
 
-*(Implementado el 2026-11-01, en `develop` (staging) con el release a `main` abierto: [ADR-15](../Decisions/ADR-15.md)
-y sus [notas de implementación](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01), plan
-[US-10](../US/10-perfil-cuenta.md). Antes: "en diseño, sin implementar".)* La Fase 7 no toca los datos de los pacientes,
+*(Implementado y **en producción** desde el 2026-11-01: [ADR-15](../Decisions/ADR-15.md) y sus
+[notas de implementación](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01), plan
+[US-10](../US/10-perfil-cuenta.md), feature [us10-perfil-cuenta](../Features/us10-perfil-cuenta.md). Sin
+`SOPORTE_CORREO_DESTINO` en production, el texto de los mensajes a soporte se queda en la base y todavía no llega a
+Resend ni a una casilla. Antes: "implementado, en `develop` (staging) con el release a `main` abierto"; antes: "en
+diseño, sin implementar".)* La Fase 7 no toca los datos de los pacientes,
 pero suma un **flujo de datos nuevo** y dos datos de las cuentas:
 
 | Qué | Qué datos | Adónde van | Deuda |
