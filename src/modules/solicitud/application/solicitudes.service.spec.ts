@@ -35,6 +35,7 @@ describe('SolicitudesService', () => {
     motivo: 'Dolor de muela',
     preferenciaHoraria: 'mañanas',
     consentimiento: true,
+    terminosVersion: '1.0',
   };
 
   beforeEach(() => {
@@ -124,6 +125,7 @@ describe('SolicitudesService', () => {
           motivo: 'Ya pedí hora',
           preferenciaHoraria: 'tardes',
           consentimiento: true,
+          terminosVersion: '1.0',
         }),
       );
 

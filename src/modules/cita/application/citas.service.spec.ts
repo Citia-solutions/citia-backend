@@ -57,6 +57,7 @@ describe('CitasService', () => {
     buscarPorIds: jest.Mock;
     actualizarContacto: jest.Mock;
     completarCorreoSiVacio: jest.Mock;
+    marcarConsentimiento: jest.Mock;
   };
   let mockPacientesService: { resolverOCrear: jest.Mock };
   // TransactionRunner de mentira: ejecuta el trabajo con un contexto ficticio,
@@ -96,6 +97,7 @@ describe('CitasService', () => {
       buscarPorIds: jest.fn().mockResolvedValue([]),
       actualizarContacto: jest.fn(),
       completarCorreoSiVacio: jest.fn(),
+      marcarConsentimiento: jest.fn(),
     };
     mockPacientesService = { resolverOCrear: jest.fn() };
     mockTx = {

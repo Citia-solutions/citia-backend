@@ -37,6 +37,7 @@ import { CambioCitaOrmEntity } from '../modules/cita/infrastructure/persistence/
 import { CitaOrmEntity } from '../modules/cita/infrastructure/persistence/cita.orm-entity';
 import { EnlaceCitaOrmEntity } from '../modules/cita/infrastructure/persistence/enlace-cita.orm-entity';
 import { PacientesService } from '../modules/paciente/application/pacientes.service';
+import { AceptacionTerminosOrmEntity } from '../modules/paciente/infrastructure/persistence/aceptacion-terminos.orm-entity';
 import { PacienteOrmEntity } from '../modules/paciente/infrastructure/persistence/paciente.orm-entity';
 import { PacienteResponseDto } from '../modules/paciente/presentation/dto/paciente-response.dto';
 import { ConfiguracionRecordatorioOrmEntity } from '../modules/recordatorio/infrastructure/persistence/configuracion-recordatorio.orm-entity';
@@ -194,6 +195,9 @@ async function limpiarDatosDemo(
     await m.delete(EnlaceCitaOrmEntity, { tenantId });
     await m.delete(SolicitudCitaOrmEntity, { tenantId });
     await m.delete(CitaOrmEntity, { tenantId });
+    // aceptaciones_terminos → pacientes/usuarios/tenants (US-11, FK RESTRICT):
+    // antes que los pacientes y los usuarios.
+    await m.delete(AceptacionTerminosOrmEntity, { tenantId });
     await m.delete(PacienteOrmEntity, { tenantId });
     // mensajes_soporte → usuarios/tenants (US-10, migración 1750000020000).
     // SQL directo: no depende de que la entidad esté registrada en AppModule.

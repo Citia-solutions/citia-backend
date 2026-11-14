@@ -135,6 +135,7 @@ describe('TypeOrmSolicitudCitaRepository', () => {
         motivo: 'Dolor de muela',
         preferenciaHoraria: 'mañanas',
         consentimiento: true,
+        terminosVersion: '1.0',
       });
 
       // Act

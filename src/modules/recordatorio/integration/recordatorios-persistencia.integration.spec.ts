@@ -17,6 +17,7 @@ import { TypeOrmCitaRepository } from '../../cita/infrastructure/persistence/typ
 import { TypeOrmEnlaceCitaRepository } from '../../cita/infrastructure/persistence/typeorm-enlace-cita.repository';
 import { HmacDerivadorTokenEnlace } from '../../cita/infrastructure/seguridad/hmac-derivador-token-enlace';
 import { EstadoCita } from '../../cita/domain/cita.entity';
+import { AceptacionTerminosOrmEntity } from '../../paciente/infrastructure/persistence/aceptacion-terminos.orm-entity';
 import { PacienteOrmEntity } from '../../paciente/infrastructure/persistence/paciente.orm-entity';
 import { TenantOrmEntity } from '../../tenant/infrastructure/persistence/tenant.orm-entity';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
@@ -81,6 +82,7 @@ const ENTIDADES = [
   TenantOrmEntity,
   UsuarioOrmEntity,
   PacienteOrmEntity,
+  AceptacionTerminosOrmEntity,
   CitaOrmEntity,
   // Fase 3: el envío emite el enlace del paciente (FK a `citas`).
   EnlaceCitaOrmEntity,
@@ -341,7 +343,7 @@ describe('Recordatorios contra PostgreSQL (integration)', () => {
 
   beforeEach(async () => {
     await baseA.query(
-      'TRUNCATE recordatorios, supresiones_correo, configuraciones_recordatorio, enlaces_cita, citas, pacientes',
+      'TRUNCATE recordatorios, supresiones_correo, configuraciones_recordatorio, enlaces_cita, citas, aceptaciones_terminos, pacientes',
     );
   });
 

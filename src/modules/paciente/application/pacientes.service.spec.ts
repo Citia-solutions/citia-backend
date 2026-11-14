@@ -16,6 +16,7 @@ describe('PacientesService', () => {
     buscarPorIds: jest.Mock;
     actualizarContacto: jest.Mock;
     completarCorreoSiVacio: jest.Mock;
+    marcarConsentimiento: jest.Mock;
   };
 
   const TENANT = 'tenant-1';
@@ -54,6 +55,7 @@ describe('PacientesService', () => {
       buscarPorIds: jest.fn().mockResolvedValue([]),
       actualizarContacto: jest.fn().mockResolvedValue(true),
       completarCorreoSiVacio: jest.fn().mockResolvedValue(true),
+      marcarConsentimiento: jest.fn().mockResolvedValue(true),
     };
     service = new PacientesService(mockPacienteRepository);
   });

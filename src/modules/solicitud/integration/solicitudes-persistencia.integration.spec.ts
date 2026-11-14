@@ -107,6 +107,7 @@ describe('Solicitudes de reagendamiento contra PostgreSQL (integration)', () => 
       motivo: 'Control',
       preferenciaHoraria: 'mañanas',
       consentimiento: true,
+      terminosVersion: '1.0',
     });
 
   /** INSERT directo, para probar las restricciones sin pasar por el dominio. */

@@ -51,4 +51,16 @@ export abstract class PacienteRepository {
     correo: string,
     tx?: TransactionContext,
   ): Promise<boolean>;
+
+  // Pone `consentimiento = true` SOLO si estaba en `false`, con la condicion
+  // y el tenant en la misma escritura (US-11, ADR-16 §4): toda aceptacion de
+  // los terminos, de cualquier canal, la enciende; nada la apaga. `true` si
+  // escribio; `false` si ya estaba en `true`, si el paciente no existe o es
+  // de otro tenant (no se distinguen) o si un id no es UUID. `tx`
+  // obligatorio: corre en la transaccion que registra la aceptacion.
+  abstract marcarConsentimiento(
+    id: string,
+    tenantId: string,
+    tx: TransactionContext,
+  ): Promise<boolean>;
 }

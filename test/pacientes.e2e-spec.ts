@@ -12,6 +12,7 @@ import { CambioCitaOrmEntity } from '../src/modules/cita/infrastructure/persiste
 import { CitaOrmEntity } from '../src/modules/cita/infrastructure/persistence/cita.orm-entity';
 import { EnlaceCitaOrmEntity } from '../src/modules/cita/infrastructure/persistence/enlace-cita.orm-entity';
 import { PacienteModule } from '../src/modules/paciente/paciente.module';
+import { AceptacionTerminosOrmEntity } from '../src/modules/paciente/infrastructure/persistence/aceptacion-terminos.orm-entity';
 import { PacienteOrmEntity } from '../src/modules/paciente/infrastructure/persistence/paciente.orm-entity';
 import { TenantOrmEntity } from '../src/modules/tenant/infrastructure/persistence/tenant.orm-entity';
 import { UsuariosModule } from '../src/modules/usuario/usuarios.module';
@@ -32,6 +33,9 @@ const typeOrmPacientesTestConfig: TypeOrmModuleOptions = {
     TenantOrmEntity,
     UsuarioOrmEntity,
     PacienteOrmEntity,
+    // PacienteModule registra `aceptaciones_terminos` (US-11): sin esta
+    // entidad el módulo no arranca.
+    AceptacionTerminosOrmEntity,
     CitaOrmEntity,
     CambioCitaOrmEntity,
     // CitaModule registra `enlaces_cita` (Fase 3): sin esta entidad su

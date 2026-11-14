@@ -244,6 +244,7 @@ export class TypeOrmSolicitudCitaRepository extends SolicitudCitaRepository {
       tipo: orm.tipo,
       citaOrigenId: orm.citaOrigenId,
       enlaceId: orm.enlaceId,
+      terminosVersion: orm.terminosVersion,
     });
   }
 
@@ -266,6 +267,7 @@ export class TypeOrmSolicitudCitaRepository extends SolicitudCitaRepository {
       tipo: domain.tipo,
       citaOrigenId: domain.citaOrigenId,
       enlaceId: domain.enlaceId,
+      terminosVersion: domain.terminosVersion,
     };
     if (domain.id !== undefined) orm.id = domain.id;
     return orm;

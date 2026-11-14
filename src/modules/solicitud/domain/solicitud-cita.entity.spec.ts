@@ -17,6 +17,7 @@ describe('SolicitudCita (dominio)', () => {
     motivo: 'Dolor de muela',
     preferenciaHoraria: 'mañanas',
     consentimiento: true,
+    terminosVersion: '1.0',
   };
 
   describe('recibir', () => {

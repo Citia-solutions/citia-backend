@@ -22,6 +22,12 @@ import { CitaRepository } from '../../src/modules/cita/domain/cita.repository';
 import { EnlaceCita } from '../../src/modules/cita/domain/enlace-cita.entity';
 import { EnlaceCitaRepository } from '../../src/modules/cita/domain/enlace-cita.repository';
 import {
+  AceptacionTerminos,
+  CANALES_DEL_TITULAR,
+  CanalAceptacion,
+} from '../../src/modules/paciente/domain/aceptacion-terminos.entity';
+import { AceptacionTerminosRepository } from '../../src/modules/paciente/domain/aceptacion-terminos.repository';
+import {
   CambioContactoPaciente,
   Paciente,
 } from '../../src/modules/paciente/domain/paciente.entity';
@@ -80,6 +86,7 @@ const clonarSolicitud = (s: SolicitudCita): SolicitudCita =>
     tipo: s.tipo,
     citaOrigenId: s.citaOrigenId,
     enlaceId: s.enlaceId,
+    terminosVersion: s.terminosVersion,
   });
 
 export class InMemoryCitaRepository extends CitaRepository {
@@ -404,6 +411,145 @@ export class InMemoryPacienteRepository extends PacienteRepository {
     }
     this.pacientes.set(id, { ...p, correo });
     return Promise.resolve(true);
+  }
+
+  // Misma condición que el UPDATE real: solo si estaba en `false`, por
+  // tenant. Exige `tx` como el adaptador.
+  marcarConsentimiento(
+    id: string,
+    tenantId: string,
+    tx: TransactionContext,
+  ): Promise<boolean> {
+    if (!tx) {
+      return Promise.reject(
+        new Error(
+          'PacienteRepository.marcarConsentimiento requiere una transacción',
+        ),
+      );
+    }
+    const p = this.pacientes.get(id);
+    if (!p || p.tenantId !== tenantId || p.consentimiento) {
+      return Promise.resolve(false);
+    }
+    this.pacientes.set(id, { ...p, consentimiento: true });
+    return Promise.resolve(true);
+  }
+}
+
+/** La referencia que exige cada canal (`CHK_aceptaciones_terminos_referencia`). */
+const REFERENCIA_DEL_CANAL: Record<
+  CanalAceptacion,
+  'solicitudId' | 'enlaceId' | 'usuarioId'
+> = {
+  [CanalAceptacion.FORMULARIO_PUBLICO]: 'solicitudId',
+  [CanalAceptacion.ENLACE_CITA]: 'enlaceId',
+  [CanalAceptacion.PROFESIONAL]: 'usuarioId',
+};
+
+const clonarAceptacion = (a: AceptacionTerminos): AceptacionTerminos =>
+  AceptacionTerminos.reconstituir({
+    id: a.id,
+    tenantId: a.tenantId,
+    pacienteId: a.pacienteId,
+    version: a.version,
+    canal: a.canal,
+    aceptadaEn: new Date(a.aceptadaEn.getTime()),
+    usuarioId: a.usuarioId,
+    solicitudId: a.solicitudId,
+    enlaceId: a.enlaceId,
+    registradaEn: a.registradaEn,
+  });
+
+/**
+ * Doble de `aceptaciones_terminos` (US-11). Reproduce lo que hace el SQL:
+ *  - el `INSERT … SELECT FROM pacientes WHERE id AND tenant_id`: solo escribe
+ *    si el paciente existe en `pacientes` (el doble de pacientes que recibe)
+ *    y es de ese tenant;
+ *  - el índice único (paciente, versión, canal) con `ON CONFLICT DO NOTHING`;
+ *  - los CHECK de versión, canal y referencia (lanza, como la base).
+ * Exige `tx` al insertar. No reproduce la FK a `usuarios` ni bloqueos.
+ */
+export class InMemoryAceptacionTerminosRepository extends AceptacionTerminosRepository {
+  readonly aceptaciones: AceptacionTerminos[] = [];
+
+  constructor(private readonly pacientes: InMemoryPacienteRepository) {
+    super();
+  }
+
+  insertarSiNoExiste(
+    aceptacion: AceptacionTerminos,
+    tx: TransactionContext,
+  ): Promise<boolean> {
+    if (!tx) {
+      return Promise.reject(
+        new Error(
+          'AceptacionTerminosRepository.insertarSiNoExiste requiere una transacción',
+        ),
+      );
+    }
+    if (aceptacion.id !== undefined) {
+      return Promise.reject(
+        new Error(
+          'AceptacionTerminosRepository.insertarSiNoExiste: solo se insertan aceptaciones recién registradas (sin id)',
+        ),
+      );
+    }
+    const violacion =
+      InMemoryAceptacionTerminosRepository.violacion(aceptacion);
+    if (violacion) return Promise.reject(new Error(violacion));
+
+    const paciente = this.pacientes.pacientes.get(aceptacion.pacienteId);
+    if (!paciente || paciente.tenantId !== aceptacion.tenantId) {
+      return Promise.resolve(false);
+    }
+    const choca = this.aceptaciones.some(
+      (x) =>
+        x.pacienteId === aceptacion.pacienteId &&
+        x.version === aceptacion.version &&
+        x.canal === aceptacion.canal,
+    );
+    if (choca) return Promise.resolve(false);
+
+    const copia = clonarAceptacion(aceptacion);
+    copia.id = randomUUID();
+    copia.registradaEn = new Date();
+    this.aceptaciones.push(copia);
+    return Promise.resolve(true);
+  }
+
+  existeDelTitular(
+    pacienteId: string,
+    tenantId: string,
+    versiones: readonly string[],
+  ): Promise<boolean> {
+    return Promise.resolve(
+      this.aceptaciones.some(
+        (x) =>
+          x.pacienteId === pacienteId &&
+          x.tenantId === tenantId &&
+          CANALES_DEL_TITULAR.includes(x.canal) &&
+          versiones.includes(x.version),
+      ),
+    );
+  }
+
+  /** Copias de las filas, en orden de inserción. */
+  filas(): AceptacionTerminos[] {
+    return this.aceptaciones.map(clonarAceptacion);
+  }
+
+  /** El CHECK que rompería en la base, o `null`. */
+  private static violacion(a: AceptacionTerminos): string | null {
+    if (!/^[0-9]+\.[0-9]+$/.test(a.version)) {
+      return 'CHK_aceptaciones_terminos_version';
+    }
+    const propia = REFERENCIA_DEL_CANAL[a.canal];
+    if (propia === undefined) return 'CHK_aceptaciones_terminos_canal';
+    const referencias = ['solicitudId', 'enlaceId', 'usuarioId'] as const;
+    const bien = referencias.every((r) =>
+      r === propia ? a[r] !== null : a[r] === null,
+    );
+    return bien ? null : 'CHK_aceptaciones_terminos_referencia';
   }
 }
 

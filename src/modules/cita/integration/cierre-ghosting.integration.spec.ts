@@ -11,6 +11,7 @@ import { TypeOrmEventosSalidaRepository } from '../../../shared/infrastructure/s
 import { TypeOrmTransactionRunner } from '../../../shared/infrastructure/typeorm-transaction-runner';
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { PacientesService } from '../../paciente/application/pacientes.service';
+import { AceptacionTerminosOrmEntity } from '../../paciente/infrastructure/persistence/aceptacion-terminos.orm-entity';
 import { PacienteOrmEntity } from '../../paciente/infrastructure/persistence/paciente.orm-entity';
 import { TypeOrmPacienteRepository } from '../../paciente/infrastructure/persistence/typeorm-paciente.repository';
 import { RecordatorioOrmEntity } from '../../recordatorio/infrastructure/persistence/recordatorio.orm-entity';
@@ -100,6 +101,8 @@ const configuracionTypeOrm: TypeOrmModuleOptions = {
     TenantOrmEntity,
     UsuarioOrmEntity,
     PacienteOrmEntity,
+    // PacienteModule (vía CitaModule) registra `aceptaciones_terminos` (US-11).
+    AceptacionTerminosOrmEntity,
     CitaOrmEntity,
     CambioCitaOrmEntity,
     EnlaceCitaOrmEntity,

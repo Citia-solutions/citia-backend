@@ -57,4 +57,12 @@ export class CrearSolicitudDto {
   /** Requisito legal, y aquí lo marca el titular del dato. */
   @IsBoolean()
   consentimiento: boolean;
+
+  /**
+   * Versión de los términos que mostró el formulario (US-11, ADR-16 §5).
+   * TODO(US-11, api-agent): validación (`@VersionTerminosVigente()`). Sin un
+   * decorador, el `ValidationPipe` (`whitelist`) la descarta y llega
+   * `undefined`.
+   */
+  terminosVersion: string;
 }

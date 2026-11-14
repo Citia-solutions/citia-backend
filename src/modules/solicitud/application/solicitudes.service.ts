@@ -56,6 +56,7 @@ export class SolicitudesService {
         motivo: dto.motivo.trim(),
         preferenciaHoraria: dto.preferenciaHoraria.trim(),
         consentimiento: dto.consentimiento,
+        terminosVersion: dto.terminosVersion,
       }),
     );
   }

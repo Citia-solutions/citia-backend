@@ -248,7 +248,7 @@ describe('Portal del paciente: concurrencia contra PostgreSQL (integration)', ()
 
   beforeEach(async () => {
     await datos.query(
-      'TRUNCATE eventos_salida, cambios_cita, enlaces_cita, solicitudes_cita, citas, pacientes',
+      'TRUNCATE eventos_salida, cambios_cita, enlaces_cita, solicitudes_cita, citas, aceptaciones_terminos, pacientes',
     );
   });
 
