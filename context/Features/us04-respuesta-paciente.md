@@ -532,6 +532,11 @@ el paso por los **escáneres de enlaces de Gmail y Outlook** (la cita debe segui
 Staging corre con `MENSAJERIA_ADAPTADOR=registro` y no envía correos: hace falta Resend en staging o hacerlo
 en production con una cita de prueba ([checklist](../Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción)).
 
+> *(2026-11-14)* Hecho en parte, en production: la página abre y el paciente cancela desde el enlace (2026-10-28,
+> cita `2dce1c9c`); el correo llega con el botón y el escáner de **Gmail** no confirma ni registra aperturas (tres
+> recordatorios entregados, la cita siguió `pendiente`; 2026-11-01). Faltan **confirmar desde el enlace** y el
+> escáner de **Outlook**.
+
 ### Probar a mano
 
 ```bash
