@@ -9,7 +9,9 @@
 > [contexto legal de ADR-14](../Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado). Sirve para llegar
 > ordenado a un abogado, no para reemplazarlo. **Ninguna fila se da por cierta hasta esa revisión.**
 
-**Creada:** 2026-10-31, cuando el usuario eligió *"documentar cumplimiento"* · **Última revisión:** 2026-11-01 (el
+**Creada:** 2026-10-31, cuando el usuario eligió *"documentar cumplimiento"* · **Última revisión:** 2026-11-14 (la
+**primera clínica con pacientes reales** está en production desde el 2026-11-11:
+[abajo](#el-límite-real-la-primera-clínica-con-pacientes-reales)) · *antes:* 2026-11-01 (el
 flujo de soporte de la Fase 7, **en producción** desde ese día, todavía sin casilla de destino:
 [abajo](#lo-que-trae-la-fase-7-diseño-2026-10-31-implementación-2026-11-01)) · *antes:* 2026-11-01 (implementado y en
 `develop`) · 2026-10-31 (el mismo flujo, en diseño)
@@ -38,8 +40,27 @@ desde el release del 2026-10-06) y, al 2026-10-31, **sin clínicas reales**: lo 
 del usuario. El límite que importa es **la primera clínica con pacientes reales**. Desde ese día Citia trata datos
 de pacientes por cuenta de alguien, y lo que hoy es preparación pasa a ser obligación.
 
-**Si P1 es condición para recibir a esa primera clínica, el usuario no lo ha decidido**
-([abajo](#lo-que-el-usuario-no-ha-decidido)).
+> **2026-11-14 — el límite ya se cruzó.** El **2026-11-11** se creó en production la **primera cuenta de una persona
+> real**. Ese día se crearon tres cuentas con un comando de PowerShell; las otras dos son pruebas del usuario. El
+> 2026-11-14 el usuario confirmó que esa cuenta **ya agenda pacientes reales**. Desde el 2026-11-11, entonces:
+>
+> - **Citia trata datos de pacientes reales por cuenta de una clínica**, sin el P1 hecho: no hay contrato de encargo
+>   ([DT-51](../Deudas/DT-51.md)), inventario de proveedores con garantías ([DT-52](../Deudas/DT-52.md)), política de
+>   privacidad ni procedimiento de derechos ([DT-53](../Deudas/DT-53.md)). Tampoco se sabe el alcance del art. 10 bis
+>   ([DT-55](../Deudas/DT-55.md)), y el consentimiento de los recordatorios sigue siendo una casilla que no sirve de base
+>   ([DT-16](../Deudas/DT-16.md)).
+> - **DT-51, DT-52 y DT-53 suben a 🔴 alta y DT-56 a 🟠 media**, como ellas mismas lo tenían previsto para este día.
+>   DT-54 sube solo si esa clínica atiende a menores (sin confirmar).
+> - **Sus pacientes pasan por todo el sistema.** Los recordatorios salen por Resend, G1 cierra sus citas sin respuesta
+>   y US-07.01 guarda hechos de asistencia (la bitácora y la primera apertura del enlace). Según el pre-análisis, la
+>   asistencia puede ser un dato sensible de salud (A1). La calificación (US-07.02) sigue 🚧 bloqueada: esos hechos se
+>   guardan, pero no se usan para perfilar.
+> - **La Ley 21.719 rige el 2026-12-01** mientras no se publique la postergación ([abajo](#vigencia-verificada-el-2026-10-30)).
+> - Que **P1 fuera condición para recibir la primera clínica** ya no se puede decidir. Ahora hay que decidir **qué hacer
+>   con el P1 mientras esa clínica opera** ([abajo](#lo-que-el-usuario-no-ha-decidido)).
+>
+> *Antes (2026-10-31 → 2026-11-14): "**Si P1 es condición para recibir a esa primera clínica, el usuario no lo ha
+> decidido**".*
 
 ---
 
@@ -238,9 +259,12 @@ su A6, la base de licitud, que en ADR-14 son filas de la tabla y no preguntas). 
 
 ## Lo que el usuario no ha decidido
 
-*(Al 2026-10-31.)*
+*(Al 2026-10-31; el punto 1 cambió el 2026-11-14.)*
 
-1. **Si P1 es condición para recibir la primera clínica con pacientes reales.** No está decidido en ningún sentido.
+1. **Qué hacer con el P1 ahora que la primera clínica con pacientes reales opera** (desde el 2026-11-11). Por ejemplo,
+   redactar ya los borradores del contrato y de la política para que los revise un abogado, o pausar algo hasta
+   tenerlos. Sin decidir. *Antes (2026-10-31 → 2026-11-14): "Si P1 es condición para recibir la primera clínica con
+   pacientes reales. No está decidido en ningún sentido." Esa decisión ya no se puede tomar: la clínica entró antes.*
 2. **Quién es el responsable de cumplimiento**, la primera pieza del programa interno ([DT-56](../Deudas/DT-56.md)).
 3. **Cuándo redactar la política de privacidad y el contrato de encargo** ([DT-53](../Deudas/DT-53.md),
    [DT-51](../Deudas/DT-51.md)). El 2026-10-31 el usuario eligió documentar, no redactar.
