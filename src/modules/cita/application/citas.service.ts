@@ -1,6 +1,7 @@
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { PacienteNoEncontradoError } from '../../paciente/application/paciente-no-encontrado.error';
 import { PacientesService } from '../../paciente/application/pacientes.service';
+import { CanalAceptacion } from '../../paciente/domain/aceptacion-terminos.entity';
 import { Paciente } from '../../paciente/domain/paciente.entity';
 import { PacienteRepository } from '../../paciente/domain/paciente.repository';
 import { PublicadorEventos } from '../../../shared/application/publicador-eventos';
@@ -170,14 +171,45 @@ export class CitasService {
    * Abre la transaccion y delega en `agendar`. Quien ya tiene una transaccion
    * abierta (aceptar una solicitud) llama a `agendar` directamente: llamar
    * aqui abriria una segunda.
+   *
+   * US-11 (ADR-16 §7): SOLO con `dto.paciente` (los datos del modal, con la
+   * casilla y la version de los terminos), despues de `agendar` y en la MISMA
+   * transaccion, registra la aceptacion de canal `profesional` a nombre del
+   * usuario del token, con `aceptadaEn` = el reloj del servicio. La respuesta
+   * sale con `paciente.consentimiento = true`. Con `pacienteId` no registra
+   * nada (no trae casilla). `agendar` no registra nada por si mismo: la
+   * bandeja registra su propio canal.
+   *
+   * Orden de bloqueo: paciente (correo vacio; la bandera al registrar) →
+   * cita nueva. No toca ninguna cita existente.
+   *
+   * @throws VersionTerminosNoVigenteError si la version no recibe
+   *   aceptaciones (el DTO ya lo impide; defensa): se revierte todo.
    */
   async crearCita(
     dto: CrearCitaDto,
     usuario: AuthenticatedUser,
   ): Promise<CitaResponseDto> {
-    return this.tx.run((tx) =>
-      this.agendar(dto, usuario, tx, OrigenCita.MANUAL),
-    );
+    return this.tx.run(async (tx) => {
+      const creada = await this.agendar(dto, usuario, tx, OrigenCita.MANUAL);
+      if (dto.paciente) {
+        await this.pacientesService.registrarAceptacion(
+          {
+            canal: CanalAceptacion.PROFESIONAL,
+            usuarioId: usuario.userId,
+            tenantId: usuario.tenantId,
+            pacienteId: creada.pacienteId,
+            // Obligatoria en HTTP (DTO). Ausente, `registrar` lanza
+            // VersionTerminosNoVigenteError (→ 400) y se revierte la cita.
+            version: dto.paciente.terminosVersion ?? '',
+            aceptadaEn: this.reloj(),
+          },
+          tx,
+        );
+        if (creada.paciente) creada.paciente.consentimiento = true;
+      }
+      return creada;
+    });
   }
 
   /**

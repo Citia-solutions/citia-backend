@@ -5,6 +5,7 @@ import { validate } from 'class-validator';
 
 import { CrearCitaDto } from '../../../cita/presentation/dto/crear-cita.dto';
 import { CrearPacienteDto } from './crear-paciente.dto';
+import { MENSAJE_VERSION_TERMINOS_NO_VIGENTE } from './version-terminos.decorator';
 
 const valido = {
   rut: '12.345.678-5',
@@ -12,6 +13,7 @@ const valido = {
   telefono: '+56 9 1111 1111',
   correo: 'ana@mail.com',
   consentimiento: true,
+  terminosVersion: '1.0',
 };
 
 // Transforma y valida como el ValidationPipe global (whitelist + transform).
@@ -90,6 +92,71 @@ describe('CrearPacienteDto', () => {
 
     it('debería dejar pasar sin tocar lo que no es texto (lo rechaza @IsEmail)', () => {
       expect(transformar({ ...valido, correo: 42 }).correo).toBe(42);
+    });
+  });
+
+  describe('autorización y versión de los términos (US-11, D6)', () => {
+    // Mensajes de `campo`, como los arma el ValidationPipe.
+    const mensajes = async (
+      body: Record<string, unknown>,
+      campo: string,
+    ): Promise<string[]> => {
+      const resultado = await validate(transformar(body), { whitelist: true });
+      return resultado
+        .filter((e) => e.property === campo)
+        .flatMap((e) => Object.values(e.constraints ?? {}));
+    };
+
+    it.each([false, 'true', 1, null])(
+      'debería rechazar consentimiento %p',
+      async (consentimiento) => {
+        expect(
+          await mensajes({ ...valido, consentimiento }, 'consentimiento'),
+        ).toEqual(['Se necesita la autorización del paciente']);
+      },
+    );
+
+    it('debería rechazar el cuerpo sin consentimiento', async () => {
+      const sinConsentimiento: Record<string, unknown> = { ...valido };
+      delete sinConsentimiento.consentimiento;
+      expect(await mensajes(sinConsentimiento, 'consentimiento')).toHaveLength(
+        1,
+      );
+    });
+
+    it.each([undefined, null, '', '0.2', '9.9', 1, ' 1.0'])(
+      'debería rechazar terminosVersion %p con el mensaje fijo',
+      async (terminosVersion) => {
+        const lista = await mensajes(
+          { ...valido, terminosVersion },
+          'terminosVersion',
+        );
+        expect(lista.length).toBeGreaterThan(0);
+        expect(new Set(lista)).toEqual(
+          new Set([MENSAJE_VERSION_TERMINOS_NO_VIGENTE]),
+        );
+      },
+    );
+
+    it('debería exigir la versión también en el paciente en línea de POST /citas', async () => {
+      // Arrange
+      const sinVersion: Record<string, unknown> = { ...valido };
+      delete sinVersion.terminosVersion;
+      const dto = plainToInstance(CrearCitaDto, {
+        inicio: '2026-10-05T13:00:00Z',
+        duracionMin: 30,
+        tipoConsulta: 'Control',
+        paciente: sinVersion,
+      });
+
+      // Act
+      const [error] = await validate(dto, { whitelist: true });
+
+      // Assert
+      expect(error.property).toBe('paciente');
+      expect(error.children?.map((c) => c.property)).toEqual([
+        'terminosVersion',
+      ]);
     });
   });
 

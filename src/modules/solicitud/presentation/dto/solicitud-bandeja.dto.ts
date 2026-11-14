@@ -53,6 +53,12 @@ export class SolicitudBandejaDto {
    * aceptar, ya movida). `null` en una `nueva`.
    */
   citaOrigen: CitaOrigenDto | null;
+  /**
+   * US-11 (D13, aditivo): versión de los términos que el paciente aceptó en
+   * el formulario público (la bandeja muestra «· aceptó los términos v1.0»).
+   * `null` en las de reagendamiento y en las anteriores al despliegue.
+   */
+  terminosVersion: string | null;
 
   constructor(partial: SolicitudBandejaDto) {
     Object.assign(this, partial);

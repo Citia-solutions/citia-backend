@@ -4,7 +4,8 @@
  * Puebla la BD con lo mínimo para probar US-06 (dashboard de citas del día,
  * GET /api/citas/hoy):
  *   - 1 Tenant CLINICA + 1 Usuario ADMIN con credenciales FIJAS.
- *   - 3 Pacientes del tenant.
+ *   - 3 Pacientes del tenant: dos con su aceptación de los términos (canal
+ *     `profesional`, US-11) y una ficha vieja sin aceptación (Camila).
  *   - 6 Citas para HOY con estados variados y horas repartidas.
  *
  * Diseño:
@@ -37,6 +38,7 @@ import { CambioCitaOrmEntity } from '../modules/cita/infrastructure/persistence/
 import { CitaOrmEntity } from '../modules/cita/infrastructure/persistence/cita.orm-entity';
 import { EnlaceCitaOrmEntity } from '../modules/cita/infrastructure/persistence/enlace-cita.orm-entity';
 import { PacientesService } from '../modules/paciente/application/pacientes.service';
+import { CATALOGO_TERMINOS_PACIENTE } from '../modules/paciente/domain/terminos-paciente';
 import { AceptacionTerminosOrmEntity } from '../modules/paciente/infrastructure/persistence/aceptacion-terminos.orm-entity';
 import { PacienteOrmEntity } from '../modules/paciente/infrastructure/persistence/paciente.orm-entity';
 import { PacienteResponseDto } from '../modules/paciente/presentation/dto/paciente-response.dto';
@@ -124,9 +126,17 @@ const PLAN_CITAS: PlanCita[] = [
   },
 ];
 
+// Versión de los términos con la que el admin demo "registra" a los pacientes
+// que autorizaron (US-11): la del catálogo.
+const TERMINOS_VERSION_DEMO = CATALOGO_TERMINOS_PACIENTE[0].version;
+
 // El correo es obligatorio al crear (ADR-13 §14). Siempre en `example.com`
 // (reservado, RFC 2606): con los recordatorios activos, un seed corrido con el
 // adaptador de Resend no debe escribirle a un buzón real.
+//
+// US-11: los de `consentimiento: true` se crean por el alta manual
+// (`crearPaciente`), que deja su aceptación de canal `profesional` a nombre
+// del admin demo. Camila (`false`) NO: ver el paso 3 del seed.
 const PACIENTES = [
   {
     rut: '11.111.111-1',
@@ -244,12 +254,31 @@ async function seed(): Promise<void> {
     );
 
     // 3) Pacientes del tenant.
+    //    - Con `consentimiento: true`: por el alta manual (`POST /pacientes`),
+    //      que en una transacción crea el paciente y su aceptación de los
+    //      términos de canal `profesional` a nombre del admin demo.
+    //    - Camila (`consentimiento: false`) representa una ficha VIEJA, de
+    //      antes de US-11: sin aceptación y con la bandera en `false`, para
+    //      probar `PoliticaConsentimiento` (DT-16) y la tarjeta de `/cita`.
+    //      El alta manual ya no admite `false` (D6), así que se crea con
+    //      `resolverOCrear`, que no registra ninguna aceptación (ADR-16 T3).
     const pacientes: PacienteResponseDto[] = [];
     for (const p of PACIENTES) {
-      const creado = await pacientesService.crearPaciente(p, registro.tenantId);
+      const creado = p.consentimiento
+        ? await pacientesService.crearPaciente(
+            { ...p, terminosVersion: TERMINOS_VERSION_DEMO },
+            { userId: registro.id, tenantId: registro.tenantId },
+          )
+        : PacientesService.aResponse(
+            await pacientesService.resolverOCrear(p, registro.tenantId),
+          );
       pacientes.push(creado);
     }
-    console.log(`[seed] ${pacientes.length} pacientes creados.`);
+    console.log(
+      `[seed] ${pacientes.length} pacientes creados (${
+        PACIENTES.filter((p) => p.consentimiento).length
+      } con su aceptación de los términos v${TERMINOS_VERSION_DEMO}).`,
+    );
 
     // 4) Citas de HOY, con horas relativas a "ahora" y estados variados.
     const ahora = Date.now();

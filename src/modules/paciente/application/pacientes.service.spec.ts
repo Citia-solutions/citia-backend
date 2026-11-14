@@ -1,6 +1,11 @@
 import { RutInvalidoError } from '../../../shared/domain/rut-invalido.error';
+import {
+  AceptacionTerminos,
+  CanalAceptacion,
+} from '../domain/aceptacion-terminos.entity';
 import { CambioContactoVacioError } from '../domain/exceptions/cambio-contacto-vacio.error';
 import { CorreoPacienteRequeridoError } from '../domain/exceptions/correo-paciente-requerido.error';
+import { VersionTerminosNoVigenteError } from '../domain/exceptions/version-terminos-no-vigente.error';
 import { Paciente } from '../domain/paciente.entity';
 import { CrearPacienteDto } from '../presentation/dto/crear-paciente.dto';
 import { PacienteResponseDto } from '../presentation/dto/paciente-response.dto';
@@ -18,9 +23,17 @@ describe('PacientesService', () => {
     completarCorreoSiVacio: jest.Mock;
     marcarConsentimiento: jest.Mock;
   };
+  // US-11: el puerto de `aceptaciones_terminos` y el TransactionRunner.
+  let mockAceptaciones: {
+    insertarSiNoExiste: jest.Mock;
+    existeDelTitular: jest.Mock;
+  };
+  let mockTx: { run: jest.Mock };
 
   const TENANT = 'tenant-1';
   const PACIENTE_ID = '3f1c2b9e-8a4d-4c7e-9b21-5d6f7a8b9c0d';
+  const USUARIO = { userId: 'usuario-1', tenantId: TENANT };
+  const AHORA = new Date('2026-11-14T15:00:00.000Z');
 
   const dto: CrearPacienteDto = {
     rut: '12.345.678-5',
@@ -28,6 +41,7 @@ describe('PacientesService', () => {
     telefono: '+56 9 1111 1111',
     correo: 'ana@mail.com',
     consentimiento: true,
+    terminosVersion: '1.0',
   };
 
   // Fila ya persistida (ficha existente). `correo` por defecto en NULL: la
@@ -57,8 +71,27 @@ describe('PacientesService', () => {
       completarCorreoSiVacio: jest.fn().mockResolvedValue(true),
       marcarConsentimiento: jest.fn().mockResolvedValue(true),
     };
-    service = new PacientesService(mockPacienteRepository);
+    mockAceptaciones = {
+      insertarSiNoExiste: jest.fn().mockResolvedValue(true),
+      existeDelTitular: jest.fn().mockResolvedValue(false),
+    };
+    mockTx = {
+      run: jest.fn((work: (tx: unknown) => Promise<unknown>) => work('tx')),
+    };
+    service = new PacientesService(
+      mockPacienteRepository,
+      mockAceptaciones,
+      mockTx,
+      () => AHORA,
+    );
   });
+
+  // La aceptación pasada al primer `insertarSiNoExiste`, tipada.
+  const primeraAceptacion = (): AceptacionTerminos =>
+    (
+      mockAceptaciones.insertarSiNoExiste.mock
+        .calls as unknown as AceptacionTerminos[][]
+    )[0][0];
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -352,7 +385,7 @@ describe('PacientesService', () => {
   describe('crearPaciente', () => {
     it('debería devolver el RUT formateado para mostrar', async () => {
       // Act
-      const result = await service.crearPaciente(dto, TENANT);
+      const result = await service.crearPaciente(dto, USUARIO);
 
       // Assert — canónico en BD, formateado hacia afuera
       expect(result.rut).toBe('12.345.678-5');
@@ -367,13 +400,156 @@ describe('PacientesService', () => {
           nombre: 'Sin RUT',
           telefono: '+56 9 0000 0000',
           correo: 'sin.rut@mail.com',
-          consentimiento: false,
+          consentimiento: true,
+          terminosVersion: '1.0',
         },
-        TENANT,
+        USUARIO,
       );
 
       // Assert
       expect(result.rut).toBeNull();
+    });
+
+    describe('US-11: aceptación del canal profesional', () => {
+      it('debería abrir UNA transacción y crear y registrar dentro de ella', async () => {
+        // Act
+        await service.crearPaciente(dto, USUARIO);
+
+        // Assert
+        expect(mockTx.run).toHaveBeenCalledTimes(1);
+        expect(mockPacienteRepository.guardar).toHaveBeenCalledWith(
+          expect.any(Paciente),
+          'tx',
+        );
+        expect(mockAceptaciones.insertarSiNoExiste).toHaveBeenCalledWith(
+          expect.any(AceptacionTerminos),
+          'tx',
+        );
+        expect(
+          mockPacienteRepository.marcarConsentimiento,
+        ).toHaveBeenCalledWith('paciente-1', TENANT, 'tx');
+      });
+
+      it('debería registrar canal profesional con el usuario del token, la versión y el reloj', async () => {
+        // Act
+        await service.crearPaciente(dto, USUARIO);
+
+        // Assert
+        const aceptacion = primeraAceptacion();
+        expect(aceptacion).toMatchObject({
+          tenantId: TENANT,
+          pacienteId: 'paciente-1',
+          version: '1.0',
+          canal: CanalAceptacion.PROFESIONAL,
+          aceptadaEn: AHORA,
+          usuarioId: 'usuario-1',
+          solicitudId: null,
+          enlaceId: null,
+        });
+      });
+
+      it('debería responder consentimiento: true también con un paciente existente que lo tenía en false', async () => {
+        // Arrange — ficha vieja por RUT, sin autorización
+        mockPacienteRepository.buscarPorRut.mockResolvedValue(
+          Paciente.reconstituir({
+            id: 'paciente-viejo',
+            rut: '123456785',
+            nombre: 'Ana (ficha)',
+            telefono: '+56 9 9999 9999',
+            correo: 'ana@mail.com',
+            consentimiento: false,
+            tenantId: TENANT,
+          }),
+        );
+
+        // Act
+        const result = await service.crearPaciente(dto, USUARIO);
+
+        // Assert — se registra igual y la bandera queda en true
+        expect(result.consentimiento).toBe(true);
+        expect(primeraAceptacion().pacienteId).toBe('paciente-viejo');
+        expect(
+          mockPacienteRepository.marcarConsentimiento,
+        ).toHaveBeenCalledWith('paciente-viejo', TENANT, 'tx');
+      });
+
+      it.each([undefined, '', '0.2', '9.9'])(
+        'debería lanzar VersionTerminosNoVigenteError sin registrar con la versión %p',
+        async (terminosVersion) => {
+          // Act & Assert
+          await expect(
+            service.crearPaciente({ ...dto, terminosVersion }, USUARIO),
+          ).rejects.toBeInstanceOf(VersionTerminosNoVigenteError);
+          expect(mockAceptaciones.insertarSiNoExiste).not.toHaveBeenCalled();
+          expect(
+            mockPacienteRepository.marcarConsentimiento,
+          ).not.toHaveBeenCalled();
+        },
+      );
+    });
+  });
+
+  describe('registrarAceptacion (US-11)', () => {
+    const props = {
+      canal: CanalAceptacion.ENLACE_CITA as const,
+      enlaceId: 'enlace-1',
+      tenantId: TENANT,
+      pacienteId: PACIENTE_ID,
+      version: '1.0',
+      aceptadaEn: AHORA,
+    };
+
+    it('debería insertar y marcar la bandera en el tx de quien llama', async () => {
+      // Act
+      const insertada = await service.registrarAceptacion(props, 'tx-llamador');
+
+      // Assert
+      expect(insertada).toBe(true);
+      expect(mockAceptaciones.insertarSiNoExiste).toHaveBeenCalledWith(
+        expect.objectContaining({ canal: CanalAceptacion.ENLACE_CITA }),
+        'tx-llamador',
+      );
+      expect(mockPacienteRepository.marcarConsentimiento).toHaveBeenCalledWith(
+        PACIENTE_ID,
+        TENANT,
+        'tx-llamador',
+      );
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
+    it('debería marcar la bandera aunque la aceptación ya existiera (no insertó)', async () => {
+      // Arrange
+      mockAceptaciones.insertarSiNoExiste.mockResolvedValue(false);
+
+      // Act
+      const insertada = await service.registrarAceptacion(props, 'tx');
+
+      // Assert
+      expect(insertada).toBe(false);
+      expect(mockPacienteRepository.marcarConsentimiento).toHaveBeenCalled();
+    });
+  });
+
+  describe('titularAceptoVigente (US-11)', () => {
+    it('debería preguntar por las versiones que cubren, con el tenant y el tx', async () => {
+      // Arrange
+      mockAceptaciones.existeDelTitular.mockResolvedValue(true);
+
+      // Act
+      const acepto = await service.titularAceptoVigente(
+        PACIENTE_ID,
+        TENANT,
+        'tx',
+      );
+
+      // Assert
+      expect(acepto).toBe(true);
+      expect(mockAceptaciones.existeDelTitular).toHaveBeenCalledWith(
+        PACIENTE_ID,
+        TENANT,
+        ['1.0'],
+        'tx',
+      );
     });
   });
 

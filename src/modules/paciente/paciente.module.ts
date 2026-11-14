@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
+import { TransactionRunner } from '../../shared/application/transaction-runner';
+import { SharedModule } from '../../shared/shared.module';
 import { PacientesService } from './application/pacientes.service';
 import { AceptacionTerminosRepository } from './domain/aceptacion-terminos.repository';
 import { PacienteRepository } from './domain/paciente.repository';
@@ -18,13 +20,27 @@ import { PacientesController } from './presentation/pacientes.controller';
     // la inyecta. Una suite que liste entidades a mano y cargue este modulo
     // tiene que incluirla (y a Tenant, Usuario y Paciente, por sus FK).
     TypeOrmModule.forFeature([PacienteOrmEntity, AceptacionTerminosOrmEntity]),
+    // TransactionRunner (US-11): `POST /pacientes` registra el paciente y su
+    // aceptación de los términos en una transacción. SharedModule no importa
+    // ningún módulo de negocio: sin ciclo.
+    SharedModule,
   ],
   controllers: [PacientesController],
   providers: [
     {
+      // Caso de uso sin Nest (ADR-02): se arma con fábrica. El reloj es el
+      // por defecto (`aceptadaEn` del canal `profesional`).
       provide: PacientesService,
-      useFactory: (pr: PacienteRepository) => new PacientesService(pr),
-      inject: [PacienteRepository],
+      useFactory: (
+        pr: PacienteRepository,
+        aceptaciones: AceptacionTerminosRepository,
+        tx: TransactionRunner,
+      ) => new PacientesService(pr, aceptaciones, tx),
+      inject: [
+        PacienteRepository,
+        AceptacionTerminosRepository,
+        TransactionRunner,
+      ],
     },
     {
       provide: PacienteRepository,
@@ -41,7 +57,11 @@ import { PacientesController } from './presentation/pacientes.controller';
     },
   ],
   // Se exporta el puerto (para resolver nombres en el dashboard) y el servicio
-  // (para que Cita reutilice `resolverOCrear` al agendar, ADR-09 §3).
+  // (para que Cita reutilice `resolverOCrear` al agendar, ADR-09 §3, y para
+  // que `cita`, `solicitud` y `portal-paciente` registren la aceptación de
+  // los términos con `registrarAceptacion`, US-11). El puerto de
+  // `aceptaciones_terminos` NO se exporta: solo se escribe por el servicio.
+  // Este módulo no importa ninguno de los que lo importan (sin ciclos).
   exports: [PacienteRepository, PacientesService],
 })
 export class PacienteModule {}

@@ -1,5 +1,5 @@
 import {
-  IsBoolean,
+  Equals,
   IsEmail,
   IsNotEmpty,
   IsOptional,
@@ -8,6 +8,7 @@ import {
 } from 'class-validator';
 
 import { NormalizarCorreo } from '../../../../shared/presentation/normalizar-correo.decorator';
+import { VersionTerminosVigente } from './version-terminos.decorator';
 
 /**
  * Datos de un paciente nuevo. Lo usan DOS rutas: `POST /pacientes` y el
@@ -38,6 +39,15 @@ export class CrearPacienteDto {
   @MaxLength(254)
   correo: string;
 
-  @IsBoolean()
+  // US-11 (ADR-16 §7, D6): la casilla es obligatoria también en la API. Si el
+  // paciente no autoriza, no se registra en Citia. Al crear, el caso de uso
+  // deja una aceptación de canal `profesional` a nombre del usuario del token.
+  @Equals(true, { message: 'Se necesita la autorización del paciente' })
   consentimiento: boolean;
+
+  // Versión de los términos que el profesional le leyó o envió al paciente.
+  // Opcional SOLO en el tipo: la bandeja arma un CrearPacienteDto sin pasar
+  // por el pipe y no lo usa. En HTTP es obligatoria (sin @IsOptional).
+  @VersionTerminosVigente()
+  terminosVersion?: string;
 }

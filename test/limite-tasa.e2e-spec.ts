@@ -86,6 +86,7 @@ const vista = (estado: EstadoCita): VistaCitaPacienteDto =>
     organizacion: 'Clínica Límite',
     accionesPermitidas: [],
     solicitudOtraHora: null,
+    terminosPendientes: false,
   });
 
 /** El portal del paciente sin base de datos: mismas respuestas que el real. */

@@ -147,6 +147,9 @@ describe('Portal del paciente: concurrencia contra PostgreSQL (integration)', ()
           telefono: '+56 9 1234 5678',
           correo: 'concurrente@correo.cl',
           consentimiento: true,
+          // US-11: el alta con `paciente` registra la aceptación del
+          // profesional.
+          terminosVersion: '1.0',
         },
       },
       profesional,

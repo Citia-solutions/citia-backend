@@ -7,6 +7,8 @@ import { EnlaceCitaNoValidoError } from '../../cita/application/enlace-cita-no-v
 import { EnlacesCitaService } from '../../cita/application/enlaces-cita.service';
 import { Cita } from '../../cita/domain/cita.entity';
 import { EnlaceCita } from '../../cita/domain/enlace-cita.entity';
+import { PacientesService } from '../../paciente/application/pacientes.service';
+import { CanalAceptacion } from '../../paciente/domain/aceptacion-terminos.entity';
 import {
   PeticionOtraHora,
   SolicitudesOtraHoraService,
@@ -36,8 +38,9 @@ interface ContextoAccion {
 /**
  * Portal del paciente (Fase 3, US-04 + US-02.07; contrato §3.4). Composición:
  * no tiene reglas de negocio propias más allá de `accionesPermitidasPaciente`;
- * orquesta `cita` (enlace, acciones del paciente) y `solicitud` (pedir otra
- * hora) en UNA transacción por petición.
+ * orquesta `cita` (enlace, acciones del paciente), `solicitud` (pedir otra
+ * hora) y `paciente` (la aceptación de los términos, US-11) en UNA
+ * transacción por petición.
  *
  * Esqueleto de cada petición, siempre en este orden:
  *
@@ -49,6 +52,10 @@ interface ContextoAccion {
  *  4. `accionesPermitidasPaciente`; si la acción pedida no está →
  *     `AccionNoDisponibleError` (409).
  *  5. La acción, y la vista resultante.
+ *
+ * Aceptar los términos (US-11) usa el mismo esqueleto SIN el paso 4: no es
+ * una acción sobre la cita. Escribe la fila de la aceptación y la bandera del
+ * paciente DESPUÉS de la cita (orden cita → paciente).
  *
  * Al cancelar NO se descarta aquí la petición abierta: bloquearla después de
  * la cita invertiría el orden de la bandeja (solicitud → cita) y podría
@@ -64,6 +71,8 @@ export class PortalPacienteService {
     private readonly citas: CitasService,
     private readonly otraHora: SolicitudesOtraHoraService,
     private readonly nombres: LectorNombresCita,
+    // US-11: `terminosPendientes` de la vista y la aceptación por el enlace.
+    private readonly pacientes: PacientesService,
     // `APP_TZ`: la página muestra la hora en la zona de la clínica.
     private readonly zonaHoraria: string,
     private readonly reloj: () => Date = () => new Date(),
@@ -147,6 +156,52 @@ export class PortalPacienteService {
     });
   }
 
+  /**
+   * `POST /publico/cita/aceptar-terminos` (US-11, ADR-16 §8): el paciente
+   * acepta los términos desde su enlace.
+   *
+   *  - El esqueleto de siempre (enlace no válido → el MISMO 404), pero **sin
+   *    `exigir`**: aceptar no es una acción sobre la cita. Vale con cualquier
+   *    enlace válido, también con una petición de otra hora abierta o con la
+   *    cita confirmada. Sin 409.
+   *  - Si el titular ya aceptó una versión que cubre (formulario o enlace),
+   *    no escribe nada: idempotente. Si no, registra canal `enlace_cita` con
+   *    el enlace resuelto y `aceptadaEn` = el `ahora` del portal; eso pone
+   *    `consentimiento = true`.
+   *  - No toca la cita, su bitácora, el outbox ni la primera apertura.
+   *    Ningún hecho nuevo.
+   *
+   * @throws EnlaceCitaNoValidoError (404 uniforme).
+   * @throws VersionTerminosNoVigenteError si la versión no recibe
+   *   aceptaciones (el DTO ya lo impide; defensa → 400).
+   */
+  aceptarTerminos(
+    token: unknown,
+    version: string,
+  ): Promise<VistaCitaPacienteDto> {
+    return this.enTransaccion(token, async (ctx, tx) => {
+      const yaAcepto = await this.pacientes.titularAceptoVigente(
+        ctx.cita.pacienteId,
+        ctx.cita.tenantId,
+        tx,
+      );
+      if (!yaAcepto) {
+        await this.pacientes.registrarAceptacion(
+          {
+            canal: CanalAceptacion.ENLACE_CITA,
+            enlaceId: ctx.enlace.id,
+            tenantId: ctx.cita.tenantId,
+            pacienteId: ctx.cita.pacienteId,
+            version,
+            aceptadaEn: ctx.ahora,
+          },
+          tx,
+        );
+      }
+      return this.vista(ctx.cita, ctx.abierta, ctx.ahora, tx);
+    });
+  }
+
   // ---------------------------------------------------------------------
   // Internos
   // ---------------------------------------------------------------------
@@ -194,7 +249,9 @@ export class PortalPacienteService {
 
   /**
    * Proyección para el paciente (S2). Las acciones se recalculan sobre la
-   * cita RESULTANTE (tras cancelar no queda ninguna).
+   * cita RESULTANTE (tras cancelar no queda ninguna). `terminosPendientes`
+   * (US-11) se lee en cada respuesta, GET y POST, sin bloqueo y dentro de la
+   * misma transacción: un booleano, ningún dato del paciente.
    */
   private async vista(
     cita: Cita,
@@ -210,6 +267,12 @@ export class PortalPacienteService {
         `Integridad: el profesional "${cita.usuarioId}" de la cita "${cita.id}" no existe en su tenant`,
       );
     }
+
+    const titularAcepto = await this.pacientes.titularAceptoVigente(
+      cita.pacienteId,
+      cita.tenantId,
+      tx,
+    );
 
     return new VistaCitaPacienteDto({
       inicio: cita.inicio.toISOString(),
@@ -229,6 +292,7 @@ export class PortalPacienteService {
             solicitadaEn: abierta.recibidaEn.toISOString(),
           }
         : null,
+      terminosPendientes: !titularAcepto,
     });
   }
 }

@@ -27,6 +27,7 @@ import { SolicitudesController } from '../src/modules/solicitud/presentation/sol
 import { RolUsuario } from '../src/modules/usuario/domain/usuario.entity';
 import {
   ContadorTransacciones,
+  InMemoryAceptacionTerminosRepository,
   InMemoryCambioCitaRepository,
   InMemoryCitaRepository,
   InMemoryPacienteRepository,
@@ -134,6 +135,12 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
   const pacienteRepo = new InMemoryPacienteRepository();
   const tx = new ContadorTransacciones();
   const eventos = new PublicadorEnMemoria();
+  // US-11: la bandeja y el alta comparten el registro de aceptaciones.
+  const pacientesService = new PacientesService(
+    pacienteRepo,
+    new InMemoryAceptacionTerminosRepository(pacienteRepo),
+    tx,
+  );
 
   let tokenA: string;
   let tokenColegaA: string;
@@ -256,7 +263,7 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
               citaRepo,
               cambioRepo,
               pacienteRepo,
-              new PacientesService(pacienteRepo),
+              pacientesService,
               tx,
               eventos,
               TZ,
@@ -266,7 +273,13 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
           provide: BandejaSolicitudesService,
           inject: [CitasService],
           useFactory: (citas: CitasService) =>
-            new BandejaSolicitudesService(solicitudRepo, citas, tx, eventos),
+            new BandejaSolicitudesService(
+              solicitudRepo,
+              citas,
+              pacientesService,
+              tx,
+              eventos,
+            ),
         },
       ],
     }).compile();

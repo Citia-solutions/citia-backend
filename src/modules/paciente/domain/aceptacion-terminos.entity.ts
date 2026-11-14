@@ -1,3 +1,11 @@
+import { VersionTerminosNoVigenteError } from './exceptions/version-terminos-no-vigente.error';
+import {
+  CATALOGO_TERMINOS_PACIENTE,
+  VersionTerminosPaciente,
+  esVersionConocida,
+  recibeAceptaciones,
+} from './terminos-paciente';
+
 /**
  * Por dónde llegó una aceptación de los términos del paciente (US-11,
  * ADR-16 §3). Cada canal lleva exactamente UNA referencia:
@@ -25,6 +33,38 @@ export const CANALES_DEL_TITULAR: readonly CanalAceptacion[] = [
   CanalAceptacion.FORMULARIO_PUBLICO,
   CanalAceptacion.ENLACE_CITA,
 ];
+
+/** Lo común a una aceptación nueva, sea cual sea el canal. */
+interface RegistrarAceptacionBase {
+  tenantId: string;
+  pacienteId: string;
+  /** Versión del catálogo (`terminos-paciente.ts`). */
+  version: string;
+  /** El acto (ver `AceptacionTerminos.aceptadaEn`). */
+  aceptadaEn: Date;
+}
+
+/**
+ * Una aceptación NUEVA (US-11, ADR-16 §3): unión discriminada por `canal`,
+ * cada uno con SU referencia y ninguna otra. Así el compilador impide, por
+ * ejemplo, una aceptación del profesional sin usuario o con una solicitud.
+ */
+export type RegistrarAceptacionProps =
+  | (RegistrarAceptacionBase & {
+      canal: CanalAceptacion.FORMULARIO_PUBLICO;
+      /** La solicitud del formulario que trajo la versión. */
+      solicitudId: string;
+    })
+  | (RegistrarAceptacionBase & {
+      canal: CanalAceptacion.ENLACE_CITA;
+      /** El enlace de la cita con el que se aceptó. */
+      enlaceId: string;
+    })
+  | (RegistrarAceptacionBase & {
+      canal: CanalAceptacion.PROFESIONAL;
+      /** El usuario del token que marcó la casilla. */
+      usuarioId: string;
+    });
 
 /**
  * Fila de `aceptaciones_terminos` ya armada. Uso exclusivo de la persistencia
@@ -82,6 +122,75 @@ export class AceptacionTerminos {
     // Se construye vía registrar() o reconstituir().
   }
 
+  /**
+   * Fábrica de una aceptación NUEVA (sin `id` ni `registradaEn`: los pone la
+   * base). Las referencias que no son de su canal quedan en `null` (no
+   * `undefined`), como exige `CHK_aceptaciones_terminos_referencia`.
+   *
+   * Versión, según el canal (ADR-16 §2):
+   *  - `formulario_publico`: basta con que la versión sea CONOCIDA. La
+   *    solicitud pudo enviarse antes de que esa versión dejara de recibir
+   *    aceptaciones, y lo que se registra es el acto de entonces.
+   *  - `enlace_cita` y `profesional`: la versión tiene que RECIBIR
+   *    aceptaciones (el acto es ahora).
+   *
+   * `catalogo`: solo para los tests (por defecto, el vigente).
+   *
+   * @throws VersionTerminosNoVigenteError si la versión no sirve para el
+   *   canal (también vacía o ausente). El controller → 400.
+   * @throws RangeError si falta la referencia del canal, el canal no existe o
+   *   `aceptadaEn` no es una fecha válida: invariantes de quien llama (500).
+   */
+  static registrar(
+    props: RegistrarAceptacionProps,
+    catalogo: readonly VersionTerminosPaciente[] = CATALOGO_TERMINOS_PACIENTE,
+  ): AceptacionTerminos {
+    if (!Object.values(CanalAceptacion).includes(props.canal)) {
+      throw new RangeError('AceptacionTerminos: canal desconocido');
+    }
+
+    const versionValida =
+      props.canal === CanalAceptacion.FORMULARIO_PUBLICO
+        ? esVersionConocida(props.version, catalogo)
+        : recibeAceptaciones(props.version, catalogo);
+    if (!versionValida) {
+      throw new VersionTerminosNoVigenteError();
+    }
+
+    if (
+      !(props.aceptadaEn instanceof Date) ||
+      Number.isNaN(props.aceptadaEn.getTime())
+    ) {
+      throw new RangeError('AceptacionTerminos: aceptadaEn no es una fecha');
+    }
+
+    const aceptacion = new AceptacionTerminos();
+    aceptacion.tenantId = props.tenantId;
+    aceptacion.pacienteId = props.pacienteId;
+    aceptacion.version = props.version;
+    aceptacion.canal = props.canal;
+    aceptacion.aceptadaEn = props.aceptadaEn;
+    aceptacion.solicitudId = null;
+    aceptacion.enlaceId = null;
+    aceptacion.usuarioId = null;
+
+    switch (props.canal) {
+      case CanalAceptacion.FORMULARIO_PUBLICO:
+        aceptacion.solicitudId = exigirReferencia(
+          props.solicitudId,
+          'solicitudId',
+        );
+        break;
+      case CanalAceptacion.ENLACE_CITA:
+        aceptacion.enlaceId = exigirReferencia(props.enlaceId, 'enlaceId');
+        break;
+      case CanalAceptacion.PROFESIONAL:
+        aceptacion.usuarioId = exigirReferencia(props.usuarioId, 'usuarioId');
+        break;
+    }
+    return aceptacion;
+  }
+
   /** Uso exclusivo de la persistencia y de los dobles de test. */
   static reconstituir(
     props: ReconstituirAceptacionTerminosProps,
@@ -99,4 +208,14 @@ export class AceptacionTerminos {
     aceptacion.registradaEn = props.registradaEn;
     return aceptacion;
   }
+}
+
+/** La referencia del canal: un texto no vacío. Sin ella, `RangeError`. */
+function exigirReferencia(valor: unknown, campo: string): string {
+  if (typeof valor !== 'string' || valor.trim() === '') {
+    throw new RangeError(
+      `AceptacionTerminos: falta la referencia del canal (${campo})`,
+    );
+  }
+  return valor;
 }

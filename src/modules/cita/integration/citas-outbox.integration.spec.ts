@@ -68,6 +68,8 @@ const PACIENTE = {
   telefono: '+56 9 8765 4321',
   correo: 'maria.perez@correo.cl',
   consentimiento: true,
+  // US-11: el alta con `paciente` registra la aceptación del profesional.
+  terminosVersion: '1.0',
 };
 // Dato de salud: tampoco viaja en el hecho (ADR-13 §12).
 const TIPO_CONSULTA = 'Control psiquiátrico';

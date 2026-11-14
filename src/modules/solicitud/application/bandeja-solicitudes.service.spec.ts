@@ -10,6 +10,8 @@ import { TransicionEstadoInvalidaError } from '../../cita/domain/exceptions/tran
 import { AvisosCitaDto } from '../../cita/presentation/dto/avisos-cita.dto';
 import { CitaResponseDto } from '../../cita/presentation/dto/cita-response.dto';
 import { CrearCitaDto } from '../../cita/presentation/dto/crear-cita.dto';
+import { PacientesService } from '../../paciente/application/pacientes.service';
+import { CanalAceptacion } from '../../paciente/domain/aceptacion-terminos.entity';
 import { PacienteResponseDto } from '../../paciente/presentation/dto/paciente-response.dto';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import {
@@ -44,6 +46,8 @@ describe('BandejaSolicitudesService', () => {
     reagendarEnTx: jest.Mock;
     resumenesPorIds: jest.Mock;
   };
+  // US-11: solo se usa `registrarAceptacion`.
+  let mockPacientesService: { registrarAceptacion: jest.Mock };
   let mockTx: { run: jest.Mock };
   let mockEventos: { publicar: jest.Mock };
 
@@ -67,7 +71,10 @@ describe('BandejaSolicitudesService', () => {
   // Solicitud como la traeria el repositorio desde BD (RUT canonico).
   const solicitudEn = (
     estado: EstadoSolicitud,
-    extra: Partial<{ consentimiento: boolean }> = {},
+    extra: Partial<{
+      consentimiento: boolean;
+      terminosVersion: string | null;
+    }> = {},
   ): SolicitudCita =>
     SolicitudCita.reconstituir({
       id: SOLICITUD_ID,
@@ -87,6 +94,7 @@ describe('BandejaSolicitudesService', () => {
         estado === EstadoSolicitud.RECIBIDA
           ? null
           : new Date('2026-09-20T10:00:00Z'),
+      terminosVersion: extra.terminosVersion ?? null,
     });
 
   const citaCreada = new CitaResponseDto({
@@ -175,6 +183,9 @@ describe('BandejaSolicitudesService', () => {
       reagendarEnTx: jest.fn().mockResolvedValue(citaMovida),
       resumenesPorIds: jest.fn().mockResolvedValue(new Map()),
     };
+    mockPacientesService = {
+      registrarAceptacion: jest.fn().mockResolvedValue(true),
+    };
     mockTx = {
       run: jest.fn((work: (tx: unknown) => Promise<unknown>) => work('tx')),
     };
@@ -185,6 +196,7 @@ describe('BandejaSolicitudesService', () => {
       // CitasService es una clase concreta: solo se usan `agendar`,
       // `reagendarEnTx` y `resumenesPorIds`.
       mockCitasService as unknown as CitasService,
+      mockPacientesService as unknown as PacientesService,
       mockTx,
       mockEventos,
     );
@@ -283,7 +295,21 @@ describe('BandejaSolicitudesService', () => {
         tipo: TipoSolicitud.NUEVA,
         citaOrigenId: null,
         citaOrigen: null,
+        terminosVersion: null,
       });
+    });
+
+    it('debería proyectar la versión de los términos de la solicitud (US-11)', async () => {
+      // Arrange
+      mockSolicitudRepository.listarPorEstado.mockResolvedValue([
+        solicitudEn(EstadoSolicitud.RECIBIDA, { terminosVersion: '1.0' }),
+      ]);
+
+      // Act
+      const [result] = await service.listar(EstadoSolicitud.RECIBIDA, usuario);
+
+      // Assert
+      expect(result.terminosVersion).toBe('1.0');
     });
 
     it('no debería exponer tenantId, usuarioId ni el RUT canónico', async () => {
@@ -670,6 +696,64 @@ describe('BandejaSolicitudesService', () => {
         expect(mockEventos.publicar).not.toHaveBeenCalled();
       },
     );
+
+    describe('US-11: aceptación de los términos del formulario', () => {
+      it('con versión: registra formulario_publico con la solicitud, la versión y aceptadaEn = recibidaEn, en el MISMO tx', async () => {
+        // Arrange
+        mockSolicitudRepository.buscarPorIdParaActualizar.mockResolvedValue(
+          solicitudEn(EstadoSolicitud.RECIBIDA, { terminosVersion: '1.0' }),
+        );
+
+        // Act
+        const result = await service.aceptar(SOLICITUD_ID, dto, usuario);
+
+        // Assert
+        expect(mockPacientesService.registrarAceptacion).toHaveBeenCalledWith(
+          {
+            canal: CanalAceptacion.FORMULARIO_PUBLICO,
+            solicitudId: SOLICITUD_ID,
+            tenantId: 'tenant-1',
+            pacienteId: 'paciente-9',
+            version: '1.0',
+            aceptadaEn: RECIBIDA_EN,
+          },
+          'tx',
+        );
+        expect(result.cita.paciente?.consentimiento).toBe(true);
+        expect(result.solicitud.terminosVersion).toBe('1.0');
+        // Después de crear la cita
+        expect(
+          mockCitasService.agendar.mock.invocationCallOrder[0],
+        ).toBeLessThan(
+          mockPacientesService.registrarAceptacion.mock.invocationCallOrder[0],
+        );
+      });
+
+      it('sin versión (anterior al despliegue): no registra nada', async () => {
+        // Act
+        await service.aceptar(SOLICITUD_ID, dto, usuario);
+
+        // Assert
+        expect(mockPacientesService.registrarAceptacion).not.toHaveBeenCalled();
+      });
+
+      it('si el registro falla, no se guarda la solicitud ni se publica el hecho', async () => {
+        // Arrange
+        mockSolicitudRepository.buscarPorIdParaActualizar.mockResolvedValue(
+          solicitudEn(EstadoSolicitud.RECIBIDA, { terminosVersion: '1.0' }),
+        );
+        mockPacientesService.registrarAceptacion.mockRejectedValue(
+          new Error('fallo al registrar'),
+        );
+
+        // Act & Assert
+        await expect(
+          service.aceptar(SOLICITUD_ID, dto, usuario),
+        ).rejects.toThrow('fallo al registrar');
+        expect(mockSolicitudRepository.guardar).not.toHaveBeenCalled();
+        expect(mockEventos.publicar).not.toHaveBeenCalled();
+      });
+    });
   });
 
   // ---------------------------------------------------------------------
