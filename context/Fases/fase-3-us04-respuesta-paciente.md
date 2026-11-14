@@ -203,6 +203,10 @@ prueba y el correo del usuario como paciente, como la prueba de la Fase 2.
       agenda" ya no hace falta, DT-18).
 - [ ] ⬜ **Observar el límite del login** las primeras semanas: 5 por minuto por IP lo comparten las personas
       de una misma clínica detrás de una sola IP pública.
+      *(2026-11-14: la observación empieza el **2026-11-11**, cuando entró la primera clínica con pacientes reales;
+      hasta entonces solo había pruebas del usuario. El mismo 2026-11-11 los Deploy Logs de production muestran el
+      sexto intento seguido desde un teléfono con 429 y un bloqueo de unos 60 s. Que otra red no quede bloqueada
+      sigue sin comprobar.)*
 
 > Desde el despliegue, **todo recordatorio que salga** lleva el botón, también los de citas creadas antes (el
 > enlace nace al enviar). Los correos ya enviados antes del release no lo tienen.

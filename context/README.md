@@ -17,7 +17,7 @@ sin doc.**
 | **por qué está construido así** y qué se descartó | [`Decisions/`](Decisions/README.md) |
 | **qué está construido** y cómo funciona | [`Features/`](Features/README.md) |
 | **qué falta o está a medias**, y qué cuesta | [`Deudas/`](Deudas/README.md) |
-| **qué exige la ley de datos personales** y qué le falta a Citia antes de la primera clínica con pacientes reales (sin abogado: es un pre-análisis con IA, no una opinión legal) | [`Cumplimiento/`](Cumplimiento/README.md) |
+| **qué exige la ley de datos personales** y qué le falta a Citia, ahora que tiene su primera clínica con pacientes reales (desde el 2026-11-11, sin el P1 hecho; sin abogado: es un pre-análisis con IA, no una opinión legal) | [`Cumplimiento/`](Cumplimiento/README.md) |
 | **qué decidió el frontend** que afecta al backend | [`Frontend-Decisions/`](Frontend-Decisions/README.md) |
 | **qué falta decidir** y quién puede decidirlo | [`PREGUNTAS-ABIERTAS.md`](PREGUNTAS-ABIERTAS.md) |
 | qué commit corresponde a qué documento | [`TRAZABILIDAD.md`](TRAZABILIDAD.md) |

@@ -676,8 +676,16 @@ este repo; al 2026-10-31, todo ⬜.)*
 > para el abogado están en [`Cumplimiento/`](Cumplimiento/README.md). **Nada de esto es una opinión legal**: sale de
 > un pre-análisis hecho con una IA el 2026-10-30, y al 2026-10-31 el usuario no tiene abogado.
 
+> **2026-11-14 — el límite se cruzó el 2026-11-11.** Ese día entró a production la **primera clínica con pacientes
+> reales**: un **piloto de prueba** con una psicóloga amiga del usuario, que según confirmó el usuario el 2026-11-14 ya
+> agenda pacientes. El P1 **no estaba hecho**. Por eso DT-51, DT-52 y DT-53 suben a 🔴 alta y DT-56 a 🟠 media, como
+> ellas mismas lo tenían previsto. **El usuario decidió** abordar el P1 sin abogado por ahora y sin pausar el piloto,
+> empezando por los términos que autoriza el paciente
+> ([borrador](Cumplimiento/borrador-terminos-paciente.md), [detalle](Cumplimiento/README.md#el-límite-real-la-primera-clínica-con-pacientes-reales)).
+
 **Estado:** ⬜ documentado el 2026-10-31; nada redactado ni implementado. **Límite:** la **primera clínica con
-pacientes reales**, no "producción": Citia ya está en producción sin clínicas reales. **Fecha legal:** la Ley 21.719
+pacientes reales**, no "producción" *(cruzado el 2026-11-11; antes: "Citia ya está en producción sin clínicas
+reales")*. **Fecha legal:** la Ley 21.719
 rige el **2026-12-01** mientras no se publique la postergación (el Senado la aprobó el 2026-10-29 con la fecha
 2027-10-15 y sigue en la Cámara); la Ley 19.628 y la Ley 20.584 ya rigen.
 
@@ -694,9 +702,11 @@ rige el **2026-12-01** mientras no se publique la postergación (el Senado la ap
   jurídica, evaluación de impacto, información al paciente e intervención humana real
   ([Fase 5](#fase-5--us-07-calificación-de-asistencia-scoring)).
 
-**Decisión pendiente del usuario:** si **P1 es condición** para recibir la primera clínica con pacientes reales.
-Tampoco están decididos quién es el responsable de cumplimiento ni cuándo redactar la política de privacidad y el
-contrato ([detalle](Cumplimiento/README.md#lo-que-el-usuario-no-ha-decidido)).
+**Decidido (2026-11-14):** el P1 se aborda **sin abogado por ahora** y **sin pausar el piloto**, empezando por los
+términos y el consentimiento que autoriza el paciente ([borrador](Cumplimiento/borrador-terminos-paciente.md), decisiones confirmadas ese día).
+*Antes (2026-10-31 → 2026-11-14): "Decisión pendiente del usuario: si P1 es condición para recibir la primera clínica
+con pacientes reales".* Siguen sin decidir quién es el responsable de cumplimiento y cuándo redactar el contrato de
+encargo; la política de privacidad del paciente empezó con ese borrador ([detalle](Cumplimiento/README.md#lo-que-el-usuario-no-ha-decidido)).
 
 ---
 
@@ -715,8 +725,10 @@ contrato ([detalle](Cumplimiento/README.md#lo-que-el-usuario-no-ha-decidido)).
 | — | US-09 | — | ⬜ pendiente |
 
 > **Transversal (2026-10-31):** [Cumplimiento (Ley 21.719)](#cumplimiento-ley-21719--transversal) — ⬜ documentado,
-> nada redactado ni implementado; P1 antes de la primera clínica con pacientes reales (si es condición para
-> recibirla, sin decidir); P3 es la condición del 🚧 de US-07.02 y US-07.03.
+> nada redactado ni implementado; P1 antes de la primera clínica con pacientes reales, que **entró el 2026-11-11 sin
+> el P1 hecho**, como piloto de prueba (se aborda sin abogado por ahora, empezando por los términos del paciente; *antes:
+> "si es condición para recibirla, sin decidir"*); P3 es la
+> condición del 🚧 de US-07.02 y US-07.03.
 
 ## Decisiones previas
 

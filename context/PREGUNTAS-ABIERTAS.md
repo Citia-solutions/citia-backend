@@ -517,6 +517,9 @@ chocaría con el modelo de precios. El código usa A mientras tanto; cambiarlo e
 
 **Entregable:** el nombre.
 
+> ✅ **Respondida el 2026-11-14: A, *Plan piloto*.** La decidió el usuario y es el valor que ya usa el código, así que
+> no hay cambio.
+
 ### Q19 — Casilla de soporte
 
 El botón *Contactar soporte* guarda el mensaje y un job lo manda por correo a la dirección de
@@ -534,6 +537,15 @@ mensajes** —que puede traer datos de pacientes aunque se pida no incluirlos—
 de incidentes ([DT-56](Deudas/DT-56.md)).
 
 **Entregable:** la dirección y el proveedor; con eso, `SOPORTE_CORREO_DESTINO` en production y la fila en DT-52.
+
+> ✅ **Respondida el 2026-11-14: A.** La decidió el usuario:
+> - la dirección es `soporte@citiahealth.cl`;
+> - Cloudflare Email Routing la reenvía a la cuenta de Gmail del proyecto, `citia.software@gmail.com`;
+> - los dos proveedores ya están en [DT-52](Deudas/DT-52.md#nota-2026-11-14--la-casilla-de-soporte-decidida-q19--a),
+>   con la salvedad de que una cuenta gratuita de Gmail probablemente no tiene contrato de encargo.
+>
+> Quedan dos pasos del usuario: configurar el reenvío en Cloudflare y cargar
+> `SOPORTE_CORREO_DESTINO=soporte@citiahealth.cl` en production.
 
 ---
 
