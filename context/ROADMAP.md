@@ -703,7 +703,7 @@ rige el **2026-12-01** mientras no se publique la postergación (el Senado la ap
   ([Fase 5](#fase-5--us-07-calificación-de-asistencia-scoring)).
 
 **Decidido (2026-11-14):** el P1 se aborda **sin abogado por ahora** y **sin pausar el piloto**, empezando por los
-términos y el consentimiento que autoriza el paciente ([borrador v0.1](Cumplimiento/borrador-terminos-paciente.md)).
+términos y el consentimiento que autoriza el paciente ([borrador](Cumplimiento/borrador-terminos-paciente.md), decisiones confirmadas ese día).
 *Antes (2026-10-31 → 2026-11-14): "Decisión pendiente del usuario: si P1 es condición para recibir la primera clínica
 con pacientes reales".* Siguen sin decidir quién es el responsable de cumplimiento y cuándo redactar el contrato de
 encargo; la política de privacidad del paciente empezó con ese borrador ([detalle](Cumplimiento/README.md#lo-que-el-usuario-no-ha-decidido)).

@@ -5,9 +5,10 @@
 > [DT-52](../Deudas/DT-52.md) (proveedores), [DT-26](../Deudas/DT-26.md) (conservación), [DT-54](../Deudas/DT-54.md)
 > (menores)
 
-**Estado:** ✏️ borrador v0.1 del 2026-11-14. El usuario decidió abordar el cumplimiento sin abogado por ahora,
-empezando por **los términos que autoriza el paciente**. Este texto es del proyecto: nadie con formación legal lo ha
-revisado. Los ❓ marcan datos que hay que confirmar antes de publicarlo.
+**Estado:** ✏️ borrador v0.2 del 2026-11-14, con las **7 decisiones confirmadas por el usuario** ese mismo día
+([abajo](#decisiones-confirmadas-por-el-usuario-el-2026-11-14)); falta publicarlo. El usuario decidió abordar el
+cumplimiento sin abogado por ahora, empezando por **los términos que autoriza el paciente**. Este texto es del
+proyecto: nadie con formación legal lo ha revisado. *Antes: v0.1, con las decisiones por confirmar.*
 
 **Dónde se usaría:**
 
@@ -19,14 +20,17 @@ revisado. Los ❓ marcan datos que hay que confirmar antes de publicarlo.
 
 ---
 
-## Decisiones por confirmar (del usuario)
+## Decisiones (confirmadas por el usuario el 2026-11-14)
 
-| # | Decisión | Lo que asume este borrador |
+El usuario confirmó las siete tal como estaban. Los ❓ quedan como nota: son datos sin verificar en la ley o en el panel
+del proveedor, no decisiones abiertas.
+
+| # | Decisión | Lo que se decidió |
 |---|---|---|
 | 1 | Quién figura como responsable de los datos | **El profesional o la clínica**; Citia, como su proveedor (encargado). Es lo que dice el pre-análisis, sin confirmar |
 | 2 | Un documento o dos | **Uno** (términos y privacidad juntos), con un texto corto para la casilla |
 | 3 | A quién escribe el paciente para ejercer sus derechos | **Al profesional, o a `soporte@citiahealth.cl`** |
-| 4 | Cuánto tiempo se guardan los datos | ❓ sin plazo definido hoy ([DT-26](../Deudas/DT-26.md)) |
+| 4 | Cuánto tiempo se guardan los datos | **Queda `[plazo]`** hasta que se defina la conservación ([DT-26](../Deudas/DT-26.md)); el texto ya dice que se devuelven o eliminan si el profesional deja Citia |
 | 5 | Desde qué edad acepta el propio paciente | **16 años** ❓ (lectura del pre-análisis sobre el art. 16 quáter: hasta los 15, para datos de salud, acepta la madre, el padre o quien lo represente) |
 | 6 | Proveedores y países | Railway, Resend y Netlify, con datos en EE. UU. ❓ (la región de Resend está sin verificar, [DT-52](../Deudas/DT-52.md)) |
 | 7 | Plazo para responder una solicitud de derechos | **30 días** ❓ (sin verificar en la Ley 21.719) |
@@ -40,7 +44,7 @@ revisado. Los ❓ marcan datos que hay que confirmar antes de publicarlo.
 
 ### Términos de uso y aviso de privacidad de Citia para pacientes
 
-*Versión 0.1 · [fecha de publicación]*
+*Versión 0.2 · [fecha de publicación]*
 
 **1. Quién es quién**
 
@@ -102,11 +106,11 @@ Puedes pedir:
 - una copia para llevarlos a otro lugar.
 
 Escríbele a tu profesional ([contacto]) o a soporte@citiahealth.cl, indicando tu nombre y RUT. Te responderemos dentro
-de [30] días.
+de 30 días.
 
 **8. Si el paciente es menor de edad**
 
-Si tienes menos de [16] años, la autorización la da tu madre, tu padre o quien te represente legalmente.
+Si tienes menos de 16 años, la autorización la da tu madre, tu padre o quien te represente legalmente.
 
 **9. Seguridad**
 

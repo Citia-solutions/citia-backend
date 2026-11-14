@@ -24,7 +24,7 @@ flujo de soporte de la Fase 7, **en producción** desde ese día, todavía sin c
 |---|---|
 | este README | el **estado vivo**: roles, vigencia, lo que Citia ya tiene, lo que falta por prioridad, las preguntas para el abogado y lo que el usuario no ha decidido. Se actualiza; lo que cambia queda como *Antes: …* |
 | [`pre-analisis-ia-2026-10-30.md`](pre-analisis-ia-2026-10-30.md) | la **foto fechada** del pre-análisis: las respuestas a las 13 preguntas, resumidas, con sus matices, el dictamen general y las fuentes. **No se edita** |
-| [`borrador-terminos-paciente.md`](borrador-terminos-paciente.md) | *(2026-11-14)* el **borrador v0.1** de los términos de uso y del aviso de privacidad que autoriza el paciente, con el texto de la casilla y el del alta manual. Lleva las decisiones por confirmar y lo que falta para usarlo |
+| [`borrador-terminos-paciente.md`](borrador-terminos-paciente.md) | *(2026-11-14)* el **borrador v0.2** de los términos de uso y del aviso de privacidad que autoriza el paciente, con el texto de la casilla y el del alta manual. Sus 7 decisiones las confirmó el usuario el 2026-11-14; lleva también lo que falta para publicarlo |
 
 Lo que falta vive en sus deudas ([`Deudas/`](../Deudas/README.md)) y, si algo se decide, irá en un ADR. Esta carpeta
 no reemplaza a ninguno de los dos: es la entrada.
@@ -60,7 +60,7 @@ de pacientes por cuenta de alguien, y lo que hoy es preparación pasa a ser obli
 > - **La Ley 21.719 rige el 2026-12-01** mientras no se publique la postergación ([abajo](#vigencia-verificada-el-2026-10-30)).
 > - Que **P1 fuera condición para recibir la primera clínica** ya no se puede decidir. **El usuario decidió el
 >   2026-11-14** abordar el P1 **sin abogado por ahora** y sin pausar el piloto. Empieza por los **términos y el
->   consentimiento que autoriza el paciente**: [borrador v0.1](borrador-terminos-paciente.md).
+>   consentimiento que autoriza el paciente**: [borrador](borrador-terminos-paciente.md), con sus decisiones confirmadas el mismo día.
 >
 > *Antes (2026-10-31 → 2026-11-14): "**Si P1 es condición para recibir a esa primera clínica, el usuario no lo ha
 > decidido**".*
