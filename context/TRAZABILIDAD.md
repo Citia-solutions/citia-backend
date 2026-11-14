@@ -148,6 +148,9 @@ tipo `merge`), y la Fase 7 llegó a `develop` por fast-forward, sin PR ni commit
 | 122 | `c090105` test: Definición de Terminado de US-10 | 2026-11-01 | test | [US-10 § Definición de Terminado](US/10-perfil-cuenta.md#definición-de-terminado); [us10 § Tests](Features/us10-perfil-cuenta.md#tests-y-verificación) | F7 |
 | 123 | `aeab86d` docs(context): resultados de integración y e2e de US-10 | 2026-11-01 | docs | [US-10 § Definición de Terminado](US/10-perfil-cuenta.md#definición-de-terminado) (13 / 253 de integración y 18 / 379 e2e); [ADR-15 § Verificación](Decisions/ADR-15.md#verificación-2026-11-01); ROADMAP y [Fases](Fases/README.md) | F7 |
 | 124 | `cd659c1` merge PR #15 `develop` → `main` | 2026-11-01 | release | — (**release de la Fase 7 a producción**: lleva 118–123 a `main`) · [Fase 7 § Release a producción](Fases/fase-7-us10-perfil.md#release-a-producción-2026-11-01) (ver nota) | F7 |
+| 125 | `5a0ecc3` docs(context): Fase 7 en producción, feature de US-10 y TRAZABILIDAD 96–124 | 2026-11-01 | docs | **[us10-perfil-cuenta](Features/us10-perfil-cuenta.md)** (nueva); estado "en producción desde el 2026-11-01 (PR #15)" en [Fase 7](Fases/fase-7-us10-perfil.md#release-a-producción-2026-11-01), ROADMAP, [Fases](Fases/README.md), [ADR-15](Decisions/ADR-15.md), [US-10](US/10-perfil-cuenta.md), DT-01, DT-02, DT-59, Q18 y Q19, [Cumplimiento](Cumplimiento/README.md) y `CLAUDE.md` raíz; filas 96–124 de este archivo, con los códigos `F5` y `F7` (incluidas las de US-07.01, 105–115); [Fase 5](Fases/fase-5-us07-scoring.md) y [US-07.01](US/07.01-registro-hechos.md) (ver nota) | F7 · F5 |
+| 126 | `e8b6102` merge PR #16 `docs/fase7-post-release` → `develop` | 2026-11-02 | merge | — (integra 125) | F7 · F5 |
+| 127 | `acea253` merge PR #17 `develop` → `main` | 2026-11-02 | release | — (lleva 125–126 a `main`: solo documentación; ver nota) | F7 · F5 |
 
 > **Nota commit 31.** `core.autocrlf=true` marcaba ~32 archivos como modificados con contenido
 > idéntico, ensuciando `git status` y los diffs de cada PR. `.gitattributes` fija LF para repo y
@@ -242,7 +245,9 @@ tipo `merge`), y la Fase 7 llegó a `develop` por fast-forward, sin PR ni commit
 > **Nota fila 112.** US-07.01 salió con el job G1 **apagado** (`CIERRE_GHOSTING_ACTIVO=false`). Se prendió el
 > 2026-10-27 con la variable en Railway, **sin commit**: no tiene fila; lo registra la 113. US-07.01 todavía no tiene
 > feature (se crea al cerrarla): su documentación es [ADR-14](Decisions/ADR-14.md) y el plan
-> [US-07.01](US/07.01-registro-hechos.md).
+> [US-07.01](US/07.01-registro-hechos.md). *(2026-11-14: ya la tiene,
+> [us0701-registro-hechos](Features/us0701-registro-hechos.md), creada al cerrar US-07.01; el commit que la crea no
+> tiene fila todavía, por la convención de abajo.)*
 
 > **Nota fila 117.** El PR #14 (`docs/fase5-decisiones-us0702`) se mergeó **directo a `main`**, en vez de a
 > `develop` como pide Git Flow. Es de tipo `merge` y no `release` porque es un PR de docs, no un `develop` → `main`.
@@ -264,6 +269,15 @@ tipo `merge`), y la Fase 7 llegó a `develop` por fast-forward, sin PR ni commit
 > `SOPORTE_CORREO_DESTINO` ([Q19](PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) sin respuesta): el job `soporte.envio`
 > no se registra y los mensajes esperan en `pendiente`. El frontend no está registrado en este repo. Detalle en la
 > [Fase 7 § Release a producción](Fases/fase-7-us10-perfil.md#release-a-producción-2026-11-01).
+
+> **Nota fila 125.** Es el commit que cerró la pasada del 2026-11-01 (registró las filas 96–124): por la convención
+> de abajo, se registra en esta. Vivió en la rama `docs/fase7-post-release`, que sale de `aeab86d` (fila 123), hasta el
+> merge `e8b6102` (fila 126). Además de la Fase 7, registró las filas de US-07.01 (105–115), atrasadas desde el
+> 2026-10-19, y tocó la guía de la Fase 5 y el plan de US-07.01: de ahí el `F5`.
+
+> **Nota fila 127.** Como los `release` de la nota de las filas 99, 104, 112, 117 y 124, vive **solo en `main`**
+> (`develop` no lo contiene) y no trae cambios propios: su árbol es idéntico al de `e8b6102` (fila 126), la punta de
+> `develop` que lleva. Lleva solo documentación: no cambia el código de production.
 
 > **Nota fila 53.** Los tests del cierre de la Fase 1 no se listaron en la tabla de
 > [us02 §Tests](Features/us02-gestion-citas.md#tests), que quedó en el estado del 2026-09-24. La
@@ -297,7 +311,11 @@ tipo `merge`), y la Fase 7 llegó a `develop` por fast-forward, sin PR ni commit
 > *Pasada del 2026-11-01:* registra hasta `cd659c1` inclusive (filas 96–124), tomadas de
 > `git log --reverse 05bae58..origin/main`. Las filas de US-07.01 (105–115) estaban atrasadas desde el 2026-10-19. El
 > commit de documentación que cierre esta pasada (Fase 7 en producción y la feature de US-10, rama
-> `docs/fase7-post-release`) **no tiene fila**: se registra en la siguiente.
+> `docs/fase7-post-release`) **no tiene fila**: se registra en la siguiente. *(Es `5a0ecc3`, fila 125.)*
+>
+> *Pasada del 2026-11-14:* registra hasta `acea253` inclusive (filas 125–127), tomadas de
+> `git log --reverse cd659c1..origin/main`. El commit de documentación que cierre esta pasada (cierre de US-07.01,
+> rama `docs/cierre-us0701`) **no tiene fila**: se registra en la siguiente.
 
 ## Cobertura por decisión (ADR ↔ commits)
 
@@ -334,6 +352,6 @@ tipo `merge`), y la Fase 7 llegó a `develop` por fast-forward, sin PR ni commit
 | [Fase 1 — US-02](Fases/fase-1-us02-gestion-citas.md) | 35–39, 41–58 | `f2a7dff` → `c9ac69f` |
 | [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | 59, 61–74, 76–84, 93, 96–99 | `ab30bb7` (diseño) · `daf0617` → `f2ccb01` (implementación) · `060303c` (a `develop`) · `893c112` → `4fc9a86` (Netlify, `tenantNombre`, DT-30) · `c057ade` (release a producción, 2026-10-06) · `9fc1ddd` (cierre, 2026-10-07) y su merge `72d117f` · `5042888` → `932d416` (remitente *citiahealth*, a producción el 2026-10-18) |
 | [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | 85–92, 94, 95 (antes, ADR-10 y FD-06 entraron en 38, 41 y 54) · 101, 103, 104 (docs tras el release) | `c757e0e` → `b93f2c0` (implementación y docs, 2026-10-15) · `ce0c533` (a `develop`) · `05bae58` (release a producción, 2026-10-17) · `be69c27` (en producción y coherencia, 2026-10-18), su merge `d496a86` y su release `ce7105e` |
-| [Fase 5 — US-07](Fases/fase-5-us07-scoring.md) | 105–115, 117 | `3e64472` (ADR-14 y plan de US-07.01, 2026-10-19) · `1545ad7` → `bb90815` (implementación de US-07.01) · `715c3f3` (a `develop`) · `313a506` (release a producción, 2026-10-20) · `c3e7b42` → `f6d0aa4` (decisiones de US-07.02 y bloqueo, 2026-10-30) · `33fc74c` (PR de docs directo a `main`) |
-| [Fase 7 — US-10](Fases/fase-7-us10-perfil.md) | 118–124 | `6e597be` (ADR-15 y plan) · `a2058aa` → `c090105` (implementación, 2026-11-01) · `aeab86d` (verificación) · a `develop` por fast-forward, sin fila · `cd659c1` (release a producción, 2026-11-01) |
+| [Fase 5 — US-07](Fases/fase-5-us07-scoring.md) | 105–115, 117 · 125–127 (compartidas con la Fase 7) | `3e64472` (ADR-14 y plan de US-07.01, 2026-10-19) · `1545ad7` → `bb90815` (implementación de US-07.01) · `715c3f3` (a `develop`) · `313a506` (release a producción, 2026-10-20) · `c3e7b42` → `f6d0aa4` (decisiones de US-07.02 y bloqueo, 2026-10-30) · `33fc74c` (PR de docs directo a `main`) · `5a0ecc3` (registró las filas de US-07.01), su merge `e8b6102` y su release `acea253` |
+| [Fase 7 — US-10](Fases/fase-7-us10-perfil.md) | 118–124 · 125–127 (docs tras el release) | `6e597be` (ADR-15 y plan) · `a2058aa` → `c090105` (implementación, 2026-11-01) · `aeab86d` (verificación) · a `develop` por fast-forward, sin fila · `cd659c1` (release a producción, 2026-11-01) · `5a0ecc3` (en producción y feature de US-10, 2026-11-01), su merge `e8b6102` y su release `acea253` (2026-11-02) |
 | transversal | 40 (ROADMAP), 60 (navegación por fases), 75 (primer release a `main`), 100 (`Explicado/`), 102 (`CLAUDE.md` y agentes), 116 (`Cumplimiento/`) | `cea0bd1`, `2f33394`, `f1f711f`, `8208a56`, `555b060`, `8304107` |
