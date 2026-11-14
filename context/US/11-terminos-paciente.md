@@ -539,7 +539,7 @@ El enlace abre `/terminos` **en otra pestaña** (en la misma, el paciente perder
 
 | # | Agente | Pieza | Depende de |
 |---|---|---|---|
-| 0 | usuario | aprobar [ADR-16](../Decisions/ADR-16.md) y este plan (D3, D5, D6, D7, D9 por defecto; D10 a D14; el número US-11) | — |
+| 0 | usuario | aprobó [ADR-16](../Decisions/ADR-16.md) y este plan el 2026-11-14 | — |
 | 1 | `database-agent` | las dos migraciones, `AceptacionTerminosOrmEntity`, la columna en `SolicitudCitaOrmEntity`, los puertos (`AceptacionTerminosRepository`, `marcarConsentimiento`), los adaptadores, los dobles en memoria (`InMemoryAceptacionTerminosRepository`; `marcarConsentimiento` en `InMemoryPacienteRepository`) y `seed.ts` | 0 |
 | 2 | `api-agent` | catálogo, entidad y error de dominio; `PacientesService` y `PacienteModule` (`SharedModule`); el decorador y los DTO; `crearCita`; bandeja; `recibir`; portal y su controller; traducción del error en los tres controllers; `portal-paciente/CLAUDE.md`, `solicitud/CLAUDE.md`, `cita/CLAUDE.md` | 1 |
 | 3 | `testing-agent` | unitarios e integración; ajustar las e2e (lista abajo) **sin correrlas** hasta que el usuario lo autorice | 2 |
@@ -686,16 +686,8 @@ En staging y, después del release, en production:
 
 ## Preguntas abiertas
 
-Para el usuario, con la inclinación del diseño. Si no dice otra cosa, se implementa la inclinación.
-
-1. **D3, D5, D6, D7 y D9** (por defecto): ¿alguna en contra?
-2. **D10** — ¿la versión del formulario en la solicitud y la fila al aceptarla? *Inclinación:* sí.
-3. **D11** — ¿una fila por paciente, versión y canal? *Inclinación:* sí.
-4. **D12** — ¿sin IP ni navegador? *Inclinación:* sí.
-5. **D13** — ¿«aceptó los términos v1.0» en la bandeja? *Inclinación:* sí.
-6. **D14** — ¿nada en el voucher por ahora? *Inclinación:* sí.
-7. **Cambio editorial 7** (*«tus datos»* en §6): ¿se acepta? *Inclinación:* sí.
-8. **El número US-11.** *Inclinación:* US-11.
+**Ninguna.** El 2026-11-14 el usuario aprobó el diseño completo: D3, D5, D7, D9 y D10 a D14 tal como se propusieron,
+D6 con el 400, los cambios editoriales del texto, la línea del job G1 en el §2 y el número US-11.
 
 ---
 
