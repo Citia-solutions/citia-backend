@@ -349,6 +349,9 @@ Ninguno nuevo. La prueba es la fila; los logs no llevan la versión ni el canal.
 > D9. Al publicarse se congela en `context/Cumplimiento/terminos-paciente-v1.0.md` (no se edita) y el frontend lo copia
 > **igual**. `[fecha de publicación]` es la única marca que queda: se llena con la fecha del release del frontend a
 > production, en el mismo PR.
+>
+> **(2026-11-15)** Congelado en [`terminos-paciente-v1.0.md`](../Cumplimiento/terminos-paciente-v1.0.md), publicado
+> el 2026-11-15. El texto de `/terminos` del frontend (`b6f5d5f`) y el de abajo dieron idénticos palabra por palabra.
 
 ### Términos de uso y aviso de privacidad de Citia para pacientes
 
