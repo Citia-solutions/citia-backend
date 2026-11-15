@@ -95,6 +95,24 @@ describe('SolicitudesService', () => {
       expect(solicitud.telefono).toBe('+56 9 1111 1111');
     });
 
+    it('debería guardar la versión de los términos que aceptó el paciente (US-11)', async () => {
+      // Act
+      await service.recibir(SLUG, dto);
+
+      // Assert
+      expect(primeraGuardada().terminosVersion).toBe('1.0');
+      expect(primeraGuardada().consentimiento).toBe(true);
+    });
+
+    it('debería seguir con UN solo INSERT y sin transacción (US-11 no lo cambia)', async () => {
+      // Act
+      await service.recibir(SLUG, dto);
+
+      // Assert — `guardar` sin tx: la ruta anónima no tiene TransactionRunner
+      expect(mockSolicitudRepository.guardar).toHaveBeenCalledTimes(1);
+      expect(mockSolicitudRepository.guardar.mock.calls[0]).toHaveLength(1);
+    });
+
     it('NO debería asignar profesional ni cita al recibirla', async () => {
       // Act
       await service.recibir(SLUG, dto);

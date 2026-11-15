@@ -1,3 +1,12 @@
+import {
+  ContadorTransacciones,
+  InMemoryAceptacionTerminosRepository,
+  InMemoryCambioCitaRepository,
+  InMemoryCitaRepository,
+  InMemoryPacienteRepository,
+  InMemorySolicitudCitaRepository,
+  PublicadorEnMemoria,
+} from '../../../../test/support/in-memory-repositories';
 import { EventoDominio } from '../../../shared/application/publicador-eventos';
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import {
@@ -12,6 +21,7 @@ import { CitaResponseDto } from '../../cita/presentation/dto/cita-response.dto';
 import { CrearCitaDto } from '../../cita/presentation/dto/crear-cita.dto';
 import { PacientesService } from '../../paciente/application/pacientes.service';
 import { CanalAceptacion } from '../../paciente/domain/aceptacion-terminos.entity';
+import { Paciente } from '../../paciente/domain/paciente.entity';
 import { PacienteResponseDto } from '../../paciente/presentation/dto/paciente-response.dto';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import {
@@ -908,6 +918,27 @@ describe('BandejaSolicitudesService', () => {
     );
   });
 
+  describe('aceptar una petición de otra hora: términos (US-11)', () => {
+    it('no debería registrar ninguna aceptación de los términos (no crea paciente ni trae versión)', async () => {
+      // Arrange
+      mockSolicitudRepository.buscarPorIdParaActualizar.mockResolvedValue(
+        reagendamientoEn(EstadoSolicitud.RECIBIDA),
+      );
+
+      // Act
+      const result = await service.aceptar(
+        SOLICITUD_ID,
+        { inicio: '2026-09-22T16:00:00-03:00' },
+        usuario,
+      );
+
+      // Assert
+      expect(mockPacientesService.registrarAceptacion).not.toHaveBeenCalled();
+      expect(result.solicitud.terminosVersion).toBeNull();
+      expect(result.cita.paciente).toBeUndefined();
+    });
+  });
+
   describe('rechazar una petición de otra hora (Fase 3, R3)', () => {
     it('no debería tocar la cita de origen y debería devolver citaOrigen leída en el tx', async () => {
       // Arrange
@@ -986,6 +1017,21 @@ describe('BandejaSolicitudesService', () => {
 
       // Assert
       expect(mockCitasService.agendar).not.toHaveBeenCalled();
+    });
+
+    it('no debería registrar la aceptación aunque la solicitud traiga versión: la prueba queda solo en la solicitud (US-11)', async () => {
+      // Arrange
+      mockSolicitudRepository.buscarPorIdParaActualizar.mockResolvedValue(
+        solicitudEn(EstadoSolicitud.RECIBIDA, { terminosVersion: '1.0' }),
+      );
+
+      // Act
+      const result = await service.rechazar(SOLICITUD_ID, usuario);
+
+      // Assert
+      expect(mockPacientesService.registrarAceptacion).not.toHaveBeenCalled();
+      expect(result.terminosVersion).toBe('1.0');
+      expect(primeraGuardada().terminosVersion).toBe('1.0');
     });
 
     it('debería publicar SolicitudCitaRechazada con SOLO { solicitudId, usuarioId }', async () => {
@@ -1099,6 +1145,59 @@ describe('BandejaSolicitudesService', () => {
       );
     });
 
+    it('aceptar con versión (US-11): registra la aceptación DENTRO del callback y con su tx', async () => {
+      // Arrange
+      const registradoEnTransaccion: boolean[] = [];
+      mockPacientesService.registrarAceptacion.mockImplementation(() => {
+        registradoEnTransaccion.push(enTransaccion);
+        return Promise.resolve(true);
+      });
+      mockSolicitudRepository.buscarPorIdParaActualizar.mockResolvedValue(
+        solicitudEn(EstadoSolicitud.RECIBIDA, { terminosVersion: '1.0' }),
+      );
+
+      // Act
+      await service.aceptar(SOLICITUD_ID, dto, usuario);
+
+      // Assert
+      expect(registradoEnTransaccion).toEqual([true]);
+      expect(mockPacientesService.registrarAceptacion).toHaveBeenCalledWith(
+        expect.objectContaining({ canal: CanalAceptacion.FORMULARIO_PUBLICO }),
+        txOperacion,
+      );
+    });
+
+    it('aceptar con versión (US-11): si el registro falla, el error sale de `run` (el runner revierte: ni cita ni solicitud aceptada)', async () => {
+      // Arrange
+      let errorDelCallback: unknown;
+      mockTx.run.mockImplementation(
+        async (work: (tx: unknown) => Promise<unknown>) => {
+          try {
+            return await work(txOperacion);
+          } catch (error) {
+            errorDelCallback = error;
+            throw error;
+          }
+        },
+      );
+      mockSolicitudRepository.buscarPorIdParaActualizar.mockResolvedValue(
+        solicitudEn(EstadoSolicitud.RECIBIDA, { terminosVersion: '1.0' }),
+      );
+      const fallo = new Error('fallo al registrar');
+      mockPacientesService.registrarAceptacion.mockRejectedValue(fallo);
+
+      // Act & Assert
+      await expect(service.aceptar(SOLICITUD_ID, dto, usuario)).rejects.toBe(
+        fallo,
+      );
+      // Salió del callback sin que nadie lo atrapara: el TransactionRunner
+      // real hace ROLLBACK de la cita ya agendada en ese tx.
+      expect(errorDelCallback).toBe(fallo);
+      expect(primerAgendar()[2]).toBe(txOperacion);
+      expect(mockSolicitudRepository.guardar).not.toHaveBeenCalled();
+      expect(publicadoEnTransaccion).toEqual([]);
+    });
+
     it('rechazar: publica SolicitudCitaRechazada dentro del callback, con el tx con el que guarda', async () => {
       // Act
       await service.rechazar(SOLICITUD_ID, usuario);
@@ -1111,6 +1210,189 @@ describe('BandejaSolicitudesService', () => {
       expect(mockSolicitudRepository.guardar).toHaveBeenCalledWith(
         expect.any(SolicitudCita),
         txOperacion,
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // US-11 con los casos de uso REALES (`CitasService`, `PacientesService`)
+  // sobre los dobles en memoria: se comprueba lo que queda en la ficha y en
+  // `aceptaciones_terminos`, no solo las llamadas. La reversión de verdad (el
+  // ROLLBACK) se prueba contra Postgres en
+  // `portal-paciente-concurrencia.integration.spec.ts`.
+  describe('US-11 con los casos de uso reales (dobles en memoria)', () => {
+    const FICHA_ID = 'f1c40000-0000-4000-8000-000000000001';
+
+    let solicitudes: InMemorySolicitudCitaRepository;
+    let pacientes: InMemoryPacienteRepository;
+    let aceptaciones: InMemoryAceptacionTerminosRepository;
+    let transacciones: ContadorTransacciones;
+    let eventos: PublicadorEnMemoria;
+    let bandeja: BandejaSolicitudesService;
+
+    /** La ficha que ya existía con el RUT de la solicitud (111111111). */
+    const sembrarFicha = (consentimiento: boolean): void => {
+      pacientes.pacientes.set(
+        FICHA_ID,
+        Paciente.reconstituir({
+          id: FICHA_ID,
+          rut: '111111111',
+          nombre: 'Paciente de siempre',
+          telefono: '+56 9 7777 7777',
+          correo: 'ficha@mail.com',
+          consentimiento,
+          tenantId: 'tenant-1',
+        }),
+      );
+    };
+
+    const sembrarSolicitud = (
+      extra: Partial<{
+        id: string;
+        consentimiento: boolean;
+        terminosVersion: string | null;
+      }> = {},
+    ): void => {
+      const s = solicitudEn(EstadoSolicitud.RECIBIDA, extra);
+      if (extra.id) s.id = extra.id;
+      solicitudes.sembrar(s);
+    };
+
+    beforeEach(() => {
+      solicitudes = new InMemorySolicitudCitaRepository();
+      pacientes = new InMemoryPacienteRepository();
+      aceptaciones = new InMemoryAceptacionTerminosRepository(pacientes);
+      transacciones = new ContadorTransacciones();
+      eventos = new PublicadorEnMemoria();
+      const pacientesService = new PacientesService(
+        pacientes,
+        aceptaciones,
+        transacciones,
+      );
+      const citasService = new CitasService(
+        new InMemoryCitaRepository('America/Santiago'),
+        new InMemoryCambioCitaRepository(),
+        pacientes,
+        pacientesService,
+        transacciones,
+        eventos,
+        'America/Santiago',
+      );
+      bandeja = new BandejaSolicitudesService(
+        solicitudes,
+        citasService,
+        pacientesService,
+        transacciones,
+        eventos,
+      );
+    });
+
+    it('paciente existente por RUT con consentimiento false: queda en true, con UNA fila formulario_publico y sin crear otro paciente', async () => {
+      // Arrange
+      sembrarFicha(false);
+      sembrarSolicitud({ terminosVersion: '1.0' });
+
+      // Act
+      const { cita, solicitud } = await bandeja.aceptar(
+        SOLICITUD_ID,
+        dto,
+        usuario,
+      );
+
+      // Assert — la ficha
+      expect(pacientes.pacientes.size).toBe(1);
+      expect(cita.pacienteId).toBe(FICHA_ID);
+      expect(pacientes.pacientes.get(FICHA_ID)?.consentimiento).toBe(true);
+      // La prueba: la versión y la hora del ENVÍO, no las de ahora
+      expect(aceptaciones.filas()).toEqual([
+        expect.objectContaining({
+          tenantId: 'tenant-1',
+          pacienteId: FICHA_ID,
+          version: '1.0',
+          canal: CanalAceptacion.FORMULARIO_PUBLICO,
+          aceptadaEn: RECIBIDA_EN,
+          solicitudId: SOLICITUD_ID,
+          usuarioId: null,
+          enlaceId: null,
+        }),
+      ]);
+      // La respuesta
+      expect(cita.paciente?.consentimiento).toBe(true);
+      expect(solicitud.estado).toBe(EstadoSolicitud.ACEPTADA);
+      expect(transacciones.abiertas).toBe(1);
+    });
+
+    it('paciente nuevo: nace con la autorización que marcó y su fila formulario_publico', async () => {
+      // Arrange
+      sembrarSolicitud({ terminosVersion: '1.0' });
+
+      // Act
+      const { cita } = await bandeja.aceptar(SOLICITUD_ID, dto, usuario);
+
+      // Assert
+      expect(pacientes.pacientes.get(cita.pacienteId)?.consentimiento).toBe(
+        true,
+      );
+      expect(aceptaciones.filas().map((a) => a.pacienteId)).toEqual([
+        cita.pacienteId,
+      ]);
+    });
+
+    it('la aceptación va en el MISMO tx que la cita y los hechos', async () => {
+      // Arrange
+      sembrarSolicitud({ terminosVersion: '1.0' });
+      const insercion = jest.spyOn(aceptaciones, 'insertarSiNoExiste');
+      const bandera = jest.spyOn(pacientes, 'marcarConsentimiento');
+
+      // Act
+      await bandeja.aceptar(SOLICITUD_ID, dto, usuario);
+
+      // Assert
+      const tx = transacciones.ultimoContexto;
+      expect(insercion.mock.calls[0][1]).toBe(tx);
+      expect(bandera.mock.calls[0][2]).toBe(tx);
+      expect(eventos.contextos.every((c) => c === tx)).toBe(true);
+      expect(eventos.eventos.map((e) => e.nombre)).toEqual([
+        'CitaCreada',
+        'SolicitudCitaAceptada',
+      ]);
+    });
+
+    it('sin versión (anterior al despliegue): la ficha en false sigue en false y no hay filas', async () => {
+      // Arrange
+      sembrarFicha(false);
+      sembrarSolicitud({ terminosVersion: null });
+
+      // Act
+      const { cita } = await bandeja.aceptar(SOLICITUD_ID, dto, usuario);
+
+      // Assert — la bandeja no toca la ficha existente (ADR-09 §3)
+      expect(pacientes.pacientes.get(FICHA_ID)?.consentimiento).toBe(false);
+      expect(cita.paciente?.consentimiento).toBe(false);
+      expect(aceptaciones.filas()).toHaveLength(0);
+    });
+
+    it('una segunda solicitud aceptada del mismo paciente y versión no duplica la fila: queda la del primer envío (D11)', async () => {
+      // Arrange
+      const SEGUNDA = '5f0c0000-0000-4000-8000-000000000099';
+      sembrarFicha(false);
+      sembrarSolicitud({ terminosVersion: '1.0' });
+      sembrarSolicitud({ id: SEGUNDA, terminosVersion: '1.0' });
+
+      // Act
+      await bandeja.aceptar(SOLICITUD_ID, dto, usuario);
+      await bandeja.aceptar(
+        SEGUNDA,
+        { ...dto, inicio: '2026-09-25T10:00:00-03:00' },
+        usuario,
+      );
+
+      // Assert
+      expect(aceptaciones.filas()).toEqual([
+        expect.objectContaining({ solicitudId: SOLICITUD_ID }),
+      ]);
+      expect(solicitudes.solicitudes.get(SEGUNDA)?.estado).toBe(
+        EstadoSolicitud.ACEPTADA,
       );
     });
   });
