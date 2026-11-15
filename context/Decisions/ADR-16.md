@@ -1,9 +1,13 @@
 # ADR-16: Términos de uso y aviso de privacidad del paciente — texto versionado en `/terminos`, prueba de la aceptación en `aceptaciones_terminos` y aceptación desde el enlace de la cita
 
-> **Fase:** — (transversal: [Cumplimiento](../Cumplimiento/README.md); [ROADMAP § Cumplimiento](../ROADMAP.md#cumplimiento-ley-21719--transversal)) · **Feature:** — (sin implementar) · **Plan:** [US-11](../US/11-terminos-paciente.md) · **Relacionado:** [borrador v0.2 de los términos](../Cumplimiento/borrador-terminos-paciente.md), [ADR-02](ADR-02.md), [ADR-06](ADR-06.md), [ADR-09](ADR-09.md), [ADR-10](ADR-10.md), [ADR-12](ADR-12.md), [ADR-13](ADR-13.md), [DT-16](../Deudas/DT-16.md), [DT-26](../Deudas/DT-26.md), [DT-52](../Deudas/DT-52.md), [DT-53](../Deudas/DT-53.md), [DT-54](../Deudas/DT-54.md), [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)
+> **Fase:** — (transversal: [Cumplimiento](../Cumplimiento/README.md); [ROADMAP § Cumplimiento](../ROADMAP.md#cumplimiento-ley-21719--transversal)) · **Feature:** [us11-terminos-paciente](../Features/us11-terminos-paciente.md) · **Plan:** [US-11](../US/11-terminos-paciente.md) · **Relacionado:** [borrador v0.2 de los términos](../Cumplimiento/borrador-terminos-paciente.md), [ADR-02](ADR-02.md), [ADR-06](ADR-06.md), [ADR-09](ADR-09.md), [ADR-10](ADR-10.md), [ADR-12](ADR-12.md), [ADR-13](ADR-13.md), [DT-16](../Deudas/DT-16.md), [DT-26](../Deudas/DT-26.md), [DT-52](../Deudas/DT-52.md), [DT-53](../Deudas/DT-53.md), [DT-54](../Deudas/DT-54.md), [DT-62](../Deudas/DT-62.md), [DT-63](../Deudas/DT-63.md), [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)
 
 **Fecha:** 2026-11-14
-**Estado:** **Aceptado** (2026-11-14). El usuario aprobó el documento completo ese día.
+**Estado:** **Aceptado** (2026-11-14). El usuario aprobó el documento completo ese día. · **Implementado en la rama
+`feature/terminos-paciente`, sin release** (2026-11-14): backend `92a1f36`, `bdeb1aa` y `894b96c`; frontend `eb3fbcc`
+a `e276343`; verificado en local. Lo construido está en la feature
+[us11-terminos-paciente](../Features/us11-terminos-paciente.md); el release sigue la [decisión 10](#10-despliegue-primero-el-frontend-después-el-backend).
+*Antes: «Aceptado (2026-11-14)», en implementación.*
 
 - **Decididas por el usuario el 2026-11-14**, al elegir entre opciones: **D1** (tabla de historial de solo inserción;
   `pacientes.consentimiento` sigue como bandera), **D2** (`/terminos` genérica; el nombre de la organización solo
@@ -240,7 +244,7 @@ CHECK e índice en el [plan § Modelo de datos](../US/11-terminos-paciente.md#mo
   versión, la ficha gana `consentimiento = true`. No pisa nada que haya escrito el profesional: suma la autorización
   que dio el propio paciente. Es lo que hoy se pierde.
 - **Nada la pone en `false`.** El retiro se atiende a mano (lo dice el texto: escribirle al profesional); registrarlo
-  en el sistema es una deuda a fichar ([abajo](#deudas-técnicas-asociadas)).
+  en el sistema es una deuda: [DT-62](../Deudas/DT-62.md) *(antes: «una deuda a fichar»)*.
 
 ### 5. Formulario público (D5, D10)
 
@@ -422,13 +426,20 @@ Sin ciclos: `paciente` no importa ninguno de los otros tres. `domain/` y `applic
 | F | frontend | la sección *Frontend* del plan, en paralelo a 1 y 2; **se despliega primero** (decisión 10) |
 | 4 | `architecture-agent` | notas en DT-16 y DT-53, la copia congelada de la 1.0, el borrador marcado como publicado, ROADMAP, la feature y TRAZABILIDAD |
 
+**Estado (2026-11-14):** 0, 1 (`92a1f36`), 2 (`bdeb1aa` y `894b96c`) y F (frontend `eb3fbcc` a `e276343`) ✅, en la rama
+`feature/terminos-paciente`; 3 🔶: unitarios e integración commiteados (`1d00f9e`, `fc3a83f`, `305dea5`), las e2e en curso. Del 4 están hechas las notas en DT-16 y DT-53, las deudas
+[DT-62](../Deudas/DT-62.md) y [DT-63](../Deudas/DT-63.md), ROADMAP, la feature
+[us11-terminos-paciente](../Features/us11-terminos-paciente.md) y TRAZABILIDAD. La copia congelada y el borrador
+marcado como publicado esperan al release.
+
 ---
 
 ## Preguntas abiertas
 
-Las de este ADR están en la cabecera: **D3, D5, D6, D7 y D9** van por defecto y **D10 a D14** con su inclinación. Las
-del texto (edad, plazo de respuesta, región de Resend) siguen en el
-[borrador](../Cumplimiento/borrador-terminos-paciente.md) y no bloquean.
+**Ninguna.** El usuario aprobó todas las decisiones el 2026-11-14 (cabecera). Las notas del texto (edad, plazo de
+respuesta, región de Resend) siguen con ❓ en el [borrador](../Cumplimiento/borrador-terminos-paciente.md) y no
+bloquean. *Antes: «Las de este ADR están en la cabecera: D3, D5, D6, D7 y D9 van por defecto y D10 a D14 con su
+inclinación».*
 
 ---
 
@@ -458,10 +469,17 @@ del texto (edad, plazo de respuesta, región de Resend) siguen en el
 máximo de §6 espera a esta deuda) · [DT-52](../Deudas/DT-52.md) (el texto nombra a Railway, Resend y Netlify; la
 casilla de soporte, publicada) · [DT-54](../Deudas/DT-54.md) (el texto fija 16 años y el sistema no lo controla).
 
-**A fichar al aceptar este ADR** (sin número todavía; ⚪ previstas):
+**Previstas** (fichadas el 2026-11-14; ⚪ se contraen con el release):
 
-1. **El retiro de la autorización no se registra.** El texto lo promete por escrito al profesional; el sistema no
-   tiene cómo anotarlo ni pone `consentimiento = false`. Hoy, SQL a mano. Se diseña con [DT-53](../Deudas/DT-53.md).
-2. **El profesional no ve si el paciente aceptó** (si D14 = a). Se diseña con [DT-53](../Deudas/DT-53.md).
+1. [DT-62](../Deudas/DT-62.md) — **el retiro de la autorización no se registra.** El texto lo promete por escrito al
+   profesional; el sistema no tiene cómo anotarlo ni pone `consentimiento = false`, y con la política apagada la
+   bandera tampoco frenaría los recordatorios. Hoy, SQL a mano. Se diseña con [DT-53](../Deudas/DT-53.md).
+2. [DT-63](../Deudas/DT-63.md) — **el profesional no ve si el paciente aceptó** (D14 = a). Se diseña con
+   [DT-53](../Deudas/DT-53.md).
+
+*Antes: «A fichar al aceptar este ADR (sin número todavía; ⚪ previstas)», con las mismas dos.*
+
+**En el frontend:** `DTF-09` (`citia-frontend/context/Deudas/`) — el texto de `/terminos` vive en el frontend y en la
+copia congelada del backend, sin una comparación automática.
 
 Índice completo: [`../Deudas/README.md`](../Deudas/README.md).

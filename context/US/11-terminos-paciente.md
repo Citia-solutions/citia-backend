@@ -1,11 +1,18 @@
 # Plan US-11 — Términos de uso y aviso de privacidad del paciente (RNF-02, Cumplimiento P1)
 
-> **Fase:** — (transversal: [Cumplimiento](../Cumplimiento/README.md); [ROADMAP § Cumplimiento](../ROADMAP.md#cumplimiento-ley-21719--transversal)) · **Feature:** — (sin implementar) · **Plan:** este documento · **Relacionado:** [ADR-16](../Decisions/ADR-16.md), [borrador v0.2 de los términos](../Cumplimiento/borrador-terminos-paciente.md), [ADR-02](../Decisions/ADR-02.md), [ADR-06](../Decisions/ADR-06.md), [ADR-09](../Decisions/ADR-09.md), [ADR-10](../Decisions/ADR-10.md), [ADR-13](../Decisions/ADR-13.md), [DT-16](../Deudas/DT-16.md), [DT-26](../Deudas/DT-26.md), [DT-52](../Deudas/DT-52.md), [DT-53](../Deudas/DT-53.md), [DT-54](../Deudas/DT-54.md), [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)
+> **Fase:** — (transversal: [Cumplimiento](../Cumplimiento/README.md); [ROADMAP § Cumplimiento](../ROADMAP.md#cumplimiento-ley-21719--transversal)) · **Feature:** [us11-terminos-paciente](../Features/us11-terminos-paciente.md) · **Plan:** este documento · **Relacionado:** [ADR-16](../Decisions/ADR-16.md), [borrador v0.2 de los términos](../Cumplimiento/borrador-terminos-paciente.md), [ADR-02](../Decisions/ADR-02.md), [ADR-06](../Decisions/ADR-06.md), [ADR-09](../Decisions/ADR-09.md), [ADR-10](../Decisions/ADR-10.md), [ADR-13](../Decisions/ADR-13.md), [DT-16](../Deudas/DT-16.md), [DT-26](../Deudas/DT-26.md), [DT-52](../Deudas/DT-52.md), [DT-53](../Deudas/DT-53.md), [DT-54](../Deudas/DT-54.md), [DT-62](../Deudas/DT-62.md), [DT-63](../Deudas/DT-63.md), [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)
 
-> **Estado (2026-11-14):** 🔶 **en implementación.** [ADR-16](../Decisions/ADR-16.md) **aceptado**: el usuario decidió
-> D1, D2, D4, D6 y D8 y la línea del job G1 en el §2 del texto, y aprobó el resto del diseño tal como se propuso, el
-> 2026-11-14. Rama del backend: `feature/terminos-paciente` (sale de
-> `develop`); el frontend usa una rama del mismo nombre en `citia-frontend`.
+> **Estado (2026-11-14):** 🔶 **implementado en la rama `feature/terminos-paciente`, sin release.** Backend:
+> `92a1f36` (persistencia), `bdeb1aa` (API) y `894b96c` (`CLAUDE.md` de los módulos); frontend: `eb3fbcc` a `e276343`,
+> en la rama del mismo nombre de `citia-frontend`. Verificado en local
+> ([abajo](#verificación-en-local-2026-11-14)); unitarios e integración del `testing-agent` en
+> `1d00f9e`, `fc3a83f` y `305dea5`; las e2e, en curso. Lo construido está en la
+> feature [us11-terminos-paciente](../Features/us11-terminos-paciente.md). Falta el release, en el orden de
+> [ADR-16 §10](../Decisions/ADR-16.md#10-despliegue-primero-el-frontend-después-el-backend).
+>
+> *Antes (2026-11-14):* 🔶 en implementación. [ADR-16](../Decisions/ADR-16.md) **aceptado**: el usuario decidió D1,
+> D2, D4, D6 y D8 y la línea del job G1 en el §2 del texto, y aprobó el resto del diseño tal como se propuso. La rama
+> del backend sale de `develop`.
 
 > Solo decisiones y orden. Sin código de negocio. Brief para los agentes. El porqué está en
 > [ADR-16](../Decisions/ADR-16.md); aquí va el qué, en qué orden y cuándo está terminado. **Este plan es el contrato:**
@@ -547,6 +554,11 @@ El enlace abre `/terminos` **en otra pestaña** (en la misma, el paciente perder
 | 4 | release | frontend a `main` → comprobar `/terminos` y el correo de soporte → backend a `main` (≥ 30 min después) → pedir a la profesional del piloto que recargue | 3, F |
 | 5 | `architecture-agent` | copia congelada `terminos-paciente-v1.0.md`, el borrador marcado como publicado, notas en DT-16 y DT-53, las deudas a fichar, ROADMAP, la feature y TRAZABILIDAD | 4 |
 
+**Estado (2026-11-14):** 0 ✅ · 1 ✅ `92a1f36` · 2 ✅ `bdeb1aa` y `894b96c` · 3 🔶 `1d00f9e`, `fc3a83f` y `305dea5` (unitarios e integración); las e2e, en curso · F ✅ `eb3fbcc` a
+`e276343` · 4 ⬜ · 5 🔶 adelantado en parte: las notas en DT-16 y DT-53, las deudas
+([DT-62](../Deudas/DT-62.md) y [DT-63](../Deudas/DT-63.md)), ROADMAP, la feature y TRAZABILIDAD ya están; **la copia
+congelada y el borrador marcado como publicado esperan al release**, porque la copia lleva la fecha de publicación.
+
 ### 1 · `database-agent`
 
 - Migraciones con el SQL de arriba; los dos `down` con su advertencia en el comentario de cabecera.
@@ -667,6 +679,21 @@ En staging y, después del release, en production:
 6. **`/cita` de un paciente del paso 3:** no aparece la tarjeta.
 7. **Production, piloto:** los pacientes del piloto aparecen en la consulta 3 (D7) hasta que acepten en su enlace.
 
+### Verificación en local (2026-11-14)
+
+En la base `citia_dev`, con una cuenta de prueba y el frontend de la rama (antes de staging):
+
+- La consulta 1 mostró **las tres filas**: `profesional` desde el modal, con el usuario que marcó la casilla;
+  `formulario_publico` desde un formulario público aceptado en la bandeja, con su `solicitud_id` y `aceptada_en` igual a
+  la hora del envío (la `recibida_en` de la solicitud); y `enlace_cita` desde la tarjeta de `/cita`, con su `enlace_id`.
+- El GET de `/cita` no escribió nada, la cita siguió `pendiente` y, al reabrir el enlace, la tarjeta no aparece.
+- La consulta 3 dio 0 filas.
+- **Matiz de la consulta 1:** en el canal `profesional`, `registrada_en` (`DEFAULT now()`, la hora de inicio de la
+  transacción) queda unos milisegundos **antes** que `aceptada_en` (el reloj de la app, dentro de la transacción). La
+  prueba es `aceptada_en`; `registrada_en` solo dice cuándo se escribió la fila.
+
+Los pasos 1 a 7 de arriba siguen pendientes en staging y en production.
+
 ---
 
 ## Riesgos
@@ -711,5 +738,10 @@ D6 con el 400, los cambios editoriales del texto, la línea del job G1 en el §2
 - [DT-52](../Deudas/DT-52.md) — el texto nombra a los proveedores; la casilla de soporte se publica.
 - [DT-54](../Deudas/DT-54.md) — 16 años en el texto, sin control en el sistema.
 - [DT-46](../Deudas/DT-46.md) — las fechas nuevas declaran `timestamptz`.
-- **A fichar al aceptar el ADR:** el retiro de la autorización no se registra; el profesional no ve si el paciente
-  aceptó (si D14 = a). Ver [ADR-16 § Deudas](../Decisions/ADR-16.md#deudas-técnicas-asociadas).
+- [DT-62](../Deudas/DT-62.md) — el retiro de la autorización no se registra (⚪ prevista: se contrae con el release).
+- [DT-63](../Deudas/DT-63.md) — el profesional no ve si el paciente aceptó (D14 = a; ⚪ prevista).
+- En el frontend, `DTF-09` (`citia-frontend/context/Deudas/`): el texto de `/terminos` vive en los dos repos, sin
+  comparación automática.
+
+*Antes: «A fichar al aceptar el ADR: el retiro de la autorización no se registra; el profesional no ve si el paciente
+aceptó (si D14 = a)».* Ver [ADR-16 § Deudas](../Decisions/ADR-16.md#deudas-técnicas-asociadas).

@@ -1,14 +1,24 @@
 # Borrador: términos de uso y aviso de privacidad para pacientes
 
-> **Fase:** — (transversal: [Cumplimiento](README.md)) · **Feature:** — · **Plan:** — · **Relacionado:**
-> [DT-16](../Deudas/DT-16.md) (el consentimiento), [DT-53](../Deudas/DT-53.md) (política de privacidad y derechos),
-> [DT-52](../Deudas/DT-52.md) (proveedores), [DT-26](../Deudas/DT-26.md) (conservación), [DT-54](../Deudas/DT-54.md)
-> (menores)
+> **Fase:** — (transversal: [Cumplimiento](README.md)) · **Feature:** [us11](../Features/us11-terminos-paciente.md) · **Plan:** [US-11](../US/11-terminos-paciente.md) · **Relacionado:**
+> [ADR-16](../Decisions/ADR-16.md) (cómo se publica y cómo queda la prueba), [DT-16](../Deudas/DT-16.md) (el
+> consentimiento), [DT-53](../Deudas/DT-53.md) (política de privacidad y derechos), [DT-52](../Deudas/DT-52.md)
+> (proveedores), [DT-26](../Deudas/DT-26.md) (conservación), [DT-54](../Deudas/DT-54.md) (menores),
+> [DT-62](../Deudas/DT-62.md) (el retiro)
 
 **Estado:** ✏️ borrador v0.2 del 2026-11-14, con las **7 decisiones confirmadas por el usuario** ese mismo día
-([abajo](#decisiones-confirmadas-por-el-usuario-el-2026-11-14)); falta publicarlo. El usuario decidió abordar el
+([abajo](#decisiones-confirmadas-por-el-usuario-el-2026-11-14)). El usuario decidió abordar el
 cumplimiento sin abogado por ahora, empezando por **los términos que autoriza el paciente**. Este texto es del
 proyecto: nadie con formación legal lo ha revisado. *Antes: v0.1, con las decisiones por confirmar.*
+
+> **2026-11-14 — la versión que se publica es la 1.0, no esta.** [ADR-16](../Decisions/ADR-16.md) decidió cómo se
+> publica y el [plan US-11](../US/11-terminos-paciente.md#el-texto-que-se-publica) tiene el texto **1.0**: este
+> borrador con los marcadores resueltos, sin el máximo de plazo del §6, con la autorización como dato nuevo del §2 y
+> con la línea del job G1 (*«Si no confirmas una hora y no se registra tu asistencia, al terminar el día el sistema la
+> marca sola como inasistencia.»*). La lista de los 14 cambios está en el
+> [plan](../US/11-terminos-paciente.md#cambios-respecto-del-borrador-v02). US-11 está implementada en la rama
+> `feature/terminos-paciente`, **sin release**. **Este borrador ya no se edita:** queda como antecedente. Al publicar,
+> el texto 1.0 se congela en `context/Cumplimiento/terminos-paciente-v1.0.md` y este archivo se marca como publicado.
 
 **Dónde se usaría:**
 
@@ -34,6 +44,10 @@ del proveedor, no decisiones abiertas.
 | 5 | Desde qué edad acepta el propio paciente | **16 años** ❓ (lectura del pre-análisis sobre el art. 16 quáter: hasta los 15, para datos de salud, acepta la madre, el padre o quien lo represente) |
 | 6 | Proveedores y países | Railway, Resend y Netlify, con datos en EE. UU. ❓ (la región de Resend está sin verificar, [DT-52](../Deudas/DT-52.md)) |
 | 7 | Plazo para responder una solicitud de derechos | **30 días** ❓ (sin verificar en la Ley 21.719) |
+
+*(2026-11-14, [ADR-16](../Decisions/ADR-16.md): la decisión 4 se ajustó con D8. La 1.0 se publica **sin** «con un
+máximo de [plazo]»; el máximo entra en una versión nueva cuando se resuelva [DT-26](../Deudas/DT-26.md). La 3 se
+completó con D2: el contacto del profesional es «por el medio que usas para comunicarte con tu profesional».)*
 
 ---
 
@@ -147,11 +161,21 @@ casilla**:
 
 ## Lo que falta para usarlo (no es parte de este borrador)
 
-- **Publicarlo** en una página del frontend (por ejemplo, `/terminos`), con número de versión.
-- **Guardar la prueba de la aceptación:** qué versión aceptó el paciente, cuándo y por qué canal (formulario, enlace o
-  profesional). Hoy solo se guarda un `true` o `false` ([DT-16](../Deudas/DT-16.md)).
-- **Que acepte el paciente agendado a mano:** pedirle la aceptación en la página del enlace la primera vez que la abra.
-- **Atender los derechos:** hoy no hay forma de entregarle sus datos a un paciente ni de borrarlo; solo se corrigen el
-  teléfono y el correo ([DT-53](../Deudas/DT-53.md)). Mientras tanto, se atienden a mano.
+*(2026-11-14: ADR-16 y US-11 cubren los tres primeros, en la rama `feature/terminos-paciente`, **sin release**. El
+cuarto sigue abierto. Detalle en la [feature](../Features/us11-terminos-paciente.md).)*
+
+- ✅ **Publicarlo** en una página del frontend (por ejemplo, `/terminos`), con número de versión. → **Cubierto:**
+  `/terminos`, versión 1.0, con su fecha ([ADR-16 §1](../Decisions/ADR-16.md#1-el-texto-terminos-versión-10-genérico-d2-d8-d9)).
+  La fecha se fija el día del release.
+- ✅ **Guardar la prueba de la aceptación:** qué versión aceptó el paciente, cuándo y por qué canal (formulario, enlace o
+  profesional). Hoy solo se guarda un `true` o `false` ([DT-16](../Deudas/DT-16.md)). → **Cubierto:** la tabla
+  `aceptaciones_terminos`, con los canales `formulario_publico`, `enlace_cita` y `profesional`
+  ([ADR-16 §3](../Decisions/ADR-16.md#3-la-tabla-aceptaciones_terminos-d1-d11-d12)).
+- ✅ **Que acepte el paciente agendado a mano:** pedirle la aceptación en la página del enlace la primera vez que la abra.
+  → **Cubierto:** una tarjeta no bloqueante en `/cita`, que aparece cada vez que la abre hasta que acepte
+  ([ADR-16 §8](../Decisions/ADR-16.md#8-cita-la-tarjeta-y-post-publicocitaaceptar-terminos-d4)).
+- ⬜ **Atender los derechos:** hoy no hay forma de entregarle sus datos a un paciente ni de borrarlo; solo se corrigen el
+  teléfono y el correo ([DT-53](../Deudas/DT-53.md)). Mientras tanto, se atienden a mano. → **No lo cubre US-11.** Tampoco
+  se registra el retiro de la autorización ([DT-62](../Deudas/DT-62.md)).
 - **Lo que este texto no cubre:** el contrato entre la clínica y Citia ([DT-51](../Deudas/DT-51.md)), las cuentas de
   los profesionales (donde Citia sería responsable) y la calificación de asistencia, que sigue 🚧 bloqueada.

@@ -6,7 +6,8 @@ endpoints, esquema de BD, decisiones y pendientes. Alineadas con los commits (ve
 por su fase en [`../Fases/`](../Fases/README.md).
 
 *(Estados actualizados el 2026-10-07; la Fase 3, el 2026-10-18, tras su release del 2026-10-17; la Fase 7, el
-2026-11-01, tras su release de ese día; US-07.01, el 2026-11-14, al cerrarla.)*
+2026-11-01, tras su release de ese día; US-07.01, el 2026-11-14, al cerrarla; US-11, el 2026-11-14, implementada en
+su rama, sin release.)*
 
 ## Implementadas
 
@@ -21,6 +22,7 @@ por su fase en [`../Fases/`](../Fases/README.md).
 | [us04-respuesta-paciente](us04-respuesta-paciente.md) | US-04 (+ US-02.07) · RF-07: el paciente confirma, cancela o pide otra hora desde el enlace del recordatorio + límite de tasa | ✅ **En producción** (release 2026-10-17) · [desviaciones del contrato](us04-respuesta-paciente.md#desviaciones-del-contrato-y-decisiones-tomadas-al-implementar) | [Fase 3](../Fases/fase-3-us04-respuesta-paciente.md) | **10**,13 (nota),12,09,04,06,02 | `c757e0e`,`4d3d88f`,`92b8020`,`143c8fb` (merge `ce0c533`) |
 | [us0701-registro-hechos](us0701-registro-hechos.md) | US-07.01 · primera parte de US-07 (RF-08): asistencia sobre citas `pendiente` con la guarda de la hora, quién pidió cada cancelación o reagendamiento, origen de la cita, primera apertura del enlace y job G1 de cierre por `ghosting` | ✅ **Cerrada** (2026-11-14; pruebas manuales completas el 2026-11-01) · en producción desde 2026-10-20 · job G1 prendido desde 2026-10-27 · la calificación (US-07.02) 🚧 bloqueada | [Fase 5](../Fases/fase-5-us07-scoring.md) | **14**,04 (extendido),12,10,09,07,02 | `1545ad7`,`f123617`,`8a7953b` (release `313a506`) |
 | [us10-perfil-cuenta](us10-perfil-cuenta.md) | US-10 · RF-04: perfil editable, cambio de contraseña con corte de las demás sesiones, suscripción en lectura (solo el administrador) y mensajes a soporte con su propio envío | ✅ **En producción** (release 2026-11-01) · cierre pendiente de las pruebas manuales y de Q18/Q19 · sin `SOPORTE_CORREO_DESTINO` en production: los mensajes esperan en `pendiente` · [desviaciones del contrato](us10-perfil-cuenta.md#desviaciones-del-contrato) | [Fase 7](../Fases/fase-7-us10-perfil.md) | **15**,01 (extendido),12,13,03,06,02 | `a2058aa`,`35aec28`,`fcfeac3`,`c090105` (release `cd659c1`) |
+| [us11-terminos-paciente](us11-terminos-paciente.md) | US-11 · RNF-02, cumplimiento P1: texto 1.0 en `/terminos`, prueba de la aceptación en `aceptaciones_terminos` (formulario, enlace de la cita y profesional), el backend rechaza `consentimiento: false` y tarjeta no bloqueante en `/cita` | 🔶 **Implementada en la rama `feature/terminos-paciente`, sin release** · verificada en local (2026-11-14) · unitarios e integración del `testing-agent` commiteados; las e2e, en curso · [release pendiente](us11-terminos-paciente.md#release-pendiente): frontend primero | — (transversal: [Cumplimiento](../Cumplimiento/README.md)) | **16**,09 (matiz §3),10,06,02 | `92a1f36`,`bdeb1aa`,`894b96c`,`1d00f9e`,`fc3a83f`,`305dea5` (sin merge) |
 | [registrar-usuario](registrar-usuario.md) | ⛔ DESUSO | Superseded por us00a | [Fundaciones](../Fases/fase-base-fundaciones.md) (histórico) | — | (histórico) |
 
 ## Diseñadas, sin implementar
@@ -58,6 +60,11 @@ Ninguna por ahora. *(La única que había, la respuesta del paciente de la Fase 
   aceptar): `us02` y `us04` no se reescribieron. *(Antes: "US-07.01 (Fase 5, en producción desde el 2026-10-20)
   todavía no tiene feature: se crea al cerrarla. Mientras tanto, lo construido está en ADR-14 y en su plan
   US-07.01".)*
+- **`us11-terminos-paciente.md`** (2026-11-14) describe el código de la rama `feature/terminos-paciente`, **sin merge
+  ni release**. Se creó antes del release, a diferencia de las otras, porque la implementación quedó verificada en
+  local y su release depende de pasos manuales (frontend primero, la fecha del texto, el correo de soporte). Cubre
+  también lo que US-11 cambió en `cita` (el alta manual), `solicitud` (formulario y bandeja) y `portal-paciente`
+  (`/cita`): `us02` y `us04` no se reescribieron. Al salir el release, su estado y la sección *Release* se actualizan.
 - Las features de US futuras (RF-01/02/04/05/08) aún no tienen doc porque no están
   implementadas ni diseñadas. Su estado vive en el [ROADMAP](../ROADMAP.md) y en
   [`../Fases/`](../Fases/README.md).
