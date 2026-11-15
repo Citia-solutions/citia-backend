@@ -227,6 +227,8 @@ describe('Recordatorios: políticas de envío y flujo (e2e con Postgres)', () =>
                   ? paciente.correo
                   : `paciente${pacienteN}@correo.cl`,
               consentimiento: true,
+              // US-11: obligatoria en HTTP (D5, D6).
+              terminosVersion: '1.0',
             },
           };
     const res = await request(server())
@@ -476,6 +478,8 @@ describe('Recordatorios: políticas de envío y flujo (e2e con Postgres)', () =>
           motivo: 'Control anual',
           preferenciaHoraria: 'mañanas',
           consentimiento: true,
+          // US-11: obligatoria en HTTP (D5, D6).
+          terminosVersion: '1.0',
         })
         .expect(202);
       const bandeja = await request(server())

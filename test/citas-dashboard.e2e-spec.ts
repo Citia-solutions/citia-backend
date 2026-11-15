@@ -154,6 +154,8 @@ describe('Citas dashboard (e2e)', () => {
         telefono: '+56 9 1111 1111',
         correo: 'contacto@mail.com',
         consentimiento: true,
+        // US-11: obligatoria en HTTP (D5, D6).
+        terminosVersion: '1.0',
       })
       .expect(201);
     return (res.body as PacienteBody).id;

@@ -17,6 +17,7 @@ import { AuthModule } from '../src/modules/auth/auth.module';
 import { EnlacesCitaService } from '../src/modules/cita/application/enlaces-cita.service';
 import { CitaModule } from '../src/modules/cita/cita.module';
 import { PacienteModule } from '../src/modules/paciente/paciente.module';
+import { MENSAJE_VERSION_TERMINOS_NO_VIGENTE } from '../src/modules/paciente/presentation/dto/version-terminos.decorator';
 import { PortalPacienteModule } from '../src/modules/portal-paciente/portal-paciente.module';
 import { SolicitudModule } from '../src/modules/solicitud/solicitud.module';
 import { TenantModule } from '../src/modules/tenant/tenant.module';
@@ -37,8 +38,10 @@ import { PlanificacionModule } from '../src/shared/planificacion.module';
  *   cita → el MISMO enlace sirve para la hora nueva
  *   cancelar con una petición abierta → el suscriptor la descarta
  *   reagendar desde el voucher con una petición abierta → queda atendida
- *   404 uniforme (seis formas, cuatro rutas) y 409 uniforme
+ *   404 uniforme (seis formas, cinco rutas) y 409 uniforme
  *   carrera real de dos peticiones de otra hora (23505 → 409)
+ *   US-11: terminosPendientes en la vista, aceptar-terminos (la fila
+ *   enlace_cita en la base) y la solicitud aceptada en la bandeja
  *
  * El token se obtiene como lo obtiene el recordatorio:
  * `EnlacesCitaService.asegurarActivo` en una transacción.
@@ -82,6 +85,8 @@ interface VistaBody {
   organizacion: string;
   accionesPermitidas: string[];
   solicitudOtraHora: { preferencia: string; solicitadaEn: string } | null;
+  // US-11: sin aceptación PROPIA (formulario o enlace) de una versión que cubre.
+  terminosPendientes: boolean;
 }
 interface SolicitudBody {
   id: string;
@@ -201,6 +206,9 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
           telefono: '+56 9 8765 4321',
           correo: `secreta${siguiente}@correo.cl`,
           consentimiento: true,
+          // US-11: el alta manual deja la aceptación del canal profesional
+          // (que NO cuenta para /cita: terminosPendientes sigue en true).
+          terminosVersion: '1.0',
         },
       })
       .expect(201);
@@ -407,6 +415,8 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
         organizacion: 'Clinica Portal a',
         accionesPermitidas: ['confirmar', 'cancelar', 'pedirOtraHora'],
         solicitudOtraHora: null,
+        // US-11: el profesional la marcó; el paciente todavía no aceptó.
+        terminosPendientes: true,
       });
       expect(res.headers['cache-control']).toBe('no-store');
       expect(res.headers['referrer-policy']).toBe('no-referrer');
@@ -545,6 +555,8 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
           'organizacion',
           'profesional',
           'solicitudOtraHora',
+          // US-11: un booleano sobre la autorización, no un dato del paciente
+          'terminosPendientes',
           'zonaHoraria',
         ].sort(),
       );
@@ -826,10 +838,10 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
   });
 
   // ---------------------------------------------------------------------------
-  describe('404 uniforme: seis formas de enlace no válido, cuatro rutas', () => {
+  describe('404 uniforme: seis formas de enlace no válido, cinco rutas', () => {
     const tokens: Record<string, string | undefined> = {};
     const citasConEnlace: CitaBody[] = [];
-    /** Bitácora y outbox de las tres citas, ANTES de las 24 peticiones rechazadas. */
+    /** Bitácora y outbox de las tres citas, ANTES de las 30 peticiones rechazadas. */
     let rastroAntes: { cambios: number; hechos: number };
 
     const rastro = async (): Promise<{ cambios: number; hechos: number }> => {
@@ -885,6 +897,11 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
       ['POST confirmar', (t) => post('confirmar', t)],
       ['POST cancelar', (t) => post('cancelar', t, { motivo: 'x' })],
       ['POST otra-hora', (t) => post('otra-hora', t, { preferencia: 'x' })],
+      // US-11: con un cuerpo válido, el mismo 404 (y nada escrito).
+      [
+        'POST aceptar-terminos',
+        (t) => post('aceptar-terminos', t, { terminosVersion: '1.0' }),
+      ],
     ];
 
     it.each(rutas)(
@@ -928,7 +945,18 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
           WHERE cita_origen_id = ANY($1::uuid[])`,
         [ids],
       );
-      expect({ cambios, peticiones }).toEqual({ cambios: 0, peticiones: 0 });
+      // US-11: ningún aceptar-terminos rechazado dejó una aceptación del enlace
+      const [{ aceptaciones }] = await datos.query<{ aceptaciones: number }[]>(
+        `SELECT count(*)::int AS aceptaciones FROM aceptaciones_terminos a
+           JOIN citas c ON c.paciente_id = a.paciente_id
+          WHERE c.id = ANY($1::uuid[]) AND a.canal = 'enlace_cita'`,
+        [ids],
+      );
+      expect({ cambios, peticiones, aceptaciones }).toEqual({
+        cambios: 0,
+        peticiones: 0,
+        aceptaciones: 0,
+      });
       // Ni la bitácora ni el outbox de esas citas se movieron (nada después
       // de inicio, nada con un enlace revocado ni con la cita terminal)
       expect(await rastro()).toEqual(rastroAntes);
@@ -1424,6 +1452,289 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // US-11 (ADR-16 §8): la tarjeta de /cita. `terminosPendientes` en la vista;
+  // `POST aceptar-terminos` (200, sin 409, idempotente) deja la fila
+  // `enlace_cita`; la aceptación del formulario, al aceptarse la solicitud en
+  // la bandeja, también la apaga.
+  describe('términos del paciente (US-11)', () => {
+    interface AceptacionFila {
+      canal: string;
+      version: string;
+      enlaceId: string | null;
+      solicitudId: string | null;
+      usuarioId: string | null;
+      aceptadaEn: Date;
+    }
+
+    const pacienteDe = async (cita: CitaBody): Promise<string> => {
+      const [{ id }] = await datos.query<{ id: string }[]>(
+        'SELECT paciente_id::text AS id FROM citas WHERE id = $1',
+        [cita.id],
+      );
+      return id;
+    };
+
+    const aceptacionesDe = async (cita: CitaBody): Promise<AceptacionFila[]> =>
+      datos.query<AceptacionFila[]>(
+        `SELECT canal, version,
+                enlace_id::text    AS "enlaceId",
+                solicitud_id::text AS "solicitudId",
+                usuario_id::text   AS "usuarioId",
+                aceptada_en        AS "aceptadaEn"
+           FROM aceptaciones_terminos
+          WHERE paciente_id = $1
+          ORDER BY canal`,
+        [await pacienteDe(cita)],
+      );
+
+    const banderaDe = async (cita: CitaBody): Promise<boolean> => {
+      const [{ consentimiento }] = await datos.query<
+        { consentimiento: boolean }[]
+      >(
+        `SELECT p.consentimiento FROM pacientes p
+           JOIN citas c ON c.paciente_id = p.id
+          WHERE c.id = $1`,
+        [cita.id],
+      );
+      return consentimiento;
+    };
+
+    const aceptar = (
+      token?: string,
+      cuerpo: object = { terminosVersion: '1.0' },
+    ) => post('aceptar-terminos', token, cuerpo);
+
+    describe('aceptar desde el enlace', () => {
+      let cita: CitaBody;
+      let token: string;
+
+      beforeAll(async () => {
+        cita = await crearCita(a);
+        token = await tokenDe(cita, a);
+      });
+
+      it('GET: terminosPendientes true con solo la aceptación del profesional', async () => {
+        // Act
+        const vista = (await ver(token).expect(200)).body as VistaBody;
+
+        // Assert
+        expect(vista.terminosPendientes).toBe(true);
+        expect((await aceptacionesDe(cita)).map((f) => f.canal)).toEqual([
+          'profesional',
+        ]);
+      });
+
+      it('400 con una versión desconocida, sin cuerpo o con la del borrador: el mensaje fijo y nada escrito', async () => {
+        for (const cuerpo of [
+          { terminosVersion: '9.9' },
+          {},
+          { terminosVersion: '0.2' },
+        ]) {
+          // Act
+          const res = await aceptar(token, cuerpo).expect(400);
+
+          // Assert — solo el mensaje fijo (una o dos veces, según cuántas
+          // reglas fallen)
+          const { message } = res.body as { message: string[] };
+          expect(message.length).toBeGreaterThan(0);
+          expect(new Set(message)).toEqual(
+            new Set([MENSAJE_VERSION_TERMINOS_NO_VIGENTE]),
+          );
+          exigirCabecerasPublicas(res);
+        }
+        expect((await aceptacionesDe(cita)).map((f) => f.canal)).toEqual([
+          'profesional',
+        ]);
+      });
+
+      it('el 400 de la versión llega ANTES de mirar el token: con un enlace que no existe también es 400, no 404', async () => {
+        // Act
+        const res = await aceptar('A'.repeat(43), {
+          terminosVersion: '9.9',
+        }).expect(400);
+
+        // Assert
+        expect(JSON.stringify(res.body)).toContain(
+          MENSAJE_VERSION_TERMINOS_NO_VIGENTE,
+        );
+        expect(res.text).not.toContain('Enlace no válido');
+      });
+
+      it('POST aceptar-terminos → 200 con la vista sin pendientes; la fila enlace_cita en la base y la bandera en true', async () => {
+        // Arrange
+        const antes = Date.now();
+        const bitacoraAntes = await bitacoraDe(cita);
+        const hechosAntes = await hechosDe(cita);
+
+        // Act
+        const res = await aceptar(token).expect(200);
+
+        // Assert — la vista
+        const vista = res.body as VistaBody;
+        expect(vista).toMatchObject({
+          estado: 'pendiente',
+          accionesPermitidas: ['confirmar', 'cancelar', 'pedirOtraHora'],
+          solicitudOtraHora: null,
+          terminosPendientes: false,
+        });
+        exigirCabecerasPublicas(res);
+        // La prueba: el enlace resuelto, sin usuario ni solicitud
+        const filas = await aceptacionesDe(cita);
+        expect(filas.map((f) => f.canal)).toEqual([
+          'enlace_cita',
+          'profesional',
+        ]);
+        const [delEnlace] = filas;
+        expect(delEnlace).toMatchObject({
+          version: '1.0',
+          enlaceId: await enlaceActivoDe(cita),
+          solicitudId: null,
+          usuarioId: null,
+        });
+        expect(delEnlace.aceptadaEn.getTime()).toBeGreaterThanOrEqual(
+          antes - 1_000,
+        );
+        expect(await banderaDe(cita)).toBe(true);
+        // Aceptar no es una acción sobre la cita
+        expect(await bitacoraDe(cita)).toEqual(bitacoraAntes);
+        expect(await hechosDe(cita)).toEqual(hechosAntes);
+        expect((await detalle(cita)).estado).toBe('pendiente');
+      });
+
+      it('repetido → 200 y sigue habiendo UNA fila del enlace (idempotente)', async () => {
+        // Act
+        const res = await aceptar(token).expect(200);
+
+        // Assert
+        expect((res.body as VistaBody).terminosPendientes).toBe(false);
+        expect(
+          (await aceptacionesDe(cita)).filter((f) => f.canal === 'enlace_cita'),
+        ).toHaveLength(1);
+      });
+
+      it('el GET siguiente ya no la pide y no escribe nada', async () => {
+        // Act
+        const vista = (await ver(token).expect(200)).body as VistaBody;
+
+        // Assert
+        expect(vista.terminosPendientes).toBe(false);
+        expect(await aceptacionesDe(cita)).toHaveLength(2);
+      });
+
+      it('el token ni su hash quedan en la prueba', async () => {
+        const crudo = JSON.stringify(
+          await datos.query('SELECT * FROM aceptaciones_terminos'),
+        );
+        expect(crudo).not.toContain(token);
+        expect(crudo).not.toContain(
+          createHash('sha256').update(token).digest('hex'),
+        );
+      });
+    });
+
+    it('sin 409: vale con la cita confirmada y con una petición de otra hora abierta', async () => {
+      // Arrange
+      const confirmada = await crearCita(a);
+      const tokenConfirmada = await tokenDe(confirmada, a);
+      await post('confirmar', tokenConfirmada).expect(200);
+      const conPeticion = await crearCita(a);
+      const tokenConPeticion = await tokenDe(conPeticion, a);
+      await post('otra-hora', tokenConPeticion, {
+        preferencia: 'tardes',
+      }).expect(201);
+
+      // Act
+      const resConfirmada = await aceptar(tokenConfirmada).expect(200);
+      const resConPeticion = await aceptar(tokenConPeticion).expect(200);
+
+      // Assert
+      expect(resConfirmada.body).toMatchObject({
+        estado: 'confirmada',
+        terminosPendientes: false,
+      });
+      expect(resConPeticion.body).toMatchObject({
+        accionesPermitidas: ['cancelar'],
+        solicitudOtraHora: { preferencia: 'tardes' },
+        terminosPendientes: false,
+      });
+    });
+
+    it('una solicitud del formulario aceptada en la bandeja → el GET del enlace sale con terminosPendientes: false, sin fila del enlace', async () => {
+      // Arrange — el paciente ya tiene una cita con su RUT (del profesional)
+      const rut = rutValido(17_890_123);
+      const cita = await crearCita(a, undefined, rut);
+      const token = await tokenDe(cita, a);
+      expect(
+        ((await ver(token).expect(200)).body as VistaBody).terminosPendientes,
+      ).toBe(true);
+      // …y envía el formulario público con la casilla marcada
+      await request(server())
+        .post(`/api/publico/${a.tenantSlug}/solicitudes`)
+        .send({
+          rut,
+          nombrePaciente: 'Paciente del Formulario',
+          telefono: '+56 9 1212 1212',
+          correo: 'formulario@correo.cl',
+          motivo: 'Control',
+          preferenciaHoraria: 'mañanas',
+          consentimiento: true,
+          terminosVersion: '1.0',
+        })
+        .expect(202);
+      const recibidas = (
+        await request(server())
+          .get('/api/solicitudes?estado=recibida')
+          .set('Authorization', `Bearer ${a.token}`)
+          .expect(200)
+      ).body as (SolicitudBody & { terminosVersion: string | null })[];
+      const solicitud = recibidas.find(
+        (s) => s.tipo === 'nueva' && rutCanonico(s.rut) === rutCanonico(rut),
+      )!;
+      expect(solicitud.terminosVersion).toBe('1.0');
+      const [{ recibidaEn }] = await datos.query<{ recibidaEn: Date }[]>(
+        'SELECT recibida_en AS "recibidaEn" FROM solicitudes_cita WHERE id = $1',
+        [solicitud.id],
+      );
+
+      // Act — el profesional la acepta en la bandeja
+      const aceptada = await request(server())
+        .post(`/api/solicitudes/${solicitud.id}/aceptar`)
+        .set('Authorization', `Bearer ${a.token}`)
+        .send({
+          inicio: alMinuto(Date.now() + 9 * DIA).toISOString(),
+          duracionMin: 45,
+          tipoConsulta: 'Control',
+        })
+        .expect(201);
+
+      // Assert — vinculada al mismo paciente por RUT
+      expect(
+        (aceptada.body as { cita: { pacienteId: string } }).cita.pacienteId,
+      ).toBe(await pacienteDe(cita));
+      // La prueba del formulario: su solicitud y la hora del ENVÍO
+      const filas = await aceptacionesDe(cita);
+      expect(filas.map((f) => f.canal)).toEqual([
+        'formulario_publico',
+        'profesional',
+      ]);
+      expect(filas[0]).toMatchObject({
+        version: '1.0',
+        solicitudId: solicitud.id,
+        enlaceId: null,
+        usuarioId: null,
+        aceptadaEn: recibidaEn,
+      });
+      // /cita ya no pide aceptar
+      expect(
+        ((await ver(token).expect(200)).body as VistaBody).terminosPendientes,
+      ).toBe(false);
+      // Y aceptar desde el enlace no escribe otra fila
+      await aceptar(token).expect(200);
+      expect(await aceptacionesDe(cita)).toHaveLength(2);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   describe('regla anti-spam por RUT: ignora los reagendamientos en los dos sentidos (R5)', () => {
     let c: Organizacion;
 
@@ -1443,6 +1754,7 @@ describe('Portal del paciente /api/publico/cita (e2e con Postgres)', () => {
           motivo: 'Control',
           preferenciaHoraria: 'mañanas',
           consentimiento: true,
+          terminosVersion: '1.0',
         })
         .expect(202);
 

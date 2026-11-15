@@ -17,13 +17,19 @@ import {
   OrigenCita,
 } from '../src/modules/cita/domain/cita.entity';
 import { PacientesService } from '../src/modules/paciente/application/pacientes.service';
+import { CanalAceptacion } from '../src/modules/paciente/domain/aceptacion-terminos.entity';
+import { MENSAJE_VERSION_TERMINOS_NO_VIGENTE } from '../src/modules/paciente/presentation/dto/version-terminos.decorator';
 import { BandejaSolicitudesService } from '../src/modules/solicitud/application/bandeja-solicitudes.service';
+import { SolicitudesService } from '../src/modules/solicitud/application/solicitudes.service';
 import {
   EstadoSolicitud,
   SolicitudCita,
   TipoSolicitud,
 } from '../src/modules/solicitud/domain/solicitud-cita.entity';
+import { SolicitudesPublicasController } from '../src/modules/solicitud/presentation/solicitudes-publicas.controller';
 import { SolicitudesController } from '../src/modules/solicitud/presentation/solicitudes.controller';
+import { ITenantRepository } from '../src/modules/tenant/domain/tenant.repository';
+import { Tenant, TipoTenant } from '../src/modules/tenant/domain/tenant.entity';
 import { RolUsuario } from '../src/modules/usuario/domain/usuario.entity';
 import {
   ContadorTransacciones,
@@ -43,7 +49,11 @@ import { SESION_VIGENTE_FALSA } from './support/sesion-vigente-falsa';
  * transform), JwtAuthGuard + JwtStrategy reales, ParseUUIDPipe,
  * SolicitudesController, BandejaSolicitudesService, CitasService y
  * PacientesService reales. Solo la persistencia es en memoria (contrato del
- * puerto, con copias). Lo que NO cubre (pendiente contra Postgres, DT-20): el
+ * puerto, con copias). Desde US-11 también el formulario público
+ * (`SolicitudesPublicasController` + `SolicitudesService` reales): exige
+ * `consentimiento: true` y `terminosVersion`, y la bandeja registra la
+ * aceptación `formulario_publico` al aceptar. Lo que NO cubre (pendiente
+ * contra Postgres, DT-20): el
  * `SELECT ... FOR UPDATE` real bajo concurrencia, la migración `resuelta_en`
  * y el adaptador TypeORM.
  */
@@ -101,6 +111,8 @@ interface SolicitudBody {
   tipo: string;
   citaOrigenId: string | null;
   citaOrigen: { inicio: string; duracionMin: number; estado: string } | null;
+  // US-11 (D13): null en las de reagendamiento y en las anteriores.
+  terminosVersion: string | null;
 }
 
 interface CitaBody {
@@ -135,12 +147,33 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
   const pacienteRepo = new InMemoryPacienteRepository();
   const tx = new ContadorTransacciones();
   const eventos = new PublicadorEnMemoria();
-  // US-11: la bandeja y el alta comparten el registro de aceptaciones.
+  // US-11: la bandeja y el alta comparten el registro de aceptaciones. Se
+  // limpia en `sembrar()`, como los demás dobles.
+  const aceptacionRepo = new InMemoryAceptacionTerminosRepository(pacienteRepo);
   const pacientesService = new PacientesService(
     pacienteRepo,
-    new InMemoryAceptacionTerminosRepository(pacienteRepo),
+    aceptacionRepo,
     tx,
   );
+  // US-11: las organizaciones del formulario público (solo se busca por slug).
+  const SLUG_A = 'clinica-a';
+  const tenantRepo: ITenantRepository = {
+    guardar: () => Promise.reject(new Error('no se usa')),
+    findById: () => Promise.resolve(null),
+    findBySlug: (slug: string) =>
+      Promise.resolve(
+        slug === SLUG_A
+          ? Object.assign(new Tenant(), {
+              id: TENANT_A,
+              nombre: 'Clínica A',
+              slug: SLUG_A,
+              tipo: TipoTenant.CLINICA,
+              plan: 'base',
+              creadoEn: new Date('2026-01-01T00:00:00Z'),
+            })
+          : null,
+      ),
+  };
 
   let tokenA: string;
   let tokenColegaA: string;
@@ -165,6 +198,7 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
       recibidaEn: string;
       resueltaEn: string | null;
       consentimiento: boolean;
+      terminosVersion: string | null;
     }> = {},
   ): SolicitudCita =>
     SolicitudCita.reconstituir({
@@ -185,6 +219,8 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
       citaId: props.estado === EstadoSolicitud.ACEPTADA ? CITA_EXISTENTE : null,
       recibidaEn: new Date(props.recibidaEn ?? RECIBIDA_EN),
       resueltaEn: props.resueltaEn ? new Date(props.resueltaEn) : null,
+      // US-11: sin versión por defecto (las anteriores al despliegue).
+      terminosVersion: props.terminosVersion ?? null,
     });
 
   const sembrar = (): void => {
@@ -193,6 +229,7 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
     citaRepo.citas.clear();
     cambioRepo.cambios.length = 0;
     pacienteRepo.pacientes.clear();
+    aceptacionRepo.aceptaciones.length = 0;
     eventos.limpiar();
     tx.abiertas = 0;
 
@@ -249,7 +286,8 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
           }),
         }),
       ],
-      controllers: [SolicitudesController],
+      // US-11: también el formulario público (sin guard, como en producción).
+      controllers: [SolicitudesController, SolicitudesPublicasController],
       providers: [
         JwtStrategy,
         // US-10: la estrategia verifica la sesion en cada peticion; los
@@ -268,6 +306,11 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
               eventos,
               TZ,
             ),
+        },
+        {
+          provide: SolicitudesService,
+          useFactory: () =>
+            new SolicitudesService(solicitudRepo, tenantRepo, 72),
         },
         {
           provide: BandejaSolicitudesService,
@@ -502,6 +545,7 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
         tipo: 'nueva',
         citaOrigenId: null,
         citaOrigen: null,
+        terminosVersion: null,
       });
       expect(res.text).not.toMatch(/tenantId|usuarioId|enlaceId/);
       expect(res.text).not.toContain('"111111111"');
@@ -583,6 +627,7 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
           'resueltaEn',
           'rut',
           'telefono',
+          'terminosVersion',
         ].sort(),
       );
       expect(sol).toEqual({
@@ -601,6 +646,7 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
         tipo: 'nueva',
         citaOrigenId: null,
         citaOrigen: null,
+        terminosVersion: null,
       });
     });
 
@@ -867,6 +913,7 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
         tipo: 'nueva',
         citaOrigenId: null,
         citaOrigen: null,
+        terminosVersion: null,
       });
       expect(citaRepo.citas.size).toBe(0);
       expect(pacienteRepo.pacientes.size).toBe(1);
@@ -1035,6 +1082,8 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
             duracionMin: 45,
             estado: 'confirmada',
           },
+          // US-11: una petición de otra hora nunca trae versión (CHECK).
+          terminosVersion: null,
         },
       ]);
       expect(res.text).not.toContain(ENLACE);
@@ -1168,6 +1217,231 @@ describe('Bandeja de solicitudes /api/solicitudes (e2e sin BD)', () => {
         .get('/api/solicitudes?estado=descartada')
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(200);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // US-11 (ADR-16 §5–§6, D5, D10, D13): el formulario público exige la
+  // autorización y la versión (400 ANTES de buscar la organización), la
+  // versión se ve en la bandeja y, al aceptar, nace la fila
+  // `formulario_publico` con la hora del envío.
+  describe('US-11: términos del paciente en el formulario y en la bandeja', () => {
+    const FORMULARIO = {
+      rut: '15.678.901-1',
+      nombrePaciente: 'Paciente del Formulario',
+      telefono: '+56 9 6666 6666',
+      correo: 'formulario@mail.com',
+      motivo: 'Control',
+      preferenciaHoraria: 'mañanas',
+      consentimiento: true,
+      terminosVersion: '1.0',
+    };
+
+    const enviar = (cuerpo: Record<string, unknown>, slug = SLUG_A) =>
+      request(server()).post(`/api/publico/${slug}/solicitudes`).send(cuerpo);
+
+    const sin = (
+      campo: 'consentimiento' | 'terminosVersion',
+    ): Record<string, unknown> => {
+      const cuerpo: Record<string, unknown> = { ...FORMULARIO };
+      delete cuerpo[campo];
+      return cuerpo;
+    };
+
+    describe('POST /api/publico/:tenantSlug/solicitudes', () => {
+      it('debería responder 202 con la casilla y la versión, y guardar la versión', async () => {
+        // Arrange
+        const antes = solicitudRepo.solicitudes.size;
+
+        // Act
+        await enviar(FORMULARIO).expect(202);
+
+        // Assert
+        expect(solicitudRepo.solicitudes.size).toBe(antes + 1);
+        const guardada = [...solicitudRepo.solicitudes.values()].find(
+          (s) => s.nombrePaciente === 'Paciente del Formulario',
+        );
+        expect(guardada).toMatchObject({
+          consentimiento: true,
+          terminosVersion: '1.0',
+          tipo: TipoSolicitud.NUEVA,
+        });
+        // Sin transacción ni aceptación: la fila nace al aceptarla (D10)
+        expect(tx.abiertas).toBe(0);
+        expect(aceptacionRepo.aceptaciones).toHaveLength(0);
+      });
+
+      it.each<[string, Record<string, unknown>, string]>([
+        [
+          'consentimiento: false',
+          { ...FORMULARIO, consentimiento: false },
+          'Debes aceptar los términos de uso y el aviso de privacidad',
+        ],
+        [
+          'sin consentimiento',
+          sin('consentimiento'),
+          'Debes aceptar los términos de uso y el aviso de privacidad',
+        ],
+        [
+          'sin terminosVersion',
+          sin('terminosVersion'),
+          MENSAJE_VERSION_TERMINOS_NO_VIGENTE,
+        ],
+        [
+          'una versión desconocida',
+          { ...FORMULARIO, terminosVersion: '9.9' },
+          MENSAJE_VERSION_TERMINOS_NO_VIGENTE,
+        ],
+      ])(
+        'debería responder 400 con %s, sin guardar nada',
+        async (_caso, cuerpo, mensaje) => {
+          // Arrange
+          const antes = solicitudRepo.solicitudes.size;
+
+          // Act
+          const res = await enviar(cuerpo).expect(400);
+
+          // Assert
+          expect((res.body as ErrorBody).message).toEqual(
+            expect.arrayContaining([mensaje]),
+          );
+          expect(solicitudRepo.solicitudes.size).toBe(antes);
+        },
+      );
+
+      it('el 400 llega ANTES de buscar la organización: con un slug que no existe también es 400 (y el 202 sigue uniforme)', async () => {
+        // Act & Assert
+        await enviar(
+          { ...FORMULARIO, consentimiento: false },
+          'no-existe',
+        ).expect(400);
+        await enviar(FORMULARIO, 'no-existe').expect(202);
+      });
+    });
+
+    it('GET /api/solicitudes: la que trae versión la muestra; la anterior al despliegue, null', async () => {
+      // Arrange
+      await enviar(FORMULARIO).expect(202);
+
+      // Act
+      const res = await request(server())
+        .get('/api/solicitudes')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(200);
+
+      // Assert
+      const lista = res.body as SolicitudBody[];
+      expect(
+        lista.find((s) => s.nombrePaciente === 'Paciente del Formulario')
+          ?.terminosVersion,
+      ).toBe('1.0');
+      expect(lista.find((s) => s.id === SOL_A)?.terminosVersion).toBeNull();
+    });
+
+    it('aceptar una con versión: la fila formulario_publico con la solicitud y la hora del ENVÍO, y la respuesta con consentimiento: true', async () => {
+      // Arrange
+      solicitudRepo.sembrar(
+        solicitud(SOL_A, TENANT_A, { terminosVersion: '1.0' }),
+      );
+
+      // Act
+      const res = await aceptar(SOL_A, tokenA).expect(201);
+
+      // Assert
+      const body = res.body as AceptadaBody;
+      expect(body.cita.paciente.consentimiento).toBe(true);
+      expect(body.solicitud.terminosVersion).toBe('1.0');
+      expect(aceptacionRepo.filas()).toEqual([
+        expect.objectContaining({
+          tenantId: TENANT_A,
+          pacienteId: body.cita.pacienteId,
+          version: '1.0',
+          canal: CanalAceptacion.FORMULARIO_PUBLICO,
+          aceptadaEn: new Date(RECIBIDA_EN),
+          solicitudId: SOL_A,
+          usuarioId: null,
+          enlaceId: null,
+        }),
+      ]);
+      // Una sola transacción para todo
+      expect(tx.abiertas).toBe(1);
+    });
+
+    it('aceptar una con versión de un paciente que ya existía por RUT con consentimiento false: su ficha queda en true', async () => {
+      // Arrange — la ficha conocida (12.345.678-5), sin autorización
+      pacienteRepo.pacientes.set(PACIENTE_CONOCIDO, {
+        ...pacienteRepo.pacientes.get(PACIENTE_CONOCIDO)!,
+        consentimiento: false,
+      });
+      solicitudRepo.sembrar(
+        solicitud(SOL_A_RUT_CONOCIDO, TENANT_A, {
+          rut: '123456785',
+          consentimiento: true,
+          terminosVersion: '1.0',
+        }),
+      );
+
+      // Act
+      const res = await aceptar(SOL_A_RUT_CONOCIDO, tokenA).expect(201);
+
+      // Assert
+      const body = res.body as AceptadaBody;
+      expect(body.cita.pacienteId).toBe(PACIENTE_CONOCIDO);
+      expect(body.cita.paciente.consentimiento).toBe(true);
+      expect(
+        pacienteRepo.pacientes.get(PACIENTE_CONOCIDO)?.consentimiento,
+      ).toBe(true);
+      expect(pacienteRepo.pacientes.size).toBe(1);
+      expect(aceptacionRepo.filas().map((a) => a.pacienteId)).toEqual([
+        PACIENTE_CONOCIDO,
+      ]);
+    });
+
+    it('aceptar una SIN versión (anterior al despliegue) no registra nada', async () => {
+      // Act
+      await aceptar(SOL_A, tokenA).expect(201);
+
+      // Assert
+      expect(aceptacionRepo.aceptaciones).toHaveLength(0);
+    });
+
+    it('rechazar una con versión no registra nada: la versión queda solo en la solicitud', async () => {
+      // Arrange
+      solicitudRepo.sembrar(
+        solicitud(SOL_A, TENANT_A, { terminosVersion: '1.0' }),
+      );
+
+      // Act
+      const res = await rechazar(SOL_A, tokenA).expect(200);
+
+      // Assert
+      expect((res.body as SolicitudBody).terminosVersion).toBe('1.0');
+      expect(aceptacionRepo.aceptaciones).toHaveLength(0);
+    });
+
+    it('de punta a punta: formulario → bandeja → aceptar deja la fila con la hora del envío', async () => {
+      // Arrange
+      await enviar(FORMULARIO).expect(202);
+      const enviada = [...solicitudRepo.solicitudes.values()].find(
+        (s) => s.nombrePaciente === 'Paciente del Formulario',
+      )!;
+
+      // Act
+      const res = await aceptar(enviada.id, tokenA).expect(201);
+
+      // Assert
+      const body = res.body as AceptadaBody;
+      expect(aceptacionRepo.filas()).toEqual([
+        expect.objectContaining({
+          canal: CanalAceptacion.FORMULARIO_PUBLICO,
+          solicitudId: enviada.id,
+          pacienteId: body.cita.pacienteId,
+          aceptadaEn: enviada.recibidaEn,
+        }),
+      ]);
+      expect(
+        pacienteRepo.pacientes.get(body.cita.pacienteId)?.consentimiento,
+      ).toBe(true);
     });
   });
 });
