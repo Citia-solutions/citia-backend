@@ -12,6 +12,8 @@ import {
 import { PedidoPor } from '../../cita/domain/cambio-cita.entity';
 import { OrigenCita } from '../../cita/domain/cita.entity';
 import { CitaResponseDto } from '../../cita/presentation/dto/cita-response.dto';
+import { PacientesService } from '../../paciente/application/pacientes.service';
+import { CanalAceptacion } from '../../paciente/domain/aceptacion-terminos.entity';
 import {
   EstadoSolicitud,
   SolicitudCita,
@@ -55,6 +57,10 @@ export interface FiltrosBandeja {
  * portal del paciente bloquea la cita y LEE la solicitud sin bloquearla, y el
  * suscriptor del outbox solo bloquea la solicitud: ninguno toma los dos en el
  * orden inverso, así que no hay interbloqueos.
+ *
+ * US-11: en una `nueva`, solicitud → paciente (el correo vacío en `agendar` y
+ * la bandera al registrar la aceptación) → cita NUEVA. Nunca bloquea una cita
+ * existente después del paciente.
  */
 export class BandejaSolicitudesService {
   constructor(
@@ -63,6 +69,10 @@ export class BandejaSolicitudesService {
     // con el mismo flujo que `POST /citas` y MUEVE la cita de origen de una
     // petición de otra hora con el mismo flujo que `PATCH .../reagendar`.
     private readonly citasService: CitasService,
+    // US-11 (ADR-16 §6): registra la aceptación de los términos que el
+    // paciente dio en el formulario, al aceptar una `nueva` (canal
+    // `formulario_publico`). Dependencia solicitud -> paciente.
+    private readonly pacientesService: PacientesService,
     private readonly tx: TransactionRunner,
     private readonly eventos: PublicadorEventos,
   ) {}
@@ -114,7 +124,11 @@ export class BandejaSolicitudesService {
    *     - `nueva`: exige `duracionMin` y `tipoConsulta` (400 si faltan) y crea
    *       la cita con `CitasService.agendar` (mismo flujo que `POST /citas`:
    *       resolver-o-crear paciente por RUT —completando su correo si lo tenía
-   *       vacío—, cita, bitácora, `CitaCreada`, avisos).
+   *       vacío—, cita, bitácora, `CitaCreada`, avisos). Si la solicitud trae
+   *       `terminosVersion` (US-11), registra la aceptación de canal
+   *       `formulario_publico` del paciente (nuevo o ya existente por RUT),
+   *       con `aceptadaEn = recibidaEn`, y la respuesta sale con
+   *       `paciente.consentimiento = true`.
    *     - `reagendamiento` (Fase 3, R2): MUEVE la cita de origen con
    *       `CitasService.reagendarEnTx` (mismo id, vuelve a `pendiente`,
    *       bitácora con el profesional del token y `pedido_por = paciente`
@@ -251,7 +265,7 @@ export class BandejaSolicitudesService {
       throw new DatosAceptacionIncompletosError();
     }
 
-    return this.citasService.agendar(
+    const cita = await this.citasService.agendar(
       {
         inicio: dto.inicio,
         duracionMin: dto.duracionMin,
@@ -277,6 +291,40 @@ export class BandejaSolicitudesService {
       // US-07.01 (H4): la cita nace de la solicitud pública.
       OrigenCita.SOLICITUD_PUBLICA,
     );
+
+    await this.registrarAceptacionDelFormulario(solicitud, cita, tx);
+    return cita;
+  }
+
+  /**
+   * US-11 (ADR-16 §6, D10): la aceptación que el paciente dio al ENVIAR el
+   * formulario nace ahora, cuando ya hay un paciente: canal
+   * `formulario_publico`, la solicitud como referencia, la versión que trajo
+   * y `aceptadaEn = recibidaEn` (el acto, no este momento). También si el
+   * paciente ya existía por RUT: su ficha gana `consentimiento = true`
+   * (matiza ADR-09 §3). Una solicitud sin versión (anterior al despliegue)
+   * no registra nada. Mismo `tx`: si el registro falla, no queda cita ni
+   * solicitud aceptada.
+   */
+  private async registrarAceptacionDelFormulario(
+    solicitud: SolicitudCita,
+    cita: CitaResponseDto,
+    tx: TransactionContext,
+  ): Promise<void> {
+    if (solicitud.terminosVersion === null) return;
+
+    await this.pacientesService.registrarAceptacion(
+      {
+        canal: CanalAceptacion.FORMULARIO_PUBLICO,
+        solicitudId: solicitud.id,
+        tenantId: solicitud.tenantId,
+        pacienteId: cita.pacienteId,
+        version: solicitud.terminosVersion,
+        aceptadaEn: solicitud.recibidaEn,
+      },
+      tx,
+    );
+    if (cita.paciente) cita.paciente.consentimiento = true;
   }
 
   /**
@@ -375,6 +423,7 @@ export class BandejaSolicitudesService {
         solicitud.citaOrigenId === null
           ? null
           : (citasOrigen.get(solicitud.citaOrigenId) ?? null),
+      terminosVersion: solicitud.terminosVersion,
     });
   }
 }

@@ -11,7 +11,9 @@ import { TypeOrmEventosSalidaRepository } from '../../../shared/infrastructure/s
 import { TypeOrmTransactionRunner } from '../../../shared/infrastructure/typeorm-transaction-runner';
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { PacientesService } from '../../paciente/application/pacientes.service';
+import { AceptacionTerminosOrmEntity } from '../../paciente/infrastructure/persistence/aceptacion-terminos.orm-entity';
 import { PacienteOrmEntity } from '../../paciente/infrastructure/persistence/paciente.orm-entity';
+import { TypeOrmAceptacionTerminosRepository } from '../../paciente/infrastructure/persistence/typeorm-aceptacion-terminos.repository';
 import { TypeOrmPacienteRepository } from '../../paciente/infrastructure/persistence/typeorm-paciente.repository';
 import { RecordatorioOrmEntity } from '../../recordatorio/infrastructure/persistence/recordatorio.orm-entity';
 import { SolicitudCitaOrmEntity } from '../../solicitud/infrastructure/persistence/solicitud-cita.orm-entity';
@@ -100,6 +102,8 @@ const configuracionTypeOrm: TypeOrmModuleOptions = {
     TenantOrmEntity,
     UsuarioOrmEntity,
     PacienteOrmEntity,
+    // PacienteModule (vía CitaModule) registra `aceptaciones_terminos` (US-11).
+    AceptacionTerminosOrmEntity,
     CitaOrmEntity,
     CambioCitaOrmEntity,
     EnlaceCitaOrmEntity,
@@ -404,7 +408,11 @@ describe('Job G1: cierre por ghosting contra PostgreSQL (integration)', () => {
           baseB.getRepository(CambioCitaOrmEntity),
         ),
         pacientesB,
-        new PacientesService(pacientesB),
+        new PacientesService(
+          pacientesB,
+          new TypeOrmAceptacionTerminosRepository(baseB.manager),
+          transaccionesB,
+        ),
         transaccionesB,
         new PublicadorEventosEnSalida(new TypeOrmEventosSalidaRepository()),
         TZ,

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
@@ -15,9 +16,12 @@ import { LimitarTasa } from '../../../shared/presentation/limitar-tasa.decorator
 import { SinCacheNiReferrer } from '../../../shared/presentation/sin-cache-ni-referrer.interceptor';
 import { EnlaceCitaNoValidoError } from '../../cita/application/enlace-cita-no-valido.error';
 import { TransicionEstadoInvalidaError } from '../../cita/domain/exceptions/transicion-estado-invalida.error';
+import { VersionTerminosNoVigenteError } from '../../paciente/domain/exceptions/version-terminos-no-vigente.error';
+import { MENSAJE_VERSION_TERMINOS_NO_VIGENTE } from '../../paciente/presentation/dto/version-terminos.decorator';
 import { ReagendamientoYaSolicitadoError } from '../../solicitud/domain/reagendamiento-ya-solicitado.error';
 import { AccionNoDisponibleError } from '../application/accion-no-disponible.error';
 import { PortalPacienteService } from '../application/portal-paciente.service';
+import { AceptarTerminosDto } from './dto/aceptar-terminos.dto';
 import { CancelarCitaPacienteDto } from './dto/cancelar-cita-paciente.dto';
 import { PedirOtraHoraDto } from './dto/pedir-otra-hora.dto';
 import { VistaCitaPacienteDto } from './dto/vista-cita-paciente.dto';
@@ -39,6 +43,16 @@ export const CUERPO_ACCION_NO_DISPONIBLE = Object.freeze({
 });
 
 /**
+ * Cuerpo EXACTO de una versión de los términos que no recibe aceptaciones
+ * (US-11), cuando llega al caso de uso sin pasar por el DTO (defensa). El
+ * mismo mensaje fijo que el 400 del `ValidationPipe`.
+ */
+export const CUERPO_VERSION_TERMINOS_NO_VIGENTE = Object.freeze({
+  statusCode: HttpStatus.BAD_REQUEST,
+  message: MENSAJE_VERSION_TERMINOS_NO_VIGENTE,
+});
+
+/**
  * Portal del paciente (Fase 3, contrato §3.4). Prefijo global `/api`.
  *
  * SIN JWT a propósito: quien llama es el paciente, sin cuenta. Su única
@@ -50,8 +64,8 @@ export const CUERPO_ACCION_NO_DISPONIBLE = Object.freeze({
  *   5/hora por enlace en cada POST.
  * - `Cache-Control: no-store` y `Referrer-Policy: no-referrer` en todas las
  *   respuestas, también en los errores.
- * - Errores: 404 y 409 con cuerpo fijo; cualquier otro, el 500 genérico de
- *   Nest. Nada de detalles internos.
+ * - Errores: 404, 409 y el 400 de la versión de los términos con cuerpo fijo;
+ *   cualquier otro, el 500 genérico de Nest. Nada de detalles internos.
  */
 @Controller('publico/cita')
 @LimitarTasa('portalPorIp')
@@ -109,6 +123,24 @@ export class PortalPacienteController {
   }
 
   /**
+   * POST /api/publico/cita/aceptar-terminos `{ terminosVersion }` → 200 con
+   * la vista (`terminosPendientes: false`). US-11, ADR-16 §8. Idempotente;
+   * sin 409 (no es una acción sobre la cita). Comparte el cubo
+   * `portalPorEnlace` con confirmar, cancelar y pedir otra hora.
+   */
+  @Post('aceptar-terminos')
+  @HttpCode(HttpStatus.OK)
+  @LimitarTasa('portalPorEnlace')
+  async aceptarTerminos(
+    @Headers(CABECERA_ENLACE_CITA) token: string | undefined,
+    @Body() dto: AceptarTerminosDto,
+  ): Promise<VistaCitaPacienteDto> {
+    return this.ejecutar(() =>
+      this.portal.aceptarTerminos(token, dto.terminosVersion),
+    );
+  }
+
+  /**
    * Traducción ÚNICA de errores a HTTP, con cuerpos fijos (se pasan como
    * objeto para que Nest no agregue `error`). La transacción ya se revirtió
    * cuando el error llega aquí.
@@ -129,6 +161,13 @@ export class PortalPacienteController {
         error instanceof ReagendamientoYaSolicitadoError
       ) {
         throw new ConflictException({ ...CUERPO_ACCION_NO_DISPONIBLE });
+      }
+      // US-11: la versión de los términos no recibe aceptaciones. El DTO ya
+      // lo rechaza antes de mirar el token; esto es la defensa.
+      if (error instanceof VersionTerminosNoVigenteError) {
+        throw new BadRequestException({
+          ...CUERPO_VERSION_TERMINOS_NO_VIGENTE,
+        });
       }
       throw error;
     }

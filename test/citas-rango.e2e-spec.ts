@@ -21,6 +21,7 @@ import { PacientesService } from '../src/modules/paciente/application/pacientes.
 import { RolUsuario } from '../src/modules/usuario/domain/usuario.entity';
 import {
   ContadorTransacciones,
+  InMemoryAceptacionTerminosRepository,
   InMemoryCambioCitaRepository,
   InMemoryCitaRepository,
   InMemoryPacienteRepository,
@@ -215,7 +216,11 @@ describe('Agenda por rango y avisos de solapamiento (e2e sin BD)', () => {
               citaRepo,
               cambioRepo,
               pacienteRepo,
-              new PacientesService(pacienteRepo),
+              new PacientesService(
+                pacienteRepo,
+                new InMemoryAceptacionTerminosRepository(pacienteRepo),
+                tx,
+              ),
               tx,
               eventos,
               TZ,

@@ -67,6 +67,7 @@ describe('SolicitudesController', () => {
       tipo: TipoSolicitud.NUEVA,
       citaOrigenId: null,
       citaOrigen: null,
+      terminosVersion: null,
     });
 
   beforeEach(async () => {

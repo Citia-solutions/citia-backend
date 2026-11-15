@@ -4,24 +4,125 @@ import {
   normalizarRut,
 } from '../../../shared/domain/rut';
 import { RutInvalidoError } from '../../../shared/domain/rut-invalido.error';
+import {
+  TransactionContext,
+  TransactionRunner,
+} from '../../../shared/application/transaction-runner';
+import {
+  AceptacionTerminos,
+  CanalAceptacion,
+  RegistrarAceptacionProps,
+} from '../domain/aceptacion-terminos.entity';
+import { AceptacionTerminosRepository } from '../domain/aceptacion-terminos.repository';
 import { CambioContactoPaciente, Paciente } from '../domain/paciente.entity';
 import { PacienteRepository } from '../domain/paciente.repository';
+import { versionesQueCubren } from '../domain/terminos-paciente';
 import { CrearPacienteDto } from '../presentation/dto/crear-paciente.dto';
 import { PacienteResponseDto } from '../presentation/dto/paciente-response.dto';
-import { TransactionContext } from '../../../shared/application/transaction-runner';
 import { PacienteNoEncontradoError } from './paciente-no-encontrado.error';
 
-export class PacientesService {
-  constructor(private readonly pacienteRepository: PacienteRepository) {}
+/** Quién da de alta: el usuario del token (nunca del body). */
+export interface UsuarioAlta {
+  userId: string;
+  tenantId: string;
+}
 
-  // Crea un paciente asociado al tenant del usuario autenticado.
-  // El tenantId proviene SIEMPRE del token, nunca del body.
+export class PacientesService {
+  constructor(
+    private readonly pacienteRepository: PacienteRepository,
+    // US-11 (ADR-16 §3): la prueba de la aceptación de los términos. Solo
+    // inserción.
+    private readonly aceptaciones: AceptacionTerminosRepository,
+    // `POST /pacientes` registra el paciente y su aceptación juntos.
+    private readonly tx: TransactionRunner,
+    // `aceptadaEn` de la aceptación del profesional (el acto es ahora).
+    private readonly reloj: () => Date = () => new Date(),
+  ) {}
+
+  /**
+   * `POST /pacientes` (alta manual, US-11 D6): en UNA transacción,
+   * resolver-o-crear el paciente y registrar la aceptación de los términos
+   * con canal `profesional`, a nombre del usuario del token, con la versión
+   * del DTO y `aceptadaEn` = el reloj del servicio. Paciente existente por
+   * RUT: se registra igual (una vez por versión, D11) y su bandera queda en
+   * `true`. La respuesta sale con `consentimiento: true`.
+   *
+   * El tenant y el usuario salen SIEMPRE del token, nunca del body.
+   *
+   * @throws VersionTerminosNoVigenteError si la versión no recibe
+   *   aceptaciones (el DTO ya lo impide; defensa).
+   */
   async crearPaciente(
     dto: CrearPacienteDto,
-    tenantId: string,
+    usuario: UsuarioAlta,
   ): Promise<PacienteResponseDto> {
-    const saved = await this.resolverOCrear(dto, tenantId);
-    return PacientesService.aResponse(saved);
+    return this.tx.run(async (tx) => {
+      const paciente = await this.resolverOCrear(dto, usuario.tenantId, tx);
+      await this.registrarAceptacion(
+        {
+          canal: CanalAceptacion.PROFESIONAL,
+          usuarioId: usuario.userId,
+          tenantId: usuario.tenantId,
+          pacienteId: paciente.id,
+          // Obligatoria en HTTP (DTO). Ausente, `registrar` lanza
+          // VersionTerminosNoVigenteError (→ 400).
+          version: dto.terminosVersion ?? '',
+          aceptadaEn: this.reloj(),
+        },
+        tx,
+      );
+      return PacientesService.aResponse({ ...paciente, consentimiento: true });
+    });
+  }
+
+  /**
+   * ÚNICA puerta de entrada a `aceptaciones_terminos` (US-11, ADR-16 T3):
+   * arma la aceptación (`AceptacionTerminos.registrar`, que valida la versión
+   * según el canal), la inserta si no hay ya una del mismo paciente, versión y
+   * canal (D11) y SIEMPRE marca `pacientes.consentimiento = true` (la
+   * escritura es condicional: no-op si ya estaba). Devuelve si insertó.
+   *
+   * `tx` OBLIGATORIO: corre siempre dentro de la transacción de quien llama
+   * (alta manual, bandeja, portal), junto con lo que provocó la aceptación.
+   * Bloquea la fila del paciente (el `UPDATE` de la bandera) AL FINAL del
+   * flujo de quien llama: ver el orden de bloqueo en el `CLAUDE.md` del
+   * módulo.
+   *
+   * @throws VersionTerminosNoVigenteError si la versión no sirve al canal.
+   */
+  async registrarAceptacion(
+    props: RegistrarAceptacionProps,
+    tx: TransactionContext,
+  ): Promise<boolean> {
+    const aceptacion = AceptacionTerminos.registrar(props);
+    const insertada = await this.aceptaciones.insertarSiNoExiste(
+      aceptacion,
+      tx,
+    );
+    await this.pacienteRepository.marcarConsentimiento(
+      props.pacienteId,
+      props.tenantId,
+      tx,
+    );
+    return insertada;
+  }
+
+  /**
+   * ¿El TITULAR (formulario o enlace, no el profesional) aceptó una versión
+   * que sigue cubriendo? Lo usa `/cita` para `terminosPendientes`. Lectura
+   * sin bloqueo; filtra por tenant.
+   */
+  titularAceptoVigente(
+    pacienteId: string,
+    tenantId: string,
+    tx?: TransactionContext,
+  ): Promise<boolean> {
+    return this.aceptaciones.existeDelTitular(
+      pacienteId,
+      tenantId,
+      versionesQueCubren(),
+      tx,
+    );
   }
 
   /**
@@ -37,6 +138,10 @@ export class PacientesService {
    * aceptacion de una solicitud de la bandeja (via `CitasService.agendar`).
    * Por eso recibe `tx` opcional: quien lo llame lo envuelve en su propia
    * transaccion, y TODAS las escrituras (crear o completar) van en ella.
+   *
+   * NO registra ninguna aceptacion de los terminos (US-11, ADR-16 T3): cada
+   * via registra su canal en su propio caso de uso, con
+   * `registrarAceptacion`.
    *
    * @throws RutInvalidoError si el RUT no supera el digito verificador.
    * @throws CorreoPacienteRequeridoError si hay que crear y no llega correo.

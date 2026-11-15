@@ -21,6 +21,8 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import type { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { PacienteNoEncontradoError } from '../../paciente/application/paciente-no-encontrado.error';
 import { CorreoPacienteRequeridoError } from '../../paciente/domain/exceptions/correo-paciente-requerido.error';
+import { VersionTerminosNoVigenteError } from '../../paciente/domain/exceptions/version-terminos-no-vigente.error';
+import { MENSAJE_VERSION_TERMINOS_NO_VIGENTE } from '../../paciente/presentation/dto/version-terminos.decorator';
 import { CitaNoEncontradaError } from '../application/cita-no-encontrada.error';
 import { DatosPacienteRequeridosError } from '../application/datos-paciente-requeridos.error';
 import { RangoFechasInvalidoError } from '../application/rango-fechas-invalido.error';
@@ -46,7 +48,9 @@ export class CitasController {
     private readonly enlacesCita: EnlacesCitaService,
   ) {}
 
-  // US-02: POST /api/citas
+  // US-02: POST /api/citas. Con `paciente` exige `paciente.consentimiento:
+  // true` y `paciente.terminosVersion` y registra la aceptación de canal
+  // `profesional` (US-11); con `pacienteId`, sin cambios.
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async crear(
@@ -227,6 +231,12 @@ export class CitasController {
       // Agenda por rango: `hasta` anterior a `desde` o mas de 42 dias -> 400.
       if (error instanceof RangoFechasInvalidoError) {
         throw new BadRequestException(error.message);
+      }
+      // Version de los terminos que no recibe aceptaciones -> 400 con el
+      // mensaje FIJO del DTO (US-11): el frontend lo reconoce por su texto.
+      // El DTO ya lo rechaza; esto cubre a quien llegue sin pasar por el.
+      if (error instanceof VersionTerminosNoVigenteError) {
+        throw new BadRequestException(MENSAJE_VERSION_TERMINOS_NO_VIGENTE);
       }
       throw error;
     }

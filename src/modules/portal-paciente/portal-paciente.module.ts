@@ -6,6 +6,8 @@ import { SharedModule } from '../../shared/shared.module';
 import { CitasService } from '../cita/application/citas.service';
 import { EnlacesCitaService } from '../cita/application/enlaces-cita.service';
 import { CitaModule } from '../cita/cita.module';
+import { PacientesService } from '../paciente/application/pacientes.service';
+import { PacienteModule } from '../paciente/paciente.module';
 import { SolicitudesOtraHoraService } from '../solicitud/application/solicitudes-otra-hora.service';
 import { SolicitudModule } from '../solicitud/solicitud.module';
 import { PortalPacienteService } from './application/portal-paciente.service';
@@ -18,9 +20,10 @@ import { PortalPacienteController } from './presentation/portal-paciente.control
  * `CLAUDE.md` de esta carpeta.
  *
  * Módulo de COMPOSICIÓN: depende de `cita` (resolver el enlace y las acciones
- * del paciente) y de `solicitud` (pedir otra hora), y lee los nombres del
- * profesional y de la organización con su propio lector SQL. Nadie importa
- * este módulo (solo `AppModule`), y ni `cita` ni `solicitud` saben que existe.
+ * del paciente), de `solicitud` (pedir otra hora) y de `paciente` (la
+ * aceptación de los términos, US-11), y lee los nombres del profesional y de
+ * la organización con su propio lector SQL. Nadie importa este módulo (solo
+ * `AppModule`), y ni `cita`, ni `solicitud`, ni `paciente` saben que existe.
  */
 @Module({
   imports: [
@@ -31,6 +34,9 @@ import { PortalPacienteController } from './presentation/portal-paciente.control
     CitaModule,
     // SolicitudesOtraHoraService (leer la abierta y pedir otra hora).
     SolicitudModule,
+    // PacientesService (US-11): `terminosPendientes` y aceptar los términos.
+    // `paciente` no importa ninguno de los módulos de arriba: sin ciclo.
+    PacienteModule,
   ],
   controllers: [PortalPacienteController],
   providers: [
@@ -48,6 +54,7 @@ import { PortalPacienteController } from './presentation/portal-paciente.control
         citas: CitasService,
         otraHora: SolicitudesOtraHoraService,
         nombres: LectorNombresCita,
+        pacientes: PacientesService,
         config: ConfigService,
       ) =>
         new PortalPacienteService(
@@ -56,6 +63,7 @@ import { PortalPacienteController } from './presentation/portal-paciente.control
           citas,
           otraHora,
           nombres,
+          pacientes,
           config.get<string>('APP_TZ', 'America/Santiago'),
         ),
       inject: [
@@ -64,6 +72,7 @@ import { PortalPacienteController } from './presentation/portal-paciente.control
         CitasService,
         SolicitudesOtraHoraService,
         LectorNombresCita,
+        PacientesService,
         ConfigService,
       ],
     },

@@ -107,6 +107,7 @@ describe('Solicitudes de reagendamiento contra PostgreSQL (integration)', () => 
       motivo: 'Control',
       preferenciaHoraria: 'mañanas',
       consentimiento: true,
+      terminosVersion: '1.0',
     });
 
   /** INSERT directo, para probar las restricciones sin pasar por el dominio. */
@@ -116,12 +117,17 @@ describe('Solicitudes de reagendamiento contra PostgreSQL (integration)', () => 
     rut?: string | null;
     correo?: string | null;
     estado?: string;
+    // US-11: por defecto, sin autorización ni versión (como antes).
+    consentimiento?: boolean;
+    terminosVersion?: string | null;
   }): Promise<unknown> =>
     baseA.query(
       `INSERT INTO solicitudes_cita
          (tenant_id, rut, nombre_paciente, telefono, correo, motivo,
-          preferencia_horaria, tipo, cita_origen_id, estado)
-       VALUES ($1, $2, 'X', '+56 9 0', $3, '', 'cuando sea', $4, $5, $6)`,
+          preferencia_horaria, tipo, cita_origen_id, estado,
+          consentimiento, terminos_version)
+       VALUES ($1, $2, 'X', '+56 9 0', $3, '', 'cuando sea', $4, $5, $6,
+               $7, $8)`,
       [
         tenantId,
         campos.rut === undefined ? '123456785' : campos.rut,
@@ -129,6 +135,8 @@ describe('Solicitudes de reagendamiento contra PostgreSQL (integration)', () => 
         campos.tipo,
         campos.citaOrigenId ?? null,
         campos.estado ?? 'recibida',
+        campos.consentimiento ?? false,
+        campos.terminosVersion ?? null,
       ],
     );
 
@@ -358,6 +366,140 @@ describe('Solicitudes de reagendamiento contra PostgreSQL (integration)', () => 
           estado: 'descartada',
         }),
       ).resolves.toBeDefined();
+    });
+
+    // US-11 (D10): solo una `nueva` con consentimiento trae la versión.
+    describe('CHK_solicitudes_cita_terminos_version (US-11)', () => {
+      const CHECK = {
+        code: '23514',
+        constraint: 'CHK_solicitudes_cita_terminos_version',
+      };
+
+      it('rechaza una versión en una de reagendamiento (aunque tenga consentimiento)', async () => {
+        expect(
+          await errorDe(
+            insertarCrudo({
+              tipo: 'reagendamiento',
+              citaOrigenId: randomUUID(),
+              consentimiento: true,
+              terminosVersion: '1.0',
+            }),
+          ),
+        ).toEqual(CHECK);
+      });
+
+      it('rechaza una versión en una nueva con consentimiento = false', async () => {
+        expect(
+          await errorDe(
+            insertarCrudo({
+              tipo: 'nueva',
+              consentimiento: false,
+              terminosVersion: '1.0',
+            }),
+          ),
+        ).toEqual(CHECK);
+      });
+
+      it.each(['1', 'v1.0', '1x0', '1.0.0', ''])(
+        'rechaza el formato %p (la barra de la regex llega a Postgres)',
+        async (terminosVersion) => {
+          expect(
+            await errorDe(
+              insertarCrudo({
+                tipo: 'nueva',
+                consentimiento: true,
+                terminosVersion,
+              }),
+            ),
+          ).toEqual(CHECK);
+        },
+      );
+
+      it('admite una nueva con consentimiento y versión, y NULL en cualquiera', async () => {
+        await expect(
+          insertarCrudo({
+            tipo: 'nueva',
+            consentimiento: true,
+            terminosVersion: '1.0',
+          }),
+        ).resolves.toBeDefined();
+        await expect(
+          insertarCrudo({ tipo: 'nueva', rut: '111111111' }),
+        ).resolves.toBeDefined();
+        await expect(
+          insertarCrudo({
+            tipo: 'reagendamiento',
+            citaOrigenId: randomUUID(),
+            consentimiento: true,
+          }),
+        ).resolves.toBeDefined();
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('terminos_version: ida y vuelta (US-11)', () => {
+    it('una del formulario la persiste y se relee', async () => {
+      // Act
+      const guardada = await repo.guardar(recibirNueva());
+      const releida = await repo.buscarPorId(guardada.id, tenantId);
+      const [fila] = await baseA.query<{ terminos_version: string | null }[]>(
+        'SELECT terminos_version FROM solicitudes_cita WHERE id = $1',
+        [guardada.id],
+      );
+
+      // Assert
+      expect(guardada.terminosVersion).toBe('1.0');
+      expect(releida?.terminosVersion).toBe('1.0');
+      expect(fila.terminos_version).toBe('1.0');
+    });
+
+    it('una de reagendamiento queda en NULL y se relee null', async () => {
+      // Act
+      const guardada = await repo.guardar(pedirOtraHora(randomUUID()));
+
+      // Assert
+      expect(
+        (await repo.buscarPorId(guardada.id, tenantId))?.terminosVersion,
+      ).toBeNull();
+    });
+
+    it('aceptarla o rechazarla no borra la versión (la prueba queda en la solicitud)', async () => {
+      // Arrange
+      const aceptada = await repo.guardar(recibirNueva());
+      const rechazada = await repo.guardar(recibirNueva('111111111'));
+
+      // Act
+      aceptada.aceptar(usuarioId, randomUUID());
+      await repo.guardar(aceptada);
+      rechazada.rechazar(usuarioId);
+      await repo.guardar(rechazada);
+
+      // Assert
+      for (const id of [aceptada.id, rechazada.id]) {
+        expect((await repo.buscarPorId(id, tenantId))?.terminosVersion).toBe(
+          '1.0',
+        );
+      }
+    });
+
+    it('listarPorEstado la proyecta (la bandeja la muestra)', async () => {
+      // Arrange
+      await repo.guardar(recibirNueva());
+      await repo.guardar(pedirOtraHora(randomUUID()));
+
+      // Act
+      const recibidas = await repo.listarPorEstado(
+        tenantId,
+        EstadoSolicitud.RECIBIDA,
+        10,
+      );
+
+      // Assert
+      expect(recibidas.map((s) => [s.tipo, s.terminosVersion]).sort()).toEqual([
+        [TipoSolicitud.NUEVA, '1.0'],
+        [TipoSolicitud.REAGENDAMIENTO, null],
+      ]);
     });
   });
 

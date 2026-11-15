@@ -5,6 +5,9 @@ bandeja donde el profesional las acepta o rechaza. Desde la Fase 3 también las
 **peticiones de otra hora** que el paciente hace desde el enlace de SU cita
 (`tipo = reagendamiento`, ADR-10 §4, plan `context/US/04-respuesta-paciente.md`).
 Contrato de la Fase 1: `context/Features/us02-gestion-citas.md` §"Cierre de Fase 1" (§c).
+Desde US-11 ([ADR-16](../../../context/Decisions/ADR-16.md) §5–§6, plan
+`context/US/11-terminos-paciente.md`) el formulario trae la versión de los términos que aceptó el
+paciente y la bandeja la registra al aceptar.
 
 ## Estructura
 
@@ -37,23 +40,36 @@ src/modules/solicitud/
 
 | Método | Ruta                               | Guard | Status | Respuesta |
 |--------|------------------------------------|-------|--------|-----------|
-| POST   | `/publico/:tenantSlug/solicitudes` | — (5/h por IP) | 202 siempre | `SolicitudRecibidaDto` (idéntica exista o no el tenant) |
+| POST   | `/publico/:tenantSlug/solicitudes` | — (5/h por IP) | 202 siempre / 400 | `SolicitudRecibidaDto` (idéntica exista o no el tenant) |
 | GET    | `/solicitudes?estado=&citaOrigenId=` | JWT | 200 / 400 | `SolicitudBandejaDto[]` (defecto `recibida`, tope 100) |
 | POST   | `/solicitudes/:id/aceptar`         | JWT   | 201 / 400 / 404 / 409 | `{ solicitud, cita }` |
 | POST   | `/solicitudes/:id/rechazar`        | JWT   | 200 / 404 / 409 | `SolicitudBandejaDto` (sin cuerpo) |
 
+- **Formulario público (US-11, D5):** `consentimiento` tiene que ser `true` (`@Equals(true)`, mensaje
+  *"Debes aceptar los términos de uso y el aviso de privacidad"*) y `terminosVersion` es obligatoria y del
+  catálogo de `paciente` con una versión que recibe aceptaciones (`@VersionTerminosVigente()`, mensaje fijo
+  `MENSAJE_VERSION_TERMINOS_NO_VIGENTE`). Los dos son 400 del `ValidationPipe`, **antes** de buscar la
+  organización: el 202 sigue uniforme. La versión se guarda en `solicitudes_cita.terminos_version`
+  (`SolicitudesService.recibir` sigue con un solo `INSERT` y sin transacción).
 - `estado` admite `recibida | aceptada | rechazada | descartada`. `citaOrigenId` (uuid,
   opcional): solo las de reagendamiento de esa cita; el voucher pregunta
   `?citaOrigenId=<id>&estado=recibida` ("El paciente pidió otra hora"). Otro tenant → `[]`.
 - `SolicitudBandejaDto` (Fase 3, aditivo): `tipo`, `citaOrigenId` y
   `citaOrigen: { inicio, duracionMin, estado } | null` (la cita de origen TAL COMO ESTÁ;
   `null` en una `nueva`). `motivo` puede ser `''` y `rut`/`correo` `null` en una de
-  reagendamiento. Nunca `tenantId`, `usuarioId` ni `enlaceId`.
+  reagendamiento. Nunca `tenantId`, `usuarioId` ni `enlaceId`. US-11 (D13, aditivo):
+  `terminosVersion: string | null` (la bandeja muestra *"· aceptó los términos v1.0"*; `null` en las de
+  reagendamiento y en las anteriores al despliegue).
 - `aceptar`: cuerpo `{ inicio, duracionMin?, tipoConsulta? }`.
   - `nueva`: `duracionMin` y `tipoConsulta` obligatorios (si faltan, 400 del servicio:
     "Para aceptar una solicitud nueva, duracionMin y tipoConsulta son obligatorios");
     `cita` = respuesta de `POST /citas` (con `paciente` y `avisos`). La cita nace con
     `origen = solicitud_publica` (US-07.01: `agendar(…, OrigenCita.SOLICITUD_PUBLICA)`; no se expone).
+    **US-11:** si la solicitud trae `terminosVersion`, en el MISMO tx y después de `agendar`,
+    `PacientesService.registrarAceptacion` con canal `formulario_publico`, `solicitudId`, la versión de la
+    solicitud y `aceptadaEn = recibidaEn` (el acto fue al enviar); eso pone `consentimiento = true` también
+    si el paciente ya existía por RUT, y la respuesta sale con `cita.paciente.consentimiento = true`. Sin
+    versión, nada. Si el registro falla, no queda cita ni solicitud aceptada.
   - `reagendamiento`: solo `inicio` (lo demás se ignora). MUEVE la cita de origen con
     `CitasService.reagendarEnTx(…, PedidoPor.PACIENTE)` (mismo id, vuelve a `pendiente`,
     `CitaReagendada`; la bitácora anota `pedido_por = paciente` sin preguntar, US-07.01 H3: el
@@ -66,9 +82,11 @@ src/modules/solicitud/
 
 ## Reglas del módulo
 
-- **Dependencias: solicitud → cita y solicitud → paciente (lectura), nunca al revés.**
+- **Dependencias: solicitud → cita y solicitud → paciente, nunca al revés.**
   La bandeja usa `CitasService.agendar`, `reagendarEnTx` y `resumenesPorIds` (exportados
-  por `CitaModule`); pedir otra hora lee la ficha con `PacienteRepository`. `cita` no
+  por `CitaModule`) y, desde US-11, `PacientesService.registrarAceptacion` (canal
+  `formulario_publico`); pedir otra hora lee la ficha con `PacienteRepository`. Los DTO usan el
+  decorador `@VersionTerminosVigente()` de `paciente/presentation`. `cita` no
   importa nada de aquí: `solicitud` se entera de lo que le pasa a la cita por el
   **outbox** (suscriptor). `cita_id` y `cita_origen_id` no tienen FK a propósito (ADR-09).
 - **`cita` lee esta tabla con SQL (US-07.01), sin importar el módulo:**
@@ -80,8 +98,8 @@ src/modules/solicitud/
 
   Cambiar esas columnas, sus valores o ese índice obliga a revisar el job G1.
 - **Tres servicios separados.** `SolicitudesService` (anónimo) solo tiene el
-  repositorio de solicitudes y tenants: **no** darle `CitasService` ni
-  `TransactionRunner`. Todo lo autenticado va en `BandejaSolicitudesService`.
+  repositorio de solicitudes y tenants: **no** darle `CitasService`, `PacientesService` ni
+  `TransactionRunner` (US-11 no lo cambia: la aceptación nace en la bandeja, D10). Todo lo autenticado va en `BandejaSolicitudesService`.
   `SolicitudesOtraHoraService` no abre transacciones: corre en la del portal.
 - **Aceptar/rechazar**: una transacción + `buscarPorIdParaActualizar` (FOR UPDATE);
   `asegurarResolvible` **antes** de crear/mover nada. Aceptar dos veces → 409.
@@ -89,11 +107,14 @@ src/modules/solicitud/
   bloquea la solicitud y luego `reagendarEnTx` bloquea la cita. El portal bloquea la
   cita y solo LEE la solicitud (`buscarReagendamientoAbierto`, sin bloqueo); el
   suscriptor solo bloquea la solicitud. Nadie toma los dos en orden inverso → sin
-  interbloqueos. Por eso el portal NO descarta la petición al cancelar.
+  interbloqueos. Por eso el portal NO descarta la petición al cancelar. Aceptar una `nueva` (US-11):
+  solicitud → paciente (el correo vacío en `agendar` y la bandera al registrar) → cita **nueva**;
+  nunca una cita existente después del paciente.
 - **Paciente al aceptar una `nueva`** (vía `PacientesService.resolverOCrear`): si el
   RUT ya existe se vincula sin tocar su ficha, **salvo** el correo vacío, que se
   completa con el de la solicitud en la misma transacción (ADR-13 §14). Un correo ya
-  guardado, igual o distinto, nunca se reemplaza.
+  guardado, igual o distinto, nunca se reemplaza. **Segunda excepción (US-11, ADR-16 §4):** si la
+  solicitud trae versión, la aceptación del paciente pone `consentimiento = true` en su ficha.
 - **La bandeja es de la organización**: filtra por `tenantId` del token, no por
   profesional. Quien resuelve queda como `usuarioId`. `citaOrigen` se resuelve con UNA
   lectura por lote (`resumenesPorIds`), sin N+1.
@@ -150,8 +171,8 @@ src/modules/solicitud/
 
 ## Tests
 
-- Unitarios junto a cada archivo (bandeja, pedir otra hora, suscriptor, DTOs,
-  adaptador con la traducción del 23505).
+- Unitarios junto a cada archivo (bandeja, pedir otra hora, suscriptor, DTOs —también
+  `crear-solicitud.dto.spec.ts`, US-11—, adaptador con la traducción del 23505).
 - e2e sin BD: `test/solicitudes-bandeja.e2e-spec.ts` (incluye peticiones de otra hora).
 - Con Postgres: `integration/solicitudes-persistencia.integration.spec.ts` y
   `test/portal-paciente.e2e-spec.ts` (bandeja + portal + suscriptor + carrera real del

@@ -8,6 +8,7 @@ import { RegistroSuscriptores } from '../../shared/infrastructure/salida/registr
 import { SharedModule } from '../../shared/shared.module';
 import { CitasService } from '../cita/application/citas.service';
 import { CitaModule } from '../cita/cita.module';
+import { PacientesService } from '../paciente/application/pacientes.service';
 import { PacienteRepository } from '../paciente/domain/paciente.repository';
 import { PacienteModule } from '../paciente/paciente.module';
 import { ITenantRepository } from '../tenant/domain/tenant.repository';
@@ -33,7 +34,8 @@ import { SolicitudesController } from './presentation/solicitudes.controller';
     // (CitaModule no importa este módulo).
     CitaModule,
     // Pedir otra hora (Fase 3): copia los datos del paciente desde su ficha
-    // (`PacienteRepository`, solo lectura).
+    // (`PacienteRepository`, solo lectura). Bandeja (US-11): registra la
+    // aceptación de los términos del formulario (`PacientesService`).
     PacienteModule,
     // Transacción (aceptar/rechazar con FOR UPDATE), hechos de dominio y el
     // registro de suscriptores del outbox.
@@ -65,12 +67,14 @@ import { SolicitudesController } from './presentation/solicitudes.controller';
       useFactory: (
         sr: SolicitudCitaRepository,
         cs: CitasService,
+        ps: PacientesService,
         tx: TransactionRunner,
         eventos: PublicadorEventos,
-      ) => new BandejaSolicitudesService(sr, cs, tx, eventos),
+      ) => new BandejaSolicitudesService(sr, cs, ps, tx, eventos),
       inject: [
         SolicitudCitaRepository,
         CitasService,
+        PacientesService,
         TransactionRunner,
         PublicadorEventos,
       ],

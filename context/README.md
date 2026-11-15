@@ -66,6 +66,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 | por qué una pieza es como es | la feature → su ADR → las alternativas descartadas del ADR |
 | qué riesgo se está aceptando | [Deudas/README § Lo que hay que mirar primero](Deudas/README.md#lo-que-hay-que-mirar-primero) → la deuda |
 | qué falta, en lo legal, antes de la primera clínica con pacientes reales | [Cumplimiento § Lo que falta](Cumplimiento/README.md#lo-que-falta-por-prioridad) → la deuda |
+| entender los términos del paciente y la prueba de su aceptación (en la rama, sin release) | [ADR-16](Decisions/ADR-16.md) → el plan [US-11](US/11-terminos-paciente.md) → la feature [us11-terminos-paciente](Features/us11-terminos-paciente.md) |
 | qué hay que decidir antes de avanzar | [PREGUNTAS-ABIERTAS § Por fase](PREGUNTAS-ABIERTAS.md#por-fase-del-roadmap) |
 | de dónde salió un cambio | [TRAZABILIDAD](TRAZABILIDAD.md) (commit → documento, con su fase) |
 | qué hizo el frontend | la sección *Contraparte en el frontend* de cada fase |
@@ -115,6 +116,10 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
   de las pruebas manuales y de Q18/Q19; [ADR-15](Decisions/ADR-15.md) aceptado; feature
   [us10-perfil-cuenta](Features/us10-perfil-cuenta.md); *antes: implementada, en `develop` con el release a `main`
   abierto (2026-11-01); en diseño desde el 2026-10-31*).
+  [US-11](US/11-terminos-paciente.md) términos de uso y aviso de privacidad del paciente, transversal de
+  [Cumplimiento](Cumplimiento/README.md) (🔶 implementada en la rama `feature/terminos-paciente`, sin release, el
+  2026-11-14; [ADR-16](Decisions/ADR-16.md) aceptado; feature
+  [us11-terminos-paciente](Features/us11-terminos-paciente.md)).
   **Subtareas de US-02** (archivos `02.NN-*`, no son historias propias):
   [US-02.07](US/02.07-paciente-reagenda-cancela.md) el paciente cancela o pide reagendar (⏸ aplazada
   fuera de la v1; 🔀 **absorbida por US-04** el 2026-10-14, en la
@@ -205,7 +210,10 @@ cualquier usuario con sesión escribe a soporte; sin `SOPORTE_CORREO_DESTINO` en
    redirigir el dominio raíz y `www` a `app.citiahealth.cl`, confirmar "App Sleeping" y el `FRONTEND_URL`
    de staging ([lista](ROADMAP.md#pendientes-posteriores-al-cierre)).
 5. **Consentimiento sin revisar, con fecha** ([DT-16](Deudas/DT-16.md)): riesgo aceptado hasta que entre en
-   vigor la Ley 21.719 (prevista para el 2026-12-01). La política ya existe y está apagada.
+   vigor la Ley 21.719 (prevista para el 2026-12-01). La política ya existe y está apagada. *(2026-11-14:
+   [US-11](US/11-terminos-paciente.md) —el texto para el paciente y la prueba de su aceptación— está implementada en
+   la rama `feature/terminos-paciente` y espera su release, frontend primero; cierra la parte (2) de DT-16. La política
+   sigue apagada.)*
 6. **Cuatro decisiones del usuario**, ninguna bloqueante:
    [Q12–Q15](PREGUNTAS-ABIERTAS.md#fase-2--decisiones-pendientes-tras-implementar-2026-10-04).
 

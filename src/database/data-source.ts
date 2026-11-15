@@ -2,6 +2,7 @@ import { config } from 'dotenv';
 import { DataSource } from 'typeorm';
 
 import { CitaOrmEntity } from '../modules/cita/infrastructure/persistence/cita.orm-entity';
+import { AceptacionTerminosOrmEntity } from '../modules/paciente/infrastructure/persistence/aceptacion-terminos.orm-entity';
 import { PacienteOrmEntity } from '../modules/paciente/infrastructure/persistence/paciente.orm-entity';
 import { TenantOrmEntity } from '../modules/tenant/infrastructure/persistence/tenant.orm-entity';
 import { UsuarioOrmEntity } from '../modules/usuario/infrastructure/persistence/usuario.orm-entity';
@@ -31,6 +32,8 @@ export const AppDataSource = new DataSource({
     TenantOrmEntity,
     UsuarioOrmEntity,
     PacienteOrmEntity,
+    // US-11 (migración 1750000021000).
+    AceptacionTerminosOrmEntity,
     CitaOrmEntity,
   ],
   migrations: [migrationsGlob],

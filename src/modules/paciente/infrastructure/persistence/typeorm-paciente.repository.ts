@@ -7,6 +7,15 @@ import { CambioContactoPaciente, Paciente } from '../../domain/paciente.entity';
 import { PacienteRepository } from '../../domain/paciente.repository';
 import { PacienteOrmEntity } from './paciente.orm-entity';
 
+const FORMATO_UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function sonUuid(...valores: string[]): boolean {
+  return valores.every(
+    (valor) => typeof valor === 'string' && FORMATO_UUID.test(valor),
+  );
+}
+
 // Adaptador de persistencia para el modulo paciente.
 // Conecta la entidad de dominio con la base de datos via TypeORM.
 @Injectable()
@@ -103,6 +112,36 @@ export class TypeOrmPacienteRepository extends PacienteRepository {
       .where('id = :id', { id })
       .andWhere('tenant_id = :tenantId', { tenantId })
       .andWhere("(correo IS NULL OR btrim(correo) = '')")
+      .execute();
+    return (resultado.affected ?? 0) > 0;
+  }
+
+  async marcarConsentimiento(
+    id: string,
+    tenantId: string,
+    tx: TransactionContext,
+  ): Promise<boolean> {
+    // `TransactionContext` es `unknown` y admite undefined: sin este chequeo
+    // la bandera se escribiria fuera de la transaccion que registra la
+    // aceptacion (ADR-16 §4).
+    if (!tx) {
+      throw new Error(
+        'PacienteRepository.marcarConsentimiento requiere una transacción (ADR-16 §4)',
+      );
+    }
+    // `id` y `tenant_id` son UUID: un valor con otra forma haria fallar la
+    // consulta entera (22P02) en vez de "no escribio".
+    if (!sonUuid(id, tenantId)) return false;
+    // Condicion y tenant en el WHERE, como `completarCorreoSiVacio`: con la
+    // bandera ya en `true` no escribe (ni toca `actualizado_en`). TypeORM
+    // suma `actualizado_en = CURRENT_TIMESTAMP` (@UpdateDateColumn).
+    const resultado = await this.repoFor(tx)
+      .createQueryBuilder()
+      .update(PacienteOrmEntity)
+      .set({ consentimiento: true })
+      .where('id = :id', { id })
+      .andWhere('tenant_id = :tenantId', { tenantId })
+      .andWhere('consentimiento = false')
       .execute();
     return (resultado.affected ?? 0) > 0;
   }

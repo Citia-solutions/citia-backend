@@ -137,6 +137,8 @@ describe('Recordatorios: flujo completo (e2e con Postgres)', () => {
           telefono: '+56 9 1111 1111',
           correo: `paciente${horaSiguiente}@correo.cl`,
           consentimiento: true,
+          // US-11: obligatoria en HTTP (D5, D6).
+          terminosVersion: '1.0',
         },
       })
       .expect(201);

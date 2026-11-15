@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { DataSource, DataSourceOptions, EntityManager } from 'typeorm';
 
 import { typeOrmTestConfig } from '../../../../test/typeorm-test.config';
+import { AceptacionTerminosOrmEntity } from '../../paciente/infrastructure/persistence/aceptacion-terminos.orm-entity';
 import { PacienteOrmEntity } from '../../paciente/infrastructure/persistence/paciente.orm-entity';
 import { TenantOrmEntity } from '../../tenant/infrastructure/persistence/tenant.orm-entity';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
@@ -52,6 +53,7 @@ const ENTIDADES = [
   TenantOrmEntity,
   UsuarioOrmEntity,
   PacienteOrmEntity,
+  AceptacionTerminosOrmEntity,
   CitaOrmEntity,
   CambioCitaOrmEntity,
   EnlaceCitaOrmEntity,
@@ -220,7 +222,9 @@ describe('Enlaces de cita y bloqueo de cita contra PostgreSQL (integration)', ()
   });
 
   beforeEach(async () => {
-    await baseA.query('TRUNCATE enlaces_cita, cambios_cita, citas, pacientes');
+    await baseA.query(
+      'TRUNCATE enlaces_cita, cambios_cita, citas, aceptaciones_terminos, pacientes',
+    );
   });
 
   afterAll(async () => {

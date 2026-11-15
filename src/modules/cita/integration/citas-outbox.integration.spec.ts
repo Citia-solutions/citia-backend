@@ -16,6 +16,7 @@ import { DespachadorEventosSalida } from '../../../shared/infrastructure/salida/
 import { EventoSalidaOrmEntity } from '../../../shared/infrastructure/salida/evento-salida.orm-entity';
 import { RegistroSuscriptores } from '../../../shared/infrastructure/salida/registro-suscriptores';
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
+import { AceptacionTerminosOrmEntity } from '../../paciente/infrastructure/persistence/aceptacion-terminos.orm-entity';
 import { PacienteOrmEntity } from '../../paciente/infrastructure/persistence/paciente.orm-entity';
 import { TenantOrmEntity } from '../../tenant/infrastructure/persistence/tenant.orm-entity';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
@@ -50,6 +51,8 @@ const configuracionTypeOrm: TypeOrmModuleOptions = {
     TenantOrmEntity,
     UsuarioOrmEntity,
     PacienteOrmEntity,
+    // PacienteModule (vía CitaModule) registra `aceptaciones_terminos` (US-11).
+    AceptacionTerminosOrmEntity,
     CitaOrmEntity,
     CambioCitaOrmEntity,
     // CitaModule registra `enlaces_cita` (Fase 3).
@@ -65,6 +68,8 @@ const PACIENTE = {
   telefono: '+56 9 8765 4321',
   correo: 'maria.perez@correo.cl',
   consentimiento: true,
+  // US-11: el alta con `paciente` registra la aceptación del profesional.
+  terminosVersion: '1.0',
 };
 // Dato de salud: tampoco viaja en el hecho (ADR-13 §12).
 const TIPO_CONSULTA = 'Control psiquiátrico';
@@ -145,7 +150,7 @@ describe('CitasService + outbox eventos_salida (integration)', () => {
 
   beforeEach(async () => {
     await dataSource.query(
-      'TRUNCATE eventos_salida, cambios_cita, enlaces_cita, citas, pacientes',
+      'TRUNCATE eventos_salida, cambios_cita, enlaces_cita, citas, aceptaciones_terminos, pacientes',
     );
   });
 

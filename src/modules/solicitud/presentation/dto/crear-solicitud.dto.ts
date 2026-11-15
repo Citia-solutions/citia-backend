@@ -1,10 +1,12 @@
 import {
-  IsBoolean,
+  Equals,
   IsEmail,
   IsNotEmpty,
   IsString,
   MaxLength,
 } from 'class-validator';
+
+import { VersionTerminosVigente } from '../../../paciente/presentation/dto/version-terminos.decorator';
 
 /**
  * Cuerpo del formulario público del paciente.
@@ -54,7 +56,24 @@ export class CrearSolicitudDto {
   @MaxLength(200)
   preferenciaHoraria: string;
 
-  /** Requisito legal, y aquí lo marca el titular del dato. */
-  @IsBoolean()
+  /**
+   * Requisito legal, y aquí lo marca el titular del dato. Desde US-11 (ADR-16
+   * §5, D5) tiene que ser `true`: un `false` responde 400 del
+   * `ValidationPipe`, ANTES de buscar la organización (el 202 sigue
+   * uniforme).
+   */
+  @Equals(true, {
+    message: 'Debes aceptar los términos de uso y el aviso de privacidad',
+  })
   consentimiento: boolean;
+
+  /**
+   * Versión de los términos que mostró el formulario (US-11, ADR-16 §5).
+   * Obligatoria y del catálogo, con una versión que recibe aceptaciones; si
+   * no, 400 con `MENSAJE_VERSION_TERMINOS_NO_VIGENTE` (también antes de
+   * buscar la organización). Se guarda en `solicitudes_cita.terminos_version`
+   * y la aceptación nace al aceptar la solicitud en la bandeja (D10).
+   */
+  @VersionTerminosVigente()
+  terminosVersion: string;
 }
