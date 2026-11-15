@@ -160,5 +160,34 @@ describe('SolicitudesService', () => {
       expect(mockTenantRepository.findBySlug).not.toHaveBeenCalled();
       expect(mockSolicitudRepository.guardar).not.toHaveBeenCalled();
     });
+
+    it('debería rechazar un RUT mal escrito que normalizado sería otro RUT válido', async () => {
+      // Arrange — sin la validación de forma, la X se borraba y quedaba el RUT
+      // 1.789.012-3, que sí pasa el módulo 11: la solicitud de una persona
+      // quedaba a nombre de otra.
+      const malEscrito = { ...dto, rut: '17.890.123-X' };
+
+      // Act & Assert
+      await expect(service.recibir(SLUG, malEscrito)).rejects.toBeInstanceOf(
+        RutInvalidoError,
+      );
+
+      expect(mockTenantRepository.findBySlug).not.toHaveBeenCalled();
+      expect(
+        mockSolicitudRepository.buscarAbiertaPorRut,
+      ).not.toHaveBeenCalled();
+      expect(mockSolicitudRepository.guardar).not.toHaveBeenCalled();
+    });
+
+    it.each(['12345678-5', '123456785'])(
+      'debería seguir aceptando el RUT %p sin puntos y guardarlo canónico',
+      async (rut) => {
+        // Act
+        await service.recibir(SLUG, { ...dto, rut });
+
+        // Assert
+        expect(primeraGuardada().rut).toBe('123456785');
+      },
+    );
   });
 });
