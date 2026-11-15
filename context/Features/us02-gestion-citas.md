@@ -283,7 +283,7 @@ clave foránea a propósito: el módulo `solicitud` no depende del módulo `cita
 | `cita/application/citas.service.spec.ts` (US-02.08) | unit | `detalle()`: filtra por tenant, 404 idéntico inexistente/otro tenant, sin campos internos ni RUT canónico, solo lectura |
 | `test/citas-detalle.e2e-spec.ts` (US-02.08) | e2e **sin BD** | 401 sin token / token ajeno, 400 id no UUID, 200 forma exacta, 404 cuerpo idéntico, `/hoy` no colisiona con `/:id`, detalle → reagendar/cancelar → detalle |
 | `shared/domain/rut.spec.ts`, `pacientes.service.spec.ts`, `solicitudes.service.spec.ts` (2026-11-14) | unit | forma escrita antes del módulo 11: `17.890.123-X` y otras ocho formas mal escritas se rechazan sin buscar ni guardar; con y sin puntos sigue funcionando |
-| `solicitud/presentation/solicitudes-publicas.controller.spec.ts`, `paciente/presentation/pacientes.controller.spec.ts` (2026-11-14) | unit | el RUT mal escrito llega como `400` (el público, con el caso de uso real y antes de buscar la organización) |
+| `solicitud/presentation/solicitudes-publicas.controller.spec.ts` (2026-11-14) | unit | el RUT mal escrito llega como `400`, con el caso de uso real y antes de buscar la organización |
 
 **174 unit verdes, 13 suites.** El e2e de US-02.08 corre sin infraestructura: guard, estrategia JWT,
 `ValidationPipe` y `CitasService` **reales**; solo los repositorios son en memoria (filtran por

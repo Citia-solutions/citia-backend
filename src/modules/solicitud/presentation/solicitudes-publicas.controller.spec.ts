@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
 
 import { SolicitudesService } from '../application/solicitudes.service';
 import { CrearSolicitudDto } from './dto/crear-solicitud.dto';
@@ -18,15 +19,20 @@ describe('SolicitudesPublicasController', () => {
   let findBySlug: jest.Mock;
   let guardar: jest.Mock;
 
-  const cuerpo = (rut: string): CrearSolicitudDto => ({
-    rut,
-    nombrePaciente: 'Ana Soto',
-    telefono: '+56 9 1111 1111',
-    correo: 'ana@mail.com',
-    motivo: 'Control',
-    preferenciaHoraria: 'mañanas',
-    consentimiento: true,
-  });
+  // Como lo arma el ValidationPipe. Con `plainToInstance` el cuerpo no depende
+  // de los campos que declare el DTO: `terminosVersion` (US-11) compila esté o
+  // no en `CrearSolicitudDto`.
+  const cuerpo = (rut: string): CrearSolicitudDto =>
+    plainToInstance(CrearSolicitudDto, {
+      rut,
+      nombrePaciente: 'Ana Soto',
+      telefono: '+56 9 1111 1111',
+      correo: 'ana@mail.com',
+      motivo: 'Control',
+      preferenciaHoraria: 'mañanas',
+      consentimiento: true,
+      terminosVersion: '1.0',
+    });
 
   beforeEach(() => {
     findBySlug = jest.fn().mockResolvedValue({ id: 'tenant-1', slug: SLUG });
