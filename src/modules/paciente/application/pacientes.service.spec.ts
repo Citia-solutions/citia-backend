@@ -1,7 +1,13 @@
+import {
+  ContadorTransacciones,
+  InMemoryAceptacionTerminosRepository,
+  InMemoryPacienteRepository,
+} from '../../../../test/support/in-memory-repositories';
 import { RutInvalidoError } from '../../../shared/domain/rut-invalido.error';
 import {
   AceptacionTerminos,
   CanalAceptacion,
+  RegistrarAceptacionProps,
 } from '../domain/aceptacion-terminos.entity';
 import { CambioContactoVacioError } from '../domain/exceptions/cambio-contacto-vacio.error';
 import { CorreoPacienteRequeridoError } from '../domain/exceptions/correo-paciente-requerido.error';
@@ -550,6 +556,241 @@ describe('PacientesService', () => {
         ['1.0'],
         'tx',
       );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // US-11 con los dobles en memoria: reproducen el SQL (INSERT … SELECT por
+  // tenant, el índice único con ON CONFLICT DO NOTHING, el UPDATE condicional
+  // de la bandera), así que se comprueba lo que QUEDA, no solo las llamadas.
+  describe('US-11 sobre los dobles en memoria (lo que queda escrito)', () => {
+    const OTRO_TENANT = 'tenant-2';
+    const ENLACE_ID = '0e1a0000-0000-4000-8000-000000000001';
+    const SOLICITUD_ID = '5011c000-0000-4000-8000-000000000001';
+
+    let pacientes: InMemoryPacienteRepository;
+    let aceptaciones: InMemoryAceptacionTerminosRepository;
+    let transacciones: ContadorTransacciones;
+    let real: PacientesService;
+
+    const sembrarFicha = (
+      id: string,
+      props: Partial<{ consentimiento: boolean; tenantId: string }> = {},
+    ): void => {
+      pacientes.pacientes.set(
+        id,
+        Paciente.reconstituir({
+          id,
+          rut: '123456785',
+          nombre: 'Ana Soto (ficha)',
+          telefono: '+56 9 9999 9999',
+          correo: 'ana@mail.com',
+          consentimiento: props.consentimiento ?? false,
+          tenantId: props.tenantId ?? TENANT,
+        }),
+      );
+    };
+
+    const bandera = (id = PACIENTE_ID): boolean | undefined =>
+      pacientes.pacientes.get(id)?.consentimiento;
+
+    const delCanal = (
+      canal: CanalAceptacion,
+      extra: Partial<{ tenantId: string; version: string }> = {},
+    ): RegistrarAceptacionProps => {
+      const base = {
+        tenantId: extra.tenantId ?? TENANT,
+        pacienteId: PACIENTE_ID,
+        version: extra.version ?? '1.0',
+        aceptadaEn: AHORA,
+      };
+      switch (canal) {
+        case CanalAceptacion.FORMULARIO_PUBLICO:
+          return { ...base, canal, solicitudId: SOLICITUD_ID };
+        case CanalAceptacion.ENLACE_CITA:
+          return { ...base, canal, enlaceId: ENLACE_ID };
+        case CanalAceptacion.PROFESIONAL:
+          return { ...base, canal, usuarioId: USUARIO.userId };
+      }
+    };
+
+    beforeEach(() => {
+      pacientes = new InMemoryPacienteRepository();
+      aceptaciones = new InMemoryAceptacionTerminosRepository(pacientes);
+      transacciones = new ContadorTransacciones();
+      real = new PacientesService(
+        pacientes,
+        aceptaciones,
+        transacciones,
+        () => AHORA,
+      );
+      // Una ficha vieja, sin autorización (D7: sin relleno).
+      sembrarFicha(PACIENTE_ID);
+    });
+
+    describe('registrarAceptacion', () => {
+      it('debería insertar y encender la bandera la primera vez; la segunda no inserta y la bandera sigue en true', async () => {
+        // Act
+        const primera = await real.registrarAceptacion(
+          delCanal(CanalAceptacion.ENLACE_CITA),
+          'tx',
+        );
+        const segunda = await real.registrarAceptacion(
+          delCanal(CanalAceptacion.ENLACE_CITA),
+          'tx',
+        );
+
+        // Assert
+        expect([primera, segunda]).toEqual([true, false]);
+        expect(aceptaciones.filas()).toHaveLength(1);
+        expect(bandera()).toBe(true);
+      });
+
+      it('debería dejar una fila por canal para la misma versión (D11)', async () => {
+        // Act
+        for (const canal of Object.values(CanalAceptacion)) {
+          await real.registrarAceptacion(delCanal(canal), 'tx');
+        }
+
+        // Assert
+        expect(aceptaciones.filas().map((a) => a.canal)).toEqual([
+          CanalAceptacion.FORMULARIO_PUBLICO,
+          CanalAceptacion.ENLACE_CITA,
+          CanalAceptacion.PROFESIONAL,
+        ]);
+      });
+
+      it('no debería escribir nada con un paciente de otra organización (ni la fila ni la bandera)', async () => {
+        // Act
+        const insertada = await real.registrarAceptacion(
+          delCanal(CanalAceptacion.ENLACE_CITA, { tenantId: OTRO_TENANT }),
+          'tx',
+        );
+
+        // Assert
+        expect(insertada).toBe(false);
+        expect(aceptaciones.filas()).toHaveLength(0);
+        expect(bandera()).toBe(false);
+      });
+
+      it('no debería escribir nada con una versión que no sirve al canal', async () => {
+        // Act & Assert
+        await expect(
+          real.registrarAceptacion(
+            delCanal(CanalAceptacion.PROFESIONAL, { version: '9.9' }),
+            'tx',
+          ),
+        ).rejects.toBeInstanceOf(VersionTerminosNoVigenteError);
+        expect(aceptaciones.filas()).toHaveLength(0);
+        expect(bandera()).toBe(false);
+      });
+
+      it('no debería abrir una transacción propia: corre en la de quien llama', async () => {
+        // Act
+        await real.registrarAceptacion(
+          delCanal(CanalAceptacion.FORMULARIO_PUBLICO),
+          'tx-de-quien-llama',
+        );
+
+        // Assert
+        expect(transacciones.abiertas).toBe(0);
+      });
+    });
+
+    describe('titularAceptoVigente', () => {
+      it('debería ser false sin ninguna aceptación', async () => {
+        expect(await real.titularAceptoVigente(PACIENTE_ID, TENANT)).toBe(
+          false,
+        );
+      });
+
+      it('debería ser false con SOLO la del profesional (no es del titular)', async () => {
+        // Arrange
+        await real.registrarAceptacion(
+          delCanal(CanalAceptacion.PROFESIONAL),
+          'tx',
+        );
+
+        // Act & Assert — la bandera sí se encendió, pero /cita sigue pidiendo
+        expect(bandera()).toBe(true);
+        expect(await real.titularAceptoVigente(PACIENTE_ID, TENANT)).toBe(
+          false,
+        );
+      });
+
+      it.each([
+        CanalAceptacion.FORMULARIO_PUBLICO,
+        CanalAceptacion.ENLACE_CITA,
+      ])('debería ser true con una de %s de la 1.0', async (canal) => {
+        // Arrange
+        await real.registrarAceptacion(delCanal(canal), 'tx');
+
+        // Act & Assert
+        expect(await real.titularAceptoVigente(PACIENTE_ID, TENANT)).toBe(true);
+      });
+
+      it('debería ser false si se pregunta con otra organización', async () => {
+        // Arrange
+        await real.registrarAceptacion(
+          delCanal(CanalAceptacion.ENLACE_CITA),
+          'tx',
+        );
+
+        // Act & Assert
+        expect(await real.titularAceptoVigente(PACIENTE_ID, OTRO_TENANT)).toBe(
+          false,
+        );
+      });
+    });
+
+    describe('crearPaciente', () => {
+      it('con un paciente existente por RUT con consentimiento false: lo vincula, registra profesional con el usuario y la bandera queda en true', async () => {
+        // Act
+        const respuesta = await real.crearPaciente(dto, USUARIO);
+
+        // Assert — no se creó otro paciente
+        expect(pacientes.pacientes.size).toBe(1);
+        expect(respuesta.id).toBe(PACIENTE_ID);
+        expect(respuesta.consentimiento).toBe(true);
+        expect(bandera()).toBe(true);
+        expect(aceptaciones.filas()).toEqual([
+          expect.objectContaining({
+            tenantId: TENANT,
+            pacienteId: PACIENTE_ID,
+            version: '1.0',
+            canal: CanalAceptacion.PROFESIONAL,
+            aceptadaEn: AHORA,
+            usuarioId: USUARIO.userId,
+            solicitudId: null,
+            enlaceId: null,
+          }),
+        ]);
+        expect(transacciones.abiertas).toBe(1);
+      });
+
+      it('dos altas del mismo RUT con la misma versión dejan UNA fila profesional', async () => {
+        // Act
+        await real.crearPaciente(dto, USUARIO);
+        await real.crearPaciente(dto, { ...USUARIO, userId: 'usuario-2' });
+
+        // Assert — gana el primer acto
+        expect(aceptaciones.filas()).toHaveLength(1);
+        expect(aceptaciones.filas()[0].usuarioId).toBe(USUARIO.userId);
+        expect(transacciones.abiertas).toBe(2);
+      });
+
+      it('un paciente nuevo nace con su aceptación y la bandera en true', async () => {
+        // Act
+        const respuesta = await real.crearPaciente(
+          { ...dto, rut: undefined, correo: 'nueva@mail.com' },
+          USUARIO,
+        );
+
+        // Assert
+        expect(pacientes.pacientes.size).toBe(2);
+        expect(bandera(respuesta.id)).toBe(true);
+        expect(aceptaciones.filas()[0].pacienteId).toBe(respuesta.id);
+      });
     });
   });
 
