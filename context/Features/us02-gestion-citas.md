@@ -134,8 +134,8 @@ formulario del frontend se cierre:
 }
 ```
 
-**Responde `202` con un mensaje fijo, siempre.** Solo devuelve `400` si el RUT no pasa el dígito
-verificador o falta un campo.
+**Responde `202` con un mensaje fijo, siempre.** Solo devuelve `400` si el RUT está mal escrito o no
+pasa el dígito verificador, o si falta un campo.
 
 ---
 
@@ -153,6 +153,14 @@ RUT inventado con aritmética. Cumple dos funciones a la vez:
 2. **Filtro de entrada** de la vía pública.
 
 Se almacena **canónico** (`208929933`) y se devuelve **formateado** (`20.892.993-3`).
+
+**Forma escrita (2026-11-14).** `esRutValido` revisa la forma **antes** de normalizar: cuerpo sin puntos
+o con los puntos de miles bien puestos, guion opcional y verificador (dígito o K). `12.345.678-5`,
+`12345678-5` y `123456785` pasan; `17.890.123-X`, `12 345 678-5` o `17.890.123` (sin verificador) dan
+`400`, el mismo de un verificador incorrecto, en `POST /publico/:tenantSlug/solicitudes`, `POST /pacientes`
+y el paciente en línea de `POST /citas`. Antes, `normalizarRut` borraba lo que sobraba y `17.890.123-X`
+pasaba como el RUT 1.789.012-3. Detalle y límite que queda en
+[ADR-09 §3, matiz del 2026-11-14](../Decisions/ADR-09.md#3-el-rut-es-la-identidad-del-paciente-la-solicitud-no-crea-paciente).
 
 > **Límite conocido:** el algoritmo es público, así que valida la *forma*, no la *titularidad*. Ver
 > [DT-23](../Deudas/DT-23.md).
@@ -274,6 +282,8 @@ clave foránea a propósito: el módulo `solicitud` no depende del módulo `cita
 | `cita/domain/cita.entity.spec.ts` (US-02.08) | unit | `accionesPermitidas` en los seis estados; cada acción anunciada no lanza y cada no anunciada lanza 409; tras reagendar desde `confirmada` vuelven las de `pendiente` |
 | `cita/application/citas.service.spec.ts` (US-02.08) | unit | `detalle()`: filtra por tenant, 404 idéntico inexistente/otro tenant, sin campos internos ni RUT canónico, solo lectura |
 | `test/citas-detalle.e2e-spec.ts` (US-02.08) | e2e **sin BD** | 401 sin token / token ajeno, 400 id no UUID, 200 forma exacta, 404 cuerpo idéntico, `/hoy` no colisiona con `/:id`, detalle → reagendar/cancelar → detalle |
+| `shared/domain/rut.spec.ts`, `pacientes.service.spec.ts`, `solicitudes.service.spec.ts` (2026-11-14) | unit | forma escrita antes del módulo 11: `17.890.123-X` y otras ocho formas mal escritas se rechazan sin buscar ni guardar; con y sin puntos sigue funcionando |
+| `solicitud/presentation/solicitudes-publicas.controller.spec.ts`, `paciente/presentation/pacientes.controller.spec.ts` (2026-11-14) | unit | el RUT mal escrito llega como `400` (el público, con el caso de uso real y antes de buscar la organización) |
 
 **174 unit verdes, 13 suites.** El e2e de US-02.08 corre sin infraestructura: guard, estrategia JWT,
 `ValidationPipe` y `CitasService` **reales**; solo los repositorios son en memoria (filtran por
