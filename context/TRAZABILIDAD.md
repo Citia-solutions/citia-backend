@@ -160,7 +160,7 @@ tipo `merge`), y la Fase 7 llegó a `develop` por fast-forward, sin PR ni commit
 | 133 | `1d00f9e` test(paciente): aceptaciones de los términos, unitarios e integración | 2026-11-14 | test | [US-11 § Tests por capa](US/11-terminos-paciente.md#tests-por-capa) (`paciente`: servicio, adaptadores y `integration/aceptaciones-terminos`); [us11 § Tests y verificación](Features/us11-terminos-paciente.md#tests-y-verificación) | — |
 | 134 | `fc3a83f` test(solicitud): versión de los términos en el formulario y la bandeja | 2026-11-14 | test | [US-11 § Tests por capa](US/11-terminos-paciente.md#tests-por-capa) (`solicitud`: entidad, servicios, adaptador y el CHECK en `solicitudes-persistencia`); [us11 § Tests y verificación](Features/us11-terminos-paciente.md#tests-y-verificación) | — |
 | 135 | `305dea5` test(portal-paciente): aceptar-terminos, unitarios y concurrencia contra Postgres | 2026-11-14 | test | [US-11 § Tests por capa](US/11-terminos-paciente.md#tests-por-capa) (`portal-paciente`: servicio, DTO y `portal-paciente-concurrencia`); [us11 § Tests y verificación](Features/us11-terminos-paciente.md#tests-y-verificación) | — |
-| 136 | `66e54bc` test(e2e): contrato de la US-11, sin correr | 2026-11-14 | test | [US-11 § Definición de Terminado](US/11-terminos-paciente.md#definición-de-terminado) y la [lista de e2e](US/11-terminos-paciente.md#e2e-solo-listadas-no-se-corren-sin-la-autorización-del-usuario) (ver nota) | — |
+| 136 | `66e54bc` test(e2e): contrato de la US-11 | 2026-11-14 | test | [US-11 § Definición de Terminado](US/11-terminos-paciente.md#definición-de-terminado) y la [lista de e2e](US/11-terminos-paciente.md#e2e-solo-listadas-no-se-corren-sin-la-autorización-del-usuario) (ver nota) | — |
 
 > **Nota commit 31.** `core.autocrlf=true` marcaba ~32 archivos como modificados con contenido
 > idéntico, ensuciando `git status` y los diffs de cada PR. `.gitattributes` fija LF para repo y
@@ -293,7 +293,7 @@ tipo `merge`), y la Fase 7 llegó a `develop` por fast-forward, sin PR ni commit
 > PR #19 en `develop`): al 2026-11-14 no tienen merge ni release. Las filas 128–132 se commitearon el 2026-11-14 entre
 > las 17:19 y las 17:58, con la implementación ya verificada en local; la 128 trae el ADR ya aceptado. Las 133–135 son
 > los tests del `testing-agent` (unitarios e integración por módulo), commiteados a las 21:43. La **136** son las e2e
-> ajustadas al contrato nuevo: compilan, pero **no se corrieron** (el usuario no autorizó `npm run test:e2e`). El frontend tiene sus propios commits (`eb3fbcc` a
+> ajustadas al contrato nuevo; con la autorización del usuario se corrieron el 2026-11-14: 18 suites y 418 tests en verde. El frontend tiene sus propios commits (`eb3fbcc` a
 > `e276343`), en la rama del mismo nombre de `citia-frontend`.
 
 > **Nota fila 53.** Los tests del cierre de la Fase 1 no se listaron en la tabla de

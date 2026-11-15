@@ -248,9 +248,21 @@ Rama `feature/terminos-paciente`, sin release. Está documentado en ese repo:
 | `paciente/integration/aceptaciones-terminos.integration.spec.ts` (`1d00f9e`) | integración | los tres CHECK (la barra de la expresión regular llega a Postgres); **el índice único con dos transacciones en conexiones distintas → una fila** (si la primera se revierte, escribe la segunda); `INSERT … SELECT` con un paciente de otra organización; FK `RESTRICT`; `registrarAceptacion` atómica en una transacción real |
 | `solicitud/`: entidad, `solicitudes.service.spec.ts`, adaptador, `bandeja-solicitudes.service.spec.ts` e `integration/solicitudes-persistencia` (`fc3a83f`) | unit e integración | la versión de ida y vuelta; `recibir` sigue con un solo `INSERT`; `reagendamiento` y `rechazar` no registran; un paciente existente por RUT con `false` queda en `true`; el CHECK `CHK_solicitudes_cita_terminos_version` |
 | `portal-paciente/`: servicio, `dto/aceptar-terminos.dto.spec.ts` e `integration/portal-paciente-concurrencia` (`305dea5`) | unit e integración | el orden cita → inserción → bandera en el mismo `tx`; ni el GET ni los otros tres `POST` registran; **`aceptar-terminos` contra la bandeja aceptando una solicitud del mismo paciente, en los dos órdenes, sin interbloqueo**; dos y cinco `aceptar-terminos` con el mismo enlace → una fila |
-| la [lista de e2e del plan](../US/11-terminos-paciente.md#e2e-solo-listadas-no-se-corren-sin-la-autorización-del-usuario) | e2e | `92a1f36` y `bdeb1aa` tocaron seis solo para limpiar las tablas o compilar; los casos nuevos van en un commit todavía sin hacer (fila 136 de la [TRAZABILIDAD](../TRAZABILIDAD.md)); la corrida, **con la autorización del usuario** |
+| la [lista de e2e del plan](../US/11-terminos-paciente.md#e2e-solo-listadas-no-se-corren-sin-la-autorización-del-usuario) (`66e54bc`) | e2e | `pacientes`, `portal-paciente`, `limite-tasa` y `solicitudes-bandeja` con los casos nuevos (400 por la casilla y la versión, filas de los tres canales, `aceptar-terminos` dentro del 404 uniforme, del cubo `portalPorEnlace` y con sus cabeceras); `terminosVersion: '1.0'` en `logs-redaccion`, `citas-dashboard`, `recordatorios-flujo` y `recordatorios-politicas` |
 
-**Resultado:** sin números registrados al 2026-11-14.
+**Resultado (2026-11-14, rama `feature/terminos-paciente`):**
+
+| Suite | Resultado |
+|---|---|
+| `npm test` | 137 suites, **2577 tests** en verde |
+| `npm run test:integration` (Postgres local) | 14 suites, **316 tests** en verde |
+| `npm run test:e2e` (con la autorización del usuario) | 18 suites, **418 tests** en verde |
+| `tsc`, ESLint y Prettier | limpios |
+| Frontend: `npm run build` (`vue-tsc` + `vite`) | en verde |
+
+Ninguna suite corre el SQL de las migraciones `1750000021000` y `1750000022000`: las integraciones arman el esquema
+con `synchronize` desde el ORM. Las dos se probaron a mano en `citia_dev` (`migration:run`, dos `migration:revert` y
+otra vez `migration:run`), y un diff de esquema en seco no mostró diferencias entre la ORM y la migración.
 
 ### Verificación en local (2026-11-14)
 

@@ -618,16 +618,17 @@ congelada y el borrador marcado como publicado esperan al release**, porque la c
 
 ## Definición de Terminado
 
-- [ ] `tsc`, ESLint, Prettier y `npm test` en verde.
-- [ ] `npm run test:integration` en verde (Postgres local).
-- [ ] e2e de la lista, ajustadas; en verde **con la autorización del usuario**.
-- [ ] `npm run migration:run` y `migration:revert` limpias en local; las dos migraciones son aditivas.
-- [ ] Frontend: `npm run build` en verde; `/terminos` con el texto **idéntico** al de este plan (comparado a mano,
-      párrafo por párrafo) y la versión de `shared/config/terminosPaciente.ts` igual a la del catálogo del backend.
-- [ ] `src/modules/portal-paciente/CLAUDE.md`, `solicitud/CLAUDE.md` y `cita/CLAUDE.md` al día; `paciente` gana su
-      `CLAUDE.md` si el `api-agent` lo ve necesario (ahora tiene reglas propias: solo inserción, catálogo).
+- [x] `tsc`, ESLint, Prettier y `npm test` en verde (137 suites, 2577 tests; 2026-11-14).
+- [x] `npm run test:integration` en verde (Postgres local; 14 suites, 316 tests).
+- [x] e2e de la lista, ajustadas; en verde **con la autorización del usuario** (18 suites, 418 tests; 2026-11-14).
+- [x] `npm run migration:run` y `migration:revert` limpias en local; las dos migraciones son aditivas.
+- [x] Frontend: `npm run build` en verde; `/terminos` con el texto **idéntico** al de este plan (comparado bloque por
+      bloque, 55 de 55) y la versión de `shared/config/terminosPaciente.ts` igual a la del catálogo del backend (`1.0`).
+- [x] `src/modules/portal-paciente/CLAUDE.md`, `solicitud/CLAUDE.md` y `cita/CLAUDE.md` al día; `paciente` ganó su
+      `CLAUDE.md`.
 - [ ] **La prueba se ve en la base** (staging y, después del release, production), con estas consultas (`:tenant` = el
-      id de la organización; solo ids, sin nombres ni RUT):
+      id de la organización; solo ids, sin nombres ni RUT). ✅ En local, el 2026-11-14 (los tres canales); faltan
+      staging y production:
 
 ```sql
 -- 1. La prueba, la más reciente primero.
