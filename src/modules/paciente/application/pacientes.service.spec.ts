@@ -194,6 +194,38 @@ describe('PacientesService', () => {
       expect(mockPacienteRepository.guardar).not.toHaveBeenCalled();
     });
 
+    it('debería rechazar un RUT mal escrito sin vincularlo al paciente de otro RUT', async () => {
+      // Arrange — '17.890.123-X' normalizado era 17890123 (el RUT 1.789.012-3,
+      // válido): el alta quedaba vinculada a la ficha de otra persona.
+      mockPacienteRepository.buscarPorRut.mockResolvedValue(existente());
+
+      // Act & Assert
+      await expect(
+        service.resolverOCrear({ ...dto, rut: '17.890.123-X' }, TENANT),
+      ).rejects.toBeInstanceOf(RutInvalidoError);
+
+      expect(mockPacienteRepository.buscarPorRut).not.toHaveBeenCalled();
+      expect(
+        mockPacienteRepository.completarCorreoSiVacio,
+      ).not.toHaveBeenCalled();
+      expect(mockPacienteRepository.guardar).not.toHaveBeenCalled();
+    });
+
+    it.each(['12345678-5', '123456785'])(
+      'debería seguir buscando por el RUT canónico cuando llega %p sin puntos',
+      async (rut) => {
+        // Act
+        await service.resolverOCrear({ ...dto, rut }, TENANT);
+
+        // Assert
+        expect(mockPacienteRepository.buscarPorRut).toHaveBeenCalledWith(
+          '123456785',
+          TENANT,
+          undefined,
+        );
+      },
+    );
+
     it('debería crear sin buscar cuando no hay RUT (alta manual de alguien sin documento)', async () => {
       // Act
       await service.resolverOCrear(

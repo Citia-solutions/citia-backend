@@ -10,6 +10,19 @@
 // cortos, las empresas mas largos); el filtro real es el digito verificador.
 const FORMATO_CANONICO = /^\d{6,9}[0-9k]$/;
 
+// Forma escrita aceptada, antes de normalizar: el cuerpo sin puntos o con los
+// puntos de miles bien puestos, guion opcional y el verificador (digito o K).
+// Acepta '12.345.678-5', '12345678-5' y la canonica '123456785', que es la que
+// envia el frontend y la que reusa la bandeja al aceptar una solicitud.
+//
+// Existe porque normalizarRut borra todo lo que no es digito o k: sin este
+// filtro, '17.890.123-X' perdia la X y pasaba como el RUT 1.789.012-3, y el
+// RUT es la identidad del paciente (ADR-09 §3). Un RUT con puntos y sin
+// verificador ('17.890.123') tambien se rechaza; sin puntos ni guion
+// ('17890123') es indistinguible de la forma canonica: lo ataja el formulario,
+// que exige el guion.
+const FORMATO_ESCRITO = /^(?:\d{1,3}(?:\.\d{3})+|\d+)-?[0-9kK]$/;
+
 /**
  * Lleva un RUT a su forma canonica: solo digitos y el verificador, sin puntos
  * ni guion, con la `k` en minuscula.
@@ -18,18 +31,25 @@ const FORMATO_CANONICO = /^\d{6,9}[0-9k]$/;
  *   '12345678-5'   -> '123456785'
  *
  * Es la unica forma en la que el RUT se almacena y se compara.
+ *
+ * Borra cualquier otro caracter sin preguntar: aplicala solo a un RUT que ya
+ * paso `esRutValido`, nunca como validacion.
  */
 export function normalizarRut(rut: string): string {
   return rut.replace(/[^0-9kK]/g, '').toLowerCase();
 }
 
 /**
- * Valida el digito verificador con el algoritmo modulo 11.
+ * Valida la forma escrita del RUT y su digito verificador (modulo 11).
  *
- * Rechaza un RUT inventado sin consultar nada. No verifica titularidad: que el
- * RUT sea valido no significa que pertenezca a quien lo escribe (ver DT-23).
+ * Primero la forma (`FORMATO_ESCRITO`, tolerando espacios alrededor) y despues
+ * el modulo 11 sobre la forma canonica. Rechaza un RUT inventado o mal escrito
+ * sin consultar nada. No verifica titularidad: que el RUT sea valido no
+ * significa que pertenezca a quien lo escribe (ver DT-23).
  */
 export function esRutValido(rut: string): boolean {
+  if (!FORMATO_ESCRITO.test(rut.trim())) return false;
+
   const limpio = normalizarRut(rut);
   if (!FORMATO_CANONICO.test(limpio)) return false;
 
