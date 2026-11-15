@@ -457,6 +457,28 @@ describe('PortalPacienteService', () => {
       },
     );
 
+    it.each(casos)(
+      'aceptarTerminos con un enlace %s no toca la bandera de una ficha sin autorización (US-11)',
+      async (_caso, preparar) => {
+        // Arrange — la foto de arriba parte con la bandera en true; aquí, en
+        // false, para ver que tampoco se enciende.
+        pacientes.pacientes.set(pacienteId, {
+          ...pacientes.pacientes.get(pacienteId)!,
+          consentimiento: false,
+        });
+        await preparar();
+        const registrar = jest.spyOn(pacientesService, 'registrarAceptacion');
+
+        // Act & Assert
+        await expect(
+          portal.aceptarTerminos(tokenUsado, '1.0'),
+        ).rejects.toBeInstanceOf(EnlaceCitaNoValidoError);
+        expect(registrar).not.toHaveBeenCalled();
+        expect(aceptaciones.aceptaciones).toHaveLength(0);
+        expect(pacientes.pacientes.get(pacienteId)?.consentimiento).toBe(false);
+      },
+    );
+
     it('no debería consultar la base con un token mal formado', async () => {
       // Arrange
       const lectura = jest.spyOn(enlaces, 'buscarPorTokenHash');
@@ -798,6 +820,66 @@ describe('PortalPacienteService', () => {
         await portal.ver(token);
         expect(aceptaciones.aceptaciones).toHaveLength(0);
       });
+
+      it('la lee DENTRO de la transacción de la petición, por paciente y tenant de la cita, con las versiones que cubren', async () => {
+        // Arrange
+        const lectura = jest.spyOn(aceptaciones, 'existeDelTitular');
+
+        // Act
+        await portal.ver(token);
+
+        // Assert
+        expect(lectura).toHaveBeenCalledWith(
+          pacienteId,
+          tenantId,
+          ['1.0'],
+          transacciones.ultimoContexto,
+        );
+        expect(transacciones.abiertas).toBe(1);
+      });
+
+      it('false si el titular aceptó desde el enlace de OTRA cita suya (la aceptación es del paciente, no de la cita)', async () => {
+        // Arrange
+        const otraCita = sembrarCita({
+          inicio: new Date('2026-10-22T13:00:00.000Z'),
+        });
+        await portal.aceptarTerminos(await tokenDe(otraCita), '1.0');
+
+        // Act
+        const vista = await portal.ver(token);
+
+        // Assert
+        expect(vista.terminosPendientes).toBe(false);
+        expect(aceptaciones.filas()).toHaveLength(1);
+      });
+
+      it('ni el GET ni los otros tres POST registran: la ficha sin autorización sigue en false y sin filas', async () => {
+        // Arrange
+        pacientes.pacientes.set(pacienteId, {
+          ...pacientes.pacientes.get(pacienteId)!,
+          consentimiento: false,
+        });
+        const registrar = jest.spyOn(pacientesService, 'registrarAceptacion');
+
+        // Act — las cuatro rutas que no son aceptar, cada una con su vista
+        const vistas = [
+          await portal.ver(token),
+          await portal.confirmar(token),
+          await portal.pedirOtraHora(token, { preferencia: 'tardes' }),
+          await portal.cancelar(token, undefined),
+        ];
+
+        // Assert
+        expect(vistas.map((v) => v.terminosPendientes)).toEqual([
+          true,
+          true,
+          true,
+          true,
+        ]);
+        expect(registrar).not.toHaveBeenCalled();
+        expect(aceptaciones.aceptaciones).toHaveLength(0);
+        expect(pacientes.pacientes.get(pacienteId)?.consentimiento).toBe(false);
+      });
     });
 
     describe('aceptarTerminos', () => {
@@ -909,6 +991,80 @@ describe('PortalPacienteService', () => {
         );
         expect(vista.estado).toBe(EstadoCita.CONFIRMADA);
         expect(vista.terminosPendientes).toBe(false);
+      });
+
+      it('bloquea la cita ANTES de escribir la bandera del paciente (orden cita → paciente)', async () => {
+        // Arrange
+        pacientes.pacientes.set(pacienteId, {
+          ...pacientes.pacientes.get(pacienteId)!,
+          consentimiento: false,
+        });
+        const bloqueo = jest.spyOn(citas, 'buscarPorIdParaActualizar');
+        const insercion = jest.spyOn(aceptaciones, 'insertarSiNoExiste');
+        const bandera = jest.spyOn(pacientes, 'marcarConsentimiento');
+
+        // Act
+        await portal.aceptarTerminos(token, '1.0');
+
+        // Assert — todo en el MISMO tx
+        expect(bloqueo.mock.invocationCallOrder[0]).toBeLessThan(
+          insercion.mock.invocationCallOrder[0],
+        );
+        expect(insercion.mock.invocationCallOrder[0]).toBeLessThan(
+          bandera.mock.invocationCallOrder[0],
+        );
+        expect(insercion.mock.calls[0][1]).toBe(transacciones.ultimoContexto);
+        expect(bandera).toHaveBeenCalledWith(
+          pacienteId,
+          tenantId,
+          transacciones.ultimoContexto,
+        );
+      });
+
+      it.each([
+        CanalAceptacion.FORMULARIO_PUBLICO,
+        CanalAceptacion.ENLACE_CITA,
+      ])(
+        'con una aceptación propia de %s no llama a registrar (ni toca la fila del paciente)',
+        async (canal) => {
+          // Arrange
+          sembrarAceptacion(canal);
+          const registrar = jest.spyOn(pacientesService, 'registrarAceptacion');
+          const bandera = jest.spyOn(pacientes, 'marcarConsentimiento');
+
+          // Act
+          const vista = await portal.aceptarTerminos(token, '1.0');
+
+          // Assert
+          expect(registrar).not.toHaveBeenCalled();
+          expect(bandera).not.toHaveBeenCalled();
+          expect(vista.terminosPendientes).toBe(false);
+        },
+      );
+
+      it('después de aceptar, el GET ya no la pide y no escribe otra fila', async () => {
+        // Arrange
+        await portal.aceptarTerminos(token, '1.0');
+
+        // Act
+        const vista = await portal.ver(token);
+
+        // Assert
+        expect(vista.terminosPendientes).toBe(false);
+        expect(aceptaciones.aceptaciones).toHaveLength(1);
+      });
+
+      it('con una petición de otra hora abierta, la vista conserva la petición y solo cancelar', async () => {
+        // Arrange
+        await portal.pedirOtraHora(token, { preferencia: 'tardes' });
+
+        // Act
+        const vista = await portal.aceptarTerminos(token, '1.0');
+
+        // Assert
+        expect(vista.accionesPermitidas).toEqual(['cancelar']);
+        expect(vista.solicitudOtraHora?.preferencia).toBe('tardes');
+        expect(solicitudes.solicitudes.size).toBe(1);
       });
 
       it('con una versión que no recibe aceptaciones (sin pasar por el DTO) lanza y no escribe', async () => {

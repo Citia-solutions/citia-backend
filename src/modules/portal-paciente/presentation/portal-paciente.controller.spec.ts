@@ -26,7 +26,6 @@ import { MENSAJE_VERSION_TERMINOS_NO_VIGENTE } from '../../paciente/presentation
 import { ReagendamientoYaSolicitadoError } from '../../solicitud/domain/reagendamiento-ya-solicitado.error';
 import { AccionNoDisponibleError } from '../application/accion-no-disponible.error';
 import { PortalPacienteService } from '../application/portal-paciente.service';
-import { AceptarTerminosDto } from './dto/aceptar-terminos.dto';
 import { CancelarCitaPacienteDto } from './dto/cancelar-cita-paciente.dto';
 import { PedirOtraHoraDto } from './dto/pedir-otra-hora.dto';
 import { VistaCitaPacienteDto } from './dto/vista-cita-paciente.dto';
@@ -377,34 +376,7 @@ describe('PortalPacienteController', () => {
       });
     });
 
-    describe('AceptarTerminosDto (US-11)', () => {
-      const mensajes = async (
-        cuerpo: Record<string, unknown>,
-      ): Promise<string[]> => {
-        const resultado = await validate(
-          plainToInstance(AceptarTerminosDto, cuerpo),
-          { whitelist: true },
-        );
-        return resultado.flatMap((e) => Object.values(e.constraints ?? {}));
-      };
-
-      it('acepta la versión vigente', async () => {
-        expect(await mensajes({ terminosVersion: '1.0' })).toEqual([]);
-      });
-
-      it.each<[string, Record<string, unknown>]>([
-        ['ausente', {}],
-        ['vacía', { terminosVersion: '' }],
-        ['desconocida', { terminosVersion: '9.9' }],
-        ['no texto', { terminosVersion: 1 }],
-      ])('rechaza la versión %s con el mensaje fijo', async (_c, cuerpo) => {
-        const lista = await mensajes(cuerpo);
-        expect(lista.length).toBeGreaterThan(0);
-        expect(new Set(lista)).toEqual(
-          new Set([MENSAJE_VERSION_TERMINOS_NO_VIGENTE]),
-        );
-      });
-    });
+    // AceptarTerminosDto (US-11): en `dto/aceptar-terminos.dto.spec.ts`.
 
     describe('CancelarCitaPacienteDto', () => {
       it('acepta el cuerpo vacío y un motivo de 300', async () => {

@@ -6,6 +6,7 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { DataSource, QueryRunner } from 'typeorm';
 
 import { typeOrmTestConfig } from '../../../../test/typeorm-test.config';
+import { PublicadorEventos } from '../../../shared/application/publicador-eventos';
 import { TransactionRunner } from '../../../shared/application/transaction-runner';
 import { AuthenticatedUser } from '../../auth/jwt-payload.interface';
 import { CitasService } from '../../cita/application/citas.service';
@@ -16,12 +17,17 @@ import { CitaRepository } from '../../cita/domain/cita.repository';
 import { EnlaceCitaRepository } from '../../cita/domain/enlace-cita.repository';
 import { PedidoPor } from '../../cita/domain/cambio-cita.entity';
 import { TransicionEstadoInvalidaError } from '../../cita/domain/exceptions/transicion-estado-invalida.error';
+import { PacientesService } from '../../paciente/application/pacientes.service';
 import { BandejaSolicitudesService } from '../../solicitud/application/bandeja-solicitudes.service';
+import { SolicitudesOtraHoraService } from '../../solicitud/application/solicitudes-otra-hora.service';
+import { SolicitudCita } from '../../solicitud/domain/solicitud-cita.entity';
+import { SolicitudCitaRepository } from '../../solicitud/domain/solicitud-cita.repository';
 import { SolicitudModule } from '../../solicitud/solicitud.module';
 import { TenantOrmEntity } from '../../tenant/infrastructure/persistence/tenant.orm-entity';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import { UsuarioOrmEntity } from '../../usuario/infrastructure/persistence/usuario.orm-entity';
 import { PortalPacienteService } from '../application/portal-paciente.service';
+import { LectorNombresCita } from '../domain/lector-nombres-cita';
 import { PortalPacienteModule } from '../portal-paciente.module';
 
 /**
@@ -43,6 +49,10 @@ import { PortalPacienteModule } from '../portal-paciente.module';
  *  - `FOR NO KEY UPDATE` (y no `FOR UPDATE`) sobre la cita: el INSERT en
  *    `enlaces_cita` (FK → `FOR KEY SHARE`) no queda esperando, en ninguno de
  *    los dos sentidos; con `FOR UPDATE` sí esperaría (control).
+ *  - US-11: `aceptar-terminos` (cita → paciente) mientras la bandeja acepta
+ *    una solicitud del MISMO paciente (solicitud → paciente → cita nueva), en
+ *    los dos órdenes, sin interbloqueo; dos `aceptar-terminos` a la vez → una
+ *    fila; y si el registro falla en la bandeja, no queda nada.
  *
  * ⚠️ REQUIERE PostgreSQL real (vars TEST_DB_*), con synchronize/dropSchema.
  * Corre con `npm run test:integration` (en serie: comparte `citia_test`).
@@ -105,8 +115,39 @@ describe('Portal del paciente: concurrencia contra PostgreSQL (integration)', ()
   let transacciones: TransactionRunner;
   let citaRepo: CitaRepository;
   let enlaceRepo: EnlaceCitaRepository;
+  let pacientes: PacientesService;
+  let solicitudRepo: SolicitudCitaRepository;
   let profesional: AuthenticatedUser;
   let abiertas: QueryRunner[] = [];
+
+  /**
+   * Un `TransactionRunner` que corre el trabajo en la transacción que el test
+   * dejó ABIERTA en `qr`: así el caso de uso REAL (portal o bandeja) hace todo
+   * su camino y queda sin confirmar, con sus candados tomados.
+   */
+  const enLaAbierta = (qr: QueryRunner): TransactionRunner => ({
+    run: (trabajo) => trabajo(qr.manager),
+  });
+
+  const portalEn = (qr: QueryRunner): PortalPacienteService =>
+    new PortalPacienteService(
+      enLaAbierta(qr),
+      enlaces,
+      citas,
+      modulo.get(SolicitudesOtraHoraService),
+      modulo.get(LectorNombresCita),
+      pacientes,
+      'America/Santiago',
+    );
+
+  const bandejaEn = (qr: QueryRunner): BandejaSolicitudesService =>
+    new BandejaSolicitudesService(
+      solicitudRepo,
+      citas,
+      pacientes,
+      enLaAbierta(qr),
+      modulo.get(PublicadorEventos),
+    );
 
   /** Una transacción que el test deja abierta en SU conexión. */
   const abrirTx = async (): Promise<QueryRunner> => {
@@ -230,6 +271,8 @@ describe('Portal del paciente: concurrencia contra PostgreSQL (integration)', ()
     transacciones = modulo.get(TransactionRunner);
     citaRepo = modulo.get(CitaRepository);
     enlaceRepo = modulo.get(EnlaceCitaRepository);
+    pacientes = modulo.get(PacientesService);
+    solicitudRepo = modulo.get(SolicitudCitaRepository);
 
     const tenant = await datos
       .getRepository(TenantOrmEntity)
@@ -751,6 +794,330 @@ describe('Portal del paciente: concurrencia contra PostgreSQL (integration)', ()
       expect(await enlacesDe(citaId)).toHaveLength(1);
       expect((await bitacoraDe(citaId)).map((c) => c.tipo)).toEqual(['creada']);
       expect(await hechosDe(citaId)).toEqual(['CitaCreada']);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // US-11 (ADR-16 §8, plan «Orden de bloqueo»): el portal toma la cita y, AL
+  // FINAL, la fila del paciente (la bandera); la bandeja toma la solicitud, el
+  // paciente (correo vacío y la bandera) y crea una cita NUEVA. Nadie bloquea
+  // una cita existente después de un paciente: el que llega segundo espera en
+  // la fila del paciente y termina, sin interbloqueo (40P01).
+  describe('términos del paciente (US-11)', () => {
+    const RUT = '123456785';
+
+    interface Escenario {
+      pacienteId: string;
+      citaId: string;
+      token: string;
+      solicitudId: string;
+    }
+
+    /** Las aceptaciones del paciente, por canal (orden estable). */
+    const aceptacionesDe = (pacienteId: string) =>
+      datos.query<
+        {
+          canal: string;
+          version: string;
+          enlaceId: string | null;
+          solicitudId: string | null;
+        }[]
+      >(
+        `SELECT canal, version, enlace_id::text AS "enlaceId",
+                solicitud_id::text AS "solicitudId"
+           FROM aceptaciones_terminos
+          WHERE paciente_id = $1
+          ORDER BY canal`,
+        [pacienteId],
+      );
+
+    const banderaDe = async (pacienteId: string): Promise<boolean> => {
+      const [{ consentimiento }] = await datos.query<
+        { consentimiento: boolean }[]
+      >('SELECT consentimiento FROM pacientes WHERE id = $1', [pacienteId]);
+      return consentimiento;
+    };
+
+    const enlaceActivoDe = async (citaId: string): Promise<string> =>
+      (await enlaceRepo.buscarActivoPorCita(citaId, datos.manager))!.id;
+
+    /**
+     * Un paciente de antes de US-11 (sin aceptación, bandera en false; D7),
+     * con una cita y su enlace, que además envió el formulario público con
+     * la versión 1.0 (la bandeja lo vinculará por RUT).
+     */
+    const prepararEscenario = async (
+      correo: string | null,
+    ): Promise<Escenario> => {
+      const [{ id: pacienteId }] = await datos.query<{ id: string }[]>(
+        `INSERT INTO pacientes (rut, nombre, telefono, correo, consentimiento, tenant_id)
+         VALUES ($1, 'Paciente Piloto', '+56 9 3333 3333', $2, false, $3)
+         RETURNING id::text AS id`,
+        [RUT, correo, profesional.tenantId],
+      );
+      // Con `pacienteId`: no registra ninguna aceptación.
+      const cita = await citas.crearCita(
+        {
+          inicio: enDias(3).toISOString(),
+          duracionMin: 45,
+          tipoConsulta: 'Control',
+          pacienteId,
+        },
+        profesional,
+      );
+      const token = await emitirToken(cita.id);
+      const solicitud = await solicitudRepo.guardar(
+        SolicitudCita.recibir({
+          tenantId: profesional.tenantId,
+          rut: RUT,
+          nombrePaciente: 'Paciente Piloto',
+          telefono: '+56 9 3333 3333',
+          correo: 'piloto@correo.cl',
+          motivo: 'Otra hora',
+          preferenciaHoraria: 'mañanas',
+          consentimiento: true,
+          terminosVersion: '1.0',
+        }),
+      );
+      expect(await aceptacionesDe(pacienteId)).toEqual([]);
+      return { pacienteId, citaId: cita.id, token, solicitudId: solicitud.id };
+    };
+
+    const aceptarEnBandeja = (
+      e: Escenario,
+      bandejaUsada: BandejaSolicitudesService = bandeja,
+    ) =>
+      bandejaUsada.aceptar(
+        e.solicitudId,
+        {
+          inicio: enDias(5).toISOString(),
+          duracionMin: 45,
+          tipoConsulta: 'Control',
+        },
+        profesional,
+      );
+
+    /** Lo que tiene que quedar con las dos aceptaciones confirmadas. */
+    const exigirAmbasAceptaciones = async (e: Escenario): Promise<void> => {
+      expect(await aceptacionesDe(e.pacienteId)).toEqual([
+        {
+          canal: 'enlace_cita',
+          version: '1.0',
+          enlaceId: await enlaceActivoDe(e.citaId),
+          solicitudId: null,
+        },
+        {
+          canal: 'formulario_publico',
+          version: '1.0',
+          enlaceId: null,
+          solicitudId: e.solicitudId,
+        },
+      ]);
+      expect(await banderaDe(e.pacienteId)).toBe(true);
+      const [solicitud] = await datos.query<
+        { estado: string; citaId: string | null }[]
+      >(
+        `SELECT estado::text AS estado, cita_id::text AS "citaId"
+           FROM solicitudes_cita WHERE id = $1`,
+        [e.solicitudId],
+      );
+      expect(solicitud.estado).toBe('aceptada');
+      // La cita nueva de la bandeja es del MISMO paciente (vinculado por RUT)
+      const [{ n }] = await datos.query<{ n: number }[]>(
+        'SELECT count(*)::int AS n FROM citas WHERE paciente_id = $1',
+        [e.pacienteId],
+      );
+      expect(n).toBe(2);
+      // La cita del enlace no cambió: aceptar no es una acción sobre ella
+      expect((await leerCita(e.citaId)).estado).toBe('pendiente');
+      expect((await bitacoraDe(e.citaId)).map((c) => c.tipo)).toEqual([
+        'creada',
+      ]);
+    };
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    describe.each<[string, string | null]>([
+      ['con correo en la ficha', 'piloto@correo.cl'],
+      // La bandeja, además, completa el correo: toma el paciente ANTES.
+      ['con la ficha sin correo (ADR-13 §14)', null],
+    ])('aceptar-terminos contra la bandeja, %s', (_caso, correo) => {
+      it('el paciente llega primero: la bandeja espera la fila del paciente y termina; las dos aceptaciones quedan, sin interbloqueo', async () => {
+        // Arrange — el portal hizo TODO su camino (cita → aceptación →
+        // bandera) y no confirma todavía
+        const e = await prepararEscenario(correo);
+        const delPaciente = await abrirTx();
+        const vista = await portalEn(delPaciente).aceptarTerminos(
+          e.token,
+          '1.0',
+        );
+        expect(vista.terminosPendientes).toBe(false);
+
+        // Act — la bandeja acepta la solicitud del mismo paciente (otra
+        // conexión)
+        const acepta = observar(aceptarEnBandeja(e));
+        await esperarBloqueo();
+        expect(acepta.terminada()).toBe(false);
+        await delPaciente.commitTransaction();
+
+        // Assert
+        const { cita } = await acepta.promesa;
+        expect(cita.pacienteId).toBe(e.pacienteId);
+        expect(cita.paciente?.consentimiento).toBe(true);
+        await exigirAmbasAceptaciones(e);
+      });
+
+      it('la bandeja llega primero: el portal (con la cita ya bloqueada) espera la fila del paciente y termina; sin interbloqueo', async () => {
+        // Arrange — la bandeja hizo TODO su camino (solicitud → paciente →
+        // cita nueva → aceptación → bandera) y no confirma todavía
+        const e = await prepararEscenario(correo);
+        const deLaBandeja = await abrirTx();
+        await aceptarEnBandeja(e, bandejaEn(deLaBandeja));
+
+        // Act — el paciente acepta desde su enlace (otra conexión): no ve la
+        // aceptación del formulario (sin confirmar) e intenta registrar la suya
+        const acepta = observar(portal.aceptarTerminos(e.token, '1.0'));
+        await esperarBloqueo();
+        expect(acepta.terminada()).toBe(false);
+        await deLaBandeja.commitTransaction();
+
+        // Assert — la vista sale ya sin pendientes
+        expect((await acepta.promesa).terminosPendientes).toBe(false);
+        await exigirAmbasAceptaciones(e);
+      });
+    });
+
+    it('dos aceptar-terminos a la vez con el MISMO enlace: el segundo espera la cita, ve la aceptación del primero y no escribe → una fila', async () => {
+      // Arrange
+      const e = await prepararEscenario('piloto@correo.cl');
+      const primero = await abrirTx();
+      await portalEn(primero).aceptarTerminos(e.token, '1.0');
+
+      // Act
+      const segundo = observar(portal.aceptarTerminos(e.token, '1.0'));
+      await esperarBloqueo();
+      expect(segundo.terminada()).toBe(false);
+      await primero.commitTransaction();
+
+      // Assert
+      expect((await segundo.promesa).terminosPendientes).toBe(false);
+      expect(await aceptacionesDe(e.pacienteId)).toEqual([
+        {
+          canal: 'enlace_cita',
+          version: '1.0',
+          enlaceId: await enlaceActivoDe(e.citaId),
+          solicitudId: null,
+        },
+      ]);
+      expect(await banderaDe(e.pacienteId)).toBe(true);
+    });
+
+    it('cinco aceptar-terminos en paralelo con el mismo enlace → una fila y cinco vistas sin pendientes', async () => {
+      // Arrange
+      const e = await prepararEscenario('piloto@correo.cl');
+
+      // Act
+      const vistas = await Promise.all(
+        Array.from({ length: 5 }, () => portal.aceptarTerminos(e.token, '1.0')),
+      );
+
+      // Assert
+      expect(vistas.every((v) => v.terminosPendientes === false)).toBe(true);
+      expect(await aceptacionesDe(e.pacienteId)).toHaveLength(1);
+    });
+
+    it('dos enlaces de DOS citas del mismo paciente a la vez: no comparten candado de cita y el índice único deja UNA fila (la del primero)', async () => {
+      // Arrange — una segunda cita del mismo paciente, con su enlace
+      const e = await prepararEscenario('piloto@correo.cl');
+      const otra = await citas.crearCita(
+        {
+          inicio: enDias(4).toISOString(),
+          duracionMin: 45,
+          tipoConsulta: 'Control',
+          pacienteId: e.pacienteId,
+        },
+        profesional,
+      );
+      const otroToken = await emitirToken(otra.id);
+      const primero = await abrirTx();
+      await portalEn(primero).aceptarTerminos(e.token, '1.0');
+
+      // Act — el segundo bloquea SU cita, no ve la fila sin confirmar e
+      // intenta insertar: espera en el índice único
+      const segundo = observar(portal.aceptarTerminos(otroToken, '1.0'));
+      await esperarBloqueo();
+      expect(segundo.terminada()).toBe(false);
+      await primero.commitTransaction();
+
+      // Assert — ON CONFLICT DO NOTHING: gana el primer acto
+      expect((await segundo.promesa).terminosPendientes).toBe(false);
+      const filas = await aceptacionesDe(e.pacienteId);
+      expect(filas).toHaveLength(1);
+      expect(filas[0].enlaceId).toBe(await enlaceActivoDe(e.citaId));
+    });
+
+    it('si el registro de la aceptación falla en la bandeja, se revierte todo: ni cita nueva, ni paciente, ni solicitud aceptada, ni hechos', async () => {
+      // Arrange — un RUT que no es paciente: la bandeja lo crearía
+      const solicitud = await solicitudRepo.guardar(
+        SolicitudCita.recibir({
+          tenantId: profesional.tenantId,
+          rut: '111111111',
+          nombrePaciente: 'Paciente Nuevo',
+          telefono: '+56 9 4444 4444',
+          correo: 'nuevo@correo.cl',
+          motivo: 'Primera vez',
+          preferenciaHoraria: 'tardes',
+          consentimiento: true,
+          terminosVersion: '1.0',
+        }),
+      );
+      jest
+        .spyOn(pacientes, 'registrarAceptacion')
+        .mockRejectedValueOnce(new Error('falla el registro'));
+
+      // Act & Assert
+      await expect(
+        bandeja.aceptar(
+          solicitud.id,
+          {
+            inicio: enDias(5).toISOString(),
+            duracionMin: 45,
+            tipoConsulta: 'Control',
+          },
+          profesional,
+        ),
+      ).rejects.toThrow('falla el registro');
+
+      const [{ citasN, pacientesN, aceptacionesN, hechosN }] =
+        await datos.query<
+          {
+            citasN: number;
+            pacientesN: number;
+            aceptacionesN: number;
+            hechosN: number;
+          }[]
+        >(
+          `SELECT (SELECT count(*)::int FROM citas)                 AS "citasN",
+                  (SELECT count(*)::int FROM pacientes)             AS "pacientesN",
+                  (SELECT count(*)::int FROM aceptaciones_terminos) AS "aceptacionesN",
+                  (SELECT count(*)::int FROM eventos_salida)        AS "hechosN"`,
+        );
+      expect({ citasN, pacientesN, aceptacionesN, hechosN }).toEqual({
+        citasN: 0,
+        pacientesN: 0,
+        aceptacionesN: 0,
+        hechosN: 0,
+      });
+      const [fila] = await datos.query<
+        { estado: string; citaId: string | null }[]
+      >(
+        `SELECT estado::text AS estado, cita_id::text AS "citaId"
+           FROM solicitudes_cita WHERE id = $1`,
+        [solicitud.id],
+      );
+      expect(fila).toEqual({ estado: 'recibida', citaId: null });
     });
   });
 });
