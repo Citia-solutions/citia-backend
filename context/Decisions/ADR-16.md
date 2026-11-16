@@ -429,8 +429,9 @@ Sin ciclos: `paciente` no importa ninguno de los otros tres. `domain/` y `applic
 **Estado (2026-11-14):** 0, 1 (`92a1f36`), 2 (`bdeb1aa` y `894b96c`) y F (frontend `eb3fbcc` a `e276343`) ✅, en la rama
 `feature/terminos-paciente`; 3 🔶: unitarios e integración commiteados (`1d00f9e`, `fc3a83f`, `305dea5`), las e2e en curso. Del 4 están hechas las notas en DT-16 y DT-53, las deudas
 [DT-62](../Deudas/DT-62.md) y [DT-63](../Deudas/DT-63.md), ROADMAP, la feature
-[us11-terminos-paciente](../Features/us11-terminos-paciente.md) y TRAZABILIDAD. La copia congelada y el borrador
-marcado como publicado esperan al release.
+[us11-terminos-paciente](../Features/us11-terminos-paciente.md) y TRAZABILIDAD. La copia congelada
+([`terminos-paciente-v1.0.md`](../Cumplimiento/terminos-paciente-v1.0.md)) y el borrador marcado como publicado se
+hicieron el 2026-11-15, para el release de ese día (`docs/terminos-v1-publicada`). *Antes: «esperan al release».*
 
 ---
 
