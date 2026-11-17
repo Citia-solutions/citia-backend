@@ -20,6 +20,8 @@ import { TransicionEstadoInvalidaError } from '../domain/exceptions/transicion-e
 import { CitaDashboardDto } from './dto/cita-dashboard.dto';
 import { CitaDetalleDto } from './dto/cita-detalle.dto';
 import { PacienteResponseDto } from '../../paciente/presentation/dto/paciente-response.dto';
+import { VersionTerminosNoVigenteError } from '../../paciente/domain/exceptions/version-terminos-no-vigente.error';
+import { MENSAJE_VERSION_TERMINOS_NO_VIGENTE } from '../../paciente/presentation/dto/version-terminos.decorator';
 import { CitaResponseDto } from './dto/cita-response.dto';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { CitasController } from './citas.controller';
@@ -140,6 +142,25 @@ describe('CitasController', () => {
       await expect(controller.crear(dto, usuario)).rejects.toBeInstanceOf(
         ConflictException,
       );
+    });
+
+    it('debería mapear VersionTerminosNoVigenteError a 400 con el mensaje fijo (US-11)', async () => {
+      // Arrange
+      mockCitasService.crearCita.mockRejectedValue(
+        new VersionTerminosNoVigenteError(),
+      );
+
+      // Act
+      const error: unknown = await controller
+        .crear(dto, usuario)
+        .catch((e: unknown) => e);
+
+      // Assert
+      expect(error).toBeInstanceOf(BadRequestException);
+      expect((error as BadRequestException).getResponse()).toMatchObject({
+        statusCode: 400,
+        message: MENSAJE_VERSION_TERMINOS_NO_VIGENTE,
+      });
     });
 
     it('debería propagar cualquier otro error sin transformarlo', async () => {

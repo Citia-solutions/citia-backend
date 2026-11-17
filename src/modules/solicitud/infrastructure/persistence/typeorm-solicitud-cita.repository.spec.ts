@@ -135,6 +135,7 @@ describe('TypeOrmSolicitudCitaRepository', () => {
         motivo: 'Dolor de muela',
         preferenciaHoraria: 'mañanas',
         consentimiento: true,
+        terminosVersion: '1.0',
       });
 
       // Act
@@ -568,6 +569,63 @@ describe('TypeOrmSolicitudCitaRepository', () => {
           resueltaEn: ahora,
         }),
       );
+    });
+  });
+
+  // US-11 (D10): `terminos_version` en los dos sentidos. El CHECK lo prueba
+  // `solicitudes-persistencia.integration.spec.ts`.
+  describe('terminosVersion: ida y vuelta (US-11)', () => {
+    it('debería escribir la versión de una del formulario en el INSERT y devolverla', async () => {
+      // Arrange
+      const nueva = SolicitudCita.recibir({
+        tenantId: 'tenant-1',
+        rut: '111111111',
+        nombrePaciente: 'Paciente Público',
+        telefono: '+56 9 5555 5555',
+        correo: 'publico@mail.com',
+        motivo: 'Control',
+        preferenciaHoraria: 'mañanas',
+        consentimiento: true,
+        terminosVersion: '1.0',
+      });
+
+      // Act
+      const guardada = await repositorio.guardar(nueva);
+
+      // Assert
+      expect(repoOrm.save).toHaveBeenCalledWith(
+        expect.objectContaining({ terminosVersion: '1.0' }),
+      );
+      expect(guardada.terminosVersion).toBe('1.0');
+    });
+
+    it('debería escribir null en una de reagendamiento', async () => {
+      // Act
+      await repositorio.guardar(
+        SolicitudCita.reconstituir({ ...reagendamientoOrm(), id: ID }),
+      );
+
+      // Assert
+      expect(repoOrm.save).toHaveBeenCalledWith(
+        expect.objectContaining({ terminosVersion: null }),
+      );
+    });
+
+    it.each<[string, string | null | undefined, string | null]>([
+      ['con versión', '1.0', '1.0'],
+      ['con la columna en NULL', null, null],
+      ['sin la columna (fila anterior a la migración)', undefined, null],
+    ])('debería leer una fila %s', async (_caso, columna, esperada) => {
+      // Arrange
+      repoOrm.findOne.mockResolvedValue(
+        filaOrm(columna === undefined ? {} : { terminosVersion: columna }),
+      );
+
+      // Act
+      const leida = await repositorio.buscarPorId(ID, 'tenant-1');
+
+      // Assert
+      expect(leida?.terminosVersion).toBe(esperada);
     });
   });
 });

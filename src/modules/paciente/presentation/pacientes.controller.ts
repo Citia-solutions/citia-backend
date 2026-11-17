@@ -20,16 +20,20 @@ import { PacienteNoEncontradoError } from '../application/paciente-no-encontrado
 import { PacientesService } from '../application/pacientes.service';
 import { CambioContactoVacioError } from '../domain/exceptions/cambio-contacto-vacio.error';
 import { CorreoPacienteRequeridoError } from '../domain/exceptions/correo-paciente-requerido.error';
+import { VersionTerminosNoVigenteError } from '../domain/exceptions/version-terminos-no-vigente.error';
 import { ActualizarPacienteDto } from './dto/actualizar-paciente.dto';
 import { CrearPacienteDto } from './dto/crear-paciente.dto';
 import { PacienteResponseDto } from './dto/paciente-response.dto';
+import { MENSAJE_VERSION_TERMINOS_NO_VIGENTE } from './dto/version-terminos.decorator';
 
 @Controller('pacientes')
 @UseGuards(JwtAuthGuard)
 export class PacientesController {
   constructor(private readonly pacientesService: PacientesService) {}
 
-  // POST /api/pacientes
+  // POST /api/pacientes. Exige `consentimiento: true` y `terminosVersion`
+  // (US-11, D6): registra el paciente y su aceptación de canal `profesional`
+  // a nombre del usuario del token, en una transacción.
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async crear(
@@ -37,7 +41,10 @@ export class PacientesController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<PacienteResponseDto> {
     return this.ejecutar(() =>
-      this.pacientesService.crearPaciente(dto, user.tenantId),
+      this.pacientesService.crearPaciente(dto, {
+        userId: user.userId,
+        tenantId: user.tenantId,
+      }),
     );
   }
 
@@ -74,6 +81,11 @@ export class PacientesController {
       // PATCH sin `telefono` ni `correo` -> 400.
       if (error instanceof CambioContactoVacioError) {
         throw new BadRequestException(error.message);
+      }
+      // Versión de los términos que no recibe aceptaciones -> 400 con el
+      // mensaje FIJO del DTO (US-11): el frontend lo reconoce por su texto.
+      if (error instanceof VersionTerminosNoVigenteError) {
+        throw new BadRequestException(MENSAJE_VERSION_TERMINOS_NO_VIGENTE);
       }
       throw error;
     }

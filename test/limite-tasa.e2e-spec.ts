@@ -20,6 +20,7 @@ import { JwtStrategy } from '../src/modules/auth/jwt.strategy';
 import { AuthController } from '../src/modules/auth/presentation/auth.controller';
 import { EnlaceCitaNoValidoError } from '../src/modules/cita/application/enlace-cita-no-valido.error';
 import { EstadoCita } from '../src/modules/cita/domain/cita.entity';
+import { MENSAJE_VERSION_TERMINOS_NO_VIGENTE } from '../src/modules/paciente/presentation/dto/version-terminos.decorator';
 import { AccionNoDisponibleError } from '../src/modules/portal-paciente/application/accion-no-disponible.error';
 import { PortalPacienteService } from '../src/modules/portal-paciente/application/portal-paciente.service';
 import { VistaCitaPacienteDto } from '../src/modules/portal-paciente/presentation/dto/vista-cita-paciente.dto';
@@ -58,7 +59,8 @@ import { SESION_VIGENTE_FALSA } from './support/sesion-vigente-falsa';
  * servicios son dobles. El doble del portal responde como el real: 404
  * (`EnlaceCitaNoValidoError`) para todo token sin el formato de 43
  * caracteres base64url o sin cabecera, 409 (`AccionNoDisponibleError`) para
- * `TOKEN_CONFLICTO` al confirmar, y la vista en lo demás.
+ * `TOKEN_CONFLICTO` al confirmar, y la vista en lo demás. US-11: también
+ * `aceptar-terminos`, en el MISMO cubo `portalPorEnlace` que las otras tres.
  *
  * US-10 (ADR-15 §8): también `PerfilController` (cubo `cambioContrasena`) y
  * `SoporteController` (cubo `soporte`), que exigen sesión: van con la
@@ -86,12 +88,13 @@ const vista = (estado: EstadoCita): VistaCitaPacienteDto =>
     organizacion: 'Clínica Límite',
     accionesPermitidas: [],
     solicitudOtraHora: null,
+    terminosPendientes: false,
   });
 
 /** El portal del paciente sin base de datos: mismas respuestas que el real. */
 const portalFalso = (): Pick<
   PortalPacienteService,
-  'ver' | 'confirmar' | 'cancelar' | 'pedirOtraHora'
+  'ver' | 'confirmar' | 'cancelar' | 'pedirOtraHora' | 'aceptarTerminos'
 > => {
   const enlace = (t: unknown): Promise<void> =>
     typeof t === 'string' && /^[A-Za-z0-9_-]{43}$/.test(t)
@@ -106,6 +109,8 @@ const portalFalso = (): Pick<
       }),
     cancelar: (t) => enlace(t).then(() => vista(EstadoCita.CANCELADA)),
     pedirOtraHora: (t) => enlace(t).then(() => vista(EstadoCita.PENDIENTE)),
+    // US-11: sin 409 (aceptar no es una acción sobre la cita).
+    aceptarTerminos: (t) => enlace(t).then(() => vista(EstadoCita.PENDIENTE)),
   };
 };
 
@@ -251,6 +256,8 @@ const SOLICITUD = {
   motivo: 'Control',
   preferenciaHoraria: 'mañanas',
   consentimiento: true,
+  // US-11: obligatoria en el formulario público.
+  terminosVersion: '1.0',
 };
 
 /** Cabeceras que contarían el límite o el tiempo restante. */
@@ -344,14 +351,16 @@ describe('Límite de tasa, cabeceras públicas y CORS (e2e sin BD)', () => {
     });
 
     describe('portal del paciente (PortalPacienteController real)', () => {
-      /** Las tres acciones, con un cuerpo válido para cada una. */
+      /** Los cuatro POST, con un cuerpo válido para cada uno. */
       const ACCIONES: [string, object, number][] = [
         ['confirmar', {}, 200],
         ['cancelar', { motivo: 'no puedo' }, 200],
         ['otra-hora', { preferencia: 'tardes' }, 201],
+        // US-11: el mismo cubo `portalPorEnlace` (aceptar y confirmar gastan 2 de 5).
+        ['aceptar-terminos', { terminosVersion: '1.0' }, 200],
       ];
 
-      it('POST: 5 por hora POR ENLACE, sumando las TRES acciones; el 6.º recibe 429 genérico', async () => {
+      it('POST: 5 por hora POR ENLACE, sumando los CUATRO POST; el 6.º recibe 429 genérico', async () => {
         // Arrange
         const cliente = desde('198.51.100.1');
         const accion = (i: number, enlace: string) => {
@@ -362,19 +371,20 @@ describe('Límite de tasa, cabeceras públicas y CORS (e2e sin BD)', () => {
             .send(cuerpo);
         };
 
-        // Act — confirmar, cancelar, otra-hora, confirmar, cancelar: un contador
+        // Act — confirmar, cancelar, otra-hora, aceptar-terminos, confirmar:
+        // un contador
         for (let i = 0; i < 5; i++) {
           await accion(i, token(1)).expect(ACCIONES[i % ACCIONES.length][2]);
         }
 
-        // Assert — la 6.ª (otra-hora) ya no llega al controller
+        // Assert — la 6.ª (cancelar) ya no llega al controller
         const bloqueado = await accion(5, token(1)).expect(429);
         expect(bloqueado.body).toEqual({
           statusCode: 429,
           message: MENSAJE_LIMITE_TASA,
         });
         expect(cabecerasDeLimite(bloqueado)).toEqual([]);
-        // Las tres rutas quedan bloqueadas para ese enlace
+        // Las cuatro rutas quedan bloqueadas para ese enlace
         for (let i = 0; i < ACCIONES.length; i++) {
           await accion(i, token(1)).expect(429);
         }
@@ -384,6 +394,37 @@ describe('Límite de tasa, cabeceras públicas y CORS (e2e sin BD)', () => {
         await cliente
           .get('/api/publico/cita')
           .set('X-Enlace-Cita', token(1))
+          .expect(200);
+      });
+
+      it('aceptar-terminos comparte el cubo portalPorEnlace: cuatro aceptar + un confirmar agotan el enlace (US-11)', async () => {
+        // Arrange
+        const cliente = desde('198.51.100.2');
+        const aceptar = () =>
+          cliente
+            .post('/api/publico/cita/aceptar-terminos')
+            .set('X-Enlace-Cita', token(5))
+            .send({ terminosVersion: '1.0' });
+        const confirmar = () =>
+          cliente
+            .post('/api/publico/cita/confirmar')
+            .set('X-Enlace-Cita', token(5));
+
+        // Act
+        for (let i = 0; i < 4; i++) await aceptar().expect(200);
+        await confirmar().expect(200);
+
+        // Assert — el 6.º, de cualquiera de los dos, ya no pasa
+        const bloqueado = await aceptar().expect(429);
+        expect(bloqueado.body).toEqual({
+          statusCode: 429,
+          message: MENSAJE_LIMITE_TASA,
+        });
+        await confirmar().expect(429);
+        // El GET del mismo enlace no lleva ese cubo
+        await cliente
+          .get('/api/publico/cita')
+          .set('X-Enlace-Cita', token(5))
           .expect(200);
       });
 
@@ -437,7 +478,8 @@ describe('Límite de tasa, cabeceras públicas y CORS (e2e sin BD)', () => {
         const cliente = desde('198.51.100.40');
 
         // Act — 20 GET válidos, 5 GET con enlace inválido (404) y 5 POST con
-        // enlaces distintos (sin tocar el límite por enlace): 30 en total
+        // enlaces distintos (confirmar y, US-11, aceptar-terminos; sin tocar
+        // el límite por enlace): 30 en total
         for (let i = 0; i < 20; i++) {
           await cliente
             .get('/api/publico/cita')
@@ -448,9 +490,14 @@ describe('Límite de tasa, cabeceras públicas y CORS (e2e sin BD)', () => {
           await cliente.get('/api/publico/cita').expect(404);
         }
         for (let i = 0; i < 5; i++) {
+          const [ruta, cuerpo]: [string, object] =
+            i % 2 === 0
+              ? ['confirmar', {}]
+              : ['aceptar-terminos', { terminosVersion: '1.0' }];
           await cliente
-            .post('/api/publico/cita/confirmar')
+            .post(`/api/publico/cita/${ruta}`)
             .set('X-Enlace-Cita', token(100 + i))
+            .send(cuerpo)
             .expect(200);
         }
 
@@ -476,7 +523,7 @@ describe('Límite de tasa, cabeceras públicas y CORS (e2e sin BD)', () => {
           .expect(200);
       });
 
-      it('respuestas con Cache-Control: no-store y Referrer-Policy: no-referrer: 200, 201, 400, 404 y 409', async () => {
+      it('respuestas con Cache-Control: no-store y Referrer-Policy: no-referrer: 200, 201, 400, 404 y 409 (también aceptar-terminos)', async () => {
         const cliente = desde('198.51.100.50');
         const conEnlace = (ruta: string, enlace: string, cuerpo: object = {}) =>
           cliente
@@ -500,6 +547,16 @@ describe('Límite de tasa, cabeceras públicas y CORS (e2e sin BD)', () => {
           ),
           await conEnlace('confirmar', 'corto').expect(404),
           await conEnlace('confirmar', TOKEN_CONFLICTO).expect(409),
+          // US-11: aceptar-terminos en 200, 400 (versión) y 404
+          await conEnlace('aceptar-terminos', token(304), {
+            terminosVersion: '1.0',
+          }).expect(200),
+          await conEnlace('aceptar-terminos', token(305), {
+            terminosVersion: '9.9',
+          }).expect(400),
+          await conEnlace('aceptar-terminos', 'corto', {
+            terminosVersion: '1.0',
+          }).expect(404),
         ];
 
         for (const res of respuestas) {
@@ -516,6 +573,12 @@ describe('Límite de tasa, cabeceras públicas y CORS (e2e sin BD)', () => {
           statusCode: 409,
           message: 'Esta acción ya no está disponible',
         });
+        // US-11: el 400 lleva el mensaje fijo de la versión; el 404, el
+        // mismo cuerpo exacto que las otras rutas
+        expect(JSON.stringify(respuestas[9].body)).toContain(
+          MENSAJE_VERSION_TERMINOS_NO_VIGENTE,
+        );
+        expect(respuestas[10].text).toBe(respuestas[1].text);
       });
 
       it('CORS: el preflight del frontend permite X-Enlace-Cita y no consume el límite', async () => {

@@ -17,6 +17,7 @@ describe('SolicitudCita (dominio)', () => {
     motivo: 'Dolor de muela',
     preferenciaHoraria: 'mañanas',
     consentimiento: true,
+    terminosVersion: '1.0',
   };
 
   describe('recibir', () => {
@@ -189,6 +190,71 @@ describe('SolicitudCita (dominio)', () => {
       expect(solicitud.correo).toBeNull();
       expect(solicitud.citaOrigenId).toBe('cita-origen');
       expect(solicitud.enlaceId).toBe('enlace-1');
+    });
+  });
+
+  // US-11 (ADR-16 §5, D10): la versión de los términos del formulario. Solo
+  // una `nueva` la trae (CHECK CHK_solicitudes_cita_terminos_version).
+  describe('terminosVersion (US-11)', () => {
+    it('recibir guarda la versión que aceptó el paciente', () => {
+      expect(SolicitudCita.recibir(props).terminosVersion).toBe('1.0');
+    });
+
+    it('pedirOtraHora la deja en null aunque el paciente tenga consentimiento', () => {
+      const solicitud = SolicitudCita.pedirOtraHora({
+        tenantId: 'tenant-1',
+        citaOrigenId: 'cita-origen',
+        enlaceId: 'enlace-1',
+        usuarioId: 'duenio-cita',
+        rut: null,
+        nombrePaciente: 'Ana Soto',
+        telefono: '+56 9 1111 1111',
+        correo: null,
+        consentimiento: true,
+        preferenciaHoraria: 'martes',
+      });
+
+      expect(solicitud.terminosVersion).toBeNull();
+    });
+
+    it('reconstituir sin el campo lo deja en null (filas anteriores al despliegue)', () => {
+      // Act — las props de una fila vieja: sin `terminosVersion`
+      const solicitud = SolicitudCita.reconstituir({
+        tenantId: 'tenant-1',
+        rut: '123456785',
+        nombrePaciente: 'Ana Soto',
+        telefono: '+56 9 1111 1111',
+        correo: 'ana@mail.com',
+        motivo: 'Dolor de muela',
+        preferenciaHoraria: 'mañanas',
+        consentimiento: true,
+        id: 'solicitud-1',
+        usuarioId: null,
+        estado: EstadoSolicitud.RECIBIDA,
+        citaId: null,
+        recibidaEn: new Date('2026-08-24T12:00:00Z'),
+        resueltaEn: null,
+      });
+
+      // Assert
+      expect(solicitud.terminosVersion).toBeNull();
+    });
+
+    it('reconstituir conserva la versión guardada y aceptarla no la cambia', () => {
+      const solicitud = SolicitudCita.reconstituir({
+        ...props,
+        id: 'solicitud-1',
+        usuarioId: null,
+        estado: EstadoSolicitud.RECIBIDA,
+        citaId: null,
+        recibidaEn: new Date('2026-08-24T12:00:00Z'),
+        resueltaEn: null,
+        terminosVersion: '1.0',
+      });
+
+      solicitud.aceptar('usuario-1', 'cita-1');
+
+      expect(solicitud.terminosVersion).toBe('1.0');
     });
   });
 

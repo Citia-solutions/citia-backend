@@ -52,7 +52,7 @@ src/modules/cita/
 
 | Método | Ruta | Status | Respuesta / notas |
 |--------|------|--------|-------------------|
-| POST | `/citas` | 201 / 400 | `CitaResponseDto` con `avisos` |
+| POST | `/citas` | 201 / 400 | `CitaResponseDto` con `avisos`. Con `paciente` (US-11): `paciente.consentimiento` tiene que ser `true` y `paciente.terminosVersion`, del catálogo; registra la aceptación de canal `profesional` |
 | GET | `/citas?desde&hasta` | 200 / 400 | `CitaDashboardDto[]` (máx. 42 días) |
 | GET | `/citas/hoy` | 200 | `CitaDashboardDto[]` |
 | GET | `/citas/:id` | 200 / 400 / 404 | `CitaDetalleDto` (voucher) + `confirmadaPor` / `canceladaPor` (Fase 3) |
@@ -65,6 +65,24 @@ src/modules/cita/
 | POST | `/citas/:id/enlace/invalidar` | **204** / 400 / 404 | sin cuerpo; 204 también sin enlace activo |
 
 `GET /citas/:citaId/recordatorios` NO vive aquí: es del módulo `recordatorio`.
+
+### Alta manual y los términos del paciente (US-11, ADR-16 §7)
+
+- **`crearCita` con `dto.paciente`** (lo que usa el modal *Nueva cita*): dentro de su transacción y
+  **después** de `agendar(…, MANUAL)`, `PacientesService.registrarAceptacion` con canal `profesional`,
+  `usuarioId` = el del token, la versión de `dto.paciente.terminosVersion` y `aceptadaEn` = el reloj del
+  servicio. Pone `consentimiento = true` (también en un paciente existente por RUT) y la respuesta sale con
+  `paciente.consentimiento = true`. Si falla, se revierte la cita.
+- **Con `pacienteId`**: sin cambios, no registra nada (no trae casilla).
+- **`agendar` no registra nada** por sí mismo: la bandeja (`solicitud`) registra su propio canal
+  (`formulario_publico`) en su caso de uso.
+- `CrearPacienteDto` (el `paciente` en línea): `@Equals(true)` en `consentimiento` y
+  `@VersionTerminosVigente()` en `terminosVersion` (opcional solo en el tipo). Un `VersionTerminosNoVigenteError`
+  que llegue al servicio → 400 con el mensaje fijo `MENSAJE_VERSION_TERMINOS_NO_VIGENTE`.
+- **Orden de bloqueo:** paciente (correo vacío; la bandera al registrar) → cita **nueva**. No toca ninguna
+  cita existente.
+- Dependencia `cita → paciente` (ya existía, `CitaModule` importa `PacienteModule`): `paciente` no importa
+  `cita` (sin ciclo).
 
 ### Asistencia, inasistencia y la hora (US-07.01, ADR-14 §9)
 
@@ -113,7 +131,8 @@ confirmación es POSTERIOR al último `reagendada` (H9, US-07.01: una `pendiente
   duracionMin, estado }`, sin paciente ni tipo de consulta; repositorio `buscarPorIds`, sin bloqueo),
   `recordatorio` (solo `EnlacesCitaService.asegurarActivo`), `portal-paciente` (`resolver`,
   `registrarPrimeraApertura` + acciones del paciente) y el módulo hermano `CitaPlanificacionModule`
-  (`CierreGhostingService`). **`cita` no importa ninguno de ellos** (sin ciclos); se entera de lo demás por el
+  (`CierreGhostingService`). **`cita` no importa ninguno de ellos** (sin ciclos; sí importa `paciente`,
+  que no importa a nadie de negocio); se entera de lo demás por el
   outbox, nunca por import. **Única dependencia de esquema (US-07.01):** `SqlCandidatasGhosting` LEE
   con SQL `recordatorios` y `solicitudes_cita` (ver "Esquema de US-07.01"), sin imports de TypeScript.
 - **Tenant y usuario del token, nunca del body.** El paciente nunca manda ids: todo es

@@ -1,6 +1,6 @@
 # Cumplimiento: protección de datos personales (Ley 21.719, Ley 19.628 y Ley 20.584)
 
-> **Fase:** — (transversal: no es una fase del roadmap; [ROADMAP § Cumplimiento](../ROADMAP.md#cumplimiento-ley-21719--transversal)) · **Feature:** — · **Plan:** — · **Relacionado:** [ADR-13 §2 y §12](../Decisions/ADR-13.md#12-contenido-y-privacidad), [ADR-14 § Contexto legal](../Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado), [DT-16](../Deudas/DT-16.md), [DT-26](../Deudas/DT-26.md), [DT-51](../Deudas/DT-51.md), [DT-52](../Deudas/DT-52.md), [DT-53](../Deudas/DT-53.md), [DT-54](../Deudas/DT-54.md), [DT-55](../Deudas/DT-55.md), [DT-56](../Deudas/DT-56.md), [Q17](../PREGUNTAS-ABIERTAS.md#q17--manejo-de-datos-de-salud)
+> **Fase:** — (transversal: no es una fase del roadmap; [ROADMAP § Cumplimiento](../ROADMAP.md#cumplimiento-ley-21719--transversal)) · **Feature:** [us11](../Features/us11-terminos-paciente.md) (términos del paciente) · **Plan:** [US-11](../US/11-terminos-paciente.md) · **Relacionado:** [ADR-16](../Decisions/ADR-16.md), [DT-62](../Deudas/DT-62.md), [DT-63](../Deudas/DT-63.md), [ADR-13 §2 y §12](../Decisions/ADR-13.md#12-contenido-y-privacidad), [ADR-14 § Contexto legal](../Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado), [DT-16](../Deudas/DT-16.md), [DT-26](../Deudas/DT-26.md), [DT-51](../Deudas/DT-51.md), [DT-52](../Deudas/DT-52.md), [DT-53](../Deudas/DT-53.md), [DT-54](../Deudas/DT-54.md), [DT-55](../Deudas/DT-55.md), [DT-56](../Deudas/DT-56.md), [Q17](../PREGUNTAS-ABIERTAS.md#q17--manejo-de-datos-de-salud)
 
 > **Esto no es asesoría legal, y nada de lo que sigue está resuelto.** Al 2026-10-31 el usuario **no tiene
 > abogado**. Esta carpeta ordena lo que se sabe a partir de un **pre-análisis legal hecho con una IA el
@@ -9,7 +9,12 @@
 > [contexto legal de ADR-14](../Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado). Sirve para llegar
 > ordenado a un abogado, no para reemplazarlo. **Ninguna fila se da por cierta hasta esa revisión.**
 
-**Creada:** 2026-10-31, cuando el usuario eligió *"documentar cumplimiento"* · **Última revisión:** 2026-11-01 (el
+**Creada:** 2026-10-31, cuando el usuario eligió *"documentar cumplimiento"* · **Última revisión:** 2026-11-14, en la
+tarde (**US-11**, los términos del paciente y la prueba de su aceptación, **implementada en la rama
+`feature/terminos-paciente`, sin release**: [ADR-16](../Decisions/ADR-16.md),
+[feature](../Features/us11-terminos-paciente.md)) · *antes:* 2026-11-14 (la
+**primera clínica con pacientes reales** está en production desde el 2026-11-11:
+[abajo](#el-límite-real-la-primera-clínica-con-pacientes-reales)) · *antes:* 2026-11-01 (el
 flujo de soporte de la Fase 7, **en producción** desde ese día, todavía sin casilla de destino:
 [abajo](#lo-que-trae-la-fase-7-diseño-2026-10-31-implementación-2026-11-01)) · *antes:* 2026-11-01 (implementado y en
 `develop`) · 2026-10-31 (el mismo flujo, en diseño)
@@ -22,6 +27,8 @@ flujo de soporte de la Fase 7, **en producción** desde ese día, todavía sin c
 |---|---|
 | este README | el **estado vivo**: roles, vigencia, lo que Citia ya tiene, lo que falta por prioridad, las preguntas para el abogado y lo que el usuario no ha decidido. Se actualiza; lo que cambia queda como *Antes: …* |
 | [`pre-analisis-ia-2026-10-30.md`](pre-analisis-ia-2026-10-30.md) | la **foto fechada** del pre-análisis: las respuestas a las 13 preguntas, resumidas, con sus matices, el dictamen general y las fuentes. **No se edita** |
+| [`borrador-terminos-paciente.md`](borrador-terminos-paciente.md) | *(2026-11-14)* el **borrador v0.2** de los términos de uso y del aviso de privacidad que autoriza el paciente, con el texto de la casilla y el del alta manual. Sus 7 decisiones las confirmó el usuario el 2026-11-14; lleva también lo que falta para publicarlo. **Es un antecedente:** se publicó como la **1.0** del [plan US-11](../US/11-terminos-paciente.md#el-texto-que-se-publica) el 2026-11-15 ([copia congelada](terminos-paciente-v1.0.md)) |
+| [`terminos-paciente-v1.0.md`](terminos-paciente-v1.0.md) | *(2026-11-15)* la **copia congelada** del texto 1.0, publicada el 2026-11-15, con los textos cortos (casilla, tarjeta de `/cita` y alta manual). **No se edita**: es la prueba de qué decía la versión que alguien aceptó ([ADR-16 §1](../Decisions/ADR-16.md#1-el-texto-terminos-versión-10-genérico-d2-d8-d9)) |
 
 Lo que falta vive en sus deudas ([`Deudas/`](../Deudas/README.md)) y, si algo se decide, irá en un ADR. Esta carpeta
 no reemplaza a ninguno de los dos: es la entrada.
@@ -38,8 +45,35 @@ desde el release del 2026-10-06) y, al 2026-10-31, **sin clínicas reales**: lo 
 del usuario. El límite que importa es **la primera clínica con pacientes reales**. Desde ese día Citia trata datos
 de pacientes por cuenta de alguien, y lo que hoy es preparación pasa a ser obligación.
 
-**Si P1 es condición para recibir a esa primera clínica, el usuario no lo ha decidido**
-([abajo](#lo-que-el-usuario-no-ha-decidido)).
+> **2026-11-14 — el límite ya se cruzó.** El **2026-11-11** se creó en production la **primera cuenta de una persona
+> real**. Ese día se crearon tres cuentas con un comando de PowerShell; las otras dos son pruebas del usuario. El
+> 2026-11-14 el usuario confirmó que esa cuenta **ya agenda pacientes reales**. Es un **piloto de prueba**: la cuenta
+> es de una psicóloga amiga del usuario, que la usa con sus pacientes. Desde el 2026-11-11, entonces:
+>
+> - **Citia trata datos de pacientes reales por cuenta de una clínica**, sin el P1 hecho: no hay contrato de encargo
+>   ([DT-51](../Deudas/DT-51.md)), inventario de proveedores con garantías ([DT-52](../Deudas/DT-52.md)), política de
+>   privacidad ni procedimiento de derechos ([DT-53](../Deudas/DT-53.md)). Tampoco se sabe el alcance del art. 10 bis
+>   ([DT-55](../Deudas/DT-55.md)), y el consentimiento de los recordatorios sigue siendo una casilla que no sirve de base
+>   ([DT-16](../Deudas/DT-16.md)).
+> - **DT-51, DT-52 y DT-53 suben a 🔴 alta y DT-56 a 🟠 media**, como ellas mismas lo tenían previsto para este día.
+>   DT-54 sube solo si esa clínica atiende a menores (sin confirmar).
+> - **Sus pacientes pasan por todo el sistema.** Los recordatorios salen por Resend, G1 cierra sus citas sin respuesta
+>   y US-07.01 guarda hechos de asistencia (la bitácora y la primera apertura del enlace). Según el pre-análisis, la
+>   asistencia puede ser un dato sensible de salud (A1). La calificación (US-07.02) sigue 🚧 bloqueada: esos hechos se
+>   guardan, pero no se usan para perfilar.
+> - **La Ley 21.719 rige el 2026-12-01** mientras no se publique la postergación ([abajo](#vigencia-verificada-el-2026-10-30)).
+> - Que **P1 fuera condición para recibir la primera clínica** ya no se puede decidir. **El usuario decidió el
+>   2026-11-14** abordar el P1 **sin abogado por ahora** y sin pausar el piloto. Empieza por los **términos y el
+>   consentimiento que autoriza el paciente**: [borrador](borrador-terminos-paciente.md), con sus decisiones confirmadas el mismo día.
+>
+> - **Los términos del paciente están construidos (2026-11-14), sin release.** [ADR-16](../Decisions/ADR-16.md) se
+>   aceptó ese día y US-11 quedó implementada en la rama `feature/terminos-paciente`, verificada en local: el texto 1.0
+>   en `/terminos`, la prueba de cada aceptación en `aceptaciones_terminos` y el rechazo de `consentimiento: false` en
+>   el backend. Detalle en la [feature](../Features/us11-terminos-paciente.md). Los pacientes del piloto **no se
+>   rellenan**: aceptan en `/cita` cuando les llegue un recordatorio.
+>
+> *Antes (2026-10-31 → 2026-11-14): "**Si P1 es condición para recibir a esa primera clínica, el usuario no lo ha
+> decidido**".*
 
 ---
 
@@ -109,7 +143,8 @@ baste: eso lo dice el abogado.)*
 
 ## Lo que falta, por prioridad
 
-*(Prioridades del pre-análisis, con el matiz del límite real. Al 2026-10-31 ninguna está empezada.)*
+*(Prioridades del pre-análisis, con el matiz del límite real. Al 2026-10-31 ninguna está empezada. 2026-11-14: DT-53 y
+DT-16 avanzan con US-11, en la rama `feature/terminos-paciente`, sin release.)*
 
 ### P1 — antes de la primera clínica con pacientes reales
 
@@ -117,10 +152,10 @@ baste: eso lo dice el abogado.)*
 |---|---|---|
 | Fijar el rol (Citia encargado, la clínica responsable) en un **contrato de encargo** | [DT-51](../Deudas/DT-51.md) | la Ley 19.628 ya exige hoy el mandato por escrito (art. 8) |
 | **Inventario de proveedores**: qué datos recibe cada uno, en qué país, con qué **DPA** y con qué garantía para la transferencia internacional | [DT-52](../Deudas/DT-52.md) | Resend, Railway, Netlify y Better Stack |
-| **Política de privacidad** y **procedimiento para los derechos** del paciente | [DT-53](../Deudas/DT-53.md) | la publica la clínica; Citia le da el material y el apoyo, y tiene su propia política para las cuentas de los profesionales |
+| **Política de privacidad** y **procedimiento para los derechos** del paciente | [DT-53](../Deudas/DT-53.md) | la publica la clínica; Citia le da el material y el apoyo, y tiene su propia política para las cuentas de los profesionales · *(2026-11-14)* el texto para el paciente, 1.0, está en la rama de US-11 ([ADR-16](../Decisions/ADR-16.md)); el procedimiento de derechos sigue sin hacer, y el retiro de la autorización no se registra ([DT-62](../Deudas/DT-62.md)) |
 | **Alcance del art. 10 bis** de la Ley 20.584 (acreditación de plataformas de salud digital) | [DT-55](../Deudas/DT-55.md) | consultar al Minsal. P1 es *saber si aplica*, no necesariamente acreditarse |
 | Aislamiento por clínica | — | ✅ ya existe, con la observación de `supresiones_correo` |
-| Revisar el consentimiento de los recordatorios | [DT-16](../Deudas/DT-16.md) | sus disparadores de revisión ya eran el 2026-12-01 y "la entrada del primer cliente real" |
+| Revisar el consentimiento de los recordatorios | [DT-16](../Deudas/DT-16.md) | sus disparadores de revisión ya eran el 2026-12-01 y "la entrada del primer cliente real" · *(2026-11-14)* con US-11, en la rama: el backend rechaza `consentimiento: false` y guarda qué versión se aceptó, cuándo y por dónde; la política de los recordatorios sigue apagada |
 
 ### P2 — durante la preparación
 
@@ -238,12 +273,19 @@ su A6, la base de licitud, que en ADR-14 son filas de la tabla y no preguntas). 
 
 ## Lo que el usuario no ha decidido
 
-*(Al 2026-10-31.)*
+*(Al 2026-10-31; el punto 1 cambió el 2026-11-14.)*
 
-1. **Si P1 es condición para recibir la primera clínica con pacientes reales.** No está decidido en ningún sentido.
+1. ✅ **Decidido el 2026-11-14:** con el piloto de la primera clínica con pacientes reales ya en marcha (desde el
+   2026-11-11), el P1 se aborda **sin abogado por ahora** y **sin pausar el piloto**. Se empieza por los términos y el
+   consentimiento que autoriza el paciente ([borrador](borrador-terminos-paciente.md)). *Antes (2026-10-31 →
+   2026-11-14): "Si P1 es condición para recibir la primera clínica con pacientes reales. No está decidido en ningún
+   sentido." Esa decisión ya no se podía tomar: la clínica entró antes.*
 2. **Quién es el responsable de cumplimiento**, la primera pieza del programa interno ([DT-56](../Deudas/DT-56.md)).
-3. **Cuándo redactar la política de privacidad y el contrato de encargo** ([DT-53](../Deudas/DT-53.md),
-   [DT-51](../Deudas/DT-51.md)). El 2026-10-31 el usuario eligió documentar, no redactar.
+3. **Cuándo redactar el contrato de encargo** ([DT-51](../Deudas/DT-51.md)). La política de privacidad para el
+   paciente ([DT-53](../Deudas/DT-53.md)) **empezó el 2026-11-14**, con el [borrador](borrador-terminos-paciente.md),
+   y ese mismo día quedó implementada como US-11 en su rama, sin release.
+   *Antes: "Cuándo redactar la política de privacidad y el contrato de encargo. El 2026-10-31 el usuario eligió
+   documentar, no redactar."*
 4. **Cuándo, y con quién, la revisión de un abogado**: sin fecha, como dice
    [ADR-14](../Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado).
 

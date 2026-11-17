@@ -17,7 +17,7 @@ sin doc.**
 | **por qué está construido así** y qué se descartó | [`Decisions/`](Decisions/README.md) |
 | **qué está construido** y cómo funciona | [`Features/`](Features/README.md) |
 | **qué falta o está a medias**, y qué cuesta | [`Deudas/`](Deudas/README.md) |
-| **qué exige la ley de datos personales** y qué le falta a Citia antes de la primera clínica con pacientes reales (sin abogado: es un pre-análisis con IA, no una opinión legal) | [`Cumplimiento/`](Cumplimiento/README.md) |
+| **qué exige la ley de datos personales** y qué le falta a Citia, ahora que tiene su primera clínica con pacientes reales (desde el 2026-11-11, sin el P1 hecho; sin abogado: es un pre-análisis con IA, no una opinión legal) | [`Cumplimiento/`](Cumplimiento/README.md) |
 | **qué decidió el frontend** que afecta al backend | [`Frontend-Decisions/`](Frontend-Decisions/README.md) |
 | **qué falta decidir** y quién puede decidirlo | [`PREGUNTAS-ABIERTAS.md`](PREGUNTAS-ABIERTAS.md) |
 | qué commit corresponde a qué documento | [`TRAZABILIDAD.md`](TRAZABILIDAD.md) |
@@ -66,6 +66,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 | por qué una pieza es como es | la feature → su ADR → las alternativas descartadas del ADR |
 | qué riesgo se está aceptando | [Deudas/README § Lo que hay que mirar primero](Deudas/README.md#lo-que-hay-que-mirar-primero) → la deuda |
 | qué falta, en lo legal, antes de la primera clínica con pacientes reales | [Cumplimiento § Lo que falta](Cumplimiento/README.md#lo-que-falta-por-prioridad) → la deuda |
+| entender los términos del paciente y la prueba de su aceptación (en la rama, sin release) | [ADR-16](Decisions/ADR-16.md) → el plan [US-11](US/11-terminos-paciente.md) → la feature [us11-terminos-paciente](Features/us11-terminos-paciente.md) |
 | qué hay que decidir antes de avanzar | [PREGUNTAS-ABIERTAS § Por fase](PREGUNTAS-ABIERTAS.md#por-fase-del-roadmap) |
 | de dónde salió un cambio | [TRAZABILIDAD](TRAZABILIDAD.md) (commit → documento, con su fase) |
 | qué hizo el frontend | la sección *Contraparte en el frontend* de cada fase |
@@ -104,8 +105,10 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
   [US-04](US/04-respuesta-paciente.md) respuesta del paciente desde el recordatorio (✅ en producción
   desde el 2026-10-17; [ADR-10](Decisions/ADR-10.md) aceptado).
   **Subtareas de US-07** (archivos `07.NN-*`): [US-07.01](US/07.01-registro-hechos.md) registro de hechos
-  (✅ en producción desde el 2026-10-20, job G1 prendido desde el 2026-10-27, pruebas manuales en curso;
-  [ADR-14](Decisions/ADR-14.md) aceptado en lo que le toca). US-07.02 (calificación y riesgo) y US-07.03
+  (✅ **cerrada**: pruebas manuales completas el 2026-11-01, cierre documentado el 2026-11-14; en producción desde el
+  2026-10-20, job G1 prendido desde el 2026-10-27; feature
+  [us0701-registro-hechos](Features/us0701-registro-hechos.md); [ADR-14](Decisions/ADR-14.md) aceptado en lo que le
+  toca; *antes: "pruebas manuales en curso"*). US-07.02 (calificación y riesgo) y US-07.03
   (acciones) aún sin plan y 🚧 **bloqueadas desde el 2026-10-30, plan incluido**, hasta que un abogado revise el
   contexto legal de ADR-14; las decisiones de producto de US-07.02, aprobadas ese mismo día, siguen vigentes.
   *Antes (hasta el bloqueo): "su plan es el siguiente paso".*
@@ -113,6 +116,10 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
   de las pruebas manuales y de Q18/Q19; [ADR-15](Decisions/ADR-15.md) aceptado; feature
   [us10-perfil-cuenta](Features/us10-perfil-cuenta.md); *antes: implementada, en `develop` con el release a `main`
   abierto (2026-11-01); en diseño desde el 2026-10-31*).
+  [US-11](US/11-terminos-paciente.md) términos de uso y aviso de privacidad del paciente, transversal de
+  [Cumplimiento](Cumplimiento/README.md) (🔶 implementada en la rama `feature/terminos-paciente`, sin release, el
+  2026-11-14; [ADR-16](Decisions/ADR-16.md) aceptado; feature
+  [us11-terminos-paciente](Features/us11-terminos-paciente.md)).
   **Subtareas de US-02** (archivos `02.NN-*`, no son historias propias):
   [US-02.07](US/02.07-paciente-reagenda-cancela.md) el paciente cancela o pide reagendar (⏸ aplazada
   fuera de la v1; 🔀 **absorbida por US-04** el 2026-10-14, en la
@@ -141,7 +148,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 ## Estado, de un vistazo
 
 *(Actualizado el 2026-10-07; la Fase 3, el 2026-10-18, tras su release del 2026-10-17; la fila de la Fase 5, el
-2026-10-30; la de la Fase 7, el 2026-10-31 y el 2026-11-01, también después de su release. Fuente:
+2026-10-30 y el 2026-11-14 (US-07.01 cerrada); la de la Fase 7, el 2026-10-31 y el 2026-11-01, también después de su release. Fuente:
 [ROADMAP § Resumen](ROADMAP.md#resumen).)*
 
 **El MVP está en producción.** Alcance: dashboard de citas (Fase 0) · gestión de citas (Fase 1) ·
@@ -159,7 +166,7 @@ está en producción desde el 2026-10-17.
 | [Fase 2](Fases/fase-2-us03-recordatorios.md) — US-03 recordatorios | ✅ **cerrada en producción (2026-10-07)** · [pendientes posteriores](Fases/fase-2-us03-recordatorios.md#pendientes-posteriores) |
 | [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) — US-04 respuesta del paciente | ✅ **en producción (2026-10-17)** · cierre pendiente de las pruebas manuales · [us04](Features/us04-respuesta-paciente.md) · fuera del MVP |
 | [Fase 4](Fases/fase-4-us05-alertas.md) — US-05 alertas | ⬜ fuera del MVP |
-| [Fase 5](Fases/fase-5-us07-scoring.md) — US-07 scoring | 🔶 US-07.01 (registro de hechos) en producción desde el 2026-10-20, antes que la Fase 4; job G1 prendido el 2026-10-27; pruebas manuales en curso · US-07.02 y US-07.03 🚧 bloqueadas desde el 2026-10-30, plan incluido (siguen en la v2), con las decisiones de producto de US-07.02 aprobadas ese día y vigentes · siguiente: cerrar US-07.01 · *antes: ⏸ v2 (siguiente: el plan de US-07.02)* |
+| [Fase 5](Fases/fase-5-us07-scoring.md) — US-07 scoring | 🔶 US-07.01 (registro de hechos) ✅ **cerrada** (pruebas manuales completas el 2026-11-01, cierre documentado el 2026-11-14; [us0701](Features/us0701-registro-hechos.md)); en producción desde el 2026-10-20, antes que la Fase 4; job G1 prendido el 2026-10-27 · US-07.02 y US-07.03 🚧 bloqueadas desde el 2026-10-30, plan incluido (siguen en la v2), con las decisiones de producto de US-07.02 aprobadas ese día y vigentes · nada más que construir mientras dure el bloqueo · *antes (2026-10-30 → 2026-11-14): pruebas manuales en curso; siguiente: cerrar US-07.01 · antes: ⏸ v2 (siguiente: el plan de US-07.02)* |
 | [Fase 6 y US-09](Fases/fases-6-us09-sin-diseno.md) | ⬜ sin diseño |
 | [Fase 7](Fases/fase-7-us10-perfil.md) — US-10 perfil, suscripción y soporte | ✅ **en producción (2026-11-01)** · cierre pendiente de las pruebas manuales y de Q18/Q19 · [us10](Features/us10-perfil-cuenta.md) · [ADR-15](Decisions/ADR-15.md) aceptado · [plan](US/10-perfil-cuenta.md) · *antes: 🔶 implementada, en `develop` con el release a `main` abierto (2026-11-01); 🔶 en diseño (2026-10-31); ⬜ sin diseño* |
 
@@ -188,8 +195,9 @@ cualquier usuario con sesión escribe a soporte; sin `SOPORTE_CORREO_DESTINO` en
 1. **Cerrar la Fase 3 — US-04, respuesta del paciente** (✅ en producción desde el 2026-10-17: backend
    PR #7, frontend PR #8): el paciente confirma, cancela o pide otra hora desde el enlace del recordatorio, y
    la fase trajo además el límite de tasa ([DT-18](Deudas/DT-18.md)). Lo que existe está en
-   [us04-respuesta-paciente](Features/us04-respuesta-paciente.md). Para cerrarla faltan la prueba con un
-   correo real y con los escáneres de Gmail y Outlook, la prueba de `trust proxy` en production (la IP real
+   [us04-respuesta-paciente](Features/us04-respuesta-paciente.md). Para cerrarla faltan, del correo real,
+   confirmar desde el enlace y el escáner de Outlook (el botón, la página, cancelar desde el enlace y el escáner de
+   Gmail ya se comprobaron el 2026-10-28 y el 2026-11-01), la prueba de `trust proxy` en production (la IP real
    detrás del proxy de Railway) y, en el frontend, `ENLACE_PUBLICO_LISTO = true`
    ([checklist](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción)). El release tuvo
    un corte de ~9 minutos ([incidente](Fases/fase-3-us04-respuesta-paciente.md#incidente-production-caído-9-minutos)).
@@ -202,7 +210,10 @@ cualquier usuario con sesión escribe a soporte; sin `SOPORTE_CORREO_DESTINO` en
    redirigir el dominio raíz y `www` a `app.citiahealth.cl`, confirmar "App Sleeping" y el `FRONTEND_URL`
    de staging ([lista](ROADMAP.md#pendientes-posteriores-al-cierre)).
 5. **Consentimiento sin revisar, con fecha** ([DT-16](Deudas/DT-16.md)): riesgo aceptado hasta que entre en
-   vigor la Ley 21.719 (prevista para el 2026-12-01). La política ya existe y está apagada.
+   vigor la Ley 21.719 (prevista para el 2026-12-01). La política ya existe y está apagada. *(2026-11-14:
+   [US-11](US/11-terminos-paciente.md) —el texto para el paciente y la prueba de su aceptación— está implementada en
+   la rama `feature/terminos-paciente` y espera su release, frontend primero; cierra la parte (2) de DT-16. La política
+   sigue apagada.)*
 6. **Cuatro decisiones del usuario**, ninguna bloqueante:
    [Q12–Q15](PREGUNTAS-ABIERTAS.md#fase-2--decisiones-pendientes-tras-implementar-2026-10-04).
 

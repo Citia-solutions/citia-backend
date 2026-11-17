@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   HttpException,
   HttpStatus,
@@ -20,6 +21,8 @@ import { SinCacheNiReferrerInterceptor } from '../../../shared/presentation/sin-
 import { EnlaceCitaNoValidoError } from '../../cita/application/enlace-cita-no-valido.error';
 import { EstadoCita } from '../../cita/domain/cita.entity';
 import { TransicionEstadoInvalidaError } from '../../cita/domain/exceptions/transicion-estado-invalida.error';
+import { VersionTerminosNoVigenteError } from '../../paciente/domain/exceptions/version-terminos-no-vigente.error';
+import { MENSAJE_VERSION_TERMINOS_NO_VIGENTE } from '../../paciente/presentation/dto/version-terminos.decorator';
 import { ReagendamientoYaSolicitadoError } from '../../solicitud/domain/reagendamiento-ya-solicitado.error';
 import { AccionNoDisponibleError } from '../application/accion-no-disponible.error';
 import { PortalPacienteService } from '../application/portal-paciente.service';
@@ -29,6 +32,7 @@ import { VistaCitaPacienteDto } from './dto/vista-cita-paciente.dto';
 import {
   CUERPO_ACCION_NO_DISPONIBLE,
   CUERPO_ENLACE_NO_VALIDO,
+  CUERPO_VERSION_TERMINOS_NO_VIGENTE,
   PortalPacienteController,
 } from './portal-paciente.controller';
 
@@ -40,6 +44,7 @@ describe('PortalPacienteController', () => {
     confirmar: jest.Mock;
     cancelar: jest.Mock;
     pedirOtraHora: jest.Mock;
+    aceptarTerminos: jest.Mock;
   };
   let controller: PortalPacienteController;
 
@@ -52,6 +57,7 @@ describe('PortalPacienteController', () => {
     organizacion: 'Clínica Sur',
     accionesPermitidas: ['confirmar', 'cancelar', 'pedirOtraHora'],
     solicitudOtraHora: null,
+    terminosPendientes: false,
   });
 
   beforeEach(() => {
@@ -60,6 +66,7 @@ describe('PortalPacienteController', () => {
       confirmar: jest.fn().mockResolvedValue(vista),
       cancelar: jest.fn().mockResolvedValue(vista),
       pedirOtraHora: jest.fn().mockResolvedValue(vista),
+      aceptarTerminos: jest.fn().mockResolvedValue(vista),
     };
     controller = new PortalPacienteController(
       portal as unknown as PortalPacienteService,
@@ -70,7 +77,7 @@ describe('PortalPacienteController', () => {
     Object.getOwnPropertyDescriptor(PortalPacienteController.prototype, nombre)
       ?.value as object;
 
-  /** Las cuatro rutas, con la llamada al servicio que les corresponde. */
+  /** Las cinco rutas, con la llamada al servicio que les corresponde. */
   const rutas: [
     string,
     keyof typeof portal,
@@ -83,6 +90,11 @@ describe('PortalPacienteController', () => {
       'pedirOtraHora',
       'pedirOtraHora',
       (t) => controller.pedirOtraHora(t, { preferencia: 'tardes' }),
+    ],
+    [
+      'aceptarTerminos',
+      'aceptarTerminos',
+      (t) => controller.aceptarTerminos(t, { terminosVersion: '1.0' }),
     ],
   ];
 
@@ -100,6 +112,7 @@ describe('PortalPacienteController', () => {
         'confirmar',
         'cancelar',
         'pedirOtraHora',
+        'aceptarTerminos',
       ] as const) {
         expect(
           Reflect.getMetadata(GUARDS_METADATA, handler(nombre)),
@@ -112,6 +125,12 @@ describe('PortalPacienteController', () => {
       ['confirmar', RequestMethod.POST, 'confirmar', HttpStatus.OK],
       ['cancelar', RequestMethod.POST, 'cancelar', HttpStatus.OK],
       ['pedirOtraHora', RequestMethod.POST, 'otra-hora', HttpStatus.CREATED],
+      [
+        'aceptarTerminos',
+        RequestMethod.POST,
+        'aceptar-terminos',
+        HttpStatus.OK,
+      ],
     ])('%s → método %s, ruta %s, éxito %s', (nombre, metodo, ruta, codigo) => {
       const h = handler(nombre);
       expect(Reflect.getMetadata(METHOD_METADATA, h)).toBe(metodo);
@@ -132,6 +151,7 @@ describe('PortalPacienteController', () => {
         'confirmar',
         'cancelar',
         'pedirOtraHora',
+        'aceptarTerminos',
       ] as const) {
         expect(
           Reflect.getMetadata(METADATA_LIMITES_TASA, handler(nombre)),
@@ -181,6 +201,13 @@ describe('PortalPacienteController', () => {
         preferencia: 'tardes',
         motivo: 'trabajo',
       });
+    });
+
+    it('aceptarTerminos: token y versión del cuerpo (US-11)', async () => {
+      expect(
+        await controller.aceptarTerminos(TOKEN, { terminosVersion: '1.0' }),
+      ).toBe(vista);
+      expect(portal.aceptarTerminos).toHaveBeenCalledWith(TOKEN, '1.0');
     });
   });
 
@@ -241,6 +268,21 @@ describe('PortalPacienteController', () => {
         );
       });
 
+      it('VersionTerminosNoVigenteError → 400 { statusCode, message } fijo (US-11)', async () => {
+        // Arrange
+        portal[metodo].mockRejectedValue(new VersionTerminosNoVigenteError());
+
+        // Act
+        const error = await capturar(llamar(TOKEN));
+
+        // Assert
+        expect(error).toBeInstanceOf(BadRequestException);
+        expect(error.getResponse()).toEqual({
+          statusCode: 400,
+          message: MENSAJE_VERSION_TERMINOS_NO_VIGENTE,
+        });
+      });
+
       it('cualquier otro error se propaga (Nest responde el 500 genérico)', async () => {
         // Arrange
         const inesperado = new Error('Integridad: algo con ids');
@@ -254,6 +296,7 @@ describe('PortalPacienteController', () => {
     it('los cuerpos fijos no se pueden alterar', () => {
       expect(Object.isFrozen(CUERPO_ENLACE_NO_VALIDO)).toBe(true);
       expect(Object.isFrozen(CUERPO_ACCION_NO_DISPONIBLE)).toBe(true);
+      expect(Object.isFrozen(CUERPO_VERSION_TERMINOS_NO_VIGENTE)).toBe(true);
     });
   });
 
@@ -332,6 +375,8 @@ describe('PortalPacienteController', () => {
         ).toEqual({});
       });
     });
+
+    // AceptarTerminosDto (US-11): en `dto/aceptar-terminos.dto.spec.ts`.
 
     describe('CancelarCitaPacienteDto', () => {
       it('acepta el cuerpo vacío y un motivo de 300', async () => {

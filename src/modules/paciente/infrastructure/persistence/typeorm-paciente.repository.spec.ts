@@ -199,4 +199,74 @@ describe('TypeOrmPacienteRepository', () => {
       expect(repoOrm.createQueryBuilder).not.toHaveBeenCalled();
     });
   });
+
+  // US-11 (ADR-16 §4): la bandera derivada. El SQL real (condicional, por
+  // tenant) lo prueba `aceptaciones-terminos.integration.spec.ts`.
+  describe('marcarConsentimiento', () => {
+    const ID = 'a0000000-0000-4000-8000-000000000001';
+    const TENANT = '7e000000-0000-4000-8000-000000000001';
+
+    let repoTx: { createQueryBuilder: jest.Mock };
+    let tx: EntityManager;
+
+    beforeEach(() => {
+      repoTx = { createQueryBuilder: jest.fn().mockReturnValue(qb) };
+      tx = { getRepository: () => repoTx } as unknown as EntityManager;
+    });
+
+    it('debería poner la bandera con la condición y el tenant en el propio UPDATE, en el tx', async () => {
+      // Act
+      const escrito = await repositorio.marcarConsentimiento(ID, TENANT, tx);
+
+      // Assert
+      expect(escrito).toBe(true);
+      expect(repoTx.createQueryBuilder).toHaveBeenCalledTimes(1);
+      expect(repoOrm.createQueryBuilder).not.toHaveBeenCalled();
+      expect(qb.update).toHaveBeenCalledWith(PacienteOrmEntity);
+      expect(qb.set).toHaveBeenCalledWith({ consentimiento: true });
+      expect(qb.where).toHaveBeenCalledWith('id = :id', { id: ID });
+      expect(qb.andWhere).toHaveBeenCalledWith('tenant_id = :tenantId', {
+        tenantId: TENANT,
+      });
+      expect(qb.andWhere).toHaveBeenCalledWith('consentimiento = false');
+    });
+
+    it.each([{ affected: 0 }, {}])(
+      'debería devolver false cuando no escribe (%p: ya estaba en true, otro tenant o inexistente)',
+      async (resultado) => {
+        // Arrange
+        qb.execute.mockResolvedValue(resultado);
+
+        // Act & Assert
+        expect(await repositorio.marcarConsentimiento(ID, TENANT, tx)).toBe(
+          false,
+        );
+      },
+    );
+
+    it.each([undefined, null])(
+      'debería lanzar sin transacción (%p), sin escribir',
+      async (sinTx) => {
+        // Act & Assert
+        await expect(
+          repositorio.marcarConsentimiento(ID, TENANT, sinTx),
+        ).rejects.toThrow(/requiere una transacción/);
+        expect(repoOrm.createQueryBuilder).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
+      ['id', 'paciente-1', TENANT],
+      ['tenantId', ID, 'tenant-1'],
+    ])(
+      'debería devolver false SIN consultar si %s no es un UUID',
+      async (_campo, id, tenantId) => {
+        // Act & Assert
+        expect(await repositorio.marcarConsentimiento(id, tenantId, tx)).toBe(
+          false,
+        );
+        expect(repoTx.createQueryBuilder).not.toHaveBeenCalled();
+      },
+    );
+  });
 });

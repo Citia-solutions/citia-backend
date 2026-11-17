@@ -17,7 +17,7 @@ import {
 
 /**
  * Fila de `solicitudes_cita`. Esquema real: migraciones 1750000006000,
- * 1750000007000, 1750000013000 y 1750000014000.
+ * 1750000007000, 1750000013000, 1750000014000 y 1750000022000.
  *
  * Índices y CHECK se declaran también aquí para que un esquema creado con
  * `synchronize` (BD efímera de tests) quede igual que el de las migraciones.
@@ -41,6 +41,14 @@ import {
 @Check(
   'CHK_solicitudes_cita_nueva_datos',
   `"tipo" <> '${TipoSolicitud.NUEVA}' OR ("rut" IS NOT NULL AND "correo" IS NOT NULL)`,
+)
+// US-11 (D10): solo una `nueva` con consentimiento trae la versión de los
+// términos. Literal sin cast al tipo enum (su nombre difiere entre la
+// migración y `synchronize`). La barra va doblada en el fuente: a Postgres le
+// llega `\.`.
+@Check(
+  'CHK_solicitudes_cita_terminos_version',
+  `"terminos_version" IS NULL OR ("terminos_version" ~ '^[0-9]+\\.[0-9]+$' AND "tipo" = '${TipoSolicitud.NUEVA}' AND "consentimiento" = true)`,
 )
 export class SolicitudCitaOrmEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -122,4 +130,14 @@ export class SolicitudCitaOrmEntity {
   // Solo en reagendamiento: con qué enlace se pidió (`enlaces_cita.id`). Sin FK.
   @Column({ name: 'enlace_id', type: 'uuid', nullable: true })
   enlaceId: string | null;
+
+  // US-11 (D10): versión de los términos aceptada en el formulario público.
+  // Solo en una `nueva`; NULL en las de reagendamiento y en las anteriores.
+  @Column({
+    name: 'terminos_version',
+    type: 'varchar',
+    length: 10,
+    nullable: true,
+  })
+  terminosVersion: string | null;
 }

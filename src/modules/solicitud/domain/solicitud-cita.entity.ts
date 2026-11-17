@@ -57,6 +57,11 @@ export interface RecibirSolicitudProps {
   motivo: string;
   preferenciaHoraria: string;
   consentimiento: boolean;
+  /**
+   * Versión de los términos que el paciente aceptó al enviar el formulario
+   * (US-11, ADR-16 §5, D10). Obligatoria: el DTO la valida contra el catálogo.
+   */
+  terminosVersion: string;
 }
 
 /**
@@ -102,6 +107,8 @@ export interface ReconstituirSolicitudProps {
   tipo?: TipoSolicitud;
   citaOrigenId?: string | null;
   enlaceId?: string | null;
+  /** Ausente = `null` (filas y dobles anteriores a US-11). */
+  terminosVersion?: string | null;
 }
 
 export class SolicitudCita {
@@ -141,6 +148,13 @@ export class SolicitudCita {
   citaOrigenId: string | null;
   /** Solo en `reagendamiento`: el enlace con el que se pidió. */
   enlaceId: string | null;
+  /**
+   * Versión de los términos que el paciente aceptó en el formulario público
+   * (US-11, D10). Solo en una `nueva`; `null` en las de reagendamiento y en
+   * las anteriores al despliegue (CHECK `CHK_solicitudes_cita_terminos_version`).
+   * La fila de `aceptaciones_terminos` nace al aceptarla en la bandeja.
+   */
+  terminosVersion: string | null;
 
   private _estado: EstadoSolicitud;
 
@@ -165,6 +179,7 @@ export class SolicitudCita {
     solicitud.tipo = TipoSolicitud.NUEVA;
     solicitud.citaOrigenId = null;
     solicitud.enlaceId = null;
+    solicitud.terminosVersion = props.terminosVersion;
     solicitud._estado = EstadoSolicitud.RECIBIDA;
     return solicitud;
   }
@@ -190,6 +205,8 @@ export class SolicitudCita {
     solicitud.tipo = TipoSolicitud.REAGENDAMIENTO;
     solicitud.citaOrigenId = props.citaOrigenId;
     solicitud.enlaceId = props.enlaceId;
+    // El consentimiento se copia de la ficha; la versión, nunca (CHECK).
+    solicitud.terminosVersion = null;
     solicitud._estado = EstadoSolicitud.RECIBIDA;
     return solicitud;
   }
@@ -214,6 +231,7 @@ export class SolicitudCita {
     solicitud.tipo = props.tipo ?? TipoSolicitud.NUEVA;
     solicitud.citaOrigenId = props.citaOrigenId ?? null;
     solicitud.enlaceId = props.enlaceId ?? null;
+    solicitud.terminosVersion = props.terminosVersion ?? null;
     return solicitud;
   }
 

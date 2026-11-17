@@ -24,6 +24,7 @@ import { CitaDetalleDto } from '../presentation/dto/cita-detalle.dto';
 import { CitaResponseDto } from '../presentation/dto/cita-response.dto';
 import { CrearCitaDto } from '../presentation/dto/crear-cita.dto';
 import { PacientesService } from '../../paciente/application/pacientes.service';
+import { CanalAceptacion } from '../../paciente/domain/aceptacion-terminos.entity';
 import { CitasService, MAX_DIAS_RANGO } from './citas.service';
 import { CitaNoEncontradaError } from './cita-no-encontrada.error';
 import { DatosPacienteRequeridosError } from './datos-paciente-requeridos.error';
@@ -57,8 +58,12 @@ describe('CitasService', () => {
     buscarPorIds: jest.Mock;
     actualizarContacto: jest.Mock;
     completarCorreoSiVacio: jest.Mock;
+    marcarConsentimiento: jest.Mock;
   };
-  let mockPacientesService: { resolverOCrear: jest.Mock };
+  let mockPacientesService: {
+    resolverOCrear: jest.Mock;
+    registrarAceptacion: jest.Mock;
+  };
   // TransactionRunner de mentira: ejecuta el trabajo con un contexto ficticio,
   // sin transaccion real. Basta para probar el orden de las llamadas.
   let mockTx: { run: jest.Mock };
@@ -96,8 +101,13 @@ describe('CitasService', () => {
       buscarPorIds: jest.fn().mockResolvedValue([]),
       actualizarContacto: jest.fn(),
       completarCorreoSiVacio: jest.fn(),
+      marcarConsentimiento: jest.fn(),
     };
-    mockPacientesService = { resolverOCrear: jest.fn() };
+    mockPacientesService = {
+      resolverOCrear: jest.fn(),
+      // US-11: la aceptación del canal profesional al crear con `paciente`.
+      registrarAceptacion: jest.fn().mockResolvedValue(true),
+    };
     mockTx = {
       run: jest.fn((work: (tx: unknown) => Promise<unknown>) => work('tx')),
     };
@@ -107,7 +117,8 @@ describe('CitasService', () => {
       mockCambioCitaRepository,
       mockPacienteRepository,
       // PacientesService es una clase concreta: el doble no es estructuralmente
-      // compatible, por eso el cast. Solo se usa `resolverOCrear`.
+      // compatible, por eso el cast. Solo se usan `resolverOCrear` y
+      // `registrarAceptacion`.
       mockPacientesService as unknown as PacientesService,
       mockTx,
       mockEventos,
@@ -354,6 +365,134 @@ describe('CitasService', () => {
       ).rejects.toBeInstanceOf(DatosPacienteRequeridosError);
 
       expect(mockCitaRepository.guardar).not.toHaveBeenCalled();
+    });
+
+    describe('US-11: aceptación de los términos del canal profesional', () => {
+      const AHORA = new Date('2026-11-14T15:00:00.000Z');
+      const dtoConPaciente: CrearCitaDto = {
+        inicio: '2026-11-20T13:00:00Z',
+        duracionMin: 30,
+        tipoConsulta: 'Control',
+        paciente: {
+          rut: '12.345.678-5',
+          nombre: 'Ana Soto',
+          telefono: '+56 9 1111 1111',
+          correo: 'ana@mail.com',
+          consentimiento: true,
+          terminosVersion: '1.0',
+        },
+      };
+
+      beforeEach(() => {
+        // Un paciente existente por RUT que tenía la bandera en false.
+        mockPacientesService.resolverOCrear.mockResolvedValue({
+          id: 'paciente-ana',
+          rut: '123456785',
+          nombre: 'Ana Soto',
+          telefono: '+56 9 1111 1111',
+          correo: 'ana@mail.com',
+          consentimiento: false,
+          tenantId: 'tenant-1',
+        });
+        mockCitaRepository.guardar.mockImplementation((cita: Cita) => {
+          cita.id = 'cita-1';
+          return Promise.resolve(cita);
+        });
+      });
+
+      it('con `paciente`: registra canal profesional con el userId, la versión y el reloj, en el MISMO tx y después de agendar', async () => {
+        // Arrange — el servicio con reloj fijo
+        const conReloj = new CitasService(
+          mockCitaRepository,
+          mockCambioCitaRepository,
+          mockPacienteRepository,
+          mockPacientesService as unknown as PacientesService,
+          mockTx,
+          mockEventos,
+          'America/Santiago',
+          () => AHORA,
+        );
+
+        // Act
+        const result = await conReloj.crearCita(
+          dtoConPaciente,
+          usuarioAutenticado,
+        );
+
+        // Assert
+        expect(mockTx.run).toHaveBeenCalledTimes(1);
+        expect(mockPacientesService.registrarAceptacion).toHaveBeenCalledWith(
+          {
+            canal: CanalAceptacion.PROFESIONAL,
+            usuarioId: 'usuario-1',
+            tenantId: 'tenant-1',
+            pacienteId: 'paciente-ana',
+            version: '1.0',
+            aceptadaEn: AHORA,
+          },
+          'tx',
+        );
+        expect(
+          mockCitaRepository.guardar.mock.invocationCallOrder[0],
+        ).toBeLessThan(
+          mockPacientesService.registrarAceptacion.mock.invocationCallOrder[0],
+        );
+        // La respuesta sale con la bandera encendida
+        expect(result.paciente?.consentimiento).toBe(true);
+      });
+
+      it('con `pacienteId`: no registra nada', async () => {
+        // Arrange
+        mockPacienteRepository.buscarPorId.mockResolvedValue({
+          id: 'paciente-1',
+          rut: null,
+          nombre: 'Ana',
+          telefono: '+56 9 1111 1111',
+          correo: 'ana@mail.com',
+          consentimiento: false,
+          tenantId: 'tenant-1',
+        });
+
+        // Act
+        await service.crearCita(
+          {
+            inicio: '2026-11-20T13:00:00Z',
+            duracionMin: 30,
+            tipoConsulta: 'Control',
+            pacienteId: 'paciente-1',
+          },
+          usuarioAutenticado,
+        );
+
+        // Assert
+        expect(mockPacientesService.registrarAceptacion).not.toHaveBeenCalled();
+      });
+
+      it('agendar (lo que llama la bandeja) no registra nada por sí mismo', async () => {
+        // Act
+        const result = await service.agendar(
+          dtoConPaciente,
+          usuarioAutenticado,
+          'tx-bandeja',
+          OrigenCita.SOLICITUD_PUBLICA,
+        );
+
+        // Assert
+        expect(mockPacientesService.registrarAceptacion).not.toHaveBeenCalled();
+        expect(result.paciente?.consentimiento).toBe(false);
+      });
+
+      it('si el registro falla, el error sube (la transacción se revierte)', async () => {
+        // Arrange
+        mockPacientesService.registrarAceptacion.mockRejectedValue(
+          new Error('fallo al registrar'),
+        );
+
+        // Act & Assert
+        await expect(
+          service.crearCita(dtoConPaciente, usuarioAutenticado),
+        ).rejects.toThrow('fallo al registrar');
+      });
     });
   });
 

@@ -51,6 +51,7 @@ describe('SolicitudesOtraHoraService (pedir otra hora, Fase 3)', () => {
     buscarPorIds: jest.Mock;
     actualizarContacto: jest.Mock;
     completarCorreoSiVacio: jest.Mock;
+    marcarConsentimiento: jest.Mock;
   };
   let eventos: { publicar: jest.Mock<Promise<void>, [EventoDominio, unknown]> };
   let service: SolicitudesOtraHoraService;
@@ -82,6 +83,7 @@ describe('SolicitudesOtraHoraService (pedir otra hora, Fase 3)', () => {
       buscarPorIds: jest.fn(),
       actualizarContacto: jest.fn(),
       completarCorreoSiVacio: jest.fn(),
+      marcarConsentimiento: jest.fn(),
     };
     eventos = {
       publicar: jest

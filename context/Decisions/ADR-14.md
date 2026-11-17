@@ -17,7 +17,8 @@ vigentes y quedan listas para cuando se desbloqueen · las decisiones de product
 y dueño del producto) el 2026-10-19 y el 2026-10-30 ·
 [US-07.01](#10-us-0701-los-datos-que-hoy-se-pierden-va-primero) (registro de hechos: decisiones 9 y 10) está
 **en producción desde el 2026-10-20**, con el **job G1 prendido desde el 2026-10-27**
-([DT-11](../Deudas/DT-11.md) cerrada) y sus pruebas manuales en curso; su contrato está en el plan
+([DT-11](../Deudas/DT-11.md) cerrada), y **cerrada** (pruebas manuales completas el 2026-11-01, cierre documentado el
+2026-11-14; *antes: "y sus pruebas manuales en curso"*); su contrato está en el plan
 [US-07.01](../US/07.01-registro-hechos.md). **El bloqueo no la toca** · US-07.02 (calificación y riesgo) y US-07.03
 (acciones) siguen además fuera del MVP, en la v2
 ([ROADMAP](../ROADMAP.md#fase-5--us-07-calificación-de-asistencia-scoring)) · **el siguiente paso de la Fase 5 es
@@ -498,7 +499,9 @@ nota que apunta aquí. Responde la deuda [DT-48](../Deudas/DT-48.md) (*"un cierr
 
 *(Hasta el 2026-10-19 se llamaba "Etapa 0".)* **Aceptada el 2026-10-19 y en construcción desde ese día**, antes
 que la calificación y antes que la Fase 4, de la que no depende. **En producción desde el 2026-10-20; el job G1,
-prendido desde el 2026-10-27**; pruebas manuales en curso. El contrato (migraciones, DTO, hechos, job)
+prendido desde el 2026-10-27**; **cerrada** (pruebas manuales completas el 2026-11-01, cierre documentado el
+2026-11-14, feature [us0701-registro-hechos](../Features/us0701-registro-hechos.md); *antes: "pruebas manuales en
+curso"*). El contrato (migraciones, DTO, hechos, job)
 está en el plan [US-07.01](../US/07.01-registro-hechos.md). Son datos que hasta ahora no se guardaban y **no se
 pueden reconstruir**: cada día sin ellos es un día que la calificación no podrá contar.
 
@@ -758,7 +761,7 @@ de Terminado. La de US-07.01 está en [`US/07.01-registro-hechos.md`](../US/07.0
 | **US-07.01** | 2 | `api-agent` | ✅ transiciones desde `pendiente` y guarda de la hora (decisión 9); marca de la primera apertura en el portal; origen al crear (alta manual y bandeja); "quién lo pidió" en cancelar y reagendar; job G1 con actor `sistema` y `CIERRE_GHOSTING_ACTIVO` |
 | **US-07.01** | 3 | `testing-agent` | ✅ el grafo nuevo; la apertura no cambia la cita ni se escribe dos veces; G1 con su corte y sus tres condiciones; el contrato de cancelar y reagendar |
 | **US-07.01** | — | frontend | ✅ botones del voucher sobre citas `pendiente`; "¿quién lo pidió?" al cancelar y al reagendar |
-| **US-07.01** | — | usuario | ✅ release a producción (2026-10-20) · ✅ job G1 prendido (2026-10-27) · 🔶 pruebas manuales, feature y TRAZABILIDAD, en curso · **siguiente paso de la Fase 5** (2026-10-30): cerrarla |
+| **US-07.01** | — | usuario | ✅ release a producción (2026-10-20) · ✅ job G1 prendido (2026-10-27) · ✅ **cerrada** (pruebas manuales completas el 2026-11-01; feature y cierre documentados el 2026-11-14) · *antes: "🔶 pruebas manuales, feature y TRAZABILIDAD, en curso · siguiente paso de la Fase 5 (2026-10-30): cerrarla"* |
 | **US-07.02** · calificación y riesgo | 4 | `architecture-agent` | 🚧 **bloqueado (2026-10-30)** hasta que un abogado revise el [Contexto legal](#contexto-legal-a-validar-por-un-abogado) o el usuario decida otra cosa: plan de US-07.02 con el contrato, incluida la corrección de cierres de la decisión 9. Las preguntas de producto ya están respondidas (2026-10-30) y quedan listas para entonces. *Antes (2026-10-30, hasta el bloqueo): ⬜ **siguiente paso**; "las preguntas de producto ya no lo bloquean; la revisión legal bloquea la implementación (pasos 5 a 8), no el plan". Antes (2026-10-19), inclinación: escribir el plan después de la revisión legal* |
 | **US-07.02** | 4.b | `database-agent` | 🚧 **antes de implementar US-07.02, cuando se desbloquee:** corregir [DT-47](../Deudas/DT-47.md) (orden de la bitácora), con la salida que elija el usuario. *Antes (hasta el bloqueo): paso previo de la implementación, sin bloqueo del plan* |
 | **US-07.02** | 5 | `database-agent` | 🚧 lector SQL de solo lectura con columnas explícitas; tabla de evaluaciones del riesgo |

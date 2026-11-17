@@ -98,6 +98,8 @@ const PACIENTE = {
   telefono: '+56 9 8765 4321',
   correo: 'maria.perez@correo-secreto.cl',
   consentimiento: true,
+  // US-11: obligatoria en HTTP (D5, D6).
+  terminosVersion: '1.0',
 };
 const TIPO_CONSULTA = 'Control psiquiátrico';
 // Token del enlace del paciente (Fase 3): 43 caracteres base64url.
@@ -115,6 +117,8 @@ const SOLICITANTE = {
   motivo: 'Dolor de espalda hace meses',
   preferenciaHoraria: 'jueves en la tarde',
   consentimiento: true,
+  // US-11: obligatoria en HTTP (D5, D6).
+  terminosVersion: '1.0',
 };
 // Lo que el paciente escribe en el portal (Fase 3): tampoco va a los logs.
 const PETICION_OTRA_HORA = {

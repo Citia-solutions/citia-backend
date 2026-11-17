@@ -8,7 +8,7 @@
 |---|---|
 | **Objetivo** | Que el paciente confirme, cancele o pida otra hora desde el enlace que le llega en el recordatorio, sin cuenta; y que el profesional lo vea en el voucher y en la bandeja. |
 | **Entregable** | El paciente confirma o cancela desde el correo; agenda y alertas se actualizan (ROADMAP). Las alertas son de la Fase 4 ([DT-43](../Deudas/DT-43.md)). |
-| **Estado** | ✅ **en producción (2026-10-17)** · **cierre pendiente** de las pruebas manuales (correo real y escáneres) y de la de `trust proxy` · fuera del MVP. Backend y frontend construidos contra el plan [US-04](../US/04-respuesta-paciente.md) ([ADR-10](../Decisions/ADR-10.md) aceptado el 2026-10-14, [Q11](../PREGUNTAS-ABIERTAS.md#q11--cómo-le-llega-al-paciente-el-enlace-de-su-cita) = B); 1709 unitarios, 287 e2e y 139 de integración en verde; mergeados a `develop` el 2026-10-15 (backend [PR #6](https://github.com/Citia-solutions/citia-backend/pull/6), frontend [PR #7](https://github.com/Citia-solutions/citia-frontend/pull/7)) y llevados a `main` el 2026-10-17 (backend [PR #7](https://github.com/Citia-solutions/citia-backend/pull/7), frontend [PR #8](https://github.com/Citia-solutions/citia-frontend/pull/8)). El release tuvo un **corte de ~9 minutos** ([abajo](#release-a-producción-2026-10-17)). |
+| **Estado** | ✅ **en producción (2026-10-17)** · **cierre pendiente** de las pruebas manuales (correo real y escáneres) y de la de `trust proxy` · fuera del MVP. Backend y frontend construidos contra el plan [US-04](../US/04-respuesta-paciente.md) ([ADR-10](../Decisions/ADR-10.md) aceptado el 2026-10-14, [Q11](../PREGUNTAS-ABIERTAS.md#q11--cómo-le-llega-al-paciente-el-enlace-de-su-cita) = B); 1709 unitarios, 287 e2e y 139 de integración en verde; mergeados a `develop` el 2026-10-15 (backend [PR #6](https://github.com/Citia-solutions/citia-backend/pull/6), frontend [PR #7](https://github.com/Citia-solutions/citia-frontend/pull/7)) y llevados a `main` el 2026-10-17 (backend [PR #7](https://github.com/Citia-solutions/citia-backend/pull/7), frontend [PR #8](https://github.com/Citia-solutions/citia-frontend/pull/8)). El release tuvo un **corte de ~9 minutos** ([abajo](#release-a-producción-2026-10-17)). *(2026-11-14: las pruebas manuales avanzan, sin cerrar la fase, con evidencia del cierre de [US-07.01](fase-5-us07-scoring.md#cierre-de-us-0701-2026-11-01). Correo real: el botón llega ✅ (2026-11-01) y la página abre y el paciente cancela desde el enlace ✅ (2026-10-28, cita `2dce1c9c`); confirmar desde el enlace ⬜, sin probar. Escáneres: Gmail ✅ (2026-11-01), Outlook ⬜. `trust proxy` sigue ⬜. Detalle en el [checklist](#checklist-de-salida-a-producción).)* |
 | **Fechas** | FD-06 2026-09-10 · ADR-10 propuesto 2026-09-23 y aplazado 2026-09-25 (Q11 → C) · reabrible desde el 2026-09-30 (el canal existe con la Fase 2) · **diseño aprobado y ADR-10 aceptado 2026-10-14** · implementación 2026-10-14 → 2026-10-15 · verificada en local, commits y merge a `develop` 2026-10-15 · **release a producción 2026-10-17** (de madrugada, hora de Chile). |
 | **Historias** | US-04, con plan propio en [US/04-respuesta-paciente.md](../US/04-respuesta-paciente.md), que **absorbe** la subtarea [US-02.07](../US/02.07-paciente-reagenda-cancela.md) (su análisis se conserva). |
 | **Commits** | filas 85–92, 94 y 95 de la [TRAZABILIDAD](../TRAZABILIDAD.md): ocho commits, `c757e0e` → `b93f2c0`, el merge `ce0c533` (PR #6) a `develop` y el release `05bae58` (PR #7) a `main`. En el frontend, los merges `e8ce193` (PR #7, a `develop`) y `1a7f324` (PR #8, a `main`). Antes, ADR-10 y US-02.07 entraron con `2877b13` (fila 41, Fase 1) y FD-06 con `16b50e1` (fila 38). |
@@ -42,7 +42,7 @@ escáneres), como la Fase 2 se cerró con su prueba de punta a punta.
 | Staging (desde `develop`) | el backend arranca con la Fase 3; `GET /api/publico/cita` responde el 404 uniforme; el preflight CORS permite `x-enlace-cita`; Netlify aplica `_headers` a `/cita` | ✅ (comprobado con `curl`) |
 | Production, backend | `/api/health` ok; el portal responde el 404 uniforme con `Cache-Control: no-store` y `Referrer-Policy: no-referrer`; el preflight desde `https://app.citiahealth.cl` permite `x-enlace-cita`; migraciones `1750000012000` a `1750000014000` aplicadas (log del `entrypoint.sh`) | ✅ |
 | Production, frontend | `curl -I https://app.citiahealth.cl/cita` → 200 con `Referrer-Policy: no-referrer` y `X-Robots-Tag: noindex, nofollow`; el sitio llama al backend de production | ✅ |
-| No verificado | correo real con el botón; escáneres de Gmail y Outlook; `trust proxy` con dos redes | ⬜ [checklist](#checklist-de-salida-a-producción) |
+| No verificado | correo real con el botón; escáneres de Gmail y Outlook; `trust proxy` con dos redes | ⬜ [checklist](#checklist-de-salida-a-producción) · *(2026-11-14: el botón del correo real y el escáner de Gmail, ✅; confirmar desde el enlace, Outlook y `trust proxy`, ⬜)* |
 
 ### Incidente: production caído ~9 minutos
 
@@ -151,7 +151,7 @@ mirar el panel y no la memoria, y **no copiar variables entre entornos**; y las 
       enseguida, un login desde **otra red** (p. ej. el teléfono con datos móviles) **no** recibe 429. Si la
       otra red también recibe 429, todos los clientes comparten la IP del proxy: Railway pone más de un salto
       y hay que revisar `trust proxy`. *(2026-10-17: no se hizo antes del release; ahora se hace en
-      production, con el mismo procedimiento.)*
+      production, con el mismo procedimiento.)* *(2026-11-14: sigue sin hacerse.)*
 - [x] ✅ **Netlify aplica `public/_headers` a `/cita`:** `curl -I https://citia-staging.netlify.app/cita`
       muestra `Referrer-Policy: no-referrer` y `X-Robots-Tag: noindex, nofollow`. *(2026-10-17.)*
 - [x] ✅ **CORS:** la página `/cita` del sitio de staging llama a la API con `X-Enlace-Cita` sin error de
@@ -165,10 +165,18 @@ queda en ningún log. Para esta prueba hace falta **Resend en staging** (pendien
 cuota, [DT-36](../Deudas/DT-36.md)) o hacerla **en production** justo después del release, con una cita de
 prueba y el correo del usuario como paciente, como la prueba de la Fase 2.
 
-- [ ] ⬜ **Correo real:** llega con el botón *Ver o responder mi hora*; el enlace abre `/cita` con la hora de
+- [ ] 🔶 **Correo real:** llega con el botón *Ver o responder mi hora*; el enlace abre `/cita` con la hora de
       Chile; confirmar se refleja en el voucher (*"Confirmada por el paciente"*).
-- [ ] ⬜ **Escáneres de enlaces:** enviado a una casilla de **Gmail** y a una de **Outlook**, la cita sigue
+      *(2026-11-14, en production: **el botón llega ✅** (2026-11-01, lo reportó el usuario); **la página abre y el
+      paciente cancela desde el enlace ✅** (2026-10-28, cita `2dce1c9c`: apertura a las 16:03:47 y cancelación a las
+      16:45:54, con `pedido_por paciente`); **confirmar desde el enlace ⬜**, sin probar. La hora de Chile en la página
+      no quedó registrada aparte. Antes: ⬜.)*
+- [ ] 🔶 **Escáneres de enlaces:** enviado a una casilla de **Gmail** y a una de **Outlook**, la cita sigue
       `pendiente` después de la entrega (abrir la página no ejecuta nada).
+      *(2026-11-14: **Gmail ✅** (2026-11-01): tres recordatorios entregados a Gmail, en las citas `27532792`,
+      `a04bd8f7` y `5e6642a4`, no registraron aperturas falsas, y la `5e6642a4` siguió `pendiente` después de la
+      entrega de su recordatorio de 24 h. **Outlook ⬜**, sin probar. Fuente: el
+      [cierre de US-07.01](fase-5-us07-scoring.md#cierre-de-us-0701-2026-11-01). Antes: ⬜.)*
 
 **Release a production**
 
@@ -195,6 +203,10 @@ prueba y el correo del usuario como paciente, como la prueba de la Fase 2.
       agenda" ya no hace falta, DT-18).
 - [ ] ⬜ **Observar el límite del login** las primeras semanas: 5 por minuto por IP lo comparten las personas
       de una misma clínica detrás de una sola IP pública.
+      *(2026-11-14: la observación empieza el **2026-11-11**, cuando entró la primera clínica con pacientes reales;
+      hasta entonces solo había pruebas del usuario. El mismo 2026-11-11 los Deploy Logs de production muestran el
+      sexto intento seguido desde un teléfono con 429 y un bloqueo de unos 60 s. Que otra red no quede bloqueada
+      sigue sin comprobar.)*
 
 > Desde el despliegue, **todo recordatorio que salga** lleva el botón, también los de citas creadas antes (el
 > enlace nace al enviar). Los correos ya enviados antes del release no lo tienen.
@@ -350,7 +362,8 @@ Las cuatro previstas de la propuesta de ADR-10: dos se ficharon (DT-42, DT-43) y
 ## Planes de US
 
 - [US-04](../US/04-respuesta-paciente.md) — ✅ **en producción** (2026-10-17). Plan y contrato vigentes;
-  Definición de Terminado: lo automático ✅ (lint con 0 problemas) y los dos puntos manuales ⬜.
+  Definición de Terminado: lo automático ✅ (lint con 0 problemas) y los dos puntos manuales ⬜. *(2026-11-14: los
+  dos, 🔶: ver el [checklist](#checklist-de-salida-a-producción).)*
 - [US-02.07](../US/02.07-paciente-reagenda-cancela.md) — 🔀 **absorbida por US-04** (2026-10-14); el
   análisis se conserva.
 

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { DerivadorTokenEnlaceDePrueba } from '../../../../test/support/derivador-token-enlace-de-prueba';
 import {
   ContadorTransacciones,
+  InMemoryAceptacionTerminosRepository,
   InMemoryCambioCitaRepository,
   InMemoryCitaRepository,
   InMemoryEnlaceCitaRepository,
@@ -16,6 +17,11 @@ import { EnlacesCitaService } from '../../cita/application/enlaces-cita.service'
 import { ActorCambio, TipoCambio } from '../../cita/domain/cambio-cita.entity';
 import { Cita, EstadoCita, OrigenCita } from '../../cita/domain/cita.entity';
 import { PacientesService } from '../../paciente/application/pacientes.service';
+import {
+  AceptacionTerminos,
+  CanalAceptacion,
+} from '../../paciente/domain/aceptacion-terminos.entity';
+import { VersionTerminosNoVigenteError } from '../../paciente/domain/exceptions/version-terminos-no-vigente.error';
 import { RolUsuario } from '../../usuario/domain/usuario.entity';
 import { SolicitudesOtraHoraService } from '../../solicitud/application/solicitudes-otra-hora.service';
 import { ReagendamientoYaSolicitadoError } from '../../solicitud/domain/reagendamiento-ya-solicitado.error';
@@ -58,6 +64,8 @@ describe('PortalPacienteService', () => {
   let citas: InMemoryCitaRepository;
   let cambios: InMemoryCambioCitaRepository;
   let pacientes: InMemoryPacienteRepository;
+  let aceptaciones: InMemoryAceptacionTerminosRepository;
+  let pacientesService: PacientesService;
   let solicitudes: InMemorySolicitudCitaRepository;
   let enlaces: InMemoryEnlaceCitaRepository;
   let transacciones: ContadorTransacciones;
@@ -111,6 +119,8 @@ describe('PortalPacienteService', () => {
     cambios: cambios.cambios.length,
     eventos: eventos.eventos.length,
     solicitudes: solicitudes.solicitudes.size,
+    aceptaciones: aceptaciones.aceptaciones.length,
+    consentimiento: pacientes.pacientes.get(pacienteId)?.consentimiento,
   });
 
   beforeEach(async () => {
@@ -118,6 +128,7 @@ describe('PortalPacienteService', () => {
     citas = new InMemoryCitaRepository(TZ);
     cambios = new InMemoryCambioCitaRepository();
     pacientes = new InMemoryPacienteRepository();
+    aceptaciones = new InMemoryAceptacionTerminosRepository(pacientes);
     solicitudes = new InMemorySolicitudCitaRepository();
     enlaces = new InMemoryEnlaceCitaRepository();
     transacciones = new ContadorTransacciones();
@@ -125,6 +136,12 @@ describe('PortalPacienteService', () => {
     derivador = new DerivadorTokenEnlaceDePrueba();
 
     const reloj = () => ahora;
+    pacientesService = new PacientesService(
+      pacientes,
+      aceptaciones,
+      transacciones,
+      reloj,
+    );
     enlacesService = new EnlacesCitaService(
       enlaces,
       citas,
@@ -136,7 +153,7 @@ describe('PortalPacienteService', () => {
       citas,
       cambios,
       pacientes,
-      new PacientesService(pacientes),
+      pacientesService,
       transacciones,
       eventos,
       TZ,
@@ -154,6 +171,7 @@ describe('PortalPacienteService', () => {
       citasService,
       otraHora,
       nombres,
+      pacientesService,
       TZ,
       reloj,
     );
@@ -193,6 +211,8 @@ describe('PortalPacienteService', () => {
         organizacion: 'Clínica Sur',
         accionesPermitidas: ['confirmar', 'cancelar', 'pedirOtraHora'],
         solicitudOtraHora: null,
+        // US-11: el paciente no tiene ninguna aceptación propia.
+        terminosPendientes: true,
       });
     });
 
@@ -345,6 +365,8 @@ describe('PortalPacienteService', () => {
       ['confirmar', (t) => portal.confirmar(t)],
       ['cancelar', (t) => portal.cancelar(t, 'motivo')],
       ['pedirOtraHora', (t) => portal.pedirOtraHora(t, { preferencia: 'x' })],
+      // US-11: sin `exigir`, pero el mismo 404 y nada escrito.
+      ['aceptarTerminos', (t) => portal.aceptarTerminos(t, '1.0')],
     ];
 
     // Cada caso prepara el estado y devuelve (vía `tokenUsado`) el token.
@@ -435,6 +457,28 @@ describe('PortalPacienteService', () => {
       },
     );
 
+    it.each(casos)(
+      'aceptarTerminos con un enlace %s no toca la bandera de una ficha sin autorización (US-11)',
+      async (_caso, preparar) => {
+        // Arrange — la foto de arriba parte con la bandera en true; aquí, en
+        // false, para ver que tampoco se enciende.
+        pacientes.pacientes.set(pacienteId, {
+          ...pacientes.pacientes.get(pacienteId)!,
+          consentimiento: false,
+        });
+        await preparar();
+        const registrar = jest.spyOn(pacientesService, 'registrarAceptacion');
+
+        // Act & Assert
+        await expect(
+          portal.aceptarTerminos(tokenUsado, '1.0'),
+        ).rejects.toBeInstanceOf(EnlaceCitaNoValidoError);
+        expect(registrar).not.toHaveBeenCalled();
+        expect(aceptaciones.aceptaciones).toHaveLength(0);
+        expect(pacientes.pacientes.get(pacienteId)?.consentimiento).toBe(false);
+      },
+    );
+
     it('no debería consultar la base con un token mal formado', async () => {
       // Arrange
       const lectura = jest.spyOn(enlaces, 'buscarPorTokenHash');
@@ -473,7 +517,7 @@ describe('PortalPacienteService', () => {
         citas,
         cambios,
         pacientes,
-        new PacientesService(pacientes),
+        pacientesService,
         transacciones,
         eventos,
         TZ,
@@ -485,6 +529,7 @@ describe('PortalPacienteService', () => {
         citasAlInicio,
         new SolicitudesOtraHoraService(solicitudes, pacientes, eventos),
         nombres,
+        pacientesService,
         TZ,
         () => ahora,
       );
@@ -712,6 +757,323 @@ describe('PortalPacienteService', () => {
       await expect(
         portal.pedirOtraHora(token, { preferencia: 'tardes' }),
       ).rejects.toBeInstanceOf(ReagendamientoYaSolicitadoError);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('términos del paciente (US-11)', () => {
+    /** Una aceptación ya registrada del paciente de la cita, por `canal`. */
+    const sembrarAceptacion = (canal: CanalAceptacion): void => {
+      const referencia = {
+        [CanalAceptacion.FORMULARIO_PUBLICO]: { solicitudId: randomUUID() },
+        [CanalAceptacion.ENLACE_CITA]: { enlaceId: randomUUID() },
+        [CanalAceptacion.PROFESIONAL]: { usuarioId: duenio },
+      }[canal];
+      aceptaciones.aceptaciones.push(
+        AceptacionTerminos.reconstituir({
+          id: randomUUID(),
+          tenantId,
+          pacienteId,
+          version: '1.0',
+          canal,
+          aceptadaEn: new Date('2026-10-01T00:00:00Z'),
+          usuarioId: null,
+          solicitudId: null,
+          enlaceId: null,
+          ...referencia,
+        }),
+      );
+    };
+
+    describe('terminosPendientes en la vista', () => {
+      const respuestas: [string, () => Promise<VistaCitaPacienteDto>][] = [
+        ['ver', () => portal.ver(token)],
+        ['confirmar', () => portal.confirmar(token)],
+        ['cancelar', () => portal.cancelar(token, undefined)],
+        [
+          'pedirOtraHora',
+          () => portal.pedirOtraHora(token, { preferencia: 'tardes' }),
+        ],
+      ];
+
+      it.each(respuestas)(
+        '%s: true sin una aceptación propia',
+        async (_n, llamar) => {
+          expect((await llamar()).terminosPendientes).toBe(true);
+        },
+      );
+
+      it.each(respuestas)(
+        '%s: false con una aceptación del formulario',
+        async (_n, llamar) => {
+          sembrarAceptacion(CanalAceptacion.FORMULARIO_PUBLICO);
+          expect((await llamar()).terminosPendientes).toBe(false);
+        },
+      );
+
+      it('la aceptación del profesional NO cuenta', async () => {
+        sembrarAceptacion(CanalAceptacion.PROFESIONAL);
+        expect((await portal.ver(token)).terminosPendientes).toBe(true);
+      });
+
+      it('el GET no registra ninguna aceptación', async () => {
+        await portal.ver(token);
+        expect(aceptaciones.aceptaciones).toHaveLength(0);
+      });
+
+      it('la lee DENTRO de la transacción de la petición, por paciente y tenant de la cita, con las versiones que cubren', async () => {
+        // Arrange
+        const lectura = jest.spyOn(aceptaciones, 'existeDelTitular');
+
+        // Act
+        await portal.ver(token);
+
+        // Assert
+        expect(lectura).toHaveBeenCalledWith(
+          pacienteId,
+          tenantId,
+          ['1.0'],
+          transacciones.ultimoContexto,
+        );
+        expect(transacciones.abiertas).toBe(1);
+      });
+
+      it('false si el titular aceptó desde el enlace de OTRA cita suya (la aceptación es del paciente, no de la cita)', async () => {
+        // Arrange
+        const otraCita = sembrarCita({
+          inicio: new Date('2026-10-22T13:00:00.000Z'),
+        });
+        await portal.aceptarTerminos(await tokenDe(otraCita), '1.0');
+
+        // Act
+        const vista = await portal.ver(token);
+
+        // Assert
+        expect(vista.terminosPendientes).toBe(false);
+        expect(aceptaciones.filas()).toHaveLength(1);
+      });
+
+      it('ni el GET ni los otros tres POST registran: la ficha sin autorización sigue en false y sin filas', async () => {
+        // Arrange
+        pacientes.pacientes.set(pacienteId, {
+          ...pacientes.pacientes.get(pacienteId)!,
+          consentimiento: false,
+        });
+        const registrar = jest.spyOn(pacientesService, 'registrarAceptacion');
+
+        // Act — las cuatro rutas que no son aceptar, cada una con su vista
+        const vistas = [
+          await portal.ver(token),
+          await portal.confirmar(token),
+          await portal.pedirOtraHora(token, { preferencia: 'tardes' }),
+          await portal.cancelar(token, undefined),
+        ];
+
+        // Assert
+        expect(vistas.map((v) => v.terminosPendientes)).toEqual([
+          true,
+          true,
+          true,
+          true,
+        ]);
+        expect(registrar).not.toHaveBeenCalled();
+        expect(aceptaciones.aceptaciones).toHaveLength(0);
+        expect(pacientes.pacientes.get(pacienteId)?.consentimiento).toBe(false);
+      });
+    });
+
+    describe('aceptarTerminos', () => {
+      it('debería registrar enlace_cita con el enlace y el ahora del portal, en el tx, y marcar la bandera', async () => {
+        // Arrange — una ficha sin autorización
+        pacientes.pacientes.set(pacienteId, {
+          ...pacientes.pacientes.get(pacienteId)!,
+          consentimiento: false,
+        });
+
+        // Act
+        const vista = await portal.aceptarTerminos(token, '1.0');
+
+        // Assert
+        expect(aceptaciones.filas()).toEqual([
+          expect.objectContaining({
+            tenantId,
+            pacienteId,
+            version: '1.0',
+            canal: CanalAceptacion.ENLACE_CITA,
+            aceptadaEn: ANTES,
+            enlaceId: enlaceIdDe(cita),
+            usuarioId: null,
+            solicitudId: null,
+          }),
+        ]);
+        expect(pacientes.pacientes.get(pacienteId)?.consentimiento).toBe(true);
+        expect(vista.terminosPendientes).toBe(false);
+        expect(transacciones.abiertas).toBe(1);
+      });
+
+      it('no debería cambiar la cita, la bitácora, el outbox, las solicitudes ni la primera apertura', async () => {
+        // Arrange
+        const antes = foto();
+        const apertura = jest.spyOn(enlaces, 'registrarPrimeraApertura');
+
+        // Act
+        await portal.aceptarTerminos(token, '1.0');
+
+        // Assert
+        const despues = foto();
+        expect(despues.cita).toBe(antes.cita);
+        expect(despues.cambios).toBe(antes.cambios);
+        expect(despues.eventos).toBe(antes.eventos);
+        expect(despues.solicitudes).toBe(antes.solicitudes);
+        expect(despues.aceptaciones).toBe(1);
+        expect(apertura).not.toHaveBeenCalled();
+      });
+
+      it('es idempotente: la segunda vez no escribe', async () => {
+        // Act
+        await portal.aceptarTerminos(token, '1.0');
+        const vista = await portal.aceptarTerminos(token, '1.0');
+
+        // Assert
+        expect(aceptaciones.aceptaciones).toHaveLength(1);
+        expect(vista.terminosPendientes).toBe(false);
+      });
+
+      it('con una aceptación del formulario no escribe nada', async () => {
+        // Arrange
+        sembrarAceptacion(CanalAceptacion.FORMULARIO_PUBLICO);
+
+        // Act
+        await portal.aceptarTerminos(token, '1.0');
+
+        // Assert
+        expect(aceptaciones.aceptaciones).toHaveLength(1);
+      });
+
+      it('con solo la del profesional, sí registra la del titular', async () => {
+        // Arrange
+        sembrarAceptacion(CanalAceptacion.PROFESIONAL);
+
+        // Act
+        await portal.aceptarTerminos(token, '1.0');
+
+        // Assert
+        expect(aceptaciones.filas().map((a) => a.canal)).toEqual([
+          CanalAceptacion.PROFESIONAL,
+          CanalAceptacion.ENLACE_CITA,
+        ]);
+      });
+
+      it('vale con una petición de otra hora abierta y con la cita confirmada (sin exigir)', async () => {
+        // Arrange
+        await portal.pedirOtraHora(token, { preferencia: 'tardes' });
+
+        // Act
+        const conPeticion = await portal.aceptarTerminos(token, '1.0');
+
+        // Assert
+        expect(conPeticion.terminosPendientes).toBe(false);
+        expect(conPeticion.solicitudOtraHora).not.toBeNull();
+
+        // Y con la cita confirmada (otro paciente, otra cita)
+        const otroPaciente = randomUUID();
+        pacientes.pacientes.set(otroPaciente, {
+          ...pacientes.pacientes.get(pacienteId)!,
+          id: otroPaciente,
+        });
+        const confirmada = sembrarCita({
+          estado: EstadoCita.CONFIRMADA,
+          pacienteId: otroPaciente,
+        });
+        const vista = await portal.aceptarTerminos(
+          await tokenDe(confirmada),
+          '1.0',
+        );
+        expect(vista.estado).toBe(EstadoCita.CONFIRMADA);
+        expect(vista.terminosPendientes).toBe(false);
+      });
+
+      it('bloquea la cita ANTES de escribir la bandera del paciente (orden cita → paciente)', async () => {
+        // Arrange
+        pacientes.pacientes.set(pacienteId, {
+          ...pacientes.pacientes.get(pacienteId)!,
+          consentimiento: false,
+        });
+        const bloqueo = jest.spyOn(citas, 'buscarPorIdParaActualizar');
+        const insercion = jest.spyOn(aceptaciones, 'insertarSiNoExiste');
+        const bandera = jest.spyOn(pacientes, 'marcarConsentimiento');
+
+        // Act
+        await portal.aceptarTerminos(token, '1.0');
+
+        // Assert — todo en el MISMO tx
+        expect(bloqueo.mock.invocationCallOrder[0]).toBeLessThan(
+          insercion.mock.invocationCallOrder[0],
+        );
+        expect(insercion.mock.invocationCallOrder[0]).toBeLessThan(
+          bandera.mock.invocationCallOrder[0],
+        );
+        expect(insercion.mock.calls[0][1]).toBe(transacciones.ultimoContexto);
+        expect(bandera).toHaveBeenCalledWith(
+          pacienteId,
+          tenantId,
+          transacciones.ultimoContexto,
+        );
+      });
+
+      it.each([
+        CanalAceptacion.FORMULARIO_PUBLICO,
+        CanalAceptacion.ENLACE_CITA,
+      ])(
+        'con una aceptación propia de %s no llama a registrar (ni toca la fila del paciente)',
+        async (canal) => {
+          // Arrange
+          sembrarAceptacion(canal);
+          const registrar = jest.spyOn(pacientesService, 'registrarAceptacion');
+          const bandera = jest.spyOn(pacientes, 'marcarConsentimiento');
+
+          // Act
+          const vista = await portal.aceptarTerminos(token, '1.0');
+
+          // Assert
+          expect(registrar).not.toHaveBeenCalled();
+          expect(bandera).not.toHaveBeenCalled();
+          expect(vista.terminosPendientes).toBe(false);
+        },
+      );
+
+      it('después de aceptar, el GET ya no la pide y no escribe otra fila', async () => {
+        // Arrange
+        await portal.aceptarTerminos(token, '1.0');
+
+        // Act
+        const vista = await portal.ver(token);
+
+        // Assert
+        expect(vista.terminosPendientes).toBe(false);
+        expect(aceptaciones.aceptaciones).toHaveLength(1);
+      });
+
+      it('con una petición de otra hora abierta, la vista conserva la petición y solo cancelar', async () => {
+        // Arrange
+        await portal.pedirOtraHora(token, { preferencia: 'tardes' });
+
+        // Act
+        const vista = await portal.aceptarTerminos(token, '1.0');
+
+        // Assert
+        expect(vista.accionesPermitidas).toEqual(['cancelar']);
+        expect(vista.solicitudOtraHora?.preferencia).toBe('tardes');
+        expect(solicitudes.solicitudes.size).toBe(1);
+      });
+
+      it('con una versión que no recibe aceptaciones (sin pasar por el DTO) lanza y no escribe', async () => {
+        // Act & Assert
+        await expect(
+          portal.aceptarTerminos(token, '9.9'),
+        ).rejects.toBeInstanceOf(VersionTerminosNoVigenteError);
+        expect(aceptaciones.aceptaciones).toHaveLength(0);
+      });
     });
   });
 

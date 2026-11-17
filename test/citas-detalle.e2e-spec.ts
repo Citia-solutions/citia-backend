@@ -228,6 +228,10 @@ class InMemoryPacienteRepository extends PacienteRepository {
   completarCorreoSiVacio(): Promise<boolean> {
     return Promise.resolve(false);
   }
+
+  marcarConsentimiento(): Promise<boolean> {
+    return Promise.resolve(false);
+  }
 }
 
 // --- Formas de respuesta -----------------------------------------------------

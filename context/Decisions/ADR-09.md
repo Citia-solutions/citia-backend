@@ -192,6 +192,26 @@ datos ni servicio externo. Ninguna otra pieza de identidad del sistema tiene esa
 5. **El RUT se almacena siempre en forma canónica** y **nunca viaja en URLs ni en logs**: es un
    identificador nacional, dato personal sensible por sí mismo.
 
+> **Matiz (2026-11-14, corrección).** La regla 1 se implementó como "normalizar y después módulo 11", y
+> `normalizarRut()` borra todo lo que no es dígito o `k`: `'17.890.123-X'` perdía la `X` y pasaba como el
+> RUT 1.789.012-3, que sí es válido. Como el RUT es la identidad, una solicitud o un alta manual podía
+> quedar **vinculada a la ficha de otra persona**. Desde la rama `fix/rut-formato-estricto`,
+> `esRutValido()` valida **primero la forma escrita** y después el módulo 11:
+>
+> - se acepta el cuerpo sin puntos o con los puntos de miles bien puestos, guion opcional y el verificador
+>   (dígito, `k` o `K`), con espacios alrededor: `12.345.678-5`, `12345678-5` y la canónica `123456785`
+>   (la que envía el frontend y la que reusa la bandeja al aceptar);
+> - se rechaza con el mismo `400` de un verificador incorrecto (`RutInvalidoError`, mismo mensaje)
+>   cualquier otro carácter, dos guiones, puntos mal puestos, espacios dentro, y un RUT con puntos o guion
+>   pero **sin** verificador (`17.890.123`, `17.890.123-`).
+>
+> El contrato del `400` no cambia de forma; sí se rechazan entradas que antes se aceptaban. `normalizarRut()`
+> queda solo para un RUT ya validado. **Límite que queda:** sin puntos ni guion (`17890123`) un RUT al que le
+> falta el verificador es indistinguible de la forma canónica y pasa 1 de cada 11 veces como otro RUT. La API
+> lo tiene que aceptar (es la forma que envía el frontend); lo ataja el **formulario**, que desde la misma
+> corrección exige el guion (`citia-frontend`, `shared/lib/rut.ts`). Los RUT guardados antes de la corrección
+> no se pueden revisar: la forma canónica no conserva lo que se escribió.
+
 **Al aceptar una solicitud**, dentro de **una sola transacción** (`TransactionRunner`, ADR-06):
 
 1. buscar `Paciente` del tenant por RUT normalizado;

@@ -35,6 +35,7 @@ describe('SolicitudesService', () => {
     motivo: 'Dolor de muela',
     preferenciaHoraria: 'mañanas',
     consentimiento: true,
+    terminosVersion: '1.0',
   };
 
   beforeEach(() => {
@@ -94,6 +95,24 @@ describe('SolicitudesService', () => {
       expect(solicitud.telefono).toBe('+56 9 1111 1111');
     });
 
+    it('debería guardar la versión de los términos que aceptó el paciente (US-11)', async () => {
+      // Act
+      await service.recibir(SLUG, dto);
+
+      // Assert
+      expect(primeraGuardada().terminosVersion).toBe('1.0');
+      expect(primeraGuardada().consentimiento).toBe(true);
+    });
+
+    it('debería seguir con UN solo INSERT y sin transacción (US-11 no lo cambia)', async () => {
+      // Act
+      await service.recibir(SLUG, dto);
+
+      // Assert — `guardar` sin tx: la ruta anónima no tiene TransactionRunner
+      expect(mockSolicitudRepository.guardar).toHaveBeenCalledTimes(1);
+      expect(mockSolicitudRepository.guardar.mock.calls[0]).toHaveLength(1);
+    });
+
     it('NO debería asignar profesional ni cita al recibirla', async () => {
       // Act
       await service.recibir(SLUG, dto);
@@ -124,6 +143,7 @@ describe('SolicitudesService', () => {
           motivo: 'Ya pedí hora',
           preferenciaHoraria: 'tardes',
           consentimiento: true,
+          terminosVersion: '1.0',
         }),
       );
 
@@ -160,5 +180,34 @@ describe('SolicitudesService', () => {
       expect(mockTenantRepository.findBySlug).not.toHaveBeenCalled();
       expect(mockSolicitudRepository.guardar).not.toHaveBeenCalled();
     });
+
+    it('debería rechazar un RUT mal escrito que normalizado sería otro RUT válido', async () => {
+      // Arrange — sin la validación de forma, la X se borraba y quedaba el RUT
+      // 1.789.012-3, que sí pasa el módulo 11: la solicitud de una persona
+      // quedaba a nombre de otra.
+      const malEscrito = { ...dto, rut: '17.890.123-X' };
+
+      // Act & Assert
+      await expect(service.recibir(SLUG, malEscrito)).rejects.toBeInstanceOf(
+        RutInvalidoError,
+      );
+
+      expect(mockTenantRepository.findBySlug).not.toHaveBeenCalled();
+      expect(
+        mockSolicitudRepository.buscarAbiertaPorRut,
+      ).not.toHaveBeenCalled();
+      expect(mockSolicitudRepository.guardar).not.toHaveBeenCalled();
+    });
+
+    it.each(['12345678-5', '123456785'])(
+      'debería seguir aceptando el RUT %p sin puntos y guardarlo canónico',
+      async (rut) => {
+        // Act
+        await service.recibir(SLUG, { ...dto, rut });
+
+        // Assert
+        expect(primeraGuardada().rut).toBe('123456785');
+      },
+    );
   });
 });
