@@ -35,7 +35,7 @@ que `/terminos` mostró una fecha que no era la real hasta que se corrigió:
   tramos queda registrada como `1.0`.
 - El backend recibe aceptaciones desde el release de citia-backend#23 (mergeado el 2026-11-16 a las 21:22). Quien
   aceptó durante el primer tramo vio la fecha del 15.
-- Las horas son de Chile. El release #23 se mergeó a las 11:07:39. A las 11:08:13, el JS publicado en
+- Las horas son de Chile. El release citia-frontend#23 se mergeó a las 11:07:39. A las 11:08:13, el JS publicado en
   `app.citiahealth.cl` ya traía `2026-11-16` y ningún `2026-11-15`, así que el deploy terminó entre esas dos horas.
 - **Esta es la única corrección hecha a la copia** (2026-11-17): la fecha del encabezado y esta sección. El texto no
   se tocó.
