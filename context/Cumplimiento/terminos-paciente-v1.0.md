@@ -28,14 +28,15 @@ que `/terminos` mostró una fecha que no era la real hasta que se corrigió:
 
 | Desde | Hasta | La línea de la fecha en `/terminos` |
 |---|---|---|
-| 2026-11-16, 21:01 (citia-frontend#21) | el deploy de la corrección (citia-frontend#22 y su release a `main`, 2026-11-17) | *Versión 1.0 · publicada el 15 de noviembre de 2026* |
-| el deploy de la corrección | — | *Versión 1.0 · publicada el 16 de noviembre de 2026* |
+| 2026-11-16, 21:01 (citia-frontend#21) | 2026-11-17, 11:08 (release citia-frontend#23, con la corrección #22) | *Versión 1.0 · publicada el 15 de noviembre de 2026* |
+| 2026-11-17, 11:08 | — | *Versión 1.0 · publicada el 16 de noviembre de 2026* |
 
 - **El resto del texto es idéntico en los dos tramos.** Es la misma versión 1.0: una aceptación de cualquiera de los dos
   tramos queda registrada como `1.0`.
 - El backend recibe aceptaciones desde el release de citia-backend#23 (mergeado el 2026-11-16 a las 21:22). Quien
   aceptó durante el primer tramo vio la fecha del 15.
-- La hora exacta del deploy de la corrección está en el historial de deploys de Netlify.
+- Las horas son de Chile. El release #23 se mergeó a las 11:07:39. A las 11:08:13, el JS publicado en
+  `app.citiahealth.cl` ya traía `2026-11-16` y ningún `2026-11-15`, así que el deploy terminó entre esas dos horas.
 - **Esta es la única corrección hecha a la copia** (2026-11-17): la fecha del encabezado y esta sección. El texto no
   se tocó.
 
