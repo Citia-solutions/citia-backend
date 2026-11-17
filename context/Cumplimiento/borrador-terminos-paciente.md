@@ -6,7 +6,7 @@
 > (proveedores), [DT-26](../Deudas/DT-26.md) (conservación), [DT-54](../Deudas/DT-54.md) (menores),
 > [DT-62](../Deudas/DT-62.md) (el retiro)
 
-**Estado:** 📦 **antecedente.** Se publicó como la **versión 1.0** el 2026-11-15: el texto vigente es la
+**Estado:** 📦 **antecedente.** Se publicó como la **versión 1.0** el 2026-11-16: el texto vigente es la
 [copia congelada](terminos-paciente-v1.0.md), y los cambios de la v0.2 a la 1.0 están en el
 [plan US-11](../US/11-terminos-paciente.md#cambios-respecto-del-borrador-v02). Este borrador ya no se edita.
 *Antes:* ✏️ borrador v0.2 del 2026-11-14, con las **7 decisiones confirmadas por el usuario** ese mismo día

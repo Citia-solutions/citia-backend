@@ -431,7 +431,8 @@ Sin ciclos: `paciente` no importa ninguno de los otros tres. `domain/` y `applic
 [DT-62](../Deudas/DT-62.md) y [DT-63](../Deudas/DT-63.md), ROADMAP, la feature
 [us11-terminos-paciente](../Features/us11-terminos-paciente.md) y TRAZABILIDAD. La copia congelada
 ([`terminos-paciente-v1.0.md`](../Cumplimiento/terminos-paciente-v1.0.md)) y el borrador marcado como publicado se
-hicieron el 2026-11-15, para el release de ese día (`docs/terminos-v1-publicada`). *Antes: «esperan al release».*
+hicieron el 2026-11-15 (`docs/terminos-v1-publicada`). El release del frontend fue el 2026-11-16, y la fecha de la
+copia y de `/terminos` se corrigió a ese día el 2026-11-17. *Antes: «esperan al release».*
 
 ---
 
