@@ -346,7 +346,7 @@ Dentro del contrato; ninguna rediseña.
 | Lint y tests en verde | antes del PR a `develop` |
 | El [release](#release-pendiente) | frontend primero, backend al menos 30 minutos después |
 | [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) | el reenvío de `soporte@citiahealth.cl`, **antes** del paso 3 |
-| La copia congelada y el borrador marcado como publicado | ✅ 2026-11-15: [`terminos-paciente-v1.0.md`](../Cumplimiento/terminos-paciente-v1.0.md), con la fecha del release del frontend. *Antes: «al publicar (paso 5)».* |
+| La copia congelada y el borrador marcado como publicado | ✅ 2026-11-15: [`terminos-paciente-v1.0.md`](../Cumplimiento/terminos-paciente-v1.0.md), con la fecha del release del frontend, corregida al 2026-11-16 el 2026-11-17. *Antes: «al publicar (paso 5)».* |
 | La verificación manual en staging y production | [plan](../US/11-terminos-paciente.md#verificación-manual-mínima) |
 
 ---

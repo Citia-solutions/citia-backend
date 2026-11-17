@@ -13,7 +13,7 @@ una palabra, es una versión nueva con su propia copia (`terminos-paciente-v1.1.
 | Dato | Valor |
 |---|---|
 | Versión | **1.0** (`CATALOGO_TERMINOS_PACIENTE` del backend y `VERSION_TERMINOS_PACIENTE` del frontend) |
-| Publicada el | **2026-11-15**, el día del release del frontend a production (`FECHA_TERMINOS_PACIENTE`) |
+| Publicada el | **2026-11-16**, el día del release del frontend a production (citia-frontend#21, mergeado a las 21:01). Hasta la corrección, la página dijo «15 de noviembre» ([abajo](#la-fecha-que-mostró-la-página)) |
 | Dónde se publica | `https://app.citiahealth.cl/terminos` (`citia-frontend`, `src/pages/terminos/ui/TerminosPage.vue`) |
 | Comprobación | El 2026-11-15, el texto de `TerminosPage.vue` (`citia-frontend` `develop`, `b6f5d5f`) y el del [plan](../US/11-terminos-paciente.md#el-texto-que-se-publica) dieron **idénticos** palabra por palabra (694 palabras, sin el formato). Como el frontend no tiene una comparación automática ([DTF-09 del frontend](../../../citia-frontend/context/Deudas/DTF-09.md)), esta copia se hizo desde ese texto comprobado |
 | Quién lo redactó | El proyecto, sin revisión de alguien con formación legal (decisión del usuario del 2026-11-14) |
@@ -21,11 +21,29 @@ una palabra, es una versión nueva con su propia copia (`terminos-paciente-v1.1.
 Los textos cortos de abajo (casilla, tarjeta de `/cita` y alta manual) son parte de lo que se muestra al aceptar, así
 que también quedan congelados con esta versión.
 
+### La fecha que mostró la página
+
+La copia se congeló el 2026-11-15 con la fecha **prevista** del release. El release del frontend fue el **2026-11-16**, así
+que `/terminos` mostró una fecha que no era la real hasta que se corrigió:
+
+| Desde | Hasta | La línea de la fecha en `/terminos` |
+|---|---|---|
+| 2026-11-16, 21:01 (citia-frontend#21) | el deploy de la corrección (citia-frontend#22 y su release a `main`, 2026-11-17) | *Versión 1.0 · publicada el 15 de noviembre de 2026* |
+| el deploy de la corrección | — | *Versión 1.0 · publicada el 16 de noviembre de 2026* |
+
+- **El resto del texto es idéntico en los dos tramos.** Es la misma versión 1.0: una aceptación de cualquiera de los dos
+  tramos queda registrada como `1.0`.
+- El backend recibe aceptaciones desde el release de citia-backend#23 (mergeado el 2026-11-16 a las 21:22). Quien
+  aceptó durante el primer tramo vio la fecha del 15.
+- La hora exacta del deploy de la corrección está en el historial de deploys de Netlify.
+- **Esta es la única corrección hecha a la copia** (2026-11-17): la fecha del encabezado y esta sección. El texto no
+  se tocó.
+
 ---
 
 ## Términos de uso y aviso de privacidad de Citia para pacientes
 
-*Versión 1.0 · publicada el 15 de noviembre de 2026*
+*Versión 1.0 · publicada el 16 de noviembre de 2026*
 
 **1. Quién es quién**
 
