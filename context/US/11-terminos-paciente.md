@@ -2,13 +2,17 @@
 
 > **Fase:** — (transversal: [Cumplimiento](../Cumplimiento/README.md); [ROADMAP § Cumplimiento](../ROADMAP.md#cumplimiento-ley-21719--transversal)) · **Feature:** [us11-terminos-paciente](../Features/us11-terminos-paciente.md) · **Plan:** este documento · **Relacionado:** [ADR-16](../Decisions/ADR-16.md), [borrador v0.2 de los términos](../Cumplimiento/borrador-terminos-paciente.md), [ADR-02](../Decisions/ADR-02.md), [ADR-06](../Decisions/ADR-06.md), [ADR-09](../Decisions/ADR-09.md), [ADR-10](../Decisions/ADR-10.md), [ADR-13](../Decisions/ADR-13.md), [DT-16](../Deudas/DT-16.md), [DT-26](../Deudas/DT-26.md), [DT-52](../Deudas/DT-52.md), [DT-53](../Deudas/DT-53.md), [DT-54](../Deudas/DT-54.md), [DT-62](../Deudas/DT-62.md), [DT-63](../Deudas/DT-63.md), [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)
 
-> **Estado (2026-11-14):** 🔶 **implementado en la rama `feature/terminos-paciente`, sin release.** Backend:
-> `92a1f36` (persistencia), `bdeb1aa` (API) y `894b96c` (`CLAUDE.md` de los módulos); frontend: `eb3fbcc` a `e276343`,
-> en la rama del mismo nombre de `citia-frontend`. Verificado en local
-> ([abajo](#verificación-en-local-2026-11-14)); unitarios e integración del `testing-agent` en
-> `1d00f9e`, `fc3a83f` y `305dea5`; las e2e, en curso. Lo construido está en la
-> feature [us11-terminos-paciente](../Features/us11-terminos-paciente.md). Falta el release, en el orden de
-> [ADR-16 §10](../Decisions/ADR-16.md#10-despliegue-primero-el-frontend-después-el-backend).
+> **Estado (2026-11-20):** ✅ **en producción desde el 2026-11-16 y verificado en production.** Frontend
+> citia-frontend#21 (2026-11-16, 21:01) y backend citia-backend#23 (`8738b98`, 21:22); la fecha de `/terminos`,
+> corregida al 16 el 2026-11-17. La [verificación manual mínima](#verificación-manual-mínima) y las consultas de la
+> [Definición de Terminado](#definición-de-terminado) se hicieron en production entre el 2026-11-17 y el 2026-11-20, con
+> la cuenta de prueba. Detalle en la feature: [release](../Features/us11-terminos-paciente.md#release-2026-11-16) y
+> [verificación](../Features/us11-terminos-paciente.md#verificación-en-production-2026-11-17--2026-11-20).
+>
+> *Antes (2026-11-14 → 2026-11-16):* 🔶 implementado en la rama `feature/terminos-paciente`, sin release. Backend
+> `92a1f36`, `bdeb1aa` y `894b96c`; frontend `eb3fbcc` a `e276343`. Verificado en local
+> ([abajo](#verificación-en-local-2026-11-14)); unitarios e integración en `1d00f9e`, `fc3a83f` y `305dea5`, y las e2e
+> en `66e54bc`.
 >
 > *Antes (2026-11-14):* 🔶 en implementación. [ADR-16](../Decisions/ADR-16.md) **aceptado**: el usuario decidió D1,
 > D2, D4, D6 y D8 y la línea del job G1 en el §2 del texto, y aprobó el resto del diseño tal como se propuso. La rama
@@ -350,8 +354,8 @@ Ninguno nuevo. La prueba es la fila; los logs no llevan la versión ni el canal.
 > **igual**. `[fecha de publicación]` es la única marca que queda: se llena con la fecha del release del frontend a
 > production, en el mismo PR.
 >
-> **(2026-11-15)** Congelado en [`terminos-paciente-v1.0.md`](../Cumplimiento/terminos-paciente-v1.0.md), publicado
-> el 2026-11-15. El texto de `/terminos` del frontend (`b6f5d5f`) y el de abajo dieron idénticos palabra por palabra.
+> **(2026-11-15)** Congelado en [`terminos-paciente-v1.0.md`](../Cumplimiento/terminos-paciente-v1.0.md). Se publicó
+> el **2026-11-16**; la fecha prevista era el 15, y se corrigió el 2026-11-17 (ver la copia). El texto de `/terminos` del frontend (`b6f5d5f`) y el de abajo dieron idénticos palabra por palabra.
 
 ### Términos de uso y aviso de privacidad de Citia para pacientes
 
@@ -557,10 +561,12 @@ El enlace abre `/terminos` **en otra pestaña** (en la misma, el paciente perder
 | 4 | release | frontend a `main` → comprobar `/terminos` y el correo de soporte → backend a `main` (≥ 30 min después) → pedir a la profesional del piloto que recargue | 3, F |
 | 5 | `architecture-agent` | copia congelada `terminos-paciente-v1.0.md`, el borrador marcado como publicado, notas en DT-16 y DT-53, las deudas a fichar, ROADMAP, la feature y TRAZABILIDAD | 4 |
 
-**Estado (2026-11-14):** 0 ✅ · 1 ✅ `92a1f36` · 2 ✅ `bdeb1aa` y `894b96c` · 3 🔶 `1d00f9e`, `fc3a83f` y `305dea5` (unitarios e integración); las e2e, en curso · F ✅ `eb3fbcc` a
-`e276343` · 4 ⬜ · 5 🔶 adelantado en parte: las notas en DT-16 y DT-53, las deudas
-([DT-62](../Deudas/DT-62.md) y [DT-63](../Deudas/DT-63.md)), ROADMAP, la feature y TRAZABILIDAD ya están; **la copia
-congelada y el borrador marcado como publicado esperan al release**, porque la copia lleva la fecha de publicación.
+**Estado (2026-11-20):** todos ✅ · 0 · 1 `92a1f36` · 2 `bdeb1aa` y `894b96c` · 3 `1d00f9e`, `fc3a83f`, `305dea5` y
+`66e54bc` (e2e) · F `eb3fbcc` a `e276343` · 4 el 2026-11-16: frontend a las 21:01 y backend a las 21:22 (**21 minutos
+después, no 30**); el correo de soporte, **después**: recibe desde el 2026-11-17; que la profesional del piloto recargue,
+no consta · 5 la copia congelada (`31b5c3f`, 2026-11-15; fecha corregida al 16 con `7f903b0`, `7fc4a36` y `962b946`) y
+el cierre (ROADMAP, la feature y TRAZABILIDAD 137–157, 2026-11-20). *Antes (2026-11-14): «3 🔶, las e2e en curso · 4 ⬜
+· 5 🔶 adelantado en parte; la copia congelada y el borrador marcado como publicado esperan al release».*
 
 ### 1 · `database-agent`
 
@@ -629,9 +635,11 @@ congelada y el borrador marcado como publicado esperan al release**, porque la c
       bloque, 55 de 55) y la versión de `shared/config/terminosPaciente.ts` igual a la del catálogo del backend (`1.0`).
 - [x] `src/modules/portal-paciente/CLAUDE.md`, `solicitud/CLAUDE.md` y `cita/CLAUDE.md` al día; `paciente` ganó su
       `CLAUDE.md`.
-- [ ] **La prueba se ve en la base** (staging y, después del release, production), con estas consultas (`:tenant` = el
-      id de la organización; solo ids, sin nombres ni RUT). ✅ En local, el 2026-11-14 (los tres canales); faltan
-      staging y production:
+- [x] **La prueba se ve en la base** (staging y, después del release, production), con estas consultas (`:tenant` = el
+      id de la organización; solo ids, sin nombres ni RUT). ✅ En local, el 2026-11-14 (los tres canales). ✅ En
+      production, el 2026-11-20 (los tres canales, con un script de solo lectura que corrió el usuario; ver la
+      [feature](../Features/us11-terminos-paciente.md#verificación-en-production-2026-11-17--2026-11-20)). En staging no
+      se hizo:
 
 ```sql
 -- 1. La prueba, la más reciente primero.
@@ -696,7 +704,22 @@ En la base `citia_dev`, con una cuenta de prueba y el frontend de la rama (antes
   transacción) queda unos milisegundos **antes** que `aceptada_en` (el reloj de la app, dentro de la transacción). La
   prueba es `aceptada_en`; `registrada_en` solo dice cuándo se escribió la fila.
 
-Los pasos 1 a 7 de arriba siguen pendientes en staging y en production.
+### En production (2026-11-17 → 2026-11-20)
+
+Con la cuenta de prueba, no la del piloto. Detalle en la
+[feature](../Features/us11-terminos-paciente.md#verificación-en-production-2026-11-17--2026-11-20).
+
+| Paso | Resultado |
+|---|---|
+| 1 | ✅ `/terminos` con *Versión 1.0* y el 16 de noviembre (2026-11-17); `soporte@citiahealth.cl` recibe desde ese día, con el reenvío de Cloudflare |
+| 2 y 3 | ✅ dos solicitudes con `terminos_version = '1.0'`, aceptadas en la bandeja → dos filas `formulario_publico` con su `solicitud_id` y `aceptada_en` = la hora del envío. Una tercera solicitud, del mismo RUT que un paciente con su fila, no dejó otra (D11) |
+| 4 | ✅ el texto del alta manual; sin la casilla, *«Marca la casilla cuando el paciente te haya autorizado.»*; al crear, la fila `profesional` con el `usuario_id` |
+| 5 | ✅ desde el recordatorio real (2026-11-19): la tarjeta, confirmar sin aceptar, «Acepto» → la fila `enlace_cita`; al reabrir, sin tarjeta |
+| 6 | no se probó aparte |
+| 7 | la consulta 3 sigue contando a los pacientes de antes de US-11 que no han aceptado (D7) |
+
+En staging no se hizo esta verificación. *Antes: «los pasos 1 a 7 de arriba siguen pendientes en staging y en
+production».*
 
 ---
 
@@ -706,7 +729,7 @@ Los pasos 1 a 7 de arriba siguen pendientes en staging y en production.
 |---|---|
 | Una pestaña cargada antes del despliegue del frontend envía después del backend: 400 sin versión | Frontend primero y ≥ 30 min de espera; con un solo piloto, pedirle que recargue |
 | El texto del frontend diverge de la copia congelada | Comparación a mano en la Definición de Terminado; cualquier cambio de texto es una versión nueva |
-| `soporte@citiahealth.cl` publicado sin reenvío configurado | Paso 4 del orden: probarlo antes del backend ([Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)) |
+| `soporte@citiahealth.cl` publicado sin reenvío configurado | Paso 4 del orden: probarlo antes del backend ([Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)). **Pasó:** se configuró el 2026-11-17, unas 14 horas después de publicar `/terminos` |
 | El enlace reenviado deja aceptar a otro | Asumido ([ADR-10 §2](../Decisions/ADR-10.md)); la prueba dice «quien tenía el enlace» |
 | Pacientes sin recordatorios nunca ven la tarjeta | Asumido (D7); la consulta 3 los muestra |
 | Revertir la migración en production borra la prueba | Corregir hacia adelante; advertencia en el `down` |

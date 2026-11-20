@@ -3,11 +3,14 @@
 > **Fase:** — (transversal: [Cumplimiento](../Cumplimiento/README.md); [ROADMAP § Cumplimiento](../ROADMAP.md#cumplimiento-ley-21719--transversal)) · **Feature:** [us11-terminos-paciente](../Features/us11-terminos-paciente.md) · **Plan:** [US-11](../US/11-terminos-paciente.md) · **Relacionado:** [borrador v0.2 de los términos](../Cumplimiento/borrador-terminos-paciente.md), [ADR-02](ADR-02.md), [ADR-06](ADR-06.md), [ADR-09](ADR-09.md), [ADR-10](ADR-10.md), [ADR-12](ADR-12.md), [ADR-13](ADR-13.md), [DT-16](../Deudas/DT-16.md), [DT-26](../Deudas/DT-26.md), [DT-52](../Deudas/DT-52.md), [DT-53](../Deudas/DT-53.md), [DT-54](../Deudas/DT-54.md), [DT-62](../Deudas/DT-62.md), [DT-63](../Deudas/DT-63.md), [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)
 
 **Fecha:** 2026-11-14
-**Estado:** **Aceptado** (2026-11-14). El usuario aprobó el documento completo ese día. · **Implementado en la rama
-`feature/terminos-paciente`, sin release** (2026-11-14): backend `92a1f36`, `bdeb1aa` y `894b96c`; frontend `eb3fbcc`
-a `e276343`; verificado en local. Lo construido está en la feature
-[us11-terminos-paciente](../Features/us11-terminos-paciente.md); el release sigue la [decisión 10](#10-despliegue-primero-el-frontend-después-el-backend).
-*Antes: «Aceptado (2026-11-14)», en implementación.*
+**Estado:** **Aceptado** (2026-11-14). El usuario aprobó el documento completo ese día. · **En producción desde el
+2026-11-16** (frontend citia-frontend#21 a las 21:01, backend citia-backend#23 `8738b98` a las 21:22) y **verificado en
+production** entre el 2026-11-17 y el 2026-11-20: las tres vías dejan su fila. Lo construido y la verificación están
+en la feature [us11-terminos-paciente](../Features/us11-terminos-paciente.md); cómo se cumplió la
+[decisión 10](#10-despliegue-primero-el-frontend-después-el-backend), en su
+[nota](#nota-2026-11-20-cómo-se-cumplió-la-decisión-10). *Antes (2026-11-14 → 2026-11-16): «implementado en la rama
+`feature/terminos-paciente`, sin release», con backend `92a1f36`, `bdeb1aa` y `894b96c` y frontend `eb3fbcc` a
+`e276343`. Antes: «Aceptado (2026-11-14)», en implementación.*
 
 - **Decididas por el usuario el 2026-11-14**, al elegir entre opciones: **D1** (tabla de historial de solo inserción;
   `pacientes.consentimiento` sigue como bandera), **D2** (`/terminos` genérica; el nombre de la organización solo
@@ -344,6 +347,21 @@ Con `whitelist` sin `forbidNonWhitelisted`, el backend de hoy **descarta en sile
 Al revés (backend primero) el modal y el formulario de hoy recibirían 400 hasta que llegue el frontend. El mismo orden
 vale en staging (`develop`).
 
+#### Nota (2026-11-20): cómo se cumplió la decisión 10
+
+El orden se respetó, pero dos pasos no se hicieron como se escribieron:
+
+| Paso | Lo que pasó |
+|---|---|
+| 1 | ✅ frontend el **2026-11-16 a las 21:01** (citia-frontend#21). La fecha que mostró fue la prevista, el 15; se corrigió al 16 el 2026-11-17 a las 11:08 (citia-frontend#23). Los dos tramos están en la [copia congelada](../Cumplimiento/terminos-paciente-v1.0.md#la-fecha-que-mostró-la-página) |
+| 2 | `/terminos` ✅. **El correo de soporte no se comprobó antes del backend:** el reenvío de Cloudflare se configuró el **2026-11-17** y recibe desde las ~11:33 de ese día ([Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)). Durante unas 14 horas, el texto publicó una dirección que no recibía |
+| 3 | backend el **2026-11-16 a las 21:22** (citia-backend#23): **21 minutos** después, no 30. Si alguna pestaña vieja envió en esa ventana, no quedó anotado |
+| 4 | no consta que se le pidiera a la profesional del piloto que recargara |
+
+Ninguna de las dos cambia la prueba: el backend solo registra una aceptación con la casilla y una versión que recibe
+aceptaciones, y las filas de production tienen la suya
+([verificación](../Features/us11-terminos-paciente.md#verificación-en-production-2026-11-17--2026-11-20)).
+
 ### 11. Módulos y dependencias
 
 | Módulo | Qué suma | Importa |
@@ -398,6 +416,8 @@ Sin ciclos: `paciente` no importa ninguno de los otros tres. `domain/` y `applic
   días y la región de Resend siguen con ❓ en el borrador. El sistema no sabe la edad del paciente
   ([DT-54](../Deudas/DT-54.md)).
 - **`soporte@citiahealth.cl` se publica**: tiene que recibir correo antes del release (decisión 10, paso 2).
+  *(2026-11-20: recibe desde el 2026-11-17, un día después del release; ver la
+  [nota de la decisión 10](#nota-2026-11-20-cómo-se-cumplió-la-decisión-10).)*
 
 ---
 
@@ -426,12 +446,15 @@ Sin ciclos: `paciente` no importa ninguno de los otros tres. `domain/` y `applic
 | F | frontend | la sección *Frontend* del plan, en paralelo a 1 y 2; **se despliega primero** (decisión 10) |
 | 4 | `architecture-agent` | notas en DT-16 y DT-53, la copia congelada de la 1.0, el borrador marcado como publicado, ROADMAP, la feature y TRAZABILIDAD |
 
-**Estado (2026-11-14):** 0, 1 (`92a1f36`), 2 (`bdeb1aa` y `894b96c`) y F (frontend `eb3fbcc` a `e276343`) ✅, en la rama
-`feature/terminos-paciente`; 3 🔶: unitarios e integración commiteados (`1d00f9e`, `fc3a83f`, `305dea5`), las e2e en curso. Del 4 están hechas las notas en DT-16 y DT-53, las deudas
+**Estado (2026-11-20):** todo ✅. En production desde el 2026-11-16 (merge a `develop` `7aaec66`, release `8738b98`);
+las e2e en `66e54bc`; el cierre (ROADMAP, la feature con la verificación en production y TRAZABILIDAD 137–157), el
+2026-11-20. *Antes (2026-11-14): 0, 1 (`92a1f36`), 2 (`bdeb1aa` y `894b96c`) y F (frontend `eb3fbcc` a `e276343`) ✅, en la rama
+`feature/terminos-paciente`; 3 🔶: unitarios e integración commiteados (`1d00f9e`, `fc3a83f`, `305dea5`), las e2e en curso.* Del 4 están hechas las notas en DT-16 y DT-53, las deudas
 [DT-62](../Deudas/DT-62.md) y [DT-63](../Deudas/DT-63.md), ROADMAP, la feature
 [us11-terminos-paciente](../Features/us11-terminos-paciente.md) y TRAZABILIDAD. La copia congelada
 ([`terminos-paciente-v1.0.md`](../Cumplimiento/terminos-paciente-v1.0.md)) y el borrador marcado como publicado se
-hicieron el 2026-11-15, para el release de ese día (`docs/terminos-v1-publicada`). *Antes: «esperan al release».*
+hicieron el 2026-11-15 (`docs/terminos-v1-publicada`). El release del frontend fue el 2026-11-16, y la fecha de la
+copia y de `/terminos` se corrigió a ese día el 2026-11-17. *Antes: «esperan al release».*
 
 ---
 
@@ -470,7 +493,7 @@ inclinación».*
 máximo de §6 espera a esta deuda) · [DT-52](../Deudas/DT-52.md) (el texto nombra a Railway, Resend y Netlify; la
 casilla de soporte, publicada) · [DT-54](../Deudas/DT-54.md) (el texto fija 16 años y el sistema no lo controla).
 
-**Previstas** (fichadas el 2026-11-14; ⚪ se contraen con el release):
+**Contraídas con el release del 2026-11-16** (fichadas el 2026-11-14 como ⚪ previstas):
 
 1. [DT-62](../Deudas/DT-62.md) — **el retiro de la autorización no se registra.** El texto lo promete por escrito al
    profesional; el sistema no tiene cómo anotarlo ni pone `consentimiento = false`, y con la política apagada la

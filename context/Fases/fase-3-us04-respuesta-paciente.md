@@ -42,7 +42,7 @@ escáneres), como la Fase 2 se cerró con su prueba de punta a punta.
 | Staging (desde `develop`) | el backend arranca con la Fase 3; `GET /api/publico/cita` responde el 404 uniforme; el preflight CORS permite `x-enlace-cita`; Netlify aplica `_headers` a `/cita` | ✅ (comprobado con `curl`) |
 | Production, backend | `/api/health` ok; el portal responde el 404 uniforme con `Cache-Control: no-store` y `Referrer-Policy: no-referrer`; el preflight desde `https://app.citiahealth.cl` permite `x-enlace-cita`; migraciones `1750000012000` a `1750000014000` aplicadas (log del `entrypoint.sh`) | ✅ |
 | Production, frontend | `curl -I https://app.citiahealth.cl/cita` → 200 con `Referrer-Policy: no-referrer` y `X-Robots-Tag: noindex, nofollow`; el sitio llama al backend de production | ✅ |
-| No verificado | correo real con el botón; escáneres de Gmail y Outlook; `trust proxy` con dos redes | ⬜ [checklist](#checklist-de-salida-a-producción) · *(2026-11-14: el botón del correo real y el escáner de Gmail, ✅; confirmar desde el enlace, Outlook y `trust proxy`, ⬜)* |
+| No verificado | correo real con el botón; escáneres de Gmail y Outlook; `trust proxy` con dos redes | ⬜ [checklist](#checklist-de-salida-a-producción) · *(2026-11-14: el botón del correo real y el escáner de Gmail, ✅; confirmar desde el enlace, Outlook y `trust proxy`, ⬜)* *(2026-11-20: confirmar desde el enlace ✅ en la página, el 2026-11-19; el voucher, sin mirar)* |
 
 ### Incidente: production caído ~9 minutos
 
@@ -171,6 +171,10 @@ prueba y el correo del usuario como paciente, como la prueba de la Fase 2.
       paciente cancela desde el enlace ✅** (2026-10-28, cita `2dce1c9c`: apertura a las 16:03:47 y cancelación a las
       16:45:54, con `pedido_por paciente`); **confirmar desde el enlace ⬜**, sin probar. La hora de Chile en la página
       no quedó registrada aparte. Antes: ⬜.)*
+      *(2026-11-20: **confirmar desde el enlace ✅ en la página** (2026-11-19, en production, durante la verificación
+      de [US-11](../Features/us11-terminos-paciente.md#verificación-en-production-2026-11-17--2026-11-20)): desde el
+      recordatorio real de 30 minutos, *«Confirmar mi hora»* respondió *«¡Listo! Confirmaste tu hora. Te esperamos.»* y
+      la cita quedó Confirmada al reabrir el enlace. El voucher (*"Confirmada por el paciente"*) no se miró.)*
 - [ ] 🔶 **Escáneres de enlaces:** enviado a una casilla de **Gmail** y a una de **Outlook**, la cita sigue
       `pendiente` después de la entrega (abrir la página no ejecuta nada).
       *(2026-11-14: **Gmail ✅** (2026-11-01): tres recordatorios entregados a Gmail, en las citas `27532792`,
