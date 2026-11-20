@@ -45,10 +45,15 @@ pide desplegarlo **después** del backend.
 | Código (2026-11-01, antes del release) | `tsc`, ESLint, Prettier y `npm test`; integración y e2e contra Postgres 16 local, con la autorización del usuario | ✅ 131 suites / 2385 unitarios · 13 / 253 de integración · 18 / 379 e2e |
 | Staging (desde `develop`) | arranque, `soporte.sin_destino` en los Deploy Logs, pasos 1 a 6 de la verificación manual | ⬜ sin verificar |
 | Production, backend | arranque, migraciones `1750000019000` y `1750000020000` aplicadas, `soporte.sin_destino`, `/api/health` | ⬜ sin verificar (nadie revisó los Deploy Logs) |
-| Production, pasos 7 a 9 | un mensaje que llegue a la casilla y la consulta de solo lectura | ⬜ esperan a [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) (el 9 se puede hacer ya) |
+| Production, pasos 7 a 9 | un mensaje que llegue a la casilla y la consulta de solo lectura | 🔶 **2026-11-17:** paso 7 ✅ (la variable cargada; el deploy de las 11:48 arrancó con `soporte.envio`, sin `soporte.sin_destino`) · paso 8 🔶 (un mensaje desde la app llegó a la casilla; responderlo y los logs del webhook, sin comprobar) · paso 9 ⬜ · *antes: ⬜ esperan a [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)* |
 | Frontend | build y despliegue | sin registrar en este repo |
 
-### En production, sin `SOPORTE_CORREO_DESTINO`
+### En production, sin `SOPORTE_CORREO_DESTINO` (hasta el 2026-11-17)
+
+> *(2026-11-20)* **Ya no:** Q18 y Q19 se respondieron el 2026-11-14 (las dos = A), y el 2026-11-17 se configuró el
+> reenvío de `soporte@citiahealth.cl` en Cloudflare y se cargó `SOPORTE_CORREO_DESTINO` en production. El deploy de las
+> 11:48 arrancó con `soporte.envio` y un mensaje enviado desde la app llegó a la casilla. Lo que sigue describe cómo
+> estuvo entre el 2026-11-01 y el 2026-11-17.
 
 [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) sigue sin respuesta, así que la variable **no está cargada en
 production**: el job `soporte.envio` no se registra, el arranque avisa `soporte.sin_destino` (`warn`) y los mensajes a
@@ -71,8 +76,8 @@ muestra el provisional *Plan piloto*.
    `soporte.sin_destino` (la [lección de la Fase 3](fase-3-us04-respuesta-paciente.md#lecciones-aprendidas): un
    arranque se confirma en los Deploy Logs, no en el estado del despliegue).
 2. La [verificación manual mínima](../US/10-perfil-cuenta.md#verificación-manual-mínima) en staging y production.
-3. Responder Q19 y cargar `SOPORTE_CORREO_DESTINO` (la casilla entra antes a [DT-52](../Deudas/DT-52.md)); responder
-   Q18.
+3. ✅ Responder Q19 y cargar `SOPORTE_CORREO_DESTINO` (la casilla entra antes a [DT-52](../Deudas/DT-52.md)); responder
+   Q18. *(Q18 y Q19, respondidas el 2026-11-14; la variable, cargada el 2026-11-17.)*
 4. El frontend, desplegado después del backend (sin registrar en este repo).
 5. Revisar la severidad de [DT-01](../Deudas/DT-01.md), que se revisa al cerrar la fase.
 

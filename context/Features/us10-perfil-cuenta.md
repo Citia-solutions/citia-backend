@@ -306,7 +306,8 @@ de ADR-15 están, con su porqué, en sus
 Llegó a `develop` por **fast-forward** el 2026-11-01 a las 12:36 (hora de Chile), sin PR, y a `main` con el
 [PR #15](https://github.com/Citia-solutions/citia-backend/pull/15) (`cd659c1`) a las 14:09; production corre al arrancar
 las migraciones `1750000019000` y `1750000020000`. **Sin verificar:** nadie revisó todavía los Deploy Logs de staging ni
-de production. Sin `SOPORTE_CORREO_DESTINO` en production. Cómo salió y lo que falta, en la
+de production. `SOPORTE_CORREO_DESTINO` está en production desde el **2026-11-17** (*antes: sin cargar*): un mensaje
+desde la app llegó a `soporte@citiahealth.cl`. Cómo salió y lo que falta, en la
 [guía de la fase](../Fases/fase-7-us10-perfil.md#release-a-producción-2026-11-01).
 
 ---
@@ -318,8 +319,8 @@ de production. Sin `SOPORTE_CORREO_DESTINO` en production. Cómo salió y lo que
 | ~~**Release**~~ | ✅ 2026-11-01 (PR #15, `cd659c1`). A `develop` llegó por fast-forward, sin PR ([TRAZABILIDAD](../TRAZABILIDAD.md), filas 118–124) |
 | Revisar los **Deploy Logs** de staging y production | arranque sin error, migraciones `1750000019000` y `1750000020000` aplicadas, `soporte.sin_destino` (lección de la [Fase 3](../Fases/fase-3-us04-respuesta-paciente.md#lecciones-aprendidas): una variable y un arranque se confirman en los Deploy Logs) |
 | La **verificación manual mínima** | [plan](../US/10-perfil-cuenta.md#verificación-manual-mínima): perfil, corte con dos navegadores, contraseña actual mal escrita, soporte, suscripción y, en production, un mensaje que llegue a la casilla |
-| [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) y `SOPORTE_CORREO_DESTINO` | sin la variable, los mensajes esperan en `pendiente`; al cargarla, salen con el primer tick. La casilla entra a [DT-52](../Deudas/DT-52.md) **antes** de usarse |
-| [Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free) y las otras seis preguntas del plan | el código usa los provisionales (*Plan piloto*, categoría cerrada, tope de 5 en 24 h, especialidad solo en el perfil, sin "cerrar todas mis sesiones") |
+| ~~[Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) y `SOPORTE_CORREO_DESTINO`~~ | ✅ Q19 respondida el 2026-11-14 (la casilla, en [DT-52](../Deudas/DT-52.md)) y la variable cargada el 2026-11-17 |
+| ~~[Q18](../PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free)~~ y las otras seis preguntas del plan | Q18 ✅ respondida el 2026-11-14 (*Plan piloto*, sin cambio en el código). Las otras seis: | el código usa los provisionales (*Plan piloto*, categoría cerrada, tope de 5 en 24 h, especialidad solo en el perfil, sin "cerrar todas mis sesiones") |
 | Frontend | sin registrar en este repo |
 | Severidad de [DT-01](../Deudas/DT-01.md) | se revisa al cerrar la fase |
 

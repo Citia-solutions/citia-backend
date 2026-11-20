@@ -100,6 +100,16 @@ legal: mientras tanto, la Fase 5 no tiene nada más que construir. La misma revi
 Gmail y el botón del correo real, comprobados; Outlook, confirmar desde el enlace y `trust proxy`, pendientes. La
 [TRAZABILIDAD](../TRAZABILIDAD.md) queda al día hasta la fila 127 (`acea253`, el release del 2026-11-02).
 
+**2026-11-20:** **US-11**, los términos del paciente, está **en producción desde el 2026-11-16** y verificada en
+production. No es de ninguna fase (es transversal, de [Cumplimiento](../Cumplimiento/README.md)); su feature es
+[us11-terminos-paciente](../Features/us11-terminos-paciente.md). Su verificación deja notas en dos fases:
+- en la [Fase 3](fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción), **confirmar desde el enlace ✅**
+  (2026-11-19, desde un recordatorio real); siguen Outlook y `trust proxy`;
+- en la [Fase 7](fase-7-us10-perfil.md), Q18 y Q19 respondidas (2026-11-14) y `SOPORTE_CORREO_DESTINO` en production
+  desde el 2026-11-17: un mensaje desde la app llegó a `soporte@citiahealth.cl`. Siguen las demás pruebas manuales.
+
+La [TRAZABILIDAD](../TRAZABILIDAD.md) queda al día hasta la fila 157 (`18965f7`, el merge del PR #24).
+
 ---
 
 ## Índice

@@ -10,7 +10,8 @@
 > [us10-perfil-cuenta](../Features/us10-perfil-cuenta.md) y los commits, las filas 118–124 de la
 > [TRAZABILIDAD](../TRAZABILIDAD.md). Las [preguntas abiertas](#preguntas-abiertas) **siguen sin respuesta**: el código
 > usa los valores provisionales y, sin `SOPORTE_CORREO_DESTINO` en production, los mensajes a soporte esperan en
-> `pendiente`. Los Deploy Logs de staging y production, **sin revisar**. Lo que el código hizo distinto de este
+> `pendiente`. *(2026-11-20: Q18 y Q19 se respondieron el 2026-11-14 y `SOPORTE_CORREO_DESTINO` está en production
+> desde el 2026-11-17; las otras preguntas del plan siguen con los provisionales.)* Los Deploy Logs de staging y production, **sin revisar**. Lo que el código hizo distinto de este
 > contrato: [Desvíos de la implementación](#desvíos-de-la-implementación-2026-11-01) y
 > [ADR-15 § Notas de implementación](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01).
 > **Rama:** `feature/fase7-perfil-cuenta`, que sale de `docs/fase5-decisiones-us0702`. Ese PR (#14) se mergeó

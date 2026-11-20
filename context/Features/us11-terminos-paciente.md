@@ -5,16 +5,18 @@
 **Historia:** US-11 (RNF-02; prioridad P1 de [Cumplimiento](../Cumplimiento/README.md)) · decisiones D1 a D14 de
 ADR-16, aprobadas por el usuario el 2026-11-14 con dos ajustes: **D6 = 400** (si el paciente no autoriza, no se
 registra) y la línea del **job G1** en el §2 del texto
-**Estado:** 🔶 **implementada en la rama `feature/terminos-paciente`** (backend y frontend), **sin release** ·
-verificada en local el 2026-11-14 ([abajo](#verificación-en-local-2026-11-14)) · unitarios e integración del
-`testing-agent` commiteados; las e2e, en curso · el release sigue el orden de ADR-16 §10
-([pendiente](#release-pendiente))
-**Pruebas:** los números de unitarios, integración y e2e no están registrados todavía (2026-11-14). Las e2e se corren
-solo con la autorización del usuario
+**Estado:** ✅ **en producción desde el 2026-11-16** (frontend citia-frontend#21 a las 21:01, backend
+citia-backend#23 a las 21:22) y **verificada en production** con la cuenta de prueba entre el 2026-11-17 y el
+2026-11-20 ([abajo](#verificación-en-production-2026-11-17--2026-11-20)): las tres vías dejan su fila. *Antes
+(2026-11-14 → 2026-11-16): «🔶 implementada en la rama `feature/terminos-paciente`, sin release».*
+**Pruebas:** unitarios, integración y e2e en verde en la rama ([abajo](#tests)); `npm test` otra vez en verde sobre
+`develop` con US-11 y el arreglo del RUT juntos (2026-11-15, 2603 tests)
 **Commits:** `da812f3` y `ee0c2b4` (ADR-16 y plan), `92a1f36` (persistencia), `bdeb1aa` (API), `894b96c` (`CLAUDE.md`
-de los módulos), `1d00f9e`, `fc3a83f` y `305dea5` (tests de `paciente`, `solicitud` y `portal-paciente`) y el de las
-e2e, por commitear · sin merge ni release · filas 128–136 de la [TRAZABILIDAD](../TRAZABILIDAD.md) · en el frontend: `eb3fbcc` (`/terminos`), `dc01428` (casillas y
-`terminosVersion`), `9614634` (tarjeta de `/cita`), `644a601` (bandeja) y `e276343` (docs)
+de los módulos), `1d00f9e`, `fc3a83f` y `305dea5` (tests de `paciente`, `solicitud` y `portal-paciente`) y `66e54bc`
+(e2e) · `7aaec66` (merge a `develop`, PR #20), `8738b98` (release a `main`, PR #23) · copia congelada `31b5c3f` y
+su fecha `7f903b0`, `7fc4a36` y `962b946` · filas 128–157 de la [TRAZABILIDAD](../TRAZABILIDAD.md) · en el
+frontend: `eb3fbcc` (`/terminos`), `dc01428` (casillas y `terminosVersion`), `9614634` (tarjeta de `/cita`), `644a601`
+(bandeja) y `e276343` (docs), con sus releases citia-frontend#21 y #23
 **ADRs:** **[16](../Decisions/ADR-16.md)** (aceptado el 2026-11-14) · matiza por segunda vez
 [09](../Decisions/ADR-09.md) §3 (la aceptación del paciente marca la ficha de un paciente que ya existía) · respeta
 [09](../Decisions/ADR-09.md) §8 (la ruta anónima, un solo `INSERT` y el 202 uniforme) y S2–S3 de
@@ -22,7 +24,8 @@ e2e, por commitear · sin merge ni release · filas 128–136 de la [TRAZABILIDA
 [12](../Decisions/ADR-12.md)
 
 > El porqué de cada pieza está en ADR-16; el contrato completo (decisiones, SQL, DTO, el texto que se publica y la
-> Definición de Terminado), en el plan US-11. Este documento resume **lo que existe en el código de la rama**.
+> Definición de Terminado), en el plan US-11. Este documento resume **lo que existe en el código** (en production
+> desde el 2026-11-16; *antes: «de la rama»*).
 > **Ninguna desviación rediseña:** lo que se decidió al implementar está en
 > [Decisiones de la implementación](#decisiones-de-la-implementación). Las reglas locales para los agentes viven en los
 > `CLAUDE.md` de `paciente` (nuevo), `cita`, `solicitud` y `portal-paciente`.
@@ -217,7 +220,9 @@ del tenant demo antes que `pacientes` y `usuarios` (FK `RESTRICT`).
 
 ## Frontend (`citia-frontend`)
 
-Rama `feature/terminos-paciente`, sin release. Está documentado en ese repo:
+En production desde el 2026-11-16 a las 21:01 (citia-frontend#21); la fecha de `/terminos`, corregida al 16 desde el
+2026-11-17 a las 11:08 (citia-frontend#23). *Antes: «rama `feature/terminos-paciente`, sin release».* Está documentado
+en ese repo:
 `citia-frontend/context/us/11-terminos-paciente.md` y las features `agendar-cita-paciente`, `crear-cita`,
 `responder-cita-paciente` y `bandeja-solicitudes`. Lo que importa desde aquí:
 
@@ -225,7 +230,9 @@ Rama `feature/terminos-paciente`, sin release. Está documentado en ese repo:
   [plan](../US/11-terminos-paciente.md#el-texto-que-se-publica): 55 de 55 bloques iguales (42 de `/terminos`, incluida
   la línea del job G1).
 - **`src/shared/config/terminosPaciente.ts`:** `VERSION_TERMINOS_PACIENTE = '1.0'`,
-  `FECHA_TERMINOS_PACIENTE = '2026-11-14'` (**se cambia al día del release**) y el mensaje fijo.
+  `FECHA_TERMINOS_PACIENTE = '2026-11-16'` (el día del release; pasó por `'2026-11-15'`, la fecha prevista, entre
+  el 2026-11-16 a las 21:01 y el 2026-11-17 a las 11:08: ver la
+  [copia congelada](../Cumplimiento/terminos-paciente-v1.0.md#la-fecha-que-mostró-la-página)) y el mensaje fijo.
 - **Funciona con el backend de hoy:** `terminosVersion` viaja igual y el backend viejo la descarta; la tarjeta de
   `/cita` solo aparece con `terminosPendientes === true` (y con la hora vigente), así que sin el campo no aparece.
 - **El texto vive en el frontend y en la copia congelada del backend**, y nada los compara solo: el frontend no tiene
@@ -284,27 +291,51 @@ Además:
 - en la fila `profesional`, `registrada_en` quedó unos milisegundos antes que `aceptada_en`
   ([arriba](#aceptada_en-es-la-prueba-registrada_en-dice-cuándo-se-escribió-la-fila)).
 
-**Falta** la [verificación manual mínima](../US/11-terminos-paciente.md#verificación-manual-mínima) en staging y en
-production.
+### Verificación en production (2026-11-17 → 2026-11-20)
+
+Con la cuenta de prueba de siempre (no la del piloto) y su organización, en `app.citiahealth.cl`. La
+[verificación manual mínima](../US/11-terminos-paciente.md#verificación-manual-mínima) se hizo **en production**; en
+staging no se repitió.
+
+| Fecha | Vía | Lo que se vio en la app | Lo que quedó en la base |
+|---|---|---|---|
+| 2026-11-17 | **`/terminos`** | el texto 1.0 y *«Versión 1.0 · publicada el 16 de noviembre de 2026»* | — |
+| 2026-11-17, 12:09 y 12:11 | **formulario público**, aceptado después en la bandeja | dos solicitudes enviadas con la casilla marcada y aceptadas en la bandeja (las hizo el usuario) | dos filas `formulario_publico` v1.0, cada una con su `solicitud_id`; `aceptada_en` = la hora del envío y `registrada_en` = la hora de aceptarla en la bandeja (unos segundos después) |
+| 2026-11-17, 12:17 | **modal *Nueva cita***, alta manual | el texto del alta manual; sin la casilla no guarda y dice *«Marca la casilla cuando el paciente te haya autorizado.»* | una fila `profesional` v1.0 con el `usuario_id` de quien marcó la casilla |
+| 2026-11-19, 15:30 → 15:32 | **tarjeta de `/cita`**, desde el recordatorio real de una cita de ese mismo paciente | la tarjeta *Tus datos y Citia*; **«Confirmar mi hora» funciona sin aceptar** (la cita pasa a Confirmada y la tarjeta sigue); «Acepto» → *«Gracias. Quedó registrada tu autorización.»* y la tarjeta desaparece; al reabrir el enlace en otra pestaña, sin tarjeta | una fila `enlace_cita` v1.0 con su `enlace_id` |
+
+Las filas se leyeron el **2026-11-20** con un script de solo lectura que corrió el usuario (`BEGIN READ ONLY`, sin
+datos personales en la salida: ids cortos, canales, versiones y fechas), con las consultas 1 y 2 de la
+[Definición de Terminado](../US/11-terminos-paciente.md#definición-de-terminado). Las migraciones `1750000021000` y
+`1750000022000` están aplicadas. Además:
+
+- **D11 se vio en production dos veces.** La cita del 2026-11-19 se creó desde el modal, con la casilla, para el mismo
+  paciente que ya tenía su fila `profesional` 1.0: no se insertó otra. Y una tercera solicitud del formulario, enviada
+  el 2026-11-17 y aceptada, cayó por RUT en un paciente que ya tenía su `formulario_publico` 1.0: tampoco. Las dos quedaron hechas
+  igual (la cita creada y la solicitud aceptada), así que el registro no falló: la fila ya existía.
+- **La consulta 3** dejó de contar a ese paciente después de «Acepto», y sigue contando a los pacientes de antes de
+  US-11 que no han aceptado (D7).
+- **Hallazgo menor, del frontend (sin ficha):** en el modal *Nueva cita*, el aviso rojo de la casilla no se borra al
+  marcarla; se borra recién al guardar.
 
 ---
 
-## Release (pendiente)
+## Release (2026-11-16)
 
 En el orden de [ADR-16 §10](../Decisions/ADR-16.md#10-despliegue-primero-el-frontend-después-el-backend): **primero el
-frontend, después el backend.** Con `whitelist` sin `forbidNonWhitelisted`, el backend de hoy descarta `terminosVersion`
-en silencio. Al revés, el modal y el formulario de hoy recibirían 400 hasta que llegue el frontend. El mismo orden vale
-en staging (`develop`).
+frontend, después el backend.** Con `whitelist` sin `forbidNonWhitelisted`, el backend de antes descartaba
+`terminosVersion` en silencio. Al revés, el modal y el formulario de antes habrían recibido 400 hasta que llegara el
+frontend. En staging, US-11 llegó a `develop` el 2026-11-15 (PR #20, junto con el arreglo del RUT, PR #21).
 
-| # | Paso | Nota |
+| # | Paso | Cómo se hizo |
 |---|---|---|
-| 0 | `FECHA_TERMINOS_PACIENTE` al día del release | hoy dice 2026-11-14; se cambia en el mismo PR del frontend (`src/shared/config/terminosPaciente.ts`) |
-| 1 | Frontend a production (Netlify) | `/terminos`, las casillas, el texto del alta manual y `terminosVersion`. Sin `terminosPendientes`, la tarjeta no aparece: nada se rompe |
-| 2 | Comprobar `/terminos` en `app.citiahealth.cl` y que **`soporte@citiahealth.cl` recibe correo** | el texto publica esa dirección; falta configurar el reenvío de Cloudflare ([Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)) |
-| 3 | Backend a production (Railway), **al menos 30 minutos después** | aplica al arrancar las migraciones `1750000021000` y `1750000022000`; desde ahí rigen la versión obligatoria y `consentimiento: true` |
-| 4 | **Pedirle a la profesional del piloto que recargue el panel** antes de su próxima cita manual | una pestaña cargada antes del frontend nuevo recibe 400 (sin versión) hasta recargar |
-| 5 | Crear la **copia congelada** `context/Cumplimiento/terminos-paciente-v1.0.md` con el texto publicado y su fecha | no se edita nunca. El borrador v0.2 se marca como publicado. Es el paso 5 del [plan](../US/11-terminos-paciente.md#orden-de-construcción) |
-| 6 | La verificación manual mínima en production y las consultas de la Definición de Terminado | los pacientes del piloto aparecen en la consulta 3 hasta que acepten en su enlace (D7) |
+| 0 | `FECHA_TERMINOS_PACIENTE` al día del release | se puso la fecha **prevista**, `'2026-11-15'`, y el release fue el 16. Se corrigió al 16 con citia-frontend#22 y su release #23 (2026-11-17, 11:08). Lo que vio cada paciente queda en la [copia congelada](../Cumplimiento/terminos-paciente-v1.0.md#la-fecha-que-mostró-la-página) |
+| 1 | Frontend a production (Netlify) | ✅ citia-frontend#21, mergeado el **2026-11-16 a las 21:01** |
+| 2 | Comprobar `/terminos` y que **`soporte@citiahealth.cl` recibe correo** | `/terminos` ✅. **El correo, no antes del backend:** el reenvío de Cloudflare se configuró el **2026-11-17**, y desde las ~11:33 de ese día `soporte@citiahealth.cl` recibe ([Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte)). Entre el 2026-11-16 a las 21:01 y esa hora, el texto publicaba una dirección que todavía no recibía |
+| 3 | Backend a production (Railway), **al menos 30 minutos después** | ✅ citia-backend#23 (`8738b98`), mergeado el **2026-11-16 a las 21:22**: **21 minutos** después del frontend, no 30. Las migraciones se aplicaron al arrancar |
+| 4 | **Pedirle a la profesional del piloto que recargue el panel** | no consta en estos docs |
+| 5 | La **copia congelada** [`terminos-paciente-v1.0.md`](../Cumplimiento/terminos-paciente-v1.0.md) | ✅ 2026-11-15 (`31b5c3f`, PR #22 a `develop`); la fecha, corregida al 16 el 2026-11-17 (PR #24). Llega a `main` con el release de los docs de cierre |
+| 6 | La verificación manual mínima en production y las consultas de la Definición de Terminado | ✅ 2026-11-17 → 2026-11-20 ([arriba](#verificación-en-production-2026-11-17--2026-11-20)) |
 
 ---
 
@@ -340,27 +371,30 @@ Dentro del contrato; ninguna rediseña.
 
 ## Pendientes
 
+**Ninguno de la historia** (2026-11-20). Lo que queda fuera está en [Lo que no hace](#lo-que-no-hace) y en sus deudas.
+
 | Qué | Nota |
 |---|---|
-| Las e2e de US-11 | el commit de sus casos nuevos (fila 136 de la [TRAZABILIDAD](../TRAZABILIDAD.md)) y la corrida, con la autorización del usuario; anotar aquí los números de unitarios, integración y e2e |
-| Lint y tests en verde | antes del PR a `develop` |
-| El [release](#release-pendiente) | frontend primero, backend al menos 30 minutos después |
-| [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) | el reenvío de `soporte@citiahealth.cl`, **antes** del paso 3 |
+| Las e2e de US-11 | ✅ `66e54bc`, corridas con la autorización del usuario el 2026-11-14 ([arriba](#tests)) |
+| Lint y tests en verde | ✅ antes del PR #20 a `develop` |
+| El [release](#release-2026-11-16) | ✅ 2026-11-16, frontend primero; el backend, 21 minutos después |
+| [Q19](../PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) | ✅ `soporte@citiahealth.cl` recibe desde el 2026-11-17, **después** del paso 3 y no antes |
 | La copia congelada y el borrador marcado como publicado | ✅ 2026-11-15: [`terminos-paciente-v1.0.md`](../Cumplimiento/terminos-paciente-v1.0.md), con la fecha del release del frontend, corregida al 2026-11-16 el 2026-11-17. *Antes: «al publicar (paso 5)».* |
-| La verificación manual en staging y production | [plan](../US/11-terminos-paciente.md#verificación-manual-mínima) |
+| La verificación manual | ✅ en production, 2026-11-17 → 2026-11-20 ([arriba](#verificación-en-production-2026-11-17--2026-11-20)); en staging no se hizo |
+| El aviso de la casilla del modal que no se borra al marcarla | hallazgo menor del frontend, sin ficha |
 
 ---
 
 ## Deudas técnicas asociadas
 
-**Cierra en parte:** [DT-16](../Deudas/DT-16.md) — la parte (2), en las tres vías; avanza la (3). Cuenta como cerrada
-cuando llegue a production.
+**Cierra en parte:** [DT-16](../Deudas/DT-16.md) — la parte (2), en las tres vías, **cerrada en production desde el
+2026-11-16**; avanza la (3).
 
 **Avanza:** [DT-53](../Deudas/DT-53.md) — el punto 1, para el paciente. El texto ya informa el cierre automático como
 inasistencia (job G1).
 
-**Prevé** (⚪, se contraen con el release): [DT-62](../Deudas/DT-62.md) (el retiro no se registra) ·
-[DT-63](../Deudas/DT-63.md) (el profesional no ve si el paciente aceptó).
+**Contrae** con el release del 2026-11-16 (eran ⚪ previstas): [DT-62](../Deudas/DT-62.md) (el retiro no se
+registra) · [DT-63](../Deudas/DT-63.md) (el profesional no ve si el paciente aceptó).
 
 **Toca:** [DT-26](../Deudas/DT-26.md) (`aceptaciones_terminos` y `solicitudes_cita.terminos_version`, sin plazo) ·
 [DT-52](../Deudas/DT-52.md) (el texto nombra a Railway, Resend y Netlify y publica la casilla de soporte) ·

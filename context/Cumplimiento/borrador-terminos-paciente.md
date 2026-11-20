@@ -20,7 +20,7 @@ proyecto: nadie con formación legal lo ha revisado. *Antes: v0.1, con las decis
 > con la línea del job G1 (*«Si no confirmas una hora y no se registra tu asistencia, al terminar el día el sistema la
 > marca sola como inasistencia.»*). La lista de los 14 cambios está en el
 > [plan](../US/11-terminos-paciente.md#cambios-respecto-del-borrador-v02). US-11 está implementada en la rama
-> `feature/terminos-paciente`, **sin release**. **Este borrador ya no se edita:** queda como antecedente. Al publicar,
+> `feature/terminos-paciente`, **sin release** *(2026-11-20: en producción desde el 2026-11-16)*. **Este borrador ya no se edita:** queda como antecedente. Al publicar,
 > el texto 1.0 se congela en `context/Cumplimiento/terminos-paciente-v1.0.md` y este archivo se marca como publicado.
 
 **Dónde se usaría:**
@@ -164,8 +164,8 @@ casilla**:
 
 ## Lo que falta para usarlo (no es parte de este borrador)
 
-*(2026-11-14: ADR-16 y US-11 cubren los tres primeros, en la rama `feature/terminos-paciente`, **sin release**. El
-cuarto sigue abierto. Detalle en la [feature](../Features/us11-terminos-paciente.md).)*
+*(2026-11-14: ADR-16 y US-11 cubren los tres primeros, en la rama `feature/terminos-paciente`, **sin release**; en
+producción desde el 2026-11-16. El cuarto sigue abierto. Detalle en la [feature](../Features/us11-terminos-paciente.md).)*
 
 - ✅ **Publicarlo** en una página del frontend (por ejemplo, `/terminos`), con número de versión. → **Cubierto:**
   `/terminos`, versión 1.0, con su fecha ([ADR-16 §1](../Decisions/ADR-16.md#1-el-texto-terminos-versión-10-genérico-d2-d8-d9)).

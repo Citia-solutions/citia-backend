@@ -9,7 +9,10 @@
 > [contexto legal de ADR-14](../Decisions/ADR-14.md#contexto-legal-a-validar-por-un-abogado). Sirve para llegar
 > ordenado a un abogado, no para reemplazarlo. **Ninguna fila se da por cierta hasta esa revisión.**
 
-**Creada:** 2026-10-31, cuando el usuario eligió *"documentar cumplimiento"* · **Última revisión:** 2026-11-14, en la
+**Creada:** 2026-10-31, cuando el usuario eligió *"documentar cumplimiento"* · **Última revisión:** 2026-11-20
+(**US-11 en producción desde el 2026-11-16** y verificada en production: el texto 1.0 en `/terminos`, congelado en
+[`terminos-paciente-v1.0.md`](terminos-paciente-v1.0.md), y la prueba de cada aceptación; `soporte@citiahealth.cl`
+recibe desde el 2026-11-17, un día después del release) · *antes:* 2026-11-14, en la
 tarde (**US-11**, los términos del paciente y la prueba de su aceptación, **implementada en la rama
 `feature/terminos-paciente`, sin release**: [ADR-16](../Decisions/ADR-16.md),
 [feature](../Features/us11-terminos-paciente.md)) · *antes:* 2026-11-14 (la
@@ -66,11 +69,12 @@ de pacientes por cuenta de alguien, y lo que hoy es preparación pasa a ser obli
 >   2026-11-14** abordar el P1 **sin abogado por ahora** y sin pausar el piloto. Empieza por los **términos y el
 >   consentimiento que autoriza el paciente**: [borrador](borrador-terminos-paciente.md), con sus decisiones confirmadas el mismo día.
 >
-> - **Los términos del paciente están construidos (2026-11-14), sin release.** [ADR-16](../Decisions/ADR-16.md) se
->   aceptó ese día y US-11 quedó implementada en la rama `feature/terminos-paciente`, verificada en local: el texto 1.0
->   en `/terminos`, la prueba de cada aceptación en `aceptaciones_terminos` y el rechazo de `consentimiento: false` en
->   el backend. Detalle en la [feature](../Features/us11-terminos-paciente.md). Los pacientes del piloto **no se
->   rellenan**: aceptan en `/cita` cuando les llegue un recordatorio.
+> - **Los términos del paciente están en producción desde el 2026-11-16** y verificados en production entre el
+>   2026-11-17 y el 2026-11-20. [ADR-16](../Decisions/ADR-16.md) se aceptó el 2026-11-14: el texto 1.0 en `/terminos`
+>   ([copia congelada](terminos-paciente-v1.0.md)), la prueba de cada aceptación en `aceptaciones_terminos` y el
+>   rechazo de `consentimiento: false` en el backend. Detalle en la [feature](../Features/us11-terminos-paciente.md).
+>   Los pacientes del piloto **no se rellenan**: aceptan en `/cita` cuando les llegue un recordatorio. *Antes
+>   (2026-11-14 → 2026-11-16): «construidos, sin release», en la rama `feature/terminos-paciente`.*
 >
 > *Antes (2026-10-31 → 2026-11-14): "**Si P1 es condición para recibir a esa primera clínica, el usuario no lo ha
 > decidido**".*
@@ -144,7 +148,7 @@ baste: eso lo dice el abogado.)*
 ## Lo que falta, por prioridad
 
 *(Prioridades del pre-análisis, con el matiz del límite real. Al 2026-10-31 ninguna está empezada. 2026-11-14: DT-53 y
-DT-16 avanzan con US-11, en la rama `feature/terminos-paciente`, sin release.)*
+DT-16 avanzan con US-11, en la rama `feature/terminos-paciente`, sin release; en producción desde el 2026-11-16.)*
 
 ### P1 — antes de la primera clínica con pacientes reales
 
@@ -152,10 +156,10 @@ DT-16 avanzan con US-11, en la rama `feature/terminos-paciente`, sin release.)*
 |---|---|---|
 | Fijar el rol (Citia encargado, la clínica responsable) en un **contrato de encargo** | [DT-51](../Deudas/DT-51.md) | la Ley 19.628 ya exige hoy el mandato por escrito (art. 8) |
 | **Inventario de proveedores**: qué datos recibe cada uno, en qué país, con qué **DPA** y con qué garantía para la transferencia internacional | [DT-52](../Deudas/DT-52.md) | Resend, Railway, Netlify y Better Stack |
-| **Política de privacidad** y **procedimiento para los derechos** del paciente | [DT-53](../Deudas/DT-53.md) | la publica la clínica; Citia le da el material y el apoyo, y tiene su propia política para las cuentas de los profesionales · *(2026-11-14)* el texto para el paciente, 1.0, está en la rama de US-11 ([ADR-16](../Decisions/ADR-16.md)); el procedimiento de derechos sigue sin hacer, y el retiro de la autorización no se registra ([DT-62](../Deudas/DT-62.md)) |
+| **Política de privacidad** y **procedimiento para los derechos** del paciente | [DT-53](../Deudas/DT-53.md) | la publica la clínica; Citia le da el material y el apoyo, y tiene su propia política para las cuentas de los profesionales · *(2026-11-14)* el texto para el paciente, 1.0, está en la rama de US-11 ([ADR-16](../Decisions/ADR-16.md)); en production desde el 2026-11-16; el procedimiento de derechos sigue sin hacer, y el retiro de la autorización no se registra ([DT-62](../Deudas/DT-62.md)) |
 | **Alcance del art. 10 bis** de la Ley 20.584 (acreditación de plataformas de salud digital) | [DT-55](../Deudas/DT-55.md) | consultar al Minsal. P1 es *saber si aplica*, no necesariamente acreditarse |
 | Aislamiento por clínica | — | ✅ ya existe, con la observación de `supresiones_correo` |
-| Revisar el consentimiento de los recordatorios | [DT-16](../Deudas/DT-16.md) | sus disparadores de revisión ya eran el 2026-12-01 y "la entrada del primer cliente real" · *(2026-11-14)* con US-11, en la rama: el backend rechaza `consentimiento: false` y guarda qué versión se aceptó, cuándo y por dónde; la política de los recordatorios sigue apagada |
+| Revisar el consentimiento de los recordatorios | [DT-16](../Deudas/DT-16.md) | sus disparadores de revisión ya eran el 2026-12-01 y "la entrada del primer cliente real" · *(2026-11-14)* con US-11, en la rama (en production desde el 2026-11-16): el backend rechaza `consentimiento: false` y guarda qué versión se aceptó, cuándo y por dónde; la política de los recordatorios sigue apagada |
 
 ### P2 — durante la preparación
 
@@ -185,9 +189,11 @@ No hay deuda nueva: es la condición del bloqueo y vive en
 
 *(Implementado y **en producción** desde el 2026-11-01: [ADR-15](../Decisions/ADR-15.md) y sus
 [notas de implementación](../Decisions/ADR-15.md#notas-de-implementación-2026-11-01), plan
-[US-10](../US/10-perfil-cuenta.md), feature [us10-perfil-cuenta](../Features/us10-perfil-cuenta.md). Sin
-`SOPORTE_CORREO_DESTINO` en production, el texto de los mensajes a soporte se queda en la base y todavía no llega a
-Resend ni a una casilla. Antes: "implementado, en `develop` (staging) con el release a `main` abierto"; antes: "en
+[US-10](../US/10-perfil-cuenta.md), feature [us10-perfil-cuenta](../Features/us10-perfil-cuenta.md). Desde el
+2026-11-17, con `SOPORTE_CORREO_DESTINO` cargada, el texto de los mensajes a soporte sale por Resend hacia
+`soporte@citiahealth.cl`, que Cloudflare reenvía a la cuenta de Gmail del proyecto ([DT-52](../Deudas/DT-52.md)).
+Antes (2026-11-01 → 2026-11-17): «sin `SOPORTE_CORREO_DESTINO` en production, el texto se queda en la base y todavía
+no llega a Resend ni a una casilla». Antes: "implementado, en `develop` (staging) con el release a `main` abierto"; antes: "en
 diseño, sin implementar".)* La Fase 7 no toca los datos de los pacientes,
 pero suma un **flujo de datos nuevo** y dos datos de las cuentas:
 
@@ -283,7 +289,7 @@ su A6, la base de licitud, que en ADR-14 son filas de la tabla y no preguntas). 
 2. **Quién es el responsable de cumplimiento**, la primera pieza del programa interno ([DT-56](../Deudas/DT-56.md)).
 3. **Cuándo redactar el contrato de encargo** ([DT-51](../Deudas/DT-51.md)). La política de privacidad para el
    paciente ([DT-53](../Deudas/DT-53.md)) **empezó el 2026-11-14**, con el [borrador](borrador-terminos-paciente.md),
-   y ese mismo día quedó implementada como US-11 en su rama, sin release.
+   y ese mismo día quedó implementada como US-11 en su rama; está en producción desde el 2026-11-16.
    *Antes: "Cuándo redactar la política de privacidad y el contrato de encargo. El 2026-10-31 el usuario eligió
    documentar, no redactar."*
 4. **Cuándo, y con quién, la revisión de un abogado**: sin fecha, como dice
