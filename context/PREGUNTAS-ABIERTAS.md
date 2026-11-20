@@ -546,6 +546,12 @@ de incidentes ([DT-56](Deudas/DT-56.md)).
 >
 > Quedan dos pasos del usuario: configurar el reenvío en Cloudflare y cargar
 > `SOPORTE_CORREO_DESTINO=soporte@citiahealth.cl` en production.
+>
+> ✅ **Los dos, hechos el 2026-11-17.** El reenvío de Cloudflare funciona desde las ~11:33 (Chile); el primer correo de
+> prueba rebotó con *550 5.1.1* porque la regla recién se había creado, y el segundo llegó. `SOPORTE_CORREO_DESTINO`
+> está en production desde el deploy de las 11:48 (antes de él, el arranque seguía dejando `soporte.sin_destino`), y un
+> mensaje enviado desde *Contactar soporte* llegó a la casilla. Fue **un día después** del release de US-11, que ya publicaba la dirección
+> ([ADR-16 § nota de la decisión 10](Decisions/ADR-16.md#nota-2026-11-20-cómo-se-cumplió-la-decisión-10)).
 
 ---
 

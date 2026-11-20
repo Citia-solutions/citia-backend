@@ -58,7 +58,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 | Buscas… | Camino |
 |---|---|
 | ponerte al día con el proyecto | este README → [ROADMAP § Resumen](ROADMAP.md#resumen) → [Fases/](Fases/README.md) → la guía de la fase en curso |
-| entender el perfil, la suscripción y el soporte (lo último en producción, desde el 2026-11-01) | [Fase 7](Fases/fase-7-us10-perfil.md) —estado, [release a producción](Fases/fase-7-us10-perfil.md#release-a-producción-2026-11-01) y lo que falta para cerrarla— y la feature [us10-perfil-cuenta](Features/us10-perfil-cuenta.md) |
+| entender el perfil, la suscripción y el soporte (en producción desde el 2026-11-01) | [Fase 7](Fases/fase-7-us10-perfil.md) —estado, [release a producción](Fases/fase-7-us10-perfil.md#release-a-producción-2026-11-01) y lo que falta para cerrarla— y la feature [us10-perfil-cuenta](Features/us10-perfil-cuenta.md) |
 | entender la respuesta del paciente (en producción desde el 2026-10-17) | [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) —estado, guía de lectura de la implementación y [checklist de salida a producción](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción)— y la feature [us04-respuesta-paciente](Features/us04-respuesta-paciente.md) |
 | entender los recordatorios (lo último en producción) | [Fase 2](Fases/fase-2-us03-recordatorios.md) —guía de lectura del diseño y de la implementación, checklist de salida a producción y [cierre](Fases/fase-2-us03-recordatorios.md#cierre-de-la-fase-2026-10-07)— y la feature [us03-recordatorios](Features/us03-recordatorios.md) |
 | qué está desplegado y dónde (staging y production) | [stack § Mapa de entornos](stack-tecnologico.md#mapa-de-entornos) e [Infraestructura en producción](stack-tecnologico.md#infraestructura-en-producción-2026-10-07) |
@@ -66,7 +66,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 | por qué una pieza es como es | la feature → su ADR → las alternativas descartadas del ADR |
 | qué riesgo se está aceptando | [Deudas/README § Lo que hay que mirar primero](Deudas/README.md#lo-que-hay-que-mirar-primero) → la deuda |
 | qué falta, en lo legal, antes de la primera clínica con pacientes reales | [Cumplimiento § Lo que falta](Cumplimiento/README.md#lo-que-falta-por-prioridad) → la deuda |
-| entender los términos del paciente y la prueba de su aceptación (en la rama, sin release) | [ADR-16](Decisions/ADR-16.md) → el plan [US-11](US/11-terminos-paciente.md) → la feature [us11-terminos-paciente](Features/us11-terminos-paciente.md) |
+| entender los términos del paciente y la prueba de su aceptación (lo último en producción, desde el 2026-11-16) | [ADR-16](Decisions/ADR-16.md) → el plan [US-11](US/11-terminos-paciente.md) → la feature [us11-terminos-paciente](Features/us11-terminos-paciente.md) |
 | qué hay que decidir antes de avanzar | [PREGUNTAS-ABIERTAS § Por fase](PREGUNTAS-ABIERTAS.md#por-fase-del-roadmap) |
 | de dónde salió un cambio | [TRAZABILIDAD](TRAZABILIDAD.md) (commit → documento, con su fase) |
 | qué hizo el frontend | la sección *Contraparte en el frontend* de cada fase |
@@ -113,13 +113,15 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
   contexto legal de ADR-14; las decisiones de producto de US-07.02, aprobadas ese mismo día, siguen vigentes.
   *Antes (hasta el bloqueo): "su plan es el siguiente paso".*
   [US-10](US/10-perfil-cuenta.md) perfil, suscripción y soporte (✅ en producción desde el 2026-11-01, cierre pendiente
-  de las pruebas manuales y de Q18/Q19; [ADR-15](Decisions/ADR-15.md) aceptado; feature
+  de las pruebas manuales; Q18 y Q19 respondidas el 2026-11-14 y `SOPORTE_CORREO_DESTINO` en production desde el
+  2026-11-17; [ADR-15](Decisions/ADR-15.md) aceptado; feature
   [us10-perfil-cuenta](Features/us10-perfil-cuenta.md); *antes: implementada, en `develop` con el release a `main`
   abierto (2026-11-01); en diseño desde el 2026-10-31*).
   [US-11](US/11-terminos-paciente.md) términos de uso y aviso de privacidad del paciente, transversal de
-  [Cumplimiento](Cumplimiento/README.md) (🔶 implementada en la rama `feature/terminos-paciente`, sin release, el
-  2026-11-14; [ADR-16](Decisions/ADR-16.md) aceptado; feature
-  [us11-terminos-paciente](Features/us11-terminos-paciente.md)).
+  [Cumplimiento](Cumplimiento/README.md) (✅ en producción desde el 2026-11-16 y verificada en production el
+  2026-11-20; [ADR-16](Decisions/ADR-16.md) aceptado; feature
+  [us11-terminos-paciente](Features/us11-terminos-paciente.md); *antes: 🔶 implementada en la rama, sin release,
+  el 2026-11-14*).
   **Subtareas de US-02** (archivos `02.NN-*`, no son historias propias):
   [US-02.07](US/02.07-paciente-reagenda-cancela.md) el paciente cancela o pide reagendar (⏸ aplazada
   fuera de la v1; 🔀 **absorbida por US-04** el 2026-10-14, en la
@@ -148,7 +150,7 @@ Desde cualquier documento se llega a su fase, y desde la fase a todo lo demás.
 ## Estado, de un vistazo
 
 *(Actualizado el 2026-10-07; la Fase 3, el 2026-10-18, tras su release del 2026-10-17; la fila de la Fase 5, el
-2026-10-30 y el 2026-11-14 (US-07.01 cerrada); la de la Fase 7, el 2026-10-31 y el 2026-11-01, también después de su release. Fuente:
+2026-10-30 y el 2026-11-14 (US-07.01 cerrada); la de la Fase 7, el 2026-10-31 y el 2026-11-01, también después de su release, y el 2026-11-20 (Q18 y Q19); la de US-11, el 2026-11-20. Fuente:
 [ROADMAP § Resumen](ROADMAP.md#resumen).)*
 
 **El MVP está en producción.** Alcance: dashboard de citas (Fase 0) · gestión de citas (Fase 1) ·
@@ -168,7 +170,8 @@ está en producción desde el 2026-10-17.
 | [Fase 4](Fases/fase-4-us05-alertas.md) — US-05 alertas | ⬜ fuera del MVP |
 | [Fase 5](Fases/fase-5-us07-scoring.md) — US-07 scoring | 🔶 US-07.01 (registro de hechos) ✅ **cerrada** (pruebas manuales completas el 2026-11-01, cierre documentado el 2026-11-14; [us0701](Features/us0701-registro-hechos.md)); en producción desde el 2026-10-20, antes que la Fase 4; job G1 prendido el 2026-10-27 · US-07.02 y US-07.03 🚧 bloqueadas desde el 2026-10-30, plan incluido (siguen en la v2), con las decisiones de producto de US-07.02 aprobadas ese día y vigentes · nada más que construir mientras dure el bloqueo · *antes (2026-10-30 → 2026-11-14): pruebas manuales en curso; siguiente: cerrar US-07.01 · antes: ⏸ v2 (siguiente: el plan de US-07.02)* |
 | [Fase 6 y US-09](Fases/fases-6-us09-sin-diseno.md) | ⬜ sin diseño |
-| [Fase 7](Fases/fase-7-us10-perfil.md) — US-10 perfil, suscripción y soporte | ✅ **en producción (2026-11-01)** · cierre pendiente de las pruebas manuales y de Q18/Q19 · [us10](Features/us10-perfil-cuenta.md) · [ADR-15](Decisions/ADR-15.md) aceptado · [plan](US/10-perfil-cuenta.md) · *antes: 🔶 implementada, en `develop` con el release a `main` abierto (2026-11-01); 🔶 en diseño (2026-10-31); ⬜ sin diseño* |
+| [Fase 7](Fases/fase-7-us10-perfil.md) — US-10 perfil, suscripción y soporte | ✅ **en producción (2026-11-01)** · cierre pendiente de las pruebas manuales · Q18 y Q19 respondidas (2026-11-14); `SOPORTE_CORREO_DESTINO` en production desde el 2026-11-17 · [us10](Features/us10-perfil-cuenta.md) · [ADR-15](Decisions/ADR-15.md) aceptado · [plan](US/10-perfil-cuenta.md) · *antes: cierre pendiente también de Q18/Q19; 🔶 implementada, en `develop` con el release a `main` abierto (2026-11-01); 🔶 en diseño (2026-10-31); ⬜ sin diseño* |
+| — US-11 términos del paciente (transversal: [Cumplimiento](Cumplimiento/README.md)) | ✅ **en producción (2026-11-16)** · verificada en production (2026-11-20) · [us11](Features/us11-terminos-paciente.md) · [ADR-16](Decisions/ADR-16.md) aceptado · [plan](US/11-terminos-paciente.md) |
 
 **Entornos** ([mapa](stack-tecnologico.md#mapa-de-entornos)): `develop` → **staging** (Railway +
 `citia-staging.netlify.app`, correo simulado con `registro`) · `main` → **production** (Railway +
@@ -187,17 +190,21 @@ profesional ve quién confirmó o canceló e invalida el enlace desde el voucher
 de otra hora, y hay **límite de tasa** en el login, el registro, la solicitud pública y el portal. Ver
 [us04-respuesta-paciente](Features/us04-respuesta-paciente.md). **Desde el 2026-11-01:** el profesional ve y corrige
 su perfil, cambia su contraseña (lo que **corta sus demás sesiones**), el administrador ve la suscripción en lectura y
-cualquier usuario con sesión escribe a soporte; sin `SOPORTE_CORREO_DESTINO` en production, esos mensajes se guardan y esperan en
-`pendiente`. Ver [us10-perfil-cuenta](Features/us10-perfil-cuenta.md).
+cualquier usuario con sesión escribe a soporte; desde el 2026-11-17 esos mensajes llegan a `soporte@citiahealth.cl`
+(*antes: sin `SOPORTE_CORREO_DESTINO`, se guardaban y esperaban en `pendiente`*). Ver
+[us10-perfil-cuenta](Features/us10-perfil-cuenta.md). **Desde el 2026-11-16:** los **términos del paciente** en
+`/terminos` (versión 1.0); el formulario público y el modal *Nueva cita* exigen la casilla, la tarjeta de `/cita` pide
+aceptar a quien no lo ha hecho, y cada aceptación queda registrada con su versión, su hora y su vía. Ver
+[us11-terminos-paciente](Features/us11-terminos-paciente.md).
 
 **Lo siguiente:**
 
 1. **Cerrar la Fase 3 — US-04, respuesta del paciente** (✅ en producción desde el 2026-10-17: backend
    PR #7, frontend PR #8): el paciente confirma, cancela o pide otra hora desde el enlace del recordatorio, y
    la fase trajo además el límite de tasa ([DT-18](Deudas/DT-18.md)). Lo que existe está en
-   [us04-respuesta-paciente](Features/us04-respuesta-paciente.md). Para cerrarla faltan, del correo real,
-   confirmar desde el enlace y el escáner de Outlook (el botón, la página, cancelar desde el enlace y el escáner de
-   Gmail ya se comprobaron el 2026-10-28 y el 2026-11-01), la prueba de `trust proxy` en production (la IP real
+   [us04-respuesta-paciente](Features/us04-respuesta-paciente.md). Para cerrarla faltan, del correo real, el
+   escáner de Outlook (el botón, la página, cancelar desde el enlace y el escáner de Gmail ya se comprobaron el
+   2026-10-28 y el 2026-11-01, y confirmar desde el enlace, el 2026-11-19), la prueba de `trust proxy` en production (la IP real
    detrás del proxy de Railway) y, en el frontend, `ENLACE_PUBLICO_LISTO = true`
    ([checklist](Fases/fase-3-us04-respuesta-paciente.md#checklist-de-salida-a-producción)). El release tuvo
    un corte de ~9 minutos ([incidente](Fases/fase-3-us04-respuesta-paciente.md#incidente-production-caído-9-minutos)).
@@ -210,10 +217,10 @@ cualquier usuario con sesión escribe a soporte; sin `SOPORTE_CORREO_DESTINO` en
    redirigir el dominio raíz y `www` a `app.citiahealth.cl`, confirmar "App Sleeping" y el `FRONTEND_URL`
    de staging ([lista](ROADMAP.md#pendientes-posteriores-al-cierre)).
 5. **Consentimiento sin revisar, con fecha** ([DT-16](Deudas/DT-16.md)): riesgo aceptado hasta que entre en
-   vigor la Ley 21.719 (prevista para el 2026-12-01). La política ya existe y está apagada. *(2026-11-14:
-   [US-11](US/11-terminos-paciente.md) —el texto para el paciente y la prueba de su aceptación— está implementada en
-   la rama `feature/terminos-paciente` y espera su release, frontend primero; cierra la parte (2) de DT-16. La política
-   sigue apagada.)*
+   vigor la Ley 21.719 (prevista para el 2026-12-01). La política ya existe y está apagada. *(2026-11-20:
+   [US-11](US/11-terminos-paciente.md) —el texto para el paciente y la prueba de su aceptación— está en producción desde
+   el 2026-11-16 y cierra la parte (2) de DT-16. La política sigue apagada. Antes (2026-11-14): «implementada en la
+   rama, espera su release».)*
 6. **Cuatro decisiones del usuario**, ninguna bloqueante:
    [Q12–Q15](PREGUNTAS-ABIERTAS.md#fase-2--decisiones-pendientes-tras-implementar-2026-10-04).
 

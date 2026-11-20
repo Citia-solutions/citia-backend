@@ -161,6 +161,27 @@ tipo `merge`), y la Fase 7 llegó a `develop` por fast-forward, sin PR ni commit
 | 134 | `fc3a83f` test(solicitud): versión de los términos en el formulario y la bandeja | 2026-11-14 | test | [US-11 § Tests por capa](US/11-terminos-paciente.md#tests-por-capa) (`solicitud`: entidad, servicios, adaptador y el CHECK en `solicitudes-persistencia`); [us11 § Tests y verificación](Features/us11-terminos-paciente.md#tests-y-verificación) | — |
 | 135 | `305dea5` test(portal-paciente): aceptar-terminos, unitarios y concurrencia contra Postgres | 2026-11-14 | test | [US-11 § Tests por capa](US/11-terminos-paciente.md#tests-por-capa) (`portal-paciente`: servicio, DTO y `portal-paciente-concurrencia`); [us11 § Tests y verificación](Features/us11-terminos-paciente.md#tests-y-verificación) | — |
 | 136 | `66e54bc` test(e2e): contrato de la US-11 | 2026-11-14 | test | [US-11 § Definición de Terminado](US/11-terminos-paciente.md#definición-de-terminado) y la [lista de e2e](US/11-terminos-paciente.md#e2e-solo-listadas-no-se-corren-sin-la-autorización-del-usuario) (ver nota) | — |
+| 137 | `6876a82` docs(context): cierre de US-07.01 y feature del registro de hechos | 2026-11-14 | docs | **[us0701-registro-hechos](Features/us0701-registro-hechos.md)** (nueva); cierre en la [Fase 5](Fases/fase-5-us07-scoring.md), [US-07.01](US/07.01-registro-hechos.md), [ADR-14](Decisions/ADR-14.md) y [DT-11](Deudas/DT-11.md); notas fechadas en la [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) y en [us04](Features/us04-respuesta-paciente.md); ROADMAP, README, [Fases](Fases/README.md) y [Features](Features/README.md); filas 125–127 de este archivo (ver nota) | F5 · F3 |
+| 138 | `9a971b7` merge PR #18 `docs/cierre-us0701` → `develop` | 2026-11-14 | merge | — (integra 137) | F5 |
+| 139 | `0e24c54` docs(context): Q18 y Q19 respondidas y la casilla de soporte en DT-52 | 2026-11-14 | docs/decisión | [Q18](PREGUNTAS-ABIERTAS.md#q18--nombre-legible-del-plan-free) y [Q19](PREGUNTAS-ABIERTAS.md#q19--casilla-de-soporte) (las dos = A); [DT-52 § La casilla de soporte](Deudas/DT-52.md#nota-2026-11-14--la-casilla-de-soporte-decidida-q19--a) (dos proveedores nuevos) | F7 · — |
+| 140 | `fc260ac` docs(context): la primera clínica con pacientes reales entró el 2026-11-11 | 2026-11-14 | docs | [Cumplimiento § El límite real](Cumplimiento/README.md#el-límite-real-la-primera-clínica-con-pacientes-reales); severidades de [DT-51](Deudas/DT-51.md) a [DT-53](Deudas/DT-53.md) y [DT-56](Deudas/DT-56.md), y nota en [DT-54](Deudas/DT-54.md); nota en [DT-16](Deudas/DT-16.md); ROADMAP, README, [Deudas](Deudas/README.md) y una nota en el checklist de la [Fase 3](Fases/fase-3-us04-respuesta-paciente.md) (la observación de `trust proxy` empieza el 2026-11-11) | — · F3 |
+| 141 | `e0b4719` docs(context): borrador de los términos que autoriza el paciente | 2026-11-14 | docs | **[borrador-terminos-paciente](Cumplimiento/borrador-terminos-paciente.md)** (nuevo, v0.1); [Cumplimiento](Cumplimiento/README.md) y ROADMAP | — |
+| 142 | `7b859ae` docs(context): términos del paciente v0.2 con las decisiones confirmadas | 2026-11-14 | docs/decisión | [borrador](Cumplimiento/borrador-terminos-paciente.md) v0.2; [Cumplimiento](Cumplimiento/README.md) y ROADMAP | — |
+| 143 | `5414226` merge PR #19 `docs/cierre-fases-3-7` → `develop` | 2026-11-14 | merge | — (integra 139–142; ver nota) | F7 · — |
+| 144 | `dbd97a5` docs(context): US-11 implementada en la rama, notas en DT-16 y DT-53 | 2026-11-14 | docs | **[us11-terminos-paciente](Features/us11-terminos-paciente.md)**, **[DT-62](Deudas/DT-62.md)** y **[DT-63](Deudas/DT-63.md)** (nuevas; las deudas, ⚪ previstas); notas en [DT-16](Deudas/DT-16.md) y [DT-53](Deudas/DT-53.md); estado en [ADR-16](Decisions/ADR-16.md), [US-11](US/11-terminos-paciente.md), ROADMAP, [Cumplimiento](Cumplimiento/README.md), el borrador, README, los índices y `CLAUDE.md` raíz; filas 128–136 de este archivo (ver nota) | — |
+| 145 | `9a8c35b` docs(context): resultados de los tests de US-11, con las e2e en verde | 2026-11-14 | docs | [us11 § Tests](Features/us11-terminos-paciente.md#tests) (137 / 2577 unitarios, 14 / 316 de integración y 18 / 418 e2e); [US-11 § Definición de Terminado](US/11-terminos-paciente.md#definición-de-terminado); la nota de las filas 128–136 | — |
+| 146 | `c6346d2` fix(rut): validar la forma escrita del RUT antes de normalizar | 2026-11-14 | fix | [ADR-09 §3](Decisions/ADR-09.md) y [us02](Features/us02-gestion-citas.md) (en `e5eb3a3`); `shared/domain/rut.ts` y sus specs, más casos en los specs de `pacientes` y `solicitudes` (ver nota) | F1 |
+| 147 | `e5eb3a3` docs(context): forma escrita del RUT en ADR-09 §3 y en la feature de US-02 | 2026-11-14 | docs | [ADR-09](Decisions/ADR-09.md) §3; [us02](Features/us02-gestion-citas.md) | F1 |
+| 148 | `a6daf27` test(rut): specs del RUT que no chocan con US-11 (#20) en ningún orden | 2026-11-15 | test | [us02](Features/us02-gestion-citas.md) (la lista de tests); quita los casos del controller de `pacientes` y ajusta los del formulario público (ver nota) | F1 · — |
+| 149 | `7aaec66` merge PR #20 `feature/terminos-paciente` → `develop` | 2026-11-15 | merge | — (integra 128–136, 144 y 145: **US-11 a staging**) | — |
+| 150 | `bba5566` merge PR #21 `fix/rut-formato-estricto` → `develop` | 2026-11-15 | merge | — (integra 146–148) | F1 |
+| 151 | `31b5c3f` docs(context): copia congelada de los términos del paciente v1.0 | 2026-11-15 | docs | **[terminos-paciente-v1.0](Cumplimiento/terminos-paciente-v1.0.md)** (nueva; con la fecha prevista, el 15); el [borrador](Cumplimiento/borrador-terminos-paciente.md) pasa a antecedente; [Cumplimiento](Cumplimiento/README.md), [ADR-16](Decisions/ADR-16.md), [US-11](US/11-terminos-paciente.md) y la [feature](Features/us11-terminos-paciente.md) | — |
+| 152 | `e42b028` merge PR #22 `docs/terminos-v1-publicada` → `develop` | 2026-11-16 | merge | — (integra 151) | — |
+| 153 | `8738b98` merge PR #23 `develop` → `main` | 2026-11-16 | release | — (**release de US-11 a producción**: lleva 137–152 a `main`) · [us11 § Release](Features/us11-terminos-paciente.md#release-2026-11-16) (ver nota) | — · F1 · F5 · F7 |
+| 154 | `7f903b0` docs(context): fecha de publicación de los términos v1.0 al 2026-11-16 | 2026-11-17 | docs | [copia congelada § La fecha que mostró la página](Cumplimiento/terminos-paciente-v1.0.md#la-fecha-que-mostró-la-página) (la única corrección a la copia); [Cumplimiento](Cumplimiento/README.md), el borrador, [ADR-16](Decisions/ADR-16.md), [US-11](US/11-terminos-paciente.md) y la [feature](Features/us11-terminos-paciente.md) | — |
+| 155 | `7fc4a36` docs(context): hora en que /terminos pasó a mostrar el 16 de noviembre | 2026-11-17 | docs | la misma sección: el primer tramo termina entre las 11:07:39 y las 11:08:13 | — |
+| 156 | `962b946` docs(context): nombrar el repo del release en la copia congelada | 2026-11-17 | docs | la misma sección (citia-frontend#23) | — |
+| 157 | `18965f7` merge PR #24 `docs/terminos-v1-fecha` → `develop` | 2026-11-17 | merge | — (integra 154–156; llega a `main` con el release siguiente) | — |
 
 > **Nota commit 31.** `core.autocrlf=true` marcaba ~32 archivos como modificados con contenido
 > idéntico, ensuciando `git status` y los diffs de cada PR. `.gitattributes` fija LF para repo y
@@ -294,7 +315,37 @@ tipo `merge`), y la Fase 7 llegó a `develop` por fast-forward, sin PR ni commit
 > las 17:19 y las 17:58, con la implementación ya verificada en local; la 128 trae el ADR ya aceptado. Las 133–135 son
 > los tests del `testing-agent` (unitarios e integración por módulo), commiteados a las 21:43. La **136** son las e2e
 > ajustadas al contrato nuevo; con la autorización del usuario se corrieron el 2026-11-14: 18 suites y 418 tests en verde. El frontend tiene sus propios commits (`eb3fbcc` a
-> `e276343`), en la rama del mismo nombre de `citia-frontend`.
+> `e276343`), en la rama del mismo nombre de `citia-frontend`. *(2026-11-20: llegaron a `develop` con el merge
+> `7aaec66` (fila 149) y a `main` con el release `8738b98` (fila 153).)*
+
+> **Nota filas 137–143.** Son anteriores en el tiempo a las de US-11 (128–136) y se registran después, como lo dejó
+> dicho la pasada de US-11 (y como la fila 38). La **137** (`6876a82`) es el commit de documentación que cerró la
+> pasada del 2026-11-14: registró las filas 125–127 y, por la convención del último commit de docs, no tenía fila. El
+> **PR #19** (139–143) viene de la rama `docs/cierre-fases-3-7`, pero **no cierra ninguna de las dos fases**: trae las
+> respuestas a Q18 y Q19, la entrada de la primera clínica con pacientes reales y el borrador de los términos del
+> paciente (v0.1 y v0.2), el antecedente de US-11. La rama `feature/terminos-paciente` sale de su merge, `5414226`.
+
+> **Nota filas 144–145.** `dbd97a5` es el commit de documentación que cerró la pasada de US-11 (registró las filas
+> 128–136), y `9a8c35b` anotó los resultados de las e2e. Los dos viven en la rama `feature/terminos-paciente` y llegaron
+> a `develop` con el PR #20 (fila 149).
+
+> **Nota filas 146–150.** El arreglo del RUT (PR #21, rama `fix/rut-formato-estricto`) salió de `5414226` en paralelo
+> con US-11: el RUT mal escrito se normalizaba en vez de rechazarse. `a6daf27` ajustó sus specs para que no chocaran
+> con US-11 (el DTO de `POST /pacientes` exige ahora la casilla y la versión) en ninguno de los dos órdenes de merge.
+> Los dos PR se mergearon a `develop` con un minuto de diferencia el 2026-11-15 (149 y 150); la combinación se probó
+> después con `npm test` sobre `develop` (2603 tests en verde).
+
+> **Nota fila 153.** Como los otros `release`, vive **solo en `main`**. **No es solo documentación:** lleva el código de
+> US-11 (128–136) y el arreglo del RUT (146–148), con las migraciones `1750000021000` y `1750000022000`, que production
+> aplicó al arrancar (comprobado el 2026-11-20 con una lectura de solo lectura). Se mergeó el 2026-11-16 a las 21:22,
+> **21 minutos** después del release del frontend (citia-frontend#21, a las 21:01); ADR-16 §10 pedía al menos 30
+> ([nota en ADR-16](Decisions/ADR-16.md#nota-2026-11-20-cómo-se-cumplió-la-decisión-10)). Lleva también la copia
+> congelada con la fecha prevista (151); la corrección de la fecha (154–156) llegó a `develop` después, con la 157.
+
+> **Nota filas 154–157.** El release del frontend fue el 2026-11-16 y no el 15, la fecha prevista con la que se congeló
+> la copia (151). Como el backend ya recibía aceptaciones, la copia registra los dos tramos en que `/terminos` mostró una
+> fecha u otra; el texto de la 1.0 no cambió. El frontend se corrigió con citia-frontend#22 y su release #23
+> (2026-11-17, 11:07). El PR #24 (157) llega a `main` con el release de los docs de cierre de US-11.
 
 > **Nota fila 53.** Los tests del cierre de la Fase 1 no se listaron en la tabla de
 > [us02 §Tests](Features/us02-gestion-citas.md#tests), que quedó en el estado del 2026-09-24. La
@@ -333,13 +384,20 @@ tipo `merge`), y la Fase 7 llegó a `develop` por fast-forward, sin PR ni commit
 > *Pasada del 2026-11-14:* registra hasta `acea253` inclusive (filas 125–127), tomadas de
 > `git log --reverse cd659c1..origin/main`. El commit de documentación que cierre esta pasada (cierre de US-07.01,
 > rama `docs/cierre-us0701`) **no tiene fila**: se registra en la siguiente. *(Es `6876a82`, todavía sin fila: ver la
-> pasada de US-11.)*
+> pasada de US-11. 2026-11-20: fila 137.)*
 >
 > *Pasada del 2026-11-14, US-11:* registra solo los commits de la rama `feature/terminos-paciente` (filas 128–136). **Quedan sin fila, a propósito,** los commits que ya están en `develop` y son
 > anteriores a esta rama: el PR #18 (`6876a82` y su merge `9a971b7`) y el PR #19 (`0e24c54`, `fc260ac`, `e0b4719`,
 > `7b859ae` y su merge `5414226`). Se registran en una pasada posterior, con números después de los de US-11 aunque
 > sean anteriores en el tiempo, como la fila 38. El commit de documentación que cierre esta pasada (la feature de
-> US-11 y estas filas) **no tiene fila**: se registra en la siguiente.
+> US-11 y estas filas) **no tiene fila**: se registra en la siguiente. *(Es `dbd97a5`, fila 144; los commits de los
+> PR #18 y #19 son las filas 137–143.)*
+>
+> *Pasada del 2026-11-20, cierre de US-11:* registra hasta `18965f7` inclusive (filas 137–157), tomadas de
+> `git log --reverse` sobre `origin/main` y `origin/develop` desde el 2026-11-01. Incluye las que la pasada de US-11 dejó
+> sin fila a propósito (137–143). El commit de documentación que cierre esta pasada (US-11 en producción y verificada,
+> rama `docs/cierre-us11`) **no tiene fila**: se registra en la siguiente, junto con su merge a `develop` y el release
+> que lo lleve a `main`.
 
 ## Cobertura por decisión (ADR ↔ commits)
 
@@ -354,14 +412,14 @@ tipo `merge`), y la Fase 7 llegó a `develop` por fast-forward, sin PR ni commit
 | **ADR-06** | Atomicidad transaccional (TransactionRunner opaco) | `d4fa476`, `f573485`, `a6c237f` (el `tx` llega a `publicar`) |
 | **ADR-07** | Día/hora en zona de la clínica (DST-safe) | `08dad63`, `717800e` (rangos y corrección del inicio del día en DST) |
 | ADR-08 | Tenant en la URL | `bfeada0` (propuesto) · fase 1 adoptada en la ruta pública por `e1253c3` |
-| **ADR-09** | Gestión de citas: solicitud aparte, RUT como identidad, reagendar con bitácora | `f2a7dff` (§3–§7), `e1253c3` (§1,§2,§8–§11), `439a5fe` (docs), `e06862a` (bandeja), `4c543a5`, `31ea490` (decisión 2 reafirmada, límite de tasa), `ab30bb7` (matiz §3) |
+| **ADR-09** | Gestión de citas: solicitud aparte, RUT como identidad, reagendar con bitácora | `f2a7dff` (§3–§7), `e1253c3` (§1,§2,§8–§11), `439a5fe` (docs), `e06862a` (bandeja), `4c543a5`, `31ea490` (decisión 2 reafirmada, límite de tasa), `ab30bb7` (matiz §3) · `c6346d2`, `e5eb3a3`, `a6daf27` (forma escrita del RUT, §3) · `bba5566` (a `develop`), `8738b98` (a producción) |
 | ADR-10 | Enlace por cita del paciente (US-04 + US-02.07) | `2877b13` (propuesto), `4c543a5` (aplazado), `b93f2c0` (aceptado y notas de implementación), `c757e0e`, `6fbf4e3`, `4d3d88f`, `5f8ac6d`, `92b8020`, `143c8fb`, `3b312f9` (implementación) · `ce0c533` (a `develop`), `05bae58` (a producción) |
 | ADR-11 | Solapamiento: avisar y permitir | `4c543a5` (doc), `538657e`, `9140bc3` (implementación), `06858f2` (tests) |
 | ADR-12 | Outbox transaccional + planificador en Postgres | `ab30bb7` (diseño), `daf0617`, `a6c237f`, `d45de20` (latidos, entorno), `f95b637`, `db46e37` (implementación) · `060303c` (a `develop`), `c057ade` (a producción) · `9fc1ddd` (estado) · `92b8020` (suscriptor de solicitudes, Fase 3), `b93f2c0` (nota) · `f123617` (job G1 en el planificador, Fase 5), `8c74f70` (nota §8: el cierre ya no está aplazado) · `fcfeac3` (job `soporte.envio`, Fase 7) |
 | ADR-13 | Recordatorios por correo (Resend) | `ab30bb7` (diseño), `d45de20`, `a37f175`, `f2d80aa`, `a13d80a`, `f719c66`, `a938f9d` (implementación) · `060303c` (a `develop`), `c057ade` (a producción) · `9fc1ddd` (estado) · `5f8ac6d` (bloque `accion`, Fase 3), `b93f2c0` (nota) · `5042888`, `865354f` (remitente *citiahealth*, nota), `932d416` (a producción) · `8304107` (nota de cumplimiento) · `fcfeac3` (soporte reutiliza `CanalMensajeria`, Fase 7) |
-| ADR-14 | Calificación de asistencia y riesgo de la cita (Fase 5) | `3e64472` (diseño; aceptado en lo que toca a US-07.01), `1545ad7`, `f123617`, `8a7953b`, `d4aa920` (implementación de US-07.01) · `715c3f3` (a `develop`), `313a506` (a producción) · `c3e7b42`, `8c74f70` (decisiones de producto de US-07.02), `f6d0aa4` (US-07.02 y US-07.03 bloqueadas), `8304107` (nota de cumplimiento) · `33fc74c` (docs directo a `main`) |
+| ADR-14 | Calificación de asistencia y riesgo de la cita (Fase 5) | `3e64472` (diseño; aceptado en lo que toca a US-07.01), `1545ad7`, `f123617`, `8a7953b`, `d4aa920` (implementación de US-07.01) · `715c3f3` (a `develop`), `313a506` (a producción) · `c3e7b42`, `8c74f70` (decisiones de producto de US-07.02), `f6d0aa4` (US-07.02 y US-07.03 bloqueadas), `8304107` (nota de cumplimiento) · `33fc74c` (docs directo a `main`) · `6876a82` (cierre de US-07.01) |
 | ADR-15 | Cuenta del profesional: perfil, corte de sesiones, suscripción y soporte (Fase 7) | `6e597be` (diseño, aceptado, con notas de implementación), `a2058aa`, `35aec28`, `fcfeac3`, `c090105` (implementación) · `aeab86d` (verificación) · a `develop` por fast-forward, sin merge · `cd659c1` (a producción) |
-| ADR-16 | Términos del paciente y prueba de la aceptación (US-11, transversal) | `da812f3` (diseño, aceptado), `ee0c2b4` (plan sin preguntas), `92a1f36`, `bdeb1aa`, `894b96c` (implementación), `1d00f9e`, `fc3a83f`, `305dea5`, `66e54bc` (tests) · en la rama `feature/terminos-paciente`, sin merge ni release |
+| ADR-16 | Términos del paciente y prueba de la aceptación (US-11, transversal) | `da812f3` (diseño, aceptado), `ee0c2b4` (plan sin preguntas), `92a1f36`, `bdeb1aa`, `894b96c` (implementación), `1d00f9e`, `fc3a83f`, `305dea5`, `66e54bc` (tests) · `dbd97a5`, `9a8c35b` (feature y resultados) · `7aaec66` (a `develop`), `8738b98` (a producción, 2026-11-16) · `31b5c3f`, `7f903b0`, `7fc4a36`, `962b946` (copia congelada de la 1.0 y su fecha) |
 
 > **ADRs en negrita** = creados en la pasada de alineación (2026-07-12) para cerrar decisiones que
 > estaban implementadas en el código pero no documentadas.
@@ -374,10 +432,10 @@ tipo `merge`), y la Fase 7 llegó a `develop` por fast-forward, sin PR ni commit
 |---|---|---|
 | [Fundaciones](Fases/fase-base-fundaciones.md) | 1–19, 26–34 | `258542f` → `bfeada0` |
 | [Fase 0 — US-06](Fases/fase-0-us06-dashboard.md) | 20–25, 28 (+ 30, 32 en docs; 48, 57 para el cierre) | `9ab2bec` → `08dad63`, `f200557` |
-| [Fase 1 — US-02](Fases/fase-1-us02-gestion-citas.md) | 35–39, 41–58 | `f2a7dff` → `c9ac69f` |
+| [Fase 1 — US-02](Fases/fase-1-us02-gestion-citas.md) | 35–39, 41–58 · 146–148, 150 (forma escrita del RUT) | `f2a7dff` → `c9ac69f` · `c6346d2` → `a6daf27` (RUT, 2026-11-14 y 2026-11-15), su merge `bba5566` y su release `8738b98` |
 | [Fase 2 — US-03](Fases/fase-2-us03-recordatorios.md) | 59, 61–74, 76–84, 93, 96–99 | `ab30bb7` (diseño) · `daf0617` → `f2ccb01` (implementación) · `060303c` (a `develop`) · `893c112` → `4fc9a86` (Netlify, `tenantNombre`, DT-30) · `c057ade` (release a producción, 2026-10-06) · `9fc1ddd` (cierre, 2026-10-07) y su merge `72d117f` · `5042888` → `932d416` (remitente *citiahealth*, a producción el 2026-10-18) |
-| [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | 85–92, 94, 95 (antes, ADR-10 y FD-06 entraron en 38, 41 y 54) · 101, 103, 104 (docs tras el release) | `c757e0e` → `b93f2c0` (implementación y docs, 2026-10-15) · `ce0c533` (a `develop`) · `05bae58` (release a producción, 2026-10-17) · `be69c27` (en producción y coherencia, 2026-10-18), su merge `d496a86` y su release `ce7105e` |
-| [Fase 5 — US-07](Fases/fase-5-us07-scoring.md) | 105–115, 117 · 125–127 (compartidas con la Fase 7) | `3e64472` (ADR-14 y plan de US-07.01, 2026-10-19) · `1545ad7` → `bb90815` (implementación de US-07.01) · `715c3f3` (a `develop`) · `313a506` (release a producción, 2026-10-20) · `c3e7b42` → `f6d0aa4` (decisiones de US-07.02 y bloqueo, 2026-10-30) · `33fc74c` (PR de docs directo a `main`) · `5a0ecc3` (registró las filas de US-07.01), su merge `e8b6102` y su release `acea253` |
-| [Fase 7 — US-10](Fases/fase-7-us10-perfil.md) | 118–124 · 125–127 (docs tras el release) | `6e597be` (ADR-15 y plan) · `a2058aa` → `c090105` (implementación, 2026-11-01) · `aeab86d` (verificación) · a `develop` por fast-forward, sin fila · `cd659c1` (release a producción, 2026-11-01) · `5a0ecc3` (en producción y feature de US-10, 2026-11-01), su merge `e8b6102` y su release `acea253` (2026-11-02) |
-| transversal | 40 (ROADMAP), 60 (navegación por fases), 75 (primer release a `main`), 100 (`Explicado/`), 102 (`CLAUDE.md` y agentes), 116 (`Cumplimiento/`) | `cea0bd1`, `2f33394`, `f1f711f`, `8208a56`, `555b060`, `8304107` |
-| transversal — US-11, términos del paciente ([Cumplimiento](Cumplimiento/README.md); [ADR-16](Decisions/ADR-16.md)) | 128–136 | `da812f3`, `ee0c2b4` (ADR-16 y plan, 2026-11-14) · `92a1f36` → `894b96c` (implementación, 2026-11-14) · `1d00f9e` → `305dea5` y `66e54bc` (tests) · en la rama `feature/terminos-paciente`, sin merge ni release |
+| [Fase 3 — US-04](Fases/fase-3-us04-respuesta-paciente.md) | 85–92, 94, 95 (antes, ADR-10 y FD-06 entraron en 38, 41 y 54) · 101, 103, 104 (docs tras el release) | `c757e0e` → `b93f2c0` (implementación y docs, 2026-10-15) · `ce0c533` (a `develop`) · `05bae58` (release a producción, 2026-10-17) · `be69c27` (en producción y coherencia, 2026-10-18), su merge `d496a86` y su release `ce7105e` · notas en 137 y 140 (2026-11-14) |
+| [Fase 5 — US-07](Fases/fase-5-us07-scoring.md) | 105–115, 117 · 125–127 (compartidas con la Fase 7) · 137, 138 (cierre de US-07.01) | `3e64472` (ADR-14 y plan de US-07.01, 2026-10-19) · `1545ad7` → `bb90815` (implementación de US-07.01) · `715c3f3` (a `develop`) · `313a506` (release a producción, 2026-10-20) · `c3e7b42` → `f6d0aa4` (decisiones de US-07.02 y bloqueo, 2026-10-30) · `33fc74c` (PR de docs directo a `main`) · `5a0ecc3` (registró las filas de US-07.01), su merge `e8b6102` y su release `acea253` · `6876a82` (cierre de US-07.01, 2026-11-14), su merge `9a971b7` y su release `8738b98` |
+| [Fase 7 — US-10](Fases/fase-7-us10-perfil.md) | 118–124 · 125–127 (docs tras el release) · 139, 143 (Q18 y Q19) | `6e597be` (ADR-15 y plan) · `a2058aa` → `c090105` (implementación, 2026-11-01) · `aeab86d` (verificación) · a `develop` por fast-forward, sin fila · `cd659c1` (release a producción, 2026-11-01) · `5a0ecc3` (en producción y feature de US-10, 2026-11-01), su merge `e8b6102` y su release `acea253` (2026-11-02) · `0e24c54` (Q18 y Q19, 2026-11-14), su merge `5414226` y su release `8738b98` |
+| transversal | 40 (ROADMAP), 60 (navegación por fases), 75 (primer release a `main`), 100 (`Explicado/`), 102 (`CLAUDE.md` y agentes), 116 (`Cumplimiento/`) · 140–142 (Cumplimiento: el piloto y el borrador de los términos) | `cea0bd1`, `2f33394`, `f1f711f`, `8208a56`, `555b060`, `8304107` · `fc260ac`, `e0b4719`, `7b859ae` (2026-11-14) |
+| transversal — US-11, términos del paciente ([Cumplimiento](Cumplimiento/README.md); [ADR-16](Decisions/ADR-16.md)) | 128–136 · 144, 145, 149 · 151–157 | `da812f3`, `ee0c2b4` (ADR-16 y plan, 2026-11-14) · `92a1f36` → `894b96c` (implementación, 2026-11-14) · `1d00f9e` → `305dea5` y `66e54bc` (tests) · `dbd97a5`, `9a8c35b` (feature y resultados) · `7aaec66` (a `develop`, 2026-11-15) · `31b5c3f` (copia congelada) y su merge `e42b028` · `8738b98` (**release a producción, 2026-11-16**) · `7f903b0` → `962b946` (la fecha, 2026-11-17) y su merge `18965f7` |

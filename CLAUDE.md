@@ -77,11 +77,11 @@ Los `*.spec.ts` unitarios van junto a cada archivo. `domain/` y `application/` n
 TypeORM ni `class-validator` (lo comprueba `src/arquitectura.spec.ts`); los servicios se instancian en el
 módulo con `useFactory` + `inject`, y los puertos son el token de inyección.
 
-> Estado actual (2026-11-14): módulos `auth`, `cita`, `paciente`, `portal-paciente`, `recordatorio`,
+> Estado actual (2026-11-20): módulos `auth`, `cita`, `paciente`, `portal-paciente`, `recordatorio`,
 > `solicitud`, `soporte`, `tenant` y `usuario`, más `src/shared/` (configuración y validación del entorno,
 > logs, límite de tasa, outbox y planificador) y 23 migraciones. En producción hasta la Fase 3, US-07.01 y la
-> Fase 7 (US-10, desde el 2026-11-01; cierre pendiente de las pruebas manuales y de Q18/Q19). US-11 (términos del
-> paciente, ADR-16) está implementada en la rama `feature/terminos-paciente`, sin release. El estado de cada fase
+> Fase 7 (US-10, desde el 2026-11-01; cierre pendiente de las pruebas manuales) y US-11 (términos del paciente,
+> ADR-16, desde el 2026-11-16, verificada en production). El estado de cada fase
 > está en `context/ROADMAP.md`.
 
 ### Convención: contexto por módulo (CLAUDE.md local)
